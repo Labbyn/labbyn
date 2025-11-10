@@ -1,15 +1,13 @@
 services:
-  #web:
-  #  build:
-  #    context: ./web
-  #  env_file:
-  #    - .env/web.env
-  #  ports:
-  #    - "80:80"
-  #  volumes:
-  #    - ./web:/app
-  #  depends_on:
-  #    - api
+  web:
+    build:
+      context: ./web
+    env_file:
+      - .env/web.env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
   api:
     build:
       context: ./api
