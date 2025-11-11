@@ -17,8 +17,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     <>
       <SidebarProvider>
         <AppSidebar />
-          <SidebarTrigger />
-          <Outlet />
+        <SidebarTrigger />
+        <Outlet />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

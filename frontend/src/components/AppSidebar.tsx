@@ -1,4 +1,12 @@
 import {
+  Building2,
+  Calendar,
+  Inbox,
+  LayoutDashboard,
+  Search,
+  Settings,
+} from 'lucide-react'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -10,55 +18,54 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { Calendar, LayoutDashboard, Inbox, Search, Settings, Building2 } from "lucide-react"
+} from '@/components/ui/sidebar'
 
 const items = [
   {
-    title: "Dashboard",
-    url: "#",
+    title: 'Dashboard',
+    url: '#',
     icon: LayoutDashboard,
   },
   {
-    title: "Labs",
-    url: "#",
+    title: 'Labs',
+    url: '#',
     icon: Inbox,
   },
   {
-    title: "Equipment",
-    url: "#",
+    title: 'Equipment',
+    url: '#',
     icon: Inbox,
   },
   {
-    title: "History",
-    url: "#",
+    title: 'History',
+    url: '#',
     icon: Calendar,
   },
   {
-    title: "User Groups",
-    url: "#",
+    title: 'User Groups',
+    url: '#',
     icon: Search,
   },
   {
-    title: "Settings",
-    url: "#",
+    title: 'Settings',
+    url: '#',
     icon: Settings,
   },
   {
-    title: "Monitoring",
-    url: "#",
+    title: 'Monitoring',
+    url: '#',
     icon: Settings,
   },
   {
-    title: "Admin tools",
-    url: "#",
+    title: 'Admin tools',
+    url: '#',
     icon: Settings,
   },
   {
-    title: "Documentation",
-    url: "#",
+    title: 'Documentation',
+    url: '#',
     icon: Settings,
-  }
+  },
 ]
 
 export function AppSidebar() {
