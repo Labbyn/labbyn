@@ -6,13 +6,5 @@
             "host": "localhost",
             "team": "some_team"
         }
-    },
-    {
-        "targets": ["192.168.18.12:9100"],
-        "labels": {
-            "job": "node",
-            "host": "192.168.18.12",
-            "team": "some_team_2"
-        }
     }
 ]

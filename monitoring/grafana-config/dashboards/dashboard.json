@@ -43,10 +43,6 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -57,12 +53,12 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "red",
+                "value": 0
               },
               {
-                "color": "red",
-                "value": 2
+                "color": "green",
+                "value": 1
               }
             ]
           },
@@ -95,10 +91,6 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "expr": "up{host=\"$host\"}",
           "refId": "A"
         }
@@ -107,10 +99,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -154,10 +142,6 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "editorMode": "code",
           "expr": "avg_over_time(node_memory_MemTotal_bytes{host=\"$host\"}[$__range]) / 1024 / 1024 / 1024",
           "legendFormat": "Host: {{host}}",
@@ -169,10 +153,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -216,10 +196,6 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "expr": "sum(avg_over_time(node_filesystem_size_bytes{host=\"$host\"}[$__range])) / 1024 / 1024 / 1024\r\n",
           "refId": "A"
         }
@@ -241,10 +217,6 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "description": "",
       "fieldConfig": {
         "defaults": {
@@ -292,10 +264,6 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\", host=\"$host\"}[2m])))",
           "refId": "A"
         }
@@ -304,10 +272,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -353,11 +317,7 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
-          "expr": "100 * (1 - (\r\n  (avg_over_time(node_memory_MemFree_bytes{host=\"$host\"}[$__range]) +\r\n   avg_over_time(node_memory_Cached_bytes{host=\"$host\"}[$__range]) +\r\n   avg_over_time(node_memory_Buffers_bytes{host=\"$host\"}[$__range]))\r\n  / avg_over_time(node_memory_MemTotal_bytes{host=\"$host\"}[$__range])\r\n))",
+          "expr": "100 * (1 - (\r\n  (avg_over_time(node_memory_MemFree_bytes{host=\"$host\"}[2m]) +\r\n   avg_over_time(node_memory_Cached_bytes{host=\"$host\"}[2m]) +\r\n   avg_over_time(node_memory_Buffers_bytes{host=\"$host\"}[2m]))\r\n  / avg_over_time(node_memory_MemTotal_bytes{host=\"$host\"}[2m])\r\n))",
           "refId": "A"
         }
       ],
@@ -365,10 +325,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -430,10 +386,6 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "editorMode": "code",
           "expr": "sum(avg_over_time(node_filesystem_avail_bytes{host=\"$host\", fstype!~\"tmpfs|overlay\"}[$__range])) / 1024 / 1024 / 1024\r\n",
           "legendFormat": "Available space",
@@ -441,10 +393,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "editorMode": "code",
           "expr": "sum(\r\n  avg_over_time(node_filesystem_size_bytes{host=\"$host\", fstype!~\"tmpfs|overlay\"}[$__range])\r\n  - avg_over_time(node_filesystem_free_bytes{host=\"$host\", fstype!~\"tmpfs|overlay\"}[$__range])\r\n) / 1024 / 1024 / 1024\r\n",
           "hide": false,
@@ -457,10 +405,6 @@
       "type": "piechart"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -533,10 +477,6 @@
       "pluginVersion": "9.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "editorMode": "code",
           "expr": "100 * (1 - (\r\n  (avg_over_time(node_memory_MemFree_bytes{host=\"$host\"}[$__range]) +\r\n   avg_over_time(node_memory_Cached_bytes{host=\"$host\"}[$__range]) +\r\n   avg_over_time(node_memory_Buffers_bytes{host=\"$host\"}[$__range]))\r\n  / avg_over_time(node_memory_MemTotal_bytes{host=\"$host\"}[$__range])\r\n))",
           "legendFormat": "Host: {{host}}",
@@ -548,10 +488,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "BbjD0rkDk"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -623,10 +559,6 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "BbjD0rkDk"
-          },
           "editorMode": "code",
           "expr": "100 * (1 - avg(rate(node_cpu_seconds_total{mode=\"idle\", host=\"$host\"}[$__range])))",
           "legendFormat": "CPU utilization",
@@ -646,12 +578,8 @@
       {
         "current": {
           "selected": false,
-          "text": "192.168.18.12",
-          "value": "192.168.18.12"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "BbjD0rkDk"
+          "text": "",
+          "value": ""
         },
         "definition": "label_values(host)",
         "hide": 0,
