@@ -95,13 +95,13 @@ async def fetch_prometheus_metrics(
             payload = await _request(url, params={"query": query})
             series = payload.get("data", {}).get("result", [])
             readable = await asyncio.gather(
-                *[_format_metrics_to_readable(m) for m in series]
+                *[_format_metrics_to_readable(item) for item in series]
             )
             if hosts:
                 readable = [
                     item
-                    for item in series
-                    if item.get("metric", {}).get("instance") in hosts
+                    for item in readable
+                    if item.get("instance") in hosts
                 ]
             results[m] = readable
         except httpx.HTTPError as e:
