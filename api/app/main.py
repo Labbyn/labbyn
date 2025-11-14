@@ -1,15 +1,31 @@
-from typing import Union
+"""Main application entry point for the FastAPI server."""
+
+import asyncio
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.routers import prometheus_router
+from app.routers.prometheus_router import metrics_worker, status_worker
 
 
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
+@asynccontextmanager
+async def lifespan(fast_api_app: FastAPI): # pylint: disable=unused-argument
+    """
+    Application lifespan context manager.
+    Starts background tasks for fetching Prometheus metrics.
+    :param app: FastAPI application instance
+    :return: None
+    """
+    status_task = asyncio.create_task(status_worker())
+    metrics_task = asyncio.create_task(metrics_worker())
+    try:
+        yield
+    finally:
+        status_task.cancel()
+        metrics_task.cancel()
+        await asyncio.gather(status_task, metrics_task, return_exceptions=True)
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+app = FastAPI(lifespan=lifespan)
+app.include_router(prometheus_router.router)

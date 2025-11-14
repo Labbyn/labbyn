@@ -27,6 +27,13 @@ services:
     ports:
       - "5432:5432"
     restart: always
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+        - redis_data:/data
+    restart: always
   adminer:
     image: adminer
     ports:
@@ -67,3 +74,4 @@ volumes:
   db_data:
   prometheus_data:
   grafana_data:
+  redis_data:
