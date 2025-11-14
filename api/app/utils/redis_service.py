@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 load_dotenv(".env/api.env")
 REDIS_URL = os.getenv("REDIS_URL")
 COLLECT_TIMEOUT = int(os.getenv("COLLECT_TIMEOUT"))
-print(REDIS_URL)
 
 async def get_redis_client():
     """

@@ -10,14 +10,24 @@ from ..utils.prometheus_service import fetch_prometheus_metrics, DEFAULT_QUERIES
 from ..utils.redis_service import get_cache, set_cache
 
 load_dotenv(".env/api.env")
-CACHE_KEY = os.getenv("PROMETEUS_CASHE_KEY")
 HOST_STATUS_INTERVAL = int(os.getenv("HOST_STATUS_INTERVAL"))
 OTHER_METRICS_INTERVAL = int(os.getenv("OTHER_METRICS_INTERVAL"))
 WEBSOCKET_PUSH_INTERVAL = int(os.getenv("WEBSOCKET_PUSH_INTERVAL"))
-PROMETEUS_CASHE_STATUS_KEY = "prometheus_metrics_cache"
-PROMETEUS_CASHE_METRICS_KEY = "prometheus_other_metrics_cache"
+PROMETEUS_CACHE_STATUS_KEY = "prometheus_metrics_cache"
+PROMETEUS_CACHE_METRICS_KEY = "prometheus_other_metrics_cache"
 
 router = APIRouter()
+
+
+def _extract_host_from_instance(instance: str):
+    """
+    Extract hostname/IP from Prometheus instance string.
+    :param instance: Prometheus instance string (e.g., "
+    :return: Hostname/IP part of the instance
+    """
+    if not instance:
+        return instance
+    return instance.rsplit(":", maxsplit=1)[0] if ":" in instance else instance
 
 
 # pylint: disable=too-few-public-methods
@@ -44,7 +54,7 @@ async def status_worker():
     """
     while True:
         status = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
-        await set_cache(PROMETEUS_CASHE_STATUS_KEY, json.dumps(status))
+        await set_cache(PROMETEUS_CACHE_STATUS_KEY, json.dumps(status))
         await asyncio.sleep(HOST_STATUS_INTERVAL)
 
 
@@ -57,7 +67,7 @@ async def metrics_worker():
         metrics = await fetch_prometheus_metrics(
             metrics=["cpu_usage", "memory_usage", "disk_usage"], hosts=None
         )
-        await set_cache(PROMETEUS_CASHE_METRICS_KEY, json.dumps(metrics))
+        await set_cache(PROMETEUS_CACHE_METRICS_KEY, json.dumps(metrics))
         await asyncio.sleep(OTHER_METRICS_INTERVAL)
 
 
@@ -74,8 +84,8 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     try:
         while True:
-            status_data = await get_cache(PROMETEUS_CASHE_STATUS_KEY)
-            metrics_data = await get_cache(PROMETEUS_CASHE_METRICS_KEY)
+            status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
+            metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
             payload = {
                 "status": json.loads(status_data) if status_data else {},
                 "metrics": json.loads(metrics_data) if metrics_data else {},
@@ -86,43 +96,46 @@ async def websocket_endpoint(ws: WebSocket):
         manager.disconnect()
 
 
-@router.get("/prometheus/metrics")
-async def get_prometheus_metrics():
+@router.get("/prometheus/instances")
+async def get_prometheus_instances():
     """
-    Fetch  Metrics for all hosts directly from Prometheus (bypasses cache).
-    :return: Metrics data for all hosts
+    Fetch all unique host instances [HOST::PORT] from Prometheus.
+    :return: List of unique hosts
     """
-    metrics_data = await fetch_prometheus_metrics(
-        metrics=list(DEFAULT_QUERIES.keys()), hosts=None
-    )
-    return metrics_data
+    payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
+    all_instances = set()
+    for item in payload.get("status", []):
+        if "instance" in item:
+            all_instances.add(item["instance"])
+    return {"isnstances": list(all_instances)}
 
 
 @router.get("/prometheus/hosts")
 async def get_prometheus_hosts():
     """
-    Fetch all unique host instances from Prometheus.
-    :return: List of unique hosts
+    Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
+    :return: List of unique hostnames/IPs
     """
     payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
     all_hosts = set()
     for item in payload.get("status", []):
         if "instance" in item:
-            all_hosts.add(item["instance"])
+            host = _extract_host_from_instance(item["instance"])
+            all_hosts.add(host)
     return {"hosts": list(all_hosts)}
 
 
-@router.get("/prometheus/selected_hosts/metrics")
-async def get_selected_hosts_prometheus_metric(
-    hosts: str = Query(None, description="Comma separated hosts")
+@router.get("/prometheus/metrics")
+async def get_prometheus_metrics(
+    instances: str = Query(None, description="Comma separated instances")
 ):
     """
-    Fetch metrics for selected hosts directly from Prometheus (bypasses cache).
-    :param hosts: List of hosts as comma separated string
-    :return: Metrics data for selected hosts
+    Fetch metrics for selected instances directly from Prometheus (bypasses cache).
+    :param hosts: List of instances as comma separated string
+    :return: Metrics data for selected instances, or all if none specified
     """
-    host_list = hosts.split(",") if hosts else None
+    instances_list = instances.split(",") if instances else None
     metrics_data = await fetch_prometheus_metrics(
-        list(DEFAULT_QUERIES.keys()), hosts=host_list
+        list(DEFAULT_QUERIES.keys()), hosts=instances_list
     )
     return metrics_data
