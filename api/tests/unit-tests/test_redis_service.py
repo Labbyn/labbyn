@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from app.utils.redis_service import get_cache, get_redis_client, set_cache
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_redis_client_singleton():
     """Test that get_redis_client returns a singleton instance."""
@@ -17,7 +17,7 @@ async def test_get_redis_client_singleton():
         client2 = await get_redis_client()
     assert client1 is client2
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_set_cache(redis_client_mock):
     """Test setting a value in Redis cache."""
@@ -26,7 +26,7 @@ async def test_set_cache(redis_client_mock):
     await set_cache(key, value)
     redis_client_mock.set.assert_awaited_once_with(key, value, ex=mock.ANY)
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_cache(redis_client_mock):
     """Test getting a value from Redis cache."""

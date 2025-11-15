@@ -17,7 +17,7 @@ def test_client():
         yield client
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="module")
 def redis_client_mock():
     """
     Pytest fixture to mock Redis client for testing.

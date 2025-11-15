@@ -1,5 +1,7 @@
+import pytest
 from unittest import mock
 
+@pytest.mark.unit
 def test_get_prometheus_instances(test_client):
     """Test fetching unique instances from Prometheus."""
     with mock.patch("app.routers.prometheus_router.fetch_prometheus_metrics") as fetch_metrics:
@@ -15,6 +17,7 @@ def test_get_prometheus_instances(test_client):
         assert "instances" in data
         assert set(data["instances"]) == {"host1:9090", "host2:9090"}
 
+@pytest.mark.unit
 def test_get_prometheus_hosts(test_client):
     """Test fetching unique hosts from Prometheus instances."""
     with mock.patch("app.routers.prometheus_router.fetch_prometheus_metrics") as fetch_metrics:
@@ -30,6 +33,7 @@ def test_get_prometheus_hosts(test_client):
         assert "hosts" in data
         assert set(data["hosts"]) == {"host1", "host2"}
 
+@pytest.mark.unit
 def test_get_prometheus_metrics_all_instances(test_client):
     """Test fetching all Prometheus metrics without filtering by hosts."""
     with mock.patch("app.routers.prometheus_router.fetch_prometheus_metrics") as fetch_metrics:
@@ -45,6 +49,7 @@ def test_get_prometheus_metrics_all_instances(test_client):
         assert "status" in data
         assert len(data["status"]) == 2
 
+@pytest.mark.unit
 def test_get_prometheus_metrics_filtered_hosts(test_client):
     """Test fetching Prometheus metrics filtered by hosts."""
     with mock.patch("app.routers.prometheus_router.fetch_prometheus_metrics") as fetch_metrics:

@@ -5,7 +5,7 @@ import httpx
 import pytest
 from app.utils.prometheus_service import fetch_prometheus_metrics
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_success():
     """Test fetching Prometheus metrics successfully."""
@@ -15,7 +15,7 @@ async def test_fetch_prometheus_metrics_success():
         assert "status" in result
         assert result["status"] == []
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_failure():
     """Test fetching Prometheus metrics with a failure."""
@@ -26,7 +26,7 @@ async def test_fetch_prometheus_metrics_failure():
         assert "error" in result["status"]
         assert "Request failed" in result["status"]["error"]
 
-
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_with_filtered_instances():
     """Test fetching Prometheus metrics filtered by instances."""
