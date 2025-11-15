@@ -86,9 +86,13 @@ async def websocket_endpoint(ws: WebSocket):
         while True:
             status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
             metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
+
+            status_parsed = json.loads(status_data) if status_data else {}
+            metrics_parsed = json.loads(metrics_data) if metrics_data else {}
+
             payload = {
-                "status": json.loads(status_data) if status_data else {},
-                "metrics": json.loads(metrics_data) if metrics_data else {},
+                "statuses": status_parsed.get("status", []),
+                "metrics": metrics_parsed,
             }
             await ws.send_json(payload)
             await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
@@ -107,7 +111,7 @@ async def get_prometheus_instances():
     for item in payload.get("status", []):
         if "instance" in item:
             all_instances.add(item["instance"])
-    return {"isnstances": list(all_instances)}
+    return {"instances": list(all_instances)}
 
 
 @router.get("/prometheus/hosts")
