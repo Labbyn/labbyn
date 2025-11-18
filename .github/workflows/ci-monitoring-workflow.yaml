@@ -6,7 +6,10 @@ on:
       - dev
     paths:
       - 'monitoring/**'
-  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
     test-prometheus:
         runs-on: ubuntu-latest

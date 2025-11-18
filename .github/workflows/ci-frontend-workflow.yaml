@@ -6,7 +6,10 @@ on:
       - dev
     paths:
       - 'frontend/**'
-  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
     test-frontend:
         runs-on: ubuntu-latest
