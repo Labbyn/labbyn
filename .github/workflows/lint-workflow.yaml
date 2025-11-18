@@ -1,0 +1,25 @@
+name: Lint Workflow
+on:
+  push: {}
+  pull_request: {}
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: read
+            statuses: write
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v5
+          with:
+            fetch-depth: 0
+            persist-credentials: false
+        - name: super-linter
+          uses: github/super-linter@v4
+          env:
+            VALIDATE_YAML: true
+            VALIDATE_PYTHON_BLACK: true
+            VALIDATE_TYPESCRIPT_ES: true
+            VALIDATE_DOCKERFILE_HADOLINT: true
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
