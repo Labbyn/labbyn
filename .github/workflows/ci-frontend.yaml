@@ -1,0 +1,9 @@
+name: CI Frontend Action
+on:
+  workflow_call:
+jobs:
+    test-frontend:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Test Frontend
+              run: echo "Test Placeholder"

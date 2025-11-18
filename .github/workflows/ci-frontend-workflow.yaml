@@ -1,0 +1,19 @@
+name: CI Frontend Workflow
+on:
+  pull_request:
+    types: [opened, edited]
+    branches:
+      - dev
+    paths:
+      - 'frontend/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    test-frontend:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Run frontend tests
+          uses: ./.github/workflows/ci-frontend.yaml
+

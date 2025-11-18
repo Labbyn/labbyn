@@ -1,0 +1,21 @@
+name: CI API Workflow
+on:
+  pull_request:
+    types: [opened, edited]
+    branches:
+      - dev
+    paths:
+      - 'api/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+    test-api:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Run api tests
+          uses: ./.github/ci-api.yaml
+          with:
+            python-version: '3.12'
+

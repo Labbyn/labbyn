@@ -1,0 +1,14 @@
+name: CI Monitoring Action
+on:
+  workflow_call:
+    inputs:
+      monitoring-tool:
+        description: 'Monitoring tool to test (prometheus or grafana)'
+        required: true
+        type: string
+jobs:
+    test-monitoring:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Test Frontend
+              run: echo "Test Placeholder for ${{ inputs.monitoring-tool }}"
