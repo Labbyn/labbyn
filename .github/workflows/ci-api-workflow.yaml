@@ -15,7 +15,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
         - name: Run api tests
-          uses: ./.github/reusable-workflows/ci-api.yaml
+          uses: ./.github/ci-api.yaml
           with:
             python-version: '3.12'
 
