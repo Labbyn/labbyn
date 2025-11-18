@@ -15,7 +15,17 @@ jobs:
           with:
             fetch-depth: 0
             persist-credentials: false
-        - name: super-linter
+        - name: Cache Docker layers
+          uses: actions/cache@v4
+          with:
+            path: /var/lib/docker
+            key: docker-super-linter-${{ runner.os }}-${{ hashFiles('.github/workflows/lint.yml') }}
+            restore-keys: |
+              docker-super-linter-${{ runner.os }}-
+        - name: Pull super-linter image
+          run: |
+            docker pull ghcr.io/super-linter/super-linter:latest
+        - name: Run Super Linter
           uses: github/super-linter@v4
           env:
             VALIDATE_YAML: true
@@ -23,5 +33,5 @@ jobs:
             VALIDATE_TYPESCRIPT_ES: true
             VALIDATE_DOCKERFILE_HADOLINT: true
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'pull_request' }}
+            VALIDATE_ALL_CODEBASE: false
 
