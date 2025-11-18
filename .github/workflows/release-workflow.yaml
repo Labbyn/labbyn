@@ -1,0 +1,15 @@
+name: Create Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+permissions:
+  contents: write
+jobs:
+    create-release:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Checkout code
+          uses: actions/checkout@v5
+        - name: Create GitHub Release
+          uses: softprops/action-gh-release@v1
