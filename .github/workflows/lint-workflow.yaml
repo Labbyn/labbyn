@@ -23,3 +23,5 @@ jobs:
             VALIDATE_TYPESCRIPT_ES: true
             VALIDATE_DOCKERFILE_HADOLINT: true
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'pull_request' }}
+
