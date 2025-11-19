@@ -1,6 +1,6 @@
 # Labbyn
 
-Labbyn is a application for your datacenter, labolatory or homelab. You can monitor your infrastructure, set location of each server/platform on interactive dashboard, store information about your assets in inventory and more. Everthing on modern GUI, deployable on most Linux machines and OPEN SOURCE.
+Labbyn is an application for your datacenter, labolatory or homelab. You can monitor your infrastructure, set location of each server/platform on interactive dashboard, store information about your assets in inventory and more. Everthing on modern GUI, deployable on most Linux machines and **OPEN SOURCE**.
 
 ## Installation
 

@@ -2,11 +2,11 @@
 set -e
 
 # Config
-COMPOSE_FILE="docker-compose.yml"
+COMPOSE_FILE="../docker-compose.yml"
 
 # Enable development mode if --dev flag is provided
 if [[ "$2" == "--dev" ]]; then
-    COMPOSE_FILE="docker-compose-dev.yaml"
+    COMPOSE_FILE="../docker-compose-dev.yaml"
     shift
     echo "Running in development mode using $COMPOSE_FILE"
 fi
