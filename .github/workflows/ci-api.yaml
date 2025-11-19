@@ -32,6 +32,8 @@ jobs:
               run: docker compose up -d
             - name: Wait for services
               run: sleep 30
+            - name: prepare API container for test
+              run: docker compose exec api apk add --no-cache redis curl
             - name: Run tests
               run: |
                 docker compose exec api pytest tests/smoke-tests
