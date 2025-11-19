@@ -25,8 +25,6 @@ jobs:
             VALIDATE_TYPESCRIPT_ES: true
             VALIDATE_DOCKERFILE_HADOLINT: true
             VALIDATE_BASH: true
-            VALIDATE_ANSIBLE: true
-            ANSIBLE_DIRECTORY: /scripts/ansible
             VALIDATE_JSON: true
             VALIDATE_ALL_CODEBASE: false
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
