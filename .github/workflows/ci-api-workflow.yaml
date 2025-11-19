@@ -11,9 +11,6 @@ concurrency:
 
 jobs:
     test-api:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Run api tests
           uses: ./.github/workflows/ci-api.yaml
           with:
             python-version: '3.12'
