@@ -2,7 +2,7 @@
 set -e
 
 # Config
-COMPOSE_FILE="../docker-compose.yml"
+COMPOSE_FILE="../docker-compose.yaml"
 
 # Enable development mode if --dev flag is provided
 if [[ "$2" == "--dev" ]]; then
