@@ -1,18 +1,23 @@
 import {
-  Building2,
-  Calendar,
-  Inbox,
+  Accessibility,
+  BookText,
+  Cable,
+  FolderInput,
+  GitBranch,
   LayoutDashboard,
-  Search,
+  Server,
   Settings,
+  UserStar,
+  Users,
 } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar'
+import { SearchForm } from './search-form'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -23,50 +28,56 @@ import {
 const items = [
   {
     title: 'Dashboard',
-    url: '#',
+    url: '/',
     icon: LayoutDashboard,
   },
   {
     title: 'Labs',
-    url: '#',
-    icon: Inbox,
+    url: 'labs',
+    icon: Server,
   },
   {
-    title: 'Equipment',
-    url: '#',
-    icon: Inbox,
+    title: 'Inventory',
+    url: 'inventory',
+    icon: Cable,
   },
   {
     title: 'History',
-    url: '#',
-    icon: Calendar,
+    url: 'history',
+    icon: GitBranch,
   },
   {
-    title: 'User Groups',
-    url: '#',
-    icon: Search,
+    title: 'Users',
+    url: 'users',
+    icon: Users,
   },
   {
     title: 'Settings',
-    url: '#',
+    url: 'settings',
     icon: Settings,
   },
   {
-    title: 'Monitoring',
-    url: '#',
-    icon: Settings,
-  },
-  {
-    title: 'Admin tools',
-    url: '#',
-    icon: Settings,
+    title: 'Admin',
+    url: 'admin',
+    icon: UserStar,
   },
   {
     title: 'Documentation',
-    url: '#',
-    icon: Settings,
+    url: 'docs',
+    icon: BookText,
+  },
+  {
+    title: 'Import & Export',
+    url: 'import-export',
+    icon: FolderInput,
   },
 ]
+
+const user = {
+  name: 'Zbigniew Trąba',
+  email: 'ekspert.od.kabelkow@labbyn.com',
+  avatar: 'https://cdn.pfps.gg/pfps/66456-cool-cat.jpeg',
+}
 
 export function AppSidebar() {
   return (
@@ -76,10 +87,10 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="#">
-                <Building2 className="!size-5" />
+                <Accessibility className="size-5!" />
                 <span className="text-base font-semibold">Labbyn</span>
               </a>
             </SidebarMenuButton>
@@ -88,9 +99,11 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SearchForm />
+              </SidebarMenuItem>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
@@ -107,6 +120,16 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <SidebarTrigger />
+        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+          <Avatar className="h-8 w-8 rounded-lg">
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+          </Avatar>
+          <div className="grid flex-1 text-left text-sm leading-tight">
+            <span className="truncate font-medium">{user.name}</span>
+            <span className="truncate text-xs">{user.email}</span>
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   )
