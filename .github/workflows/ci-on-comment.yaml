@@ -85,7 +85,7 @@ jobs:
         id: build_post_comment
         run: |
           GH_URL=${{ env.GH_URL }}
-          COMMENT="## 🤖 Test results\n\n"
+          COMMENT="## 🤖 Tests results\n\n"
           COMMENT+="🔗 Full run: $GH_URL\n\n"
 
           format_line () {
