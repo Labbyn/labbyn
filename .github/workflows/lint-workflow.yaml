@@ -6,6 +6,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
     lint:
+        outputs:
+          linter_results: ${{ steps.extract_files.outputs.lint_results }}
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -27,5 +29,32 @@ jobs:
             VALIDATE_BASH: true
             VALIDATE_JSON: true
             VALIDATE_ALL_CODEBASE: false
+            SAVE_SUPER_LINTER_SUMMARY: true
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             DEFAULT_BRANCH: ${{ github.base_ref }}
+        - name: Extract linter summary
+          id: extract_files
+          run: |
+            ls
+            ls ./super-linter-output
+            cat ./super-linter-output/super-linter.log
+            LINT_FILE="lint_results.txt"
+            echo "## ❌ Files with Failures or Warnings ##" > $LINT_FILE
+            grep -E 'FAILED|WARNING' ./super-linter-output/super-linter.log | awk '{print $1}' >> $LINT_FILE
+            echo "lint_results<<EOF" >> $GITHUB_OUTPUT
+            cat lint_results.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+
+    add-pr-comment:
+        runs-on: ubuntu-latest
+        needs: lint
+        permissions:
+          pull-requests: write
+        steps:  
+        - name: Add PR comment with linter results
+          if: always()
+          uses: mshick/add-pr-comment@v2
+          with:
+            message: |
+              🤖 Linter results:
+                ${{ needs.lint.outputs.linter_results }}
