@@ -2,8 +2,58 @@ name: Run Workflow on PR Comment
 on:
   issue_comment:
     types: [created]
-  
+env:
+    GH_URL: https://github.com/Labbyn/labbyn/actions/runs/${{ github.run_id }}
+
 jobs:
+  pre-comment:
+    if: github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Build dynamic PR comment
+        id: build_pre_comment
+        run: |
+          GH_URL=${{ env.GH_URL }}
+          COMMENT="## 🤖 Tests triggered:\n\n"
+          COMMENT+="🔗 Full run: $GH_URL\n\n"
+          
+          if [[ "${{ github.event.comment.body }}" =~ "/test api" ]]; then
+            COMMENT+="✔️ [Run API Tests]\n"
+          fi
+
+          if [[ "${{ github.event.comment.body }}" =~ "/test frontend" ]]; then
+            COMMENT+="✔️ [Run Frontend Tests]\n"
+          fi
+
+          if [[ "${{ github.event.comment.body }}" =~ "/test prometheus" ]]; then
+            COMMENT+="✔️ [Run Prometheus Tests]\n"
+          fi
+
+          if [[ "${{ github.event.comment.body }}" =~ "/test grafana" ]]; then
+            COMMENT+="✔️ [Run Grafana Tests]\n"
+          fi
+
+          if [[ "${{ github.event.comment.body }}" =~ "/test all" ]]; then
+            COMMENT+="
+            ✔️ [Run API Tests]
+            ✔️ [Run Frontend Tests]
+            ✔️ [Run Prometheus Tests]
+            ✔️ [Run Grafana Tests]
+            "
+          fi
+
+          echo "comment_body<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$COMMENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Post PR comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: ${{ steps.build_pre_comment.outputs.comment_body }}
+
   run-api-test-set:
     if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test api'))
     uses: ./.github/workflows/ci-api.yaml
@@ -20,3 +70,50 @@ jobs:
     uses: ./.github/workflows/ci-monitoring.yaml
     with:
         monitoring-tool: 'grafana'
+  post-comment:
+    needs:
+      - run-api-test-set
+      - run-frontend-test-set
+      - run-prometheus-test-set
+      - run-grafana-test-set
+    if: github.event.issue.pull_request && always()
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Build results comment
+        id: build_post_comment
+        run: |
+          GH_URL=${{ env.GH_URL }}
+          COMMENT="## 🤖 Test results\n\n"
+          COMMENT+="🔗 Full run: $GH_URL\n\n"
+
+          format_line () {
+            JOB_NAME="$1"
+            JOB_RESULT="$2"
+            if [ "$JOB_RESULT" = "success" ]; then
+              echo "✅ $JOB_NAME - passed"
+            elif [ "$JOB_RESULT" = "failure" ]; then
+              echo "❌ $JOB_NAME - failed"
+            elif [ "$JOB_RESULT" = "skipped" ]; then
+              echo "⏭️ $JOB_NAME - skipped"
+            else
+              echo "⚠️ $JOB_NAME - unknown"
+            fi
+          }
+
+          COMMENT+="$(format_line "API Tests" "${{ needs.run-api-test-set.result }}")\n"
+          COMMENT+="$(format_line "Frontend Tests" "${{ needs.run-frontend-test-set.result }}")\n"
+          COMMENT+="$(format_line "Prometheus Tests" "${{ needs.run-prometheus-test-set.result }}")\n"
+          COMMENT+="$(format_line "Grafana Tests" "${{ needs.run-grafana-test-set.result }}")\n"
+
+          echo "comment_body<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$COMMENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post PR comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: ${{ steps.build_post_comment.outputs.comment_body }}
