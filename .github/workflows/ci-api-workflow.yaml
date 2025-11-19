@@ -13,11 +13,7 @@ jobs:
     test-api:
         runs-on: ubuntu-latest
         steps:
-        - name: Start application
-          run: docker-compose up -d
         - name: Run api tests
           uses: ./.github/ci-api.yaml
           with:
             python-version: '3.12'
-        - name: Stop application
-          run: docker-compose down

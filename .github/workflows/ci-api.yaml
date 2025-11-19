@@ -28,6 +28,10 @@ jobs:
               run: |
                 python -m pip install --upgrade pip
                 pip install -r api/requirements.txt
+            - name: Start application
+              run: docker-compose up -d
             - name: Run tests
               run: |
                 pytest api/tests
+            - name: Stop application
+              run: docker-compose down
