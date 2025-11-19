@@ -5,7 +5,7 @@ set -e
 COMPOSE_FILE="docker-compose.yml"
 
 # Enable development mode if --dev flag is provided
-if [[ "$1" == "--dev" ]]; then
+if [[ "$2" == "--dev" ]]; then
     COMPOSE_FILE="docker-compose-dev.yaml"
     shift
     echo "Running in development mode using $COMPOSE_FILE"
@@ -52,9 +52,6 @@ delete_app() {
 }
 
 case "$1" in
-    prepare)
-        prepare_env
-        ;;
     deploy)
         deploy_app
         ;;
@@ -68,7 +65,7 @@ case "$1" in
         delete_app
         ;;
     *)
-        echo "Usage: $0 {prepare|deploy|update|stop|delete}"
+        echo "Usage: $0 {deploy|update|stop|delete}"
         exit 1
         ;;
 esac
