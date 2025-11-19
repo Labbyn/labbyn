@@ -16,7 +16,7 @@ jobs:
             - name: Start application
               run: docker compose up api monitoring redis -d
             - name: Wait for services
-              run: sleep 30
+              run: sleep 15
             - name: Prepare API container for tests
               run: docker compose exec api apk add --no-cache redis curl
             - name: Run tests
