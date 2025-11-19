@@ -35,12 +35,10 @@ jobs:
         - name: Extract linter summary
           id: extract_files
           run: |
-            ls
-            ls ./super-linter-output
-            cat ./super-linter-output/super-linter.log
+            cat super-linter.log
             LINT_FILE="lint_results.txt"
             echo "## ❌ Files with Failures or Warnings ##" > $LINT_FILE
-            grep -E 'FAILED|WARNING' ./super-linter-output/super-linter.log | awk '{print $1}' >> $LINT_FILE
+            grep -E 'FAILED|WARNING' super-linter.log | awk '{print $1}' >> $LINT_FILE
             echo "lint_results<<EOF" >> $GITHUB_OUTPUT
             cat lint_results.txt >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
