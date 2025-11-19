@@ -10,12 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as LabsRouteImport } from './routes/labs'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LabsRoute = LabsRouteImport.update({
+  id: '/labs',
+  path: '/labs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -23,40 +30,53 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventoryIndexRoute = InventoryIndexRouteImport.update({
+  id: '/inventory/',
+  path: '/inventory/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/inventory': typeof InventoryIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/inventory': typeof InventoryIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/inventory/': typeof InventoryIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/demo/tanstack-query'
+  fullPaths: '/' | '/labs' | '/settings' | '/inventory' | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/demo/tanstack-query'
-  id: '__root__' | '/' | '/settings' | '/demo/tanstack-query'
+  to: '/' | '/labs' | '/settings' | '/inventory' | '/users'
+  id: '__root__' | '/' | '/labs' | '/settings' | '/inventory/' | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LabsRoute: typeof LabsRoute
   SettingsRoute: typeof SettingsRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  InventoryIndexRoute: typeof InventoryIndexRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,6 +88,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/labs': {
+      id: '/labs'
+      path: '/labs'
+      fullPath: '/labs'
+      preLoaderRoute: typeof LabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -75,11 +102,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
+    '/users/': {
+      id: '/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventory/': {
+      id: '/inventory/'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof InventoryIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -87,8 +121,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LabsRoute: LabsRoute,
   SettingsRoute: SettingsRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  InventoryIndexRoute: InventoryIndexRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
