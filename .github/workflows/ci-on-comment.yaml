@@ -2,44 +2,21 @@ name: Run Workflow on PR Comment
 on:
   issue_comment:
     types: [created]
- 
+  
 jobs:
   run-api-test-set:
-    if: |
-      github.event.issue.pull_request
-      && (
-        contains(github.event.comment.body, '/test all')
-        || contains(github.event.comment.body, '/test api')
-      )
+    if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test api'))
     uses: ./.github/workflows/ci-api.yaml
-  
   run-frontend-test-set:
-    if: |
-      github.event.issue.pull_request
-      && (
-        contains(github.event.comment.body, '/test all')
-        || contains(github.event.comment.body, '/test frontend')
-      )
+    if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test frontend'))
     uses: ./.github/workflows/ci-frontend.yaml
-  
   run-prometheus-test-set:
-    if: |
-      github.event.issue.pull_request
-      && (
-        contains(github.event.comment.body, '/test all')
-        || contains(github.event.comment.body, '/test prometheus')
-      )
+    if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test prometheus'))
     uses: ./.github/workflows/ci-monitoring.yaml
     with:
-      monitoring-tool: 'prometheus'
-  
+        monitoring-tool: 'prometheus'
   run-grafana-test-set:
-    if: |
-      github.event.issue.pull_request
-      && (
-        contains(github.event.comment.body, '/test all')
-        || contains(github.event.comment.body, '/test grafana')
-      )
+    if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test grafana'))
     uses: ./.github/workflows/ci-monitoring.yaml
     with:
-      monitoring-tool: 'grafana'
+        monitoring-tool: 'grafana'
