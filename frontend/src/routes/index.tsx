@@ -1,39 +1,24 @@
 import { createFileRoute } from '@tanstack/react-router'
-import logo from '../logo.svg'
+import { useState } from 'react'
+import { CanvasComponent3D } from '../components/canvas'
+import type { Equipment, Wall } from '../components/canvas'
+import { generateDefaultLabLoadout } from '@/lib/sample-lab-gen'
+import { AppSidebar } from '@/components/app-sidebar'
+import { Card } from '@/components/ui/card'
 
 export const Route = createFileRoute('/')({
   component: App,
 })
 
 function App() {
+  const defaultLoadout = generateDefaultLabLoadout()
+  const [equipment] = useState<Array<Equipment>>(defaultLoadout.equipment)
+  const [walls] = useState<Array<Wall>>(defaultLoadout.walls)
   return (
-    <div>
-      <header className="w-full h-full flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/routes/index.tsx</code> and save to reload.
-        </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
+    <div className="h-screen w-full bg-background flex flex-col overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
+        <CanvasComponent3D equipment={equipment} walls={walls} />
+      </div>
     </div>
   )
 }
