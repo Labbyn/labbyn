@@ -98,11 +98,7 @@ async def fetch_prometheus_metrics(
                 *[_format_metrics_to_readable(item) for item in series]
             )
             if hosts:
-                readable = [
-                    item
-                    for item in readable
-                    if item.get("instance") in hosts
-                ]
+                readable = [item for item in readable if item.get("instance") in hosts]
             results[m] = readable
         except httpx.HTTPError as e:
             results[m] = {"error": str(e)}
