@@ -3,8 +3,6 @@ import { useState } from 'react'
 import { CanvasComponent3D } from '../components/canvas'
 import type { Equipment, Wall } from '../components/canvas'
 import { generateDefaultLabLoadout } from '@/lib/sample-lab-gen'
-import { AppSidebar } from '@/components/app-sidebar'
-import { Card } from '@/components/ui/card'
 
 export const Route = createFileRoute('/')({
   component: App,

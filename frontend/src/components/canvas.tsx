@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber'
 import { useMemo } from 'react'
 import { Grid, OrbitControls } from '@react-three/drei'
-import { ChevronDown, ExternalLink, Pencil, Smile } from 'lucide-react'
+import { ChevronDown, Pencil } from 'lucide-react'
 import { Button } from './ui/button'
 import {
   DropdownMenu,
@@ -10,14 +10,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { ScrollArea } from './ui/scroll-area'
-import {
-  Card,
-  CardAction,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from './ui/card'
+import { Card, CardAction, CardFooter, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
 
 export interface Equipment {
