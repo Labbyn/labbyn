@@ -1,12 +1,6 @@
 name: CI API Action
 on:
   workflow_call:
-    inputs:
-      python-version:
-        description: 'Python version to use'
-        required: false
-        default: '3.12'
-        type: string
 jobs:
     test-api:
         runs-on: ubuntu-latest

@@ -12,5 +12,3 @@ concurrency:
 jobs:
     test-api:
           uses: ./.github/workflows/ci-api.yaml
-          with:
-            python-version: '3.12'
