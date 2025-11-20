@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from ..utils.prometheus_service import (
     fetch_prometheus_metrics,
     DEFAULT_QUERIES,
-    add_prometheus_target, TargetSaveError,
+    add_prometheus_target,
+    TargetSaveError,
 )
 from ..utils.redis_service import get_cache, set_cache
 
