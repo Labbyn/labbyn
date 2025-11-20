@@ -5,8 +5,14 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from pydantic import BaseModel
 
-from ..utils.prometheus_service import fetch_prometheus_metrics, DEFAULT_QUERIES
+from ..utils.prometheus_service import (
+    fetch_prometheus_metrics,
+    DEFAULT_QUERIES,
+    add_prometheus_target,
+    TargetSaveError,
+)
 from ..utils.redis_service import get_cache, set_cache
 
 load_dotenv(".env/api.env")
@@ -42,6 +48,15 @@ class WSConnectionManager:
     def disconnect(self):
         """Disconnect the websocket connection."""
         self.websocket = None
+
+
+class PrometheusTarget(BaseModel):
+    """
+    Pydantic model for Prometheus target.
+    """
+
+    instance: str
+    labels: dict
 
 
 manager = WSConnectionManager()
@@ -143,3 +158,17 @@ async def get_prometheus_metrics(
         list(DEFAULT_QUERIES.keys()), hosts=instances_list
     )
     return metrics_data
+
+
+@router.post("/prometheus/target")
+async def add_prometheus_new_target(target: PrometheusTarget):
+    """
+    Add a new target to Prometheus targets file.
+    :param target: PrometheusTarget object containing instance and labels
+    :return: Success message
+    """
+    try:
+        entry = add_prometheus_target(target.instance, target.labels)
+    except TargetSaveError as e:
+        return {"error": str(e)}
+    return {"message": "Target added successfully", "target": entry}

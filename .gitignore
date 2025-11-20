@@ -6,3 +6,6 @@ web/app/node_modules/
 
 # database data
 db/db_data/
+
+# Pycharm project files
+.idea/
