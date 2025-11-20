@@ -27,6 +27,13 @@ DEFAULT_QUERIES = {
     '/ node_filesystem_size_bytes{fstype!="tmpfs", mountpoint!="/boot"}',
 }
 
+# Global lock for file operations
+_targets_lock = Lock()
+
+
+class TargetSaveError(Exception):
+    """Custom exception for target saving errors."""
+
 
 async def _request(
     url: str, params: dict, retries: int = 3, backoff_factor: float = 0.5
@@ -132,8 +139,8 @@ def save_targets_file(targets: List[dict]):
     try:
         with open(PROMETHEUS_TARGETS_PATH, "w", encoding="utf-8") as file:
             json.dump(targets, file, indent=2)
-    except (OSError, TypeError):
-        pass
+    except (OSError, TypeError) as e:
+        raise TargetSaveError(f"Failed to save targets file: {e}") from e
 
 
 def add_prometheus_target(instance: str, labels: dict):
@@ -141,12 +148,14 @@ def add_prometheus_target(instance: str, labels: dict):
     Add a new target to the Prometheus targets file.
     :param new_target: Target dictionary to add
     """
-    _lock = Lock()
     entry = {"target": [instance], "labels": labels}
-    with _lock:
+    with _targets_lock:
         targets = load_targets_file()
         targets.append(entry)
+    try:
         save_targets_file(targets)
+    except TargetSaveError as e:
+        raise TargetSaveError(f"Failed to add target: {e}") from e
     return entry
 
 
