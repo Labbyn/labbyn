@@ -5,13 +5,14 @@ Utility functions to interact with Prometheus server.
 import asyncio
 import os
 from typing import List, Optional
-
+import json
+from threading import Lock
 import httpx
 from dotenv import load_dotenv
 
 load_dotenv(".env/api.env")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
-
+PROMETHEUS_TARGETS_PATH = os.getenv("PROMETHEUS_TARGETS_FILE")
 
 _client = httpx.AsyncClient(
     timeout=httpx.Timeout(5.0),
@@ -103,6 +104,50 @@ async def fetch_prometheus_metrics(
         except httpx.HTTPError as e:
             results[m] = {"error": str(e)}
     return results
+
+
+def load_targets_file():
+    """
+    Load Prometheus targets from the targets file.
+    :return: List of target dictionaries or empty list if file not found or invalid
+    """
+
+    if not PROMETHEUS_TARGETS_PATH:
+        return []
+    try:
+        with open(PROMETHEUS_TARGETS_PATH, "r", encoding="utf-8") as file:
+            targets = json.load(file)
+        return targets
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return []
+
+
+def save_targets_file(targets: List[dict]):
+    """
+    Save Prometheus targets to the targets file.
+    :param targets: List of target dictionaries
+    """
+    if not PROMETHEUS_TARGETS_PATH:
+        return
+    try:
+        with open(PROMETHEUS_TARGETS_PATH, "w", encoding="utf-8") as file:
+            json.dump(targets, file, indent=2)
+    except (OSError, TypeError):
+        pass
+
+
+def add_prometheus_target(instance: str, labels: dict):
+    """
+    Add a new target to the Prometheus targets file.
+    :param new_target: Target dictionary to add
+    """
+    _lock = Lock()
+    entry = {"target": [instance], "labels": labels}
+    with _lock:
+        targets = load_targets_file()
+        targets.append(entry)
+        save_targets_file(targets)
+    return entry
 
 
 async def close_prometheus_client():
