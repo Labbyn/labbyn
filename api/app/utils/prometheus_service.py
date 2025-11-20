@@ -150,7 +150,6 @@ def add_prometheus_target(instance: str, labels: dict):
     """
     entry = {"target": [instance], "labels": labels}
     with _targets_lock:
-        print(PROMETHEUS_TARGETS_PATH)
         targets = load_targets_file()
         targets.append(entry)
     try:
