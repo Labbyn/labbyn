@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv(".env/api.env")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
-PROMETHEUS_TARGETS_PATH = os.getenv("PROMETHEUS_TARGETS_FILE")
+PROMETHEUS_TARGETS_PATH = os.getenv("PROMETHEUS_TARGETS_PATH")
 
 _client = httpx.AsyncClient(
     timeout=httpx.Timeout(5.0),
@@ -135,7 +135,7 @@ def save_targets_file(targets: List[dict]):
     :param targets: List of target dictionaries
     """
     if not PROMETHEUS_TARGETS_PATH:
-        return
+        raise TargetSaveError("PROMETHEUS_TARGETS_PATH is not set.")
     try:
         with open(PROMETHEUS_TARGETS_PATH, "w", encoding="utf-8") as file:
             json.dump(targets, file, indent=2)
@@ -150,6 +150,7 @@ def add_prometheus_target(instance: str, labels: dict):
     """
     entry = {"target": [instance], "labels": labels}
     with _targets_lock:
+        print(PROMETHEUS_TARGETS_PATH)
         targets = load_targets_file()
         targets.append(entry)
     try:
