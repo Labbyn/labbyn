@@ -1,6 +1,9 @@
 name: Lint Workflow
 on:
   pull_request: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
     lint:
         runs-on: ubuntu-latest
@@ -21,6 +24,8 @@ jobs:
             VALIDATE_PYTHON_BLACK: true
             VALIDATE_TYPESCRIPT_ES: true
             VALIDATE_DOCKERFILE_HADOLINT: true
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            VALIDATE_BASH: true
+            VALIDATE_JSON: true
             VALIDATE_ALL_CODEBASE: false
-
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            DEFAULT_BRANCH: ${{ github.base_ref }}
