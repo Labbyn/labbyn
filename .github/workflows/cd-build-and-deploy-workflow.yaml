@@ -1,0 +1,24 @@
+name: Build And Push Microservices Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_call:
+jobs:
+    build-frontend:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Build and push
+          uses: ./.github/workflows/cd-build-and-deploy.yaml
+          with:
+            image_name: "labbyn/frontend"
+            context: ./frontend
+    build-api:
+      runs-on: ubuntu-latest\
+      steps:
+        - name: Build and push
+          uses: ./.github/workflows/cd-build-and-deploy.yaml
+          with:
+            image_name: "labbyn/api"
+            context: ./frontend
