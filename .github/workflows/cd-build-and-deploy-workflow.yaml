@@ -7,18 +7,14 @@ on:
   pull_request:
 jobs:
     build-frontend:
-      runs-on: ubuntu-latest
-      steps:
-        - name: Build and push
-          uses: ./.github/workflows/cd-build-and-deploy.yaml
-          with:
-            image_name: "labbyn/frontend"
-            context: ./frontend
+        uses: ./.github/workflows/cd-build-and-deploy.yaml
+        with:
+          image_name: "labbyn/frontend"
+          context: ./frontend
+        secrets: inherit
     build-api:
-      runs-on: ubuntu-latest\
-      steps:
-        - name: Build and push
-          uses: ./.github/workflows/cd-build-and-deploy.yaml
-          with:
-            image_name: "labbyn/api"
-            context: ./frontend
+        uses: ./.github/workflows/cd-build-and-deploy.yaml
+        with:
+          image_name: "labbyn/api"
+          context: ./frontend
+        secrets: inherit

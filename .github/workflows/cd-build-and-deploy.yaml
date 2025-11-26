@@ -41,7 +41,7 @@ jobs:
                 context: ${{ inputs.context }}
                 push: true
                 tags: |
-                    ${{ inputs.image }}:latest
+                    ${{ inputs.image_name }}:latest
                     ${{ inputs.image_name }}:${{ github.sha }}
                 cache-from: type=registry,ref=${{ inputs.image_name }}:buildcache
                 cache-to: type=registry,ref=${{ inputs.image_name }}:buildcache,mode=max
