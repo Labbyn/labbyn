@@ -1,10 +1,10 @@
-name: Build And Push Microservices Docker Images
+name: CD Build And Push Microservices Docker Images
 
 on:
   push:
     branches:
       - main
-  workflow_call:
+  pull_request:
 jobs:
     build-frontend:
       runs-on: ubuntu-latest
