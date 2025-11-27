@@ -133,9 +133,13 @@ class LayoutsBase(BaseModel):
     Base model for Layouts (Association table between Room and Layout coordinates).
     """
 
-    name: str = Field(..., max_length=100, description="Name of the specific layout configuration")
+    name: str = Field(
+        ..., max_length=100, description="Name of the specific layout configuration"
+    )
     room_id: int = Field(..., description="ID of the associated room")
-    layout_id: int = Field(..., description="ID of the associated layout coordinate set")
+    layout_id: int = Field(
+        ..., description="ID of the associated layout coordinate set"
+    )
 
 
 class LayoutsCreate(LayoutsBase):
@@ -208,7 +212,9 @@ class MetadataBase(BaseModel):
     Contains configuration flags and update info.
     """
 
-    last_update: Optional[date] = Field(None, description="Date of the last metadata update")
+    last_update: Optional[date] = Field(
+        None, description="Date of the last metadata update"
+    )
     agent_prometheus: Optional[bool] = Field(
         False, description="Flag indicating if Prometheus agent is active"
     )
@@ -256,7 +262,9 @@ class TeamsBase(BaseModel):
     """
 
     name: str = Field(..., max_length=100, description="Name of the team")
-    team_admin_id: int = Field(..., description="ID of the user who is the admin of this team")
+    team_admin_id: int = Field(
+        ..., description="ID of the user who is the admin of this team"
+    )
 
 
 class TeamsCreate(TeamsBase):
@@ -297,7 +305,9 @@ class UserBase(BaseModel):
     surname: str = Field(..., max_length=80, description="User's last name")
     login: str = Field(..., max_length=30, description="Unique login username")
     email: Optional[EmailStr] = Field(None, description="User's email address")
-    team_id: Optional[int] = Field(None, description="ID of the team the user belongs to")
+    team_id: Optional[int] = Field(
+        None, description="ID of the team the user belongs to"
+    )
 
 
 class UserCreate(UserBase):
@@ -326,7 +336,10 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     login: Optional[str] = Field(None, max_length=30)
     password: Optional[str] = Field(
-        None, min_length=6, max_length=255, description="New password if change is requested"
+        None,
+        min_length=6,
+        max_length=255,
+        description="New password if change is requested",
     )
 
 
@@ -352,18 +365,30 @@ class MachinesBase(BaseModel):
     """
 
     name: str = Field(..., max_length=100, description="Unique machine name/hostname")
-    localization_id: int = Field(..., description="ID of the room where machine is located")
+    localization_id: int = Field(
+        ..., description="ID of the room where machine is located"
+    )
     mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
-    pdu_port: Optional[int] = Field(None, description="Power Distribution Unit port number")
-    team_id: Optional[int] = Field(None, description="ID of the team owning the machine")
+    pdu_port: Optional[int] = Field(
+        None, description="Power Distribution Unit port number"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team owning the machine"
+    )
     os: Optional[str] = Field(None, max_length=30, description="Operating System")
-    serial_number: Optional[str] = Field(None, max_length=50, description="Hardware serial number")
+    serial_number: Optional[str] = Field(
+        None, max_length=50, description="Hardware serial number"
+    )
     note: Optional[str] = Field(None, max_length=500, description="Optional notes")
     cpu: Optional[str] = Field(None, max_length=100, description="CPU specification")
     ram: Optional[str] = Field(None, max_length=100, description="RAM specification")
-    disk: Optional[str] = Field(None, max_length=100, description="Disk/Storage specification")
+    disk: Optional[str] = Field(
+        None, max_length=100, description="Disk/Storage specification"
+    )
     metadata_id: int = Field(..., description="ID of associated metadata record")
-    layout_id: Optional[int] = Field(None, description="ID of layout coordinates if applicable")
+    layout_id: Optional[int] = Field(
+        None, description="ID of layout coordinates if applicable"
+    )
 
 
 class MachinesCreate(MachinesBase):
@@ -372,7 +397,8 @@ class MachinesCreate(MachinesBase):
     """
 
     added_on: datetime = Field(
-        default_factory=datetime.now, description="Date when machine was added. Defaults to now."
+        default_factory=datetime.now,
+        description="Date when machine was added. Defaults to now.",
     )
 
 
@@ -460,11 +486,17 @@ class InventoryBase(BaseModel):
     name: str = Field(..., max_length=100, description="Name of the item")
     quantity: int = Field(..., description="Quantity available")
     team_id: Optional[int] = Field(None, description="ID of the team owning the item")
-    localization_id: int = Field(..., description="ID of the room where item is located")
-    machine_id: Optional[int] = Field(None, description="ID of the machine if item is part of one")
+    localization_id: int = Field(
+        ..., description="ID of the room where item is located"
+    )
+    machine_id: Optional[int] = Field(
+        None, description="ID of the machine if item is part of one"
+    )
     category_id: int = Field(..., description="ID of the item category")
     rental_status: bool = Field(False, description="True if item is currently rented")
-    rental_id: Optional[int] = Field(None, description="ID of the current active rental")
+    rental_id: Optional[int] = Field(
+        None, description="ID of the current active rental"
+    )
 
 
 class InventoryCreate(InventoryBase):
@@ -509,12 +541,22 @@ class HistoryBase(BaseModel):
     entity_type: EntityTypeEnum = Field(
         ..., description="Type of entity changed (e.g., machine, user)"
     )
-    action: ActionTypeEnum = Field(..., description="Action performed (create, update, delete)")
+    action: ActionTypeEnum = Field(
+        ..., description="Action performed (create, update, delete)"
+    )
     entity_id: int = Field(..., description="ID of the entity that was changed")
-    user_id: Optional[int] = Field(None, description="ID of the user who performed the action")
-    before_state: Optional[Dict[str, Any]] = Field(None, description="JSON state before change")
-    after_state: Optional[Dict[str, Any]] = Field(None, description="JSON state after change")
-    can_rollback: bool = Field(True, description="Flag indicating if this action can be undone")
+    user_id: Optional[int] = Field(
+        None, description="ID of the user who performed the action"
+    )
+    before_state: Optional[Dict[str, Any]] = Field(
+        None, description="JSON state before change"
+    )
+    after_state: Optional[Dict[str, Any]] = Field(
+        None, description="JSON state after change"
+    )
+    can_rollback: bool = Field(
+        True, description="Flag indicating if this action can be undone"
+    )
     metadata: Optional[Dict[str, Any]] = Field(
         None, description="Additional metadata in JSON format"
     )

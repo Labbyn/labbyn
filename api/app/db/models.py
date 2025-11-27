@@ -1,7 +1,17 @@
 """Database models for the application using SQLAlchemy ORM."""
 
-from sqlalchemy import (Boolean, Column, Date, DateTime, Enum, ForeignKey,
-                        Integer, String, func)
+from enum import Enum as PyEnum
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -11,28 +21,29 @@ Base = declarative_base()
 # pylint: disable=too-many-ancestors
 # pylint: disable=too-few-public-methods
 
-class UserType(Enum):
+
+class UserType(PyEnum):
     """User types in the system."""
 
-    admin = "admin"
-    user = "user"
+    ADMIN = "admin"
+    USER = "user"
 
 
-class EntityType(Enum):
+class EntityType(PyEnum):
     """Entity types for history tracking."""
 
-    machine = "machine"
-    inventory = "inventory"
-    room = "room"
-    user = "user"
+    MACHINE = "machine"
+    INVETORY = "inventory"
+    ROOM = "room"
+    USER = "user"
 
 
-class ActionType(Enum):
+class ActionType(PyEnum):
     """Action types for history tracking."""
 
-    create = "create"
-    update = "update"
-    delete = "delete"
+    CREATE = "create"
+    UPDATE = "update"
+    DELETE = "delete"
 
 
 class Layout(Base):
@@ -108,7 +119,7 @@ class Machines(Base):
     room = relationship("Rooms", back_populates="machines")
     layout = relationship("Layout", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
-    metadata = relationship("Metadata", back_populates="machines")
+    machine_metadata = relationship("Metadata", back_populates="machines")
     inventory = relationship("Inventory", back_populates="machine")
 
 
@@ -125,7 +136,7 @@ class Metadata(Base):
     ansible_access = Column(Boolean, nullable=True, default=False)
     ansible_root_access = Column(Boolean, nullable=True, default=False)
 
-    machines = relationship("Machines", back_populates="metadata")
+    machines = relationship("Machines", back_populates="machine_metadata")
 
 
 class Teams(Base):
@@ -137,7 +148,11 @@ class Teams(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    team_admin_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    team_admin_id = Column(
+        Integer,
+        ForeignKey("user.id", use_alter=True, name="fk_team_admin_id"),
+        nullable=False,
+    )
 
     machines = relationship("Machines", back_populates="teams")
     users = relationship("User", back_populates="teams")
@@ -153,10 +168,22 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     surname = Column(String(80), nullable=False)
-    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    team_id = Column(
+        Integer,
+        ForeignKey("teams.id", use_alter=True, name="fk_user_team_id"),
+        nullable=True,
+    )
     login = Column(String(30), nullable=False, unique=True)
     password = Column(String(255), nullable=False)
     email = Column(String(100), nullable=True, unique=True)
+
+    user_type = Column(
+        Enum(UserType, name="user_type_enum", create_type=True),
+        nullable=False,
+        default=UserType.USER,
+    )
+
+    __table_args__ = {"schema": None}
 
     teams = relationship("Teams", back_populates="users")
     rentals = relationship("Rentals", back_populates="user")
@@ -171,10 +198,16 @@ class Rentals(Base):
     __tablename__ = "rentals"
 
     id = Column(Integer, primary_key=True)
-    item_id = Column(Integer, ForeignKey("inventory.id"), nullable=False)
+    item_id = Column(
+        Integer,
+        ForeignKey("inventory.id", use_alter=True, name="fk_rentals_inventory_id"),
+        nullable=False,
+    )
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+
+    __table_args__ = {"schema": None}
 
     user = relationship("User", back_populates="rentals")
     inventory = relationship("Inventory", back_populates="rental")
@@ -197,9 +230,9 @@ class Inventory(Base):
     rental_status = Column(Boolean, nullable=False, default=False)
     rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=True)
 
-    room = relationship("Rooms", back_populates="inventories")
+    room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
-    rental = relationship("Rentals", back_populates="rental_item")
+    rental = relationship("Rentals", back_populates="inventory")
 
 
 class Categories(Base):
@@ -223,14 +256,23 @@ class History(Base):
     __tablename__ = "history"
 
     id = Column(Integer, primary_key=True)
-    entity_type = Column(Enum(EntityType), nullable=False)
-    action = Column(Enum(ActionType), nullable=False)
+
+    entity_type = Column(
+        Enum(EntityType, name="entity_type_enum", create_type=True), nullable=False
+    )
+
+    action = Column(
+        Enum(ActionType, name="action_type_enum", create_type=True), nullable=False
+    )
+
     entity_id = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"))
-    timestamp = Column(DateTime(timezone=True), server_default=func.now)
+    timestamp = Column(
+        DateTime(timezone=True), server_default=func.now()
+    )  # pylint: disable=not-callable
     before_state = Column(JSONB)
     after_state = Column(JSONB)
     can_rollback = Column(Boolean, default=True)
-    metadata = Column(JSONB)
+    extra_data = Column(JSONB)
 
     user = relationship("User", back_populates="history")
