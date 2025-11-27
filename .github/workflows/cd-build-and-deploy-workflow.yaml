@@ -16,5 +16,5 @@ jobs:
         uses: ./.github/workflows/cd-build-and-deploy.yaml
         with:
           image_name: "labbyn/api"
-          context: ./frontend
+          context: ./api
         secrets: inherit
