@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
 jobs:
     build-frontend:
         uses: ./.github/workflows/cd-build-and-deploy.yaml
