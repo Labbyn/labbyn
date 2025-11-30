@@ -174,8 +174,12 @@ class Teams(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    machines = relationship("Machines", back_populates="teams")
-    users = relationship("User", back_populates="teams")
+    machines = relationship("Machines", back_populates="team")
+
+    # POPRAWKA Z POPRZEDNIEGO KROKU: foreign_keys
+    users = relationship(
+        "User", back_populates="teams", foreign_keys="[User.team_id]"
+    )
 
 
 class User(Base):
@@ -209,7 +213,11 @@ class User(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    teams = relationship("Teams", back_populates="users")
+    # POPRAWKA Z POPRZEDNIEGO KROKU: foreign_keys
+    teams = relationship(
+        "Teams", back_populates="users", foreign_keys="[User.team_id]"
+    )
+
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
@@ -238,7 +246,14 @@ class Rentals(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     user = relationship("User", back_populates="rentals")
-    inventory = relationship("Inventory", back_populates="rental")
+
+    # POPRAWKA TUTAJ: Wskazujemy konkretny klucz obcy (item_id)
+    # Zmieniamy back_populates na 'rental_history', aby odróżnić od 'current_rental'
+    inventory = relationship(
+        "Inventory",
+        foreign_keys=[item_id],
+        back_populates="rental_history"
+    )
 
 
 class Inventory(Base):
@@ -264,7 +279,23 @@ class Inventory(Base):
 
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
-    rental = relationship("Rentals", back_populates="inventory")
+
+    # POPRAWKA TUTAJ: Rozdzielamy relacje
+
+    # 1. To jest AKTUALNE wypożyczenie (oparte na rental_id)
+    current_rental = relationship(
+        "Rentals",
+        foreign_keys=[rental_id]
+    )
+
+    # 2. To jest HISTORIA wypożyczeń (oparta na Rentals.item_id)
+    rental_history = relationship(
+        "Rentals",
+        foreign_keys="[Rentals.item_id]",
+        back_populates="inventory"
+    )
+
+    category = relationship("Categories", back_populates="inventory")
 
 
 class Categories(Base):
