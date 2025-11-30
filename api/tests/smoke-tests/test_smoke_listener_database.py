@@ -1,8 +1,11 @@
 """Smoke tests for Database Listener functionality."""
-
+import pytest
 from app.db import models
+# pylint: disable=unused-import
+import app.db.listeners
 
-
+@pytest.mark.smoke
+@pytest.mark.database
 def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
     """
     Test full lifecycle of Entity for listener
@@ -22,7 +25,7 @@ def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
         db_session.query(models.History)
         .filter(
             models.History.entity_id == new_cat.id,
-            models.History.entity_type == models.EntityType.INVENTORY,
+            models.History.entity_type == models.EntityType.CATEGORIES,
             models.History.action == models.ActionType.CREATE,
         )
         .first()

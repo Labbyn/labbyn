@@ -36,6 +36,7 @@ class EntityType(PyEnum):
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
+    CATEGORIES = "category"
 
 
 class ActionType(PyEnum):

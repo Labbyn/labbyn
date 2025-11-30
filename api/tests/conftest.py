@@ -1,12 +1,15 @@
 """Pytest configuration file for setting up test fixtures."""
+import os
+import sys
 import uuid
 from unittest import mock
 
 import pytest
 from app.main import app
 from fastapi.testclient import TestClient
-
-from api.app.database import SessionLocal
+# Encountered issues with docker - added /code path to PYTHON PATH
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from app.database import SessionLocal
 
 
 @pytest.fixture(scope="module")
@@ -46,4 +49,4 @@ def db_session():
 @pytest.fixture(scope="function")
 def unique_category_name():
     """Genearate random category name to avoid unique problems"""
-    return f"SmokeTest-GPU-{uuid.uuid4()}"
+    return f"SmokeTest-GPU-{uuid.uuid4().hex[:8]}"

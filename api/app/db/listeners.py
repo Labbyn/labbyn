@@ -51,8 +51,10 @@ def identify_entity_type(obj: Any):
         "inventory": EntityType.INVENTORY,
         "rooms": EntityType.ROOM,
         "user": EntityType.USER,
+        "categories": EntityType.CATEGORIES,
     }
     return mapping.get(table_name)
+
 
 # pylint: disable=unused-argument
 @event.listens_for(Session, "before_flush")
@@ -63,13 +65,14 @@ def dump_before_flush(
 ):
     """
     SQLAlchemy event listener triggered before session is flushed to database
-    Inspects session for UPDATE, CREATE and DELETE operation and automatically creates corresponding History log entries
+    Inspects session for UPDATE, CREATE and DELETE operation
+    and automatically creates corresponding History log entries
     :param session: Database session
     :param flush_context: Internal SQLAlchemy transaction context
     :param instances: List of instances being flushed
     :return: None
     """
-
+    objects_to_create_history = []
     user_id = session.info.get("user_id", None)
 
     for obj in session.dirty:
@@ -107,15 +110,8 @@ def dump_before_flush(
         if not entity_type:
             continue
 
-        session.add(
-            History(
-                entity_type=entity_type,
-                action=ActionType.CREATE,
-                entity_id=obj.id,
-                user_id=user_id,
-                after_state=get_entity_state(obj),
-            )
-        )
+        objects_to_create_history.append(obj)
+    session.info["objects_to_create_history"] = objects_to_create_history
 
     for obj in session.deleted:
         if isinstance(obj, History):
@@ -133,3 +129,40 @@ def dump_before_flush(
                 before_state=get_entity_state(obj),
             )
         )
+
+# pylint: disable=unused-argument
+@event.listens_for(Session, "after_flush")
+def receive_after_flush(session: Session, flush_context: UOWTransaction) -> None:
+    """
+    SQLAlchemy event listener triggered after session is flushed to database
+    Inspects session for CREATE and automatically creates corresponding History log entries
+    CREATE operations can't be listened before flush, as they need to have ID!
+    :param session: Database session
+    :param flush_context: Internal SQLAlchemy transaction context
+    :return: None
+    """
+    objects = session.info.pop("objects_to_create_history", [])
+    if not objects:
+        return
+
+    user_id = session.info.get("user_id", None)
+
+    histories = []
+    for obj in objects:
+        if obj.id is None:
+            continue
+
+        entity_type = identify_entity_type(obj)
+        histories.append(
+            History(
+                entity_type=entity_type,
+                action=ActionType.CREATE,
+                entity_id=obj.id,
+                user_id=user_id,
+                after_state=get_entity_state(obj),
+            )
+        )
+
+    if histories:
+        for h in histories:
+            session.add(h)

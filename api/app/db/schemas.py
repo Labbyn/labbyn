@@ -29,6 +29,7 @@ class EntityTypeEnum(str, Enum):
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
+    CATEGORIES = "categories"
 
 
 class ActionTypeEnum(str, Enum):
@@ -39,6 +40,19 @@ class ActionTypeEnum(str, Enum):
     CREATE = "create"
     UPDATE = "update"
     DELETE = "delete"
+
+
+# ==========================
+#          COMMON
+# ==========================
+
+
+class VersionedBase(BaseModel):
+    """
+    Base model for versioned entities.
+    """
+
+    version_id: int = Field(..., description="Optimistic locking version")
 
 
 # ==========================
@@ -77,7 +91,7 @@ class LayoutResponse(LayoutBase):
     """
 
     id: int = Field(..., description="Unique identifier of the layout")
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -100,8 +114,6 @@ class RoomsBase(BaseModel):
 class RoomsCreate(RoomsBase):
     """Schema for creating a new Room."""
 
-    # W0107: Brak instrukcji pass
-
 
 class RoomsUpdate(BaseModel):
     """
@@ -119,7 +131,7 @@ class RoomsResponse(RoomsBase):
     """
 
     id: int = Field(..., description="Unique identifier of the room")
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -162,7 +174,6 @@ class LayoutsResponse(LayoutsBase):
     """
 
     id: int
-
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -197,7 +208,7 @@ class CategoriesResponse(CategoriesBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -247,7 +258,7 @@ class MetadataResponse(MetadataBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -286,7 +297,7 @@ class TeamsResponse(TeamsBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -350,7 +361,7 @@ class UserResponse(UserBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -419,6 +430,7 @@ class MachinesUpdate(BaseModel):
     ram: Optional[str] = Field(None, max_length=100)
     disk: Optional[str] = Field(None, max_length=100)
     layout_id: Optional[int] = None
+    metadata_id: Optional[int] = None
 
 
 class MachinesResponse(MachinesBase):
@@ -428,7 +440,7 @@ class MachinesResponse(MachinesBase):
 
     id: int
     added_on: datetime
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -469,7 +481,7 @@ class RentalsResponse(RentalsBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -524,7 +536,7 @@ class InventoryResponse(InventoryBase):
     """
 
     id: int
-
+    version_id: int
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -573,5 +585,4 @@ class HistoryResponse(HistoryBase):
 
     id: int
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
-
     model_config = ConfigDict(from_attributes=True)
