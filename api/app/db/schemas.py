@@ -25,7 +25,7 @@ class EntityTypeEnum(str, Enum):
     Enumeration of entity types used for history tracking.
     """
 
-    MACHINE = "machine"
+    MACHINES = "machines"
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"

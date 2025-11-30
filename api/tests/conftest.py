@@ -1,15 +1,11 @@
 """Pytest configuration file for setting up test fixtures."""
-import os
-import sys
+
 import uuid
 from unittest import mock
-
 import pytest
+from app.database import SessionLocal
 from app.main import app
 from fastapi.testclient import TestClient
-# Encountered issues with docker - added /code path to PYTHON PATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app.database import SessionLocal
 
 
 @pytest.fixture(scope="module")
@@ -33,18 +29,20 @@ def redis_client_mock():
         mock_redis.return_value = mock_instance
         yield mock_instance
 
+
 @pytest.fixture(scope="function")
 def db_session():
     """
-    Tworzy nową sesję do bazy danych na potrzeby testu.
-    Po zakończeniu testu zamyka sesję.
+    Create new database session.
+    After test finish, close it.
     """
     session = SessionLocal()
-    session.info['user_id'] = None
+    session.info["user_id"] = None
     try:
         yield session
     finally:
         session.close()
+
 
 @pytest.fixture(scope="function")
 def unique_category_name():

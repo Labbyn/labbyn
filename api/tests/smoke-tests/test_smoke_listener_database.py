@@ -1,8 +1,11 @@
 """Smoke tests for Database Listener functionality."""
+
 import pytest
 from app.db import models
+
 # pylint: disable=unused-import
 import app.db.listeners
+
 
 @pytest.mark.smoke
 @pytest.mark.database

@@ -4,19 +4,16 @@ import json
 from typing import Any, Optional
 from datetime import datetime, date
 from sqlalchemy import event, inspect
+from sqlalchemy.exc import NoInspectionAvailable
 from sqlalchemy.orm import Session, UOWTransaction
 from app.db.models import History, EntityType, ActionType
 
 
 def json_serializer(obj: Any):
     """
-    JSON serializer helper for datetime and date objects.
-
-    Converts datetime and date objects to ISO format strings.
-    For other types, it returns their string representation.
-
-    :param obj: The object to serialize.
-    :return: ISO formatted string if date/datetime, else string representation.
+    Converts datatetime and date objects to strings.
+    :param obj: object to serialize
+    :return: JSON-serializable string representation
     """
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
@@ -25,55 +22,77 @@ def json_serializer(obj: Any):
 
 def get_entity_state(obj: Any):
     """
-    Extracts the current state of a database entity into a dictionary.
-
-    Iterates through the model's columns and retrieves their current values.
-
-    :param obj: SQLAlchemy model instance to inspect.
-    :return: A dictionary mapping column names to their values.
+    Retrieve current state of SQLAlchemy Entity
+    :param obj: SQLAlchemy model instance
+    :return: Dictionary representing entity's state
     """
     state = {}
-    mapper = inspect(obj).mapper
-    for col in mapper.column_attrs:
-        state[col.key] = getattr(obj, col.key)
+    try:
+        mapper = inspect(obj).mapper
+        for col in mapper.column_attrs:
+            state[col.key] = getattr(obj, col.key)
+    except NoInspectionAvailable:
+        pass
     return json.loads(json.dumps(state, default=json_serializer))
 
 
 def identify_entity_type(obj: Any):
     """
-    Maps database instance to coressponding EntityType Enum
-    :param obj: SQLAlchemy model instance to inspect
-    :return: corresponding EntityType enum member, or None if not mapped.
+    Robust identification of entity type based on its mapped table name
+    :param obj: SQLAlchemy model instance
+    :return: Corresponding EntityType member or None
     """
-    table_name = obj.__tablename__
+    try:
+        table_name = inspect(obj).mapper.persist_selectable.name
+    except NoInspectionAvailable:
+        table_name = getattr(obj, "__tablename__", None)
+
+    if not table_name:
+        return None
+
     mapping = {
-        "machines": EntityType.MACHINE,
+        "machines": EntityType.MACHINES,
         "inventory": EntityType.INVENTORY,
         "rooms": EntityType.ROOM,
         "user": EntityType.USER,
         "categories": EntityType.CATEGORIES,
     }
-    return mapping.get(table_name)
+
+    result = mapping.get(table_name)
+
+    return result
 
 
 # pylint: disable=unused-argument
 @event.listens_for(Session, "before_flush")
-def dump_before_flush(
-    session: Session,
-    flush_context: UOWTransaction,
-    instances: Optional[Any],
+def receive_before_flush(
+    session: Session, flush_context: UOWTransaction, instances: Optional[Any]
 ):
     """
-    SQLAlchemy event listener triggered before session is flushed to database
-    Inspects session for UPDATE, CREATE and DELETE operation
-    and automatically creates corresponding History log entries
-    :param session: Database session
-    :param flush_context: Internal SQLAlchemy transaction context
-    :param instances: List of instances being flushed
+    SQLAlchemy session listener triggered before data is flushed to database.
+
+    This function handles logging for **UPDATE** and **DELETE** actions,
+    as it requires access to the *old* state of dirty and deleted objects
+    before the database transaction commits the changes.
+
+    - **UPDATE** logs: Compares current and previous values to record specific field changes.
+    - **DELETE** logs: Captures the full state of the object *before* deletion.
+    - **CREATE** (preparatory): Stores new objects in `session.info` for later
+      processing in `after_flush`, where the `entity_id` will be available.
+
+    :param session: Current SQLAlchemy Session object
+    :param flush_context: Unit of work transaction context
+    :param instances: Optional argument
     :return: None
     """
-    objects_to_create_history = []
+    objects_to_create = session.info.setdefault("objects_to_create_history", [])
     user_id = session.info.get("user_id", None)
+
+    for obj in session.new:
+        if isinstance(obj, History):
+            continue
+        if identify_entity_type(obj):
+            objects_to_create.append(obj)
 
     for obj in session.dirty:
         if isinstance(obj, History):
@@ -85,13 +104,11 @@ def dump_before_flush(
         changes = {}
         for attr in inspect(obj).attrs:
             hist = attr.history
-
             if hist.has_changes() and attr.key != "version_id":
                 changes[attr.key] = {
                     "old": hist.deleted[0] if hist.deleted else None,
                     "new": hist.added[0] if hist.added else None,
                 }
-
         if changes:
             session.add(
                 History(
@@ -102,16 +119,6 @@ def dump_before_flush(
                     extra_data=json.loads(json.dumps(changes, default=json_serializer)),
                 )
             )
-
-    for obj in session.new:
-        if isinstance(obj, History):
-            continue
-        entity_type = identify_entity_type(obj)
-        if not entity_type:
-            continue
-
-        objects_to_create_history.append(obj)
-    session.info["objects_to_create_history"] = objects_to_create_history
 
     for obj in session.deleted:
         if isinstance(obj, History):
@@ -130,15 +137,18 @@ def dump_before_flush(
             )
         )
 
+
 # pylint: disable=unused-argument
 @event.listens_for(Session, "after_flush")
-def receive_after_flush(session: Session, flush_context: UOWTransaction) -> None:
+def receive_after_flush(session: Session, flush_context: UOWTransaction):
     """
-    SQLAlchemy event listener triggered after session is flushed to database
-    Inspects session for CREATE and automatically creates corresponding History log entries
-    CREATE operations can't be listened before flush, as they need to have ID!
-    :param session: Database session
-    :param flush_context: Internal SQLAlchemy transaction context
+    SQLAlchemy session listener triggered after data is flushed to database.
+
+    This function is primarily used to handle logging for **CREATE** actions,
+    as the primary key (`entity_id`) of the newly created objects is now available.
+
+    :param session: Current SQLAlchemy Session object
+    :param flush_context: Unit of work transaction context
     :return: None
     """
     objects = session.info.pop("objects_to_create_history", [])
@@ -147,22 +157,18 @@ def receive_after_flush(session: Session, flush_context: UOWTransaction) -> None
 
     user_id = session.info.get("user_id", None)
 
-    histories = []
     for obj in objects:
         if obj.id is None:
             continue
 
         entity_type = identify_entity_type(obj)
-        histories.append(
-            History(
-                entity_type=entity_type,
-                action=ActionType.CREATE,
-                entity_id=obj.id,
-                user_id=user_id,
-                after_state=get_entity_state(obj),
+        if entity_type:
+            session.add(
+                History(
+                    entity_type=entity_type,
+                    action=ActionType.CREATE,
+                    entity_id=obj.id,
+                    user_id=user_id,
+                    after_state=get_entity_state(obj),
+                )
             )
-        )
-
-    if histories:
-        for h in histories:
-            session.add(h)

@@ -1,5 +1,5 @@
 """Database models for the application using SQLAlchemy ORM."""
-
+from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
     Boolean,
@@ -32,7 +32,7 @@ class UserType(PyEnum):
 class EntityType(PyEnum):
     """Entity types for history tracking."""
 
-    MACHINE = "machine"
+    MACHINES = "machines"
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
@@ -118,7 +118,7 @@ class Machines(Base):
     os = Column(String(30), nullable=True)
     serial_number = Column(String(50), nullable=True)
     note = Column(String(500), nullable=True)
-    added_on = Column(DateTime, nullable=False)
+    added_on = Column(DateTime, nullable=False, default=datetime.now)
     cpu = Column(String(100), nullable=True)
     ram = Column(String(100), nullable=True)
     disk = Column(String(100), nullable=True)
