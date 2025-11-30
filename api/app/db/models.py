@@ -176,10 +176,7 @@ class Teams(Base):
 
     machines = relationship("Machines", back_populates="team")
 
-    # POPRAWKA Z POPRZEDNIEGO KROKU: foreign_keys
-    users = relationship(
-        "User", back_populates="teams", foreign_keys="[User.team_id]"
-    )
+    users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
 
 
 class User(Base):
@@ -213,10 +210,7 @@ class User(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    # POPRAWKA Z POPRZEDNIEGO KROKU: foreign_keys
-    teams = relationship(
-        "Teams", back_populates="users", foreign_keys="[User.team_id]"
-    )
+    teams = relationship("Teams", back_populates="users", foreign_keys="[User.team_id]")
 
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
@@ -247,12 +241,8 @@ class Rentals(Base):
 
     user = relationship("User", back_populates="rentals")
 
-    # POPRAWKA TUTAJ: Wskazujemy konkretny klucz obcy (item_id)
-    # Zmieniamy back_populates na 'rental_history', aby odróżnić od 'current_rental'
     inventory = relationship(
-        "Inventory",
-        foreign_keys=[item_id],
-        back_populates="rental_history"
+        "Inventory", foreign_keys=[item_id], back_populates="rental_history"
     )
 
 
@@ -280,19 +270,10 @@ class Inventory(Base):
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
 
-    # POPRAWKA TUTAJ: Rozdzielamy relacje
+    current_rental = relationship("Rentals", foreign_keys=[rental_id])
 
-    # 1. To jest AKTUALNE wypożyczenie (oparte na rental_id)
-    current_rental = relationship(
-        "Rentals",
-        foreign_keys=[rental_id]
-    )
-
-    # 2. To jest HISTORIA wypożyczeń (oparta na Rentals.item_id)
     rental_history = relationship(
-        "Rentals",
-        foreign_keys="[Rentals.item_id]",
-        back_populates="inventory"
+        "Rentals", foreign_keys="[Rentals.item_id]", back_populates="inventory"
     )
 
     category = relationship("Categories", back_populates="inventory")
@@ -335,7 +316,8 @@ class History(Base):
     entity_id = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"))
     timestamp = Column(
-        DateTime(timezone=True), server_default=func.now() # pylint: disable=not-callable
+        DateTime(timezone=True),
+        server_default=func.now(),  # pylint: disable=not-callable
     )
     before_state = Column(JSONB)
     after_state = Column(JSONB)

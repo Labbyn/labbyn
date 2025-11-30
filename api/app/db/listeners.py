@@ -54,10 +54,12 @@ def identify_entity_type(obj: Any):
     }
     return mapping.get(table_name)
 
-
+# pylint: disable=unused-argument
 @event.listens_for(Session, "before_flush")
 def dump_before_flush(
-    session: Session, flush_context: UOWTransaction, instances: Optional[Any]
+    session: Session,
+    flush_context: UOWTransaction,
+    instances: Optional[Any],
 ):
     """
     SQLAlchemy event listener triggered before session is flushed to database

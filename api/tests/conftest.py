@@ -1,10 +1,12 @@
 """Pytest configuration file for setting up test fixtures."""
-
+import uuid
 from unittest import mock
 
 import pytest
 from app.main import app
 from fastapi.testclient import TestClient
+
+from api.app.database import SessionLocal
 
 
 @pytest.fixture(scope="module")
@@ -27,3 +29,21 @@ def redis_client_mock():
         mock_instance = mock.AsyncMock()
         mock_redis.return_value = mock_instance
         yield mock_instance
+
+@pytest.fixture(scope="function")
+def db_session():
+    """
+    Tworzy nową sesję do bazy danych na potrzeby testu.
+    Po zakończeniu testu zamyka sesję.
+    """
+    session = SessionLocal()
+    session.info['user_id'] = None
+    try:
+        yield session
+    finally:
+        session.close()
+
+@pytest.fixture(scope="function")
+def unique_category_name():
+    """Genearate random category name to avoid unique problems"""
+    return f"SmokeTest-GPU-{uuid.uuid4()}"
