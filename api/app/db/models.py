@@ -33,7 +33,7 @@ class EntityType(PyEnum):
     """Entity types for history tracking."""
 
     MACHINE = "machine"
-    INVETORY = "inventory"
+    INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
 
@@ -56,6 +56,10 @@ class Layout(Base):
     id = Column(Integer, primary_key=True)
     x = Column(Integer, nullable=False)
     y = Column(Integer, nullable=False)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     rooms = relationship("Layouts", back_populates="layout")
     machines = relationship("Machines", back_populates="layout")
@@ -88,6 +92,10 @@ class Rooms(Base):
     name = Column(String(100), nullable=False, unique=True)
     room_type = Column(String(100), nullable=True)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
     inventory = relationship("Inventory", back_populates="room")
@@ -116,6 +124,10 @@ class Machines(Base):
     metadata_id = Column(Integer, ForeignKey("metadata.id"), nullable=False)
     layout_id = Column(Integer, ForeignKey("layout.id"), nullable=True)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     room = relationship("Rooms", back_populates="machines")
     layout = relationship("Layout", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
@@ -136,6 +148,10 @@ class Metadata(Base):
     ansible_access = Column(Boolean, nullable=True, default=False)
     ansible_root_access = Column(Boolean, nullable=True, default=False)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     machines = relationship("Machines", back_populates="machine_metadata")
 
 
@@ -153,6 +169,10 @@ class Teams(Base):
         ForeignKey("user.id", use_alter=True, name="fk_team_admin_id"),
         nullable=False,
     )
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     machines = relationship("Machines", back_populates="teams")
     users = relationship("User", back_populates="teams")
@@ -185,6 +205,10 @@ class User(Base):
 
     __table_args__ = {"schema": None}
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     teams = relationship("Teams", back_populates="users")
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
@@ -209,6 +233,10 @@ class Rentals(Base):
 
     __table_args__ = {"schema": None}
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     user = relationship("User", back_populates="rentals")
     inventory = relationship("Inventory", back_populates="rental")
 
@@ -230,6 +258,10 @@ class Inventory(Base):
     rental_status = Column(Boolean, nullable=False, default=False)
     rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=True)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
     rental = relationship("Rentals", back_populates="inventory")
@@ -244,6 +276,10 @@ class Categories(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False, unique=True)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     inventory = relationship("Inventory", back_populates="category")
 
@@ -268,8 +304,8 @@ class History(Base):
     entity_id = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"))
     timestamp = Column(
-        DateTime(timezone=True), server_default=func.now()
-    )  # pylint: disable=not-callable
+        DateTime(timezone=True), server_default=func.now() # pylint: disable=not-callable
+    )
     before_state = Column(JSONB)
     after_state = Column(JSONB)
     can_rollback = Column(Boolean, default=True)
