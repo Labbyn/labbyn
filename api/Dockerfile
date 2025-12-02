@@ -7,7 +7,7 @@ RUN apk add --no-cache postgresql17-client=17.7-r0
 COPY ./requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-COPY alembic.ini /code/
+COPY *.ini /code/
 COPY start-api.sh /code/
 COPY ./alembic /code/alembic
 COPY ./tests /code/tests
