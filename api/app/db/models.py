@@ -1,5 +1,5 @@
 """Database models for the application using SQLAlchemy ORM."""
-
+from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
     Boolean,
@@ -32,10 +32,11 @@ class UserType(PyEnum):
 class EntityType(PyEnum):
     """Entity types for history tracking."""
 
-    MACHINE = "machine"
-    INVETORY = "inventory"
+    MACHINES = "machines"
+    INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
+    CATEGORIES = "category"
 
 
 class ActionType(PyEnum):
@@ -56,6 +57,10 @@ class Layout(Base):
     id = Column(Integer, primary_key=True)
     x = Column(Integer, nullable=False)
     y = Column(Integer, nullable=False)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     rooms = relationship("Layouts", back_populates="layout")
     machines = relationship("Machines", back_populates="layout")
@@ -88,6 +93,10 @@ class Rooms(Base):
     name = Column(String(100), nullable=False, unique=True)
     room_type = Column(String(100), nullable=True)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
     inventory = relationship("Inventory", back_populates="room")
@@ -109,12 +118,16 @@ class Machines(Base):
     os = Column(String(30), nullable=True)
     serial_number = Column(String(50), nullable=True)
     note = Column(String(500), nullable=True)
-    added_on = Column(DateTime, nullable=False)
+    added_on = Column(DateTime, nullable=False, default=datetime.now)
     cpu = Column(String(100), nullable=True)
     ram = Column(String(100), nullable=True)
     disk = Column(String(100), nullable=True)
     metadata_id = Column(Integer, ForeignKey("metadata.id"), nullable=False)
     layout_id = Column(Integer, ForeignKey("layout.id"), nullable=True)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     room = relationship("Rooms", back_populates="machines")
     layout = relationship("Layout", back_populates="machines")
@@ -136,6 +149,10 @@ class Metadata(Base):
     ansible_access = Column(Boolean, nullable=True, default=False)
     ansible_root_access = Column(Boolean, nullable=True, default=False)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     machines = relationship("Machines", back_populates="machine_metadata")
 
 
@@ -154,8 +171,13 @@ class Teams(Base):
         nullable=False,
     )
 
-    machines = relationship("Machines", back_populates="teams")
-    users = relationship("User", back_populates="teams")
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    machines = relationship("Machines", back_populates="team")
+
+    users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
 
 
 class User(Base):
@@ -185,7 +207,12 @@ class User(Base):
 
     __table_args__ = {"schema": None}
 
-    teams = relationship("Teams", back_populates="users")
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    teams = relationship("Teams", back_populates="users", foreign_keys="[User.team_id]")
+
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
@@ -209,8 +236,15 @@ class Rentals(Base):
 
     __table_args__ = {"schema": None}
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     user = relationship("User", back_populates="rentals")
-    inventory = relationship("Inventory", back_populates="rental")
+
+    inventory = relationship(
+        "Inventory", foreign_keys=[item_id], back_populates="rental_history"
+    )
 
 
 class Inventory(Base):
@@ -230,9 +264,20 @@ class Inventory(Base):
     rental_status = Column(Boolean, nullable=False, default=False)
     rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=True)
 
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
-    rental = relationship("Rentals", back_populates="inventory")
+
+    current_rental = relationship("Rentals", foreign_keys=[rental_id])
+
+    rental_history = relationship(
+        "Rentals", foreign_keys="[Rentals.item_id]", back_populates="inventory"
+    )
+
+    category = relationship("Categories", back_populates="inventory")
 
 
 class Categories(Base):
@@ -244,6 +289,10 @@ class Categories(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False, unique=True)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
 
     inventory = relationship("Inventory", back_populates="category")
 
@@ -268,8 +317,9 @@ class History(Base):
     entity_id = Column(Integer, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"))
     timestamp = Column(
-        DateTime(timezone=True), server_default=func.now()
-    )  # pylint: disable=not-callable
+        DateTime(timezone=True),
+        server_default=func.now(),  # pylint: disable=not-callable
+    )
     before_state = Column(JSONB)
     after_state = Column(JSONB)
     can_rollback = Column(Boolean, default=True)
