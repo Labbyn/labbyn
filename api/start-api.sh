@@ -11,6 +11,7 @@ export PYTHONPATH=/code
 export ALEMBIC_CONFIG=/code/alembic.ini
 
 echo "Attempting to create a new Alembic revision based on current models..."
+cd /code
 alembic revision --autogenerate -m "Auto init on start"
 
 echo "Applying database migrations..."
