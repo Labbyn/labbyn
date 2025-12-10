@@ -1,4 +1,5 @@
 """Pytest configuration file for setting up test fixtures."""
+
 import asyncio
 import uuid
 from unittest import mock
@@ -63,7 +64,9 @@ def refresh_redis_client(monkeypatch):
     :return: New redis client connection
     """
     loop = None
-    new_redis = redis_asyncio.from_url(REDIS_URL, encoding="utf-8", decode_responses=True)
+    new_redis = redis_asyncio.from_url(
+        REDIS_URL, encoding="utf-8", decode_responses=True
+    )
     monkeypatch.setattr(redis_service.redis_manager, "client", new_redis)
     yield
     try:
@@ -79,7 +82,7 @@ def refresh_redis_client(monkeypatch):
             asyncio.set_event_loop(loop)
             loop.run_until_complete(new_redis.aclose())
             loop.close()
-    #pylint: disable=broad-exception-caught
+    # pylint: disable=broad-exception-caught
     except Exception:
         # If we catch any exception that means redis loop is already deactived.
         pass
