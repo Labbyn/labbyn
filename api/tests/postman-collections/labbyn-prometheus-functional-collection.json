@@ -1,0 +1,138 @@
+{
+	"info": {
+		"_postman_id": "labbyn-prometheus-api",
+		"name": "Labbyn Prometheus Integration",
+		"description": "Test collection for endpoints integrating Prometheus with the Labbyn API. Used for fetching metrics, listing hosts, and dynamically adding targets.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Discovery (Instances & Hosts)",
+			"item": [
+				{
+					"name": "Get All Instances",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/prometheus/instances",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"prometheus",
+								"instances"
+							]
+						},
+						"description": "Fetches a list of unique instances (format HOST:PORT) seen by Prometheus (metric 'status')."
+					}
+				},
+				{
+					"name": "Get Unique Hosts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/prometheus/hosts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"prometheus",
+								"hosts"
+							]
+						},
+						"description": "Fetches a list of unique IP addresses/hostnames (strips ports)."
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Metrics Data",
+			"item": [
+				{
+					"name": "Get Metrics (All)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/prometheus/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"prometheus",
+								"metrics"
+							]
+						},
+						"description": "Fetches metric data (CPU, RAM, Disk) for all hosts. Skips cache and queries Prometheus directly."
+					}
+				},
+				{
+					"name": "Get Metrics (Filtered by Instance)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/prometheus/metrics?instances=localhost:9090,192.168.1.15:9100",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"prometheus",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "instances",
+									"value": "localhost:9090,192.168.1.15:9100",
+									"description": "Comma separated instances"
+								}
+							]
+						},
+						"description": "Fetches metrics only for the selected instances provided in the query parameter."
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Configuration",
+			"item": [
+				{
+					"name": "Add New Target",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"instance\": \"192.168.1.50:9100\",\n    \"labels\": {\n        \"os\": \"linux\",\n        \"role\": \"database\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/prometheus/target",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"prometheus",
+								"target"
+							]
+						},
+						"description": "Adds a new target to the Prometheus configuration file (targets.json)."
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		}
+	]
+}

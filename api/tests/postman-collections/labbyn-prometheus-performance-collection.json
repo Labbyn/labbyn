@@ -1,0 +1,94 @@
+{
+	"info": {
+		"_postman_id": "labbyn-prometheus-performace-api",
+		"name": "Labbyn Prometheus Performance API testing",
+		"description":  "Test collection for endpoints integrating Prometheus with the Labbyn API. Used for fetching metrics, listing hosts, and dynamically adding targets. Parametrized for performance testing with random IPs and GUIDs to simulate load and scalability scenarios.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Add New Target (Random IP)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var reqBody = JSON.parse(pm.request.body.raw);",
+							"pm.collectionVariables.set(\"current_instance\", reqBody.instance);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{ "key": "Content-Type", "value": "application/json" }
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"instance\": \"{{$randomIP}}:9100\",\n    \"labels\": {\n        \"os\": \"linux\",\n        \"role\": \"load_test_node\",\n        \"uid\": \"{{$guid}}\"\n    }\n}"
+				},
+				"url": "{{base_url}}/prometheus/target",
+				"description": "Adds a random IP as a target. Simulates adding new infrastructure dynamically."
+			}
+		},
+		{
+			"name": "2. Get Metrics (For Created Instance)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/prometheus/metrics?instances={{current_instance}}",
+					"host": ["{{base_url}}"],
+					"path": ["prometheus", "metrics"],
+					"query": [
+						{
+							"key": "instances",
+							"value": "{{current_instance}}"
+						}
+					]
+				},
+				"description": "Fetches metrics specific to the randomly generated instance from step 1."
+			}
+		},
+		{
+			"name": "3. Get All Instances (Heavy Read)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{base_url}}/prometheus/instances",
+				"description": "Fetches the full list. As the test runs, this response will get larger and heavier."
+			}
+		},
+		{
+			"name": "4. Get Hosts List",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{base_url}}/prometheus/hosts"
+			}
+		},
+		{
+			"name": "5. Get All Metrics (Stress Test)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "{{base_url}}/prometheus/metrics",
+				"description": "Fetches metrics for EVERYTHING. This will be the heaviest endpoint."
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "current_instance",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

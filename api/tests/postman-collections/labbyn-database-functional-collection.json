@@ -1,0 +1,182 @@
+{
+	"info": {
+        "_postman_id": "labbyn-database-functional-api",
+        "name": "Labbyn Database Functional API testing",
+        "description": "Test collection for the Labbyn system. Contains the full process: from creating dictionaries, through users, up to rentals.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. SETUP",
+			"item": [
+				{
+					"name": "1.1 Create Metadata",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"agent_prometheus\": true,\n    \"ansible_access\": false,\n    \"backup_policy\": \"daily\"\n}" },
+						"url": "{{base_url}}/db/metadata/"
+					}
+				},
+				{
+					"name": "1.2 Create Room",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Serwerownia A\",\n    \"room_type\": \"server_room\",\n    \"description\": \"Główna serwerownia\"\n}" },
+						"url": "{{base_url}}/db/rooms/"
+					}
+				},
+				{
+					"name": "1.3 Create User (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Jan\",\n    \"surname\": \"Kowalski\",\n    \"login\": \"admin\",\n    \"password\": \"supersecret\",\n    \"email\": \"admin@labbyn.com\"\n}" },
+						"url": "{{base_url}}/db/users/"
+					}
+				},
+				{
+					"name": "1.4 Create Team",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"DevOps Team\",\n    \"description\": \"Zespół utrzymania\",\n    \"team_admin_id\": 1\n}" },
+						"url": "{{base_url}}/db/teams/"
+					}
+				},
+				{
+					"name": "1.5 Create Category",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Laptopy\",\n    \"description\": \"Sprzęt przenośny\"\n}" },
+						"url": "{{base_url}}/db/categories/"
+					}
+				}
+			]
+		},
+		{
+			"name": "2. RESOURCES",
+			"item": [
+				{
+					"name": "2.1 Create Machine",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"srv-01\",\n    \"localization_id\": 1,\n    \"metadata_id\": 1,\n    \"team_id\": 1,\n    \"os\": \"Ubuntu 22.04\",\n    \"cpu\": \"Xeon\",\n    \"ram\": \"64GB\",\n    \"disk\": \"1TB\"\n}" },
+						"url": "{{base_url}}/db/machines/"
+					}
+				},
+				{
+					"name": "2.2 Create Inventory Item",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"MacBook Pro\",\n    \"quantity\": 5,\n    \"category_id\": 1,\n    \"localization_id\": 1,\n    \"team_id\": 1\n}" },
+						"url": "{{base_url}}/db/inventory/"
+					}
+				}
+			]
+		},
+		{
+			"name": "3. LOGIC",
+			"item": [
+				{
+					"name": "3.1 Create Rental",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"item_id\": 1,\n    \"user_id\": 1,\n    \"start_date\": \"2023-10-01\",\n    \"end_date\": \"2023-10-15\"\n}" },
+						"url": "{{base_url}}/db/rentals/"
+					}
+				},
+				{
+					"name": "3.2 Return Rental",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{base_url}}/db/rentals/1/return"
+					}
+				}
+			]
+		},
+		{
+			"name": "4. VISUALIZATION (Layouts)",
+			"item": [
+				{
+					"name": "4.1 Create Layout Coord",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"x\": 10,\n    \"y\": 20\n}"
+                        },
+						"url": "{{base_url}}/db/layout/"
+					}
+				},
+				{
+					"name": "4.2 Create Layout Assignment",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Main Map\",\n    \"room_id\": 1,\n    \"layout_id\": 1\n}"
+                        },
+						"url": "{{base_url}}/db/layouts/"
+					}
+				}
+			]
+		},
+		{
+			"name": "5. CLEANUP",
+			"item": [
+				{
+					"name": "5.1 Delete Layout Assignment",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/layouts/1" }
+				},
+				{
+					"name": "5.2 Delete Layout Coord",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/layout/1" }
+				},
+				{
+					"name": "5.3 Delete Rental",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/rentals/1" }
+				},
+				{
+					"name": "5.4 Delete Inventory",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/inventory/1" }
+				},
+				{
+					"name": "5.5 Delete Machine",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/machines/1" }
+				},
+				{
+					"name": "5.6 Delete Team",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/teams/1" }
+				},
+				{
+					"name": "5.7 Delete User",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/users/1" }
+				},
+				{
+					"name": "5.8 Delete Category",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/categories/1" }
+				},
+				{
+					"name": "5.9 Delete Room",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/rooms/1" }
+				},
+				{
+					"name": "5.10 Delete Metadata",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/metadata/1" }
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8000", "type": "string" }
+	]
+}
