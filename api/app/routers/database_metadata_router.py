@@ -1,4 +1,5 @@
 """Router for Metadata Database API CRUD."""
+
 from typing import List
 from app.database import get_db
 from app.db.models import (
@@ -14,6 +15,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
+
 @router.post(
     "/db/metadata/",
     response_model=MetadataResponse,

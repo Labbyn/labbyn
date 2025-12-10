@@ -1,10 +1,9 @@
 """Router for Inventory Database API CRUD."""
+
 from typing import List
 
 from app.database import get_db
-from app.db.models import (
-    Inventory
-)
+from app.db.models import Inventory
 from app.db.schemas import (
     InventoryCreate,
     InventoryResponse,
@@ -15,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
 
 @router.post(
     "/db/inventory/",

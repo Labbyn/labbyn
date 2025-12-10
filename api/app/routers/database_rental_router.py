@@ -1,4 +1,5 @@
 """Router for Rental Database API CRUD."""
+
 from typing import List
 from datetime import date
 from app.database import get_db
@@ -15,6 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
 
 @router.post(
     "/db/rentals/",
@@ -102,7 +104,9 @@ def get_rental_by_id(rental_id: int, db: Session = Depends(get_db)):
     return rental
 
 
-@router.delete("/db/rentals/{rental_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rentals"])
+@router.delete(
+    "/db/rentals/{rental_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rentals"]
+)
 async def delete_rental(rental_id: int, db: Session = Depends(get_db)):
     """
     Delete rental history
@@ -112,7 +116,9 @@ async def delete_rental(rental_id: int, db: Session = Depends(get_db)):
     """
     rental = db.query(Rentals).filter(Rentals.id == rental_id).first()
     if not rental:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found"
+        )
 
     async with acquire_lock(f"inventory_lock:{rental.item_id}"):
         item = db.query(Inventory).filter(Inventory.id == rental.item_id).first()

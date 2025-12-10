@@ -1,10 +1,9 @@
 """Router for Machine Database API CRUD."""
+
 from typing import List
 
 from app.database import get_db
-from app.db.models import (
-    Machines
-)
+from app.db.models import Machines
 from app.db.schemas import (
     MachinesCreate,
     MachinesResponse,
@@ -15,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 router = APIRouter()
+
 
 @router.post(
     "/db/machines/",

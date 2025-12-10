@@ -13,7 +13,9 @@ DB_HOST = os.getenv("DB_HOST", "db")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_URL = os.getenv("DATABASE_URL", "url")
 
-engine = create_engine(DB_URL, pool_pre_ping=True, pool_size=50, max_overflow=60, pool_timeout=1800)
+engine = create_engine(
+    DB_URL, pool_pre_ping=True, pool_size=50, max_overflow=60, pool_timeout=1800
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
