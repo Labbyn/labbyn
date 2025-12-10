@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "labbyn-prometheus-api",
-		"name": "Labbyn Prometheus Integration",
+		"_postman_id": "labbyn-prometheus-functional-api",
+		"name": "Labbyn Prometheus Functional API testing",
 		"description": "Test collection for endpoints integrating Prometheus with the Labbyn API. Used for fetching metrics, listing hosts, and dynamically adding targets.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
