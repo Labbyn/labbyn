@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.routers import prometheus_router
+from app.routers import prometheus_router, database_router
 from app.routers.prometheus_router import metrics_worker, status_worker
 
 
@@ -29,3 +29,4 @@ async def lifespan(fast_api_app: FastAPI): # pylint: disable=unused-argument
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(prometheus_router.router)
+app.include_router(database_router.router)
