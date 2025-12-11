@@ -1,0 +1,299 @@
+{
+	"info": {
+        "_postman_id": "labbyn-database-functional-api",
+        "name": "Labbyn Database Perfomance API testing",
+        "description": "Test collection for the Labbyn system. Contains the full process: from creating dictionaries, through users, up to rentals.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "FULL TEST CYCLE",
+			"item": [
+				{
+					"name": "1. Create Metadata",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"meta_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"agent_prometheus\": true,\n    \"ansible_access\": false,\n    \"backup_policy\": \"daily\"\n}" },
+						"url": "{{base_url}}/db/metadata/"
+					}
+				},
+				{
+					"name": "2. Create Room",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"room_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Rm_{{uid}}\",\n    \"room_type\": \"server_room\"\n}" },
+						"url": "{{base_url}}/db/rooms/"
+					}
+				},
+				{
+					"name": "3. Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"user_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"{{$randomFirstName}}\",\n    \"surname\": \"{{$randomLastName}}\",\n    \"login\": \"u_{{uid}}\",\n    \"password\": \"pass123\",\n    \"email\": \"{{uid}}@test.com\"\n}" },
+						"url": "{{base_url}}/db/users/"
+					}
+				},
+				{
+					"name": "4. Create Team",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"team_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Tm_{{uid}}\",\n    \"team_admin_id\": {{user_id}}\n}" },
+						"url": "{{base_url}}/db/teams/"
+					}
+				},
+				{
+					"name": "5. Create Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"cat_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Cat_{{uid}}\"\n}" },
+						"url": "{{base_url}}/db/categories/"
+					}
+				},
+				{
+					"name": "6. Create Machine",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"machine_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"srv-{{uid}}\",\n    \"localization_id\": {{room_id}},\n    \"metadata_id\": {{meta_id}},\n    \"team_id\": {{team_id}},\n    \"os\": \"Linux\"\n}" },
+						"url": "{{base_url}}/db/machines/"
+					}
+				},
+				{
+					"name": "7. Create Inventory Item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"item_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Item_{{uid}}\",\n    \"quantity\": 1,\n    \"category_id\": {{cat_id}},\n    \"localization_id\": {{room_id}},\n    \"team_id\": {{team_id}}\n}" },
+						"url": "{{base_url}}/db/inventory/"
+					}
+				},
+				{
+					"name": "8. Create Rental",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"rental_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"item_id\": {{item_id}},\n    \"user_id\": {{user_id}},\n    \"start_date\": \"2023-10-01\",\n    \"end_date\": \"2023-10-15\"\n}" },
+						"url": "{{base_url}}/db/rentals/"
+					}
+				},
+				{
+					"name": "9. Return Rental",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{base_url}}/db/rentals/{{rental_id}}/return"
+					}
+				},
+				{
+					"name": "10. Create Layout Coord",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"layout_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"x\": {{$randomInt}},\n    \"y\": {{$randomInt}}\n}" },
+						"url": "{{base_url}}/db/layout/"
+					}
+				},
+				{
+					"name": "11. Create Layout Assignment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"layout_assign_id\", jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Map_{{uid}}\",\n    \"room_id\": {{room_id}},\n    \"layout_id\": {{layout_id}}\n}" },
+						"url": "{{base_url}}/db/layouts/"
+					}
+				},
+				{
+					"name": "12. DELETE Layout Assign",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/layouts/{{layout_assign_id}}" }
+				},
+				{
+					"name": "13. DELETE Layout Coord",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/layout/{{layout_id}}" }
+				},
+				{
+					"name": "14. DELETE Rental",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/rentals/{{rental_id}}" }
+				},
+				{
+					"name": "15. DELETE Inventory",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/inventory/{{item_id}}" }
+				},
+				{
+					"name": "16. DELETE Machine",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/machines/{{machine_id}}" }
+				},
+				{
+					"name": "17. DELETE Category",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/categories/{{cat_id}}" }
+				},
+				{
+					"name": "18. DELETE Team",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/teams/{{team_id}}" }
+				},
+				{
+					"name": "19. DELETE User",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/users/{{user_id}}" }
+				},
+				{
+					"name": "20. DELETE Room",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/rooms/{{room_id}}" }
+				},
+				{
+					"name": "21. DELETE Metadata",
+					"request": { "method": "DELETE", "header": [], "url": "{{base_url}}/db/metadata/{{meta_id}}" }
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"const shortId = Math.random().toString(36).substring(2, 10);",
+					"pm.collectionVariables.set(\"uid\", shortId);"
+				]
+			}
+		}
+	],
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+		{ "key": "uid", "value": "", "type": "string" },
+		{ "key": "user_id", "value": "", "type": "string" },
+		{ "key": "room_id", "value": "", "type": "string" },
+		{ "key": "team_id", "value": "", "type": "string" },
+		{ "key": "cat_id", "value": "", "type": "string" },
+		{ "key": "machine_id", "value": "", "type": "string" },
+		{ "key": "item_id", "value": "", "type": "string" },
+		{ "key": "rental_id", "value": "", "type": "string" },
+		{ "key": "meta_id", "value": "", "type": "string" },
+		{ "key": "layout_id", "value": "", "type": "string" },
+		{ "key": "layout_assign_id", "value": "", "type": "string" }
+	]
+}

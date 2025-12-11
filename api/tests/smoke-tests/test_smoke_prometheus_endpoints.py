@@ -39,7 +39,7 @@ async def test_prometheus_metrics_endpoint(test_client):
 
 
 @pytest.mark.smoke
-def test_prometheus_websocket_endpoint(test_client):
+def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """Smoke test for /ws/metrics WebSocket endpoint."""
     with test_client.websocket_connect("/ws/metrics") as websocket:
         message = websocket.receive_json()
