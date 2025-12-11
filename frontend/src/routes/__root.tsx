@@ -5,8 +5,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
-import { AppSidebar } from '@/components/AppSidebar'
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/app-sidebar'
+import { SidebarProvider } from '@/components/ui/sidebar'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -17,8 +17,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     <>
       <SidebarProvider>
         <AppSidebar />
-        <SidebarTrigger />
-        <Outlet />
+        <div className="flex basis-full justify-center place-items-center">
+          <Outlet />
+        </div>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

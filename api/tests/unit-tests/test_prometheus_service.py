@@ -1,9 +1,12 @@
 """Unit tests for Prometheus service utilities."""
+
 from unittest import mock
 
 import httpx
 import pytest
 from app.utils.prometheus_service import fetch_prometheus_metrics
+from app.utils.prometheus_service import add_prometheus_target
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -15,6 +18,7 @@ async def test_fetch_prometheus_metrics_success():
         assert "status" in result
         assert result["status"] == []
 
+
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_failure():
@@ -25,6 +29,7 @@ async def test_fetch_prometheus_metrics_failure():
         assert "status" in result
         assert "error" in result["status"]
         assert "Request failed" in result["status"]["error"]
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -50,3 +55,17 @@ async def test_fetch_prometheus_metrics_with_filtered_instances():
         assert len(result["status"]) == 1
         assert result["status"][0]["instance"] == "host1"
         assert result["status"][0]["value"] == 1.0
+
+
+@pytest.mark.unit
+def test_add_prometheus_target():
+    """Test adding a Prometheus target."""
+    mock_fake_file = mock.mock_open(read_data="[]")
+
+    with mock.patch("builtins.open", mock_fake_file), mock.patch(
+        "json.load", return_value=[]
+    ):
+        entry = add_prometheus_target("host1:9100", {"env": "dev"})
+
+    assert entry["target"] == ["host1:9100"]
+    assert entry["labels"]["env"] == {"env": "dev"} or entry["labels"]["env"] == "dev"

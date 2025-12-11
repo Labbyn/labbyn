@@ -1,0 +1,19 @@
+name: CD Build And Push Microservices Docker Images
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+    build-frontend:
+        uses: ./.github/workflows/cd-build-and-deploy.yaml
+        with:
+          image_name: "labbyn/frontend"
+          context: ./frontend
+        secrets: inherit
+    build-api:
+        uses: ./.github/workflows/cd-build-and-deploy.yaml
+        with:
+          image_name: "labbyn/api"
+          context: ./api
+        secrets: inherit

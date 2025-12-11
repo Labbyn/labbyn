@@ -5,13 +5,14 @@ Utility functions to interact with Prometheus server.
 import asyncio
 import os
 from typing import List, Optional
-
+import json
+from threading import Lock
 import httpx
 from dotenv import load_dotenv
 
 load_dotenv(".env/api.env")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
-
+PROMETHEUS_TARGETS_PATH = os.getenv("PROMETHEUS_TARGETS_PATH")
 
 _client = httpx.AsyncClient(
     timeout=httpx.Timeout(5.0),
@@ -25,6 +26,13 @@ DEFAULT_QUERIES = {
     "disk_usage": '100 - (node_filesystem_avail_bytes{fstype!="tmpfs", mountpoint!="/boot"} * 100) '
     '/ node_filesystem_size_bytes{fstype!="tmpfs", mountpoint!="/boot"}',
 }
+
+# Global lock for file operations
+_targets_lock = Lock()
+
+
+class TargetSaveError(Exception):
+    """Custom exception for target saving errors."""
 
 
 async def _request(
@@ -103,6 +111,52 @@ async def fetch_prometheus_metrics(
         except httpx.HTTPError as e:
             results[m] = {"error": str(e)}
     return results
+
+
+def load_targets_file():
+    """
+    Load Prometheus targets from the targets file.
+    :return: List of target dictionaries or empty list if file not found or invalid
+    """
+
+    if not PROMETHEUS_TARGETS_PATH:
+        return []
+    try:
+        with open(PROMETHEUS_TARGETS_PATH, "r", encoding="utf-8") as file:
+            targets = json.load(file)
+        return targets
+    except (FileNotFoundError, OSError, json.JSONDecodeError):
+        return []
+
+
+def save_targets_file(targets: List[dict]):
+    """
+    Save Prometheus targets to the targets file.
+    :param targets: List of target dictionaries
+    """
+    if not PROMETHEUS_TARGETS_PATH:
+        raise TargetSaveError("PROMETHEUS_TARGETS_PATH is not set.")
+    try:
+        with open(PROMETHEUS_TARGETS_PATH, "w", encoding="utf-8") as file:
+            json.dump(targets, file, indent=2)
+    except (OSError, TypeError) as e:
+        raise TargetSaveError(f"Failed to save targets file: {e}") from e
+
+
+def add_prometheus_target(instance: str, labels: dict):
+    """
+    Add a new target to the Prometheus targets file.
+    :param new_target: Target dictionary to add
+    """
+    entry = {"target": [instance], "labels": labels}
+    with _targets_lock:
+        targets = load_targets_file()
+        targets.append(entry)
+    try:
+        save_targets_file(targets)
+    except TargetSaveError as e:
+        raise TargetSaveError(f"Failed to add target: {e}") from e
+    return entry
 
 
 async def close_prometheus_client():

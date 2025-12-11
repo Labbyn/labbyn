@@ -18,6 +18,8 @@ services:
     restart: always
     depends_on:
       - db
+    volumes:
+      - ./monitoring/prometheus-config:/app/monitoring/prometheus-config
   db:
     image: postgres:17
     env_file:

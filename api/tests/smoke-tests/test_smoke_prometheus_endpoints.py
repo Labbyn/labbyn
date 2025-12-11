@@ -1,4 +1,5 @@
 """Smoke tests for Prometheus-related endpoints."""
+
 import pytest
 
 
@@ -38,11 +39,22 @@ async def test_prometheus_metrics_endpoint(test_client):
 
 
 @pytest.mark.smoke
-def test_prometheus_websocket_endpoint(test_client):
+def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """Smoke test for /ws/metrics WebSocket endpoint."""
     with test_client.websocket_connect("/ws/metrics") as websocket:
         message = websocket.receive_json()
         expected_keys = ["statuses", "metrics"]
         for key in expected_keys:
             assert key in message
-            assert isinstance(message[key], list) or isinstance(message[key], dict)
+            assert isinstance(message[key], (dict, list))
+
+
+@pytest.mark.smoke
+def test_prometheus_target_endpoint_connection(test_client):
+    """Smoke test for /prometheus/target endpoint."""
+    payload = {"instance": "dummy:9100", "labels": {"env": "ci-test"}}
+
+    response = test_client.post("/prometheus/target", json=payload)
+    data = response.json()
+    assert response.status_code in (200, 400, 422)
+    assert "message" in data or "error" in data
