@@ -16,6 +16,7 @@ from app.routers import (
     database_room_router,
     database_team_router,
     database_user_router,
+    database_history_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 
@@ -50,3 +51,4 @@ app.include_router(database_rental_router.router)
 app.include_router(database_room_router.router)
 app.include_router(database_team_router.router)
 app.include_router(database_user_router.router)
+app.include_router(database_history_router.router)
