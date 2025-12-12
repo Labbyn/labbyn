@@ -6,6 +6,9 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.db.models import UserType
+
+
 # ==========================
 #          ENUMS
 # ==========================
@@ -326,6 +329,10 @@ class UserCreate(UserBase):
     Schema for creating a new User.
     REQUIRES a password field.
     """
+    user_type: UserType = Field(
+        default=UserType.USER,
+        description="Role of the user (USER, ADMIN, etc.)"
+    )
 
     password: str = Field(
         ...,

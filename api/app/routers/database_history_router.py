@@ -29,11 +29,11 @@ def get_model_class(entity_type: EntityType):
     :return: Corresponding SQLAlchemy model class or None
     """
     mapping = {
-        EntityType.MACHINE: Machines,
+        EntityType.MACHINES: Machines,
         EntityType.INVENTORY: Inventory,
         EntityType.ROOM: Rooms,
         EntityType.USER: User,
-        EntityType.CATEGORY: Categories,
+        EntityType.CATEGORIES: Categories,
     }
     return mapping.get(entity_type)
 
@@ -98,8 +98,6 @@ def _rollback_delete(model_class, log_entry: History, db: Session) -> str:
             detail="No before state saved",
         )
     data = log_entry.before_state.copy()
-    if "id" in data:
-        del data["id"]
     restored_obj = model_class(**data)
     db.add(restored_obj)
     return (
@@ -174,6 +172,7 @@ def get_history_logs(limit=200, db: Session = Depends(get_db)):
             }
         )
 
+    return results
 
 @router.post(
     "/db/history/{history_id}/rollback", status_code=status.HTTP_200_OK, tags=["History"]

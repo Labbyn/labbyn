@@ -25,8 +25,8 @@ Base = declarative_base()
 class UserType(PyEnum):
     """User types in the system."""
 
-    ADMIN = "admin"
-    USER = "user"
+    ADMIN = "ADMIN"
+    USER = "USER"
 
 
 class EntityType(PyEnum):
@@ -36,7 +36,7 @@ class EntityType(PyEnum):
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
-    CATEGORIES = "category"
+    CATEGORIES = "categories"
 
 
 class ActionType(PyEnum):

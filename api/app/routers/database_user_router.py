@@ -55,8 +55,8 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         )
 
     hashed_pw = hash_password(user_data.password)
-    user_dict = user_data.model_dump(exclude={"password"})
-    new_user = User(**user_dict, password=hashed_pw, user_type=UserType.USER)
+    user_dict = user_data.model_dump(exclude={"password", "user_type"})
+    new_user = User(**user_dict, password=hashed_pw, user_type=user_data.user_type)
 
     try:
         db.add(new_user)

@@ -19,7 +19,8 @@ from app.routers import (
     database_history_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
-
+# pylint: disable=unused-import
+import app.db.listeners
 
 @asynccontextmanager
 async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
