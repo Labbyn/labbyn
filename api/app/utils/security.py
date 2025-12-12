@@ -1,3 +1,5 @@
+import secrets
+import string
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -18,3 +20,13 @@ def verify_password(plain_password: str, hashed_password: str):
     :return: True if match, False otherwise
     """
     return pwd_context.verify(plain_password, hashed_password)
+
+def generate_starting_password(lenght: int=8):
+    """
+    Generate a random starting password
+    :param lenght: Length of the password
+    :return: Randomly generated password
+    """
+    alphabet = string.ascii_letters + string.digits
+    password = ''.join(secrets.choice(alphabet) for _ in range(lenght))
+    return password

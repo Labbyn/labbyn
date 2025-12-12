@@ -11,9 +11,10 @@ from app.db.schemas import (
     UserCreate,
     UserResponse,
     UserUpdate,
+    UserCreatedResponse
 )
 from app.utils.redis_service import acquire_lock
-from app.utils.security import hash_password
+from app.utils.security import hash_password, generate_starting_password
 from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
@@ -29,7 +30,7 @@ router = APIRouter()
 # ==========================================
 @router.post(
     "/db/users/",
-    response_model=UserResponse,
+    response_model=UserCreatedResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Users"],
 )
@@ -45,14 +46,16 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_409_CONFLICT, detail="Login already exists."
         )
 
-    hashed_pw = hash_password(user_data.password)
+    raw_password = generate_starting_password()
+    hashed_pw = hash_password(raw_password)
     user_dict = user_data.model_dump(exclude={"password"})
-    new_user = User(**user_dict, password=hashed_pw, user_type=UserType.USER)
+    new_user = User(**user_dict, password=hashed_pw, force_password_change=True)
 
     try:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
+        new_user.generated_password = raw_password
         return new_user
     except Exception as e:
         db.rollback()

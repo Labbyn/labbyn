@@ -22,7 +22,7 @@ Base = declarative_base()
 # pylint: disable=too-few-public-methods
 
 
-class UserType(PyEnum):
+class UserType(str, PyEnum):
     """User types in the system."""
 
     ADMIN = "admin"

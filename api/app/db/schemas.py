@@ -329,11 +329,11 @@ class UserCreate(UserBase):
     REQUIRES a password field.
     """
 
-    password: str = Field(
-        ...,
+    password: Optional[str] = Field(
+        None,
         min_length=6,
         max_length=255,
-        description="Raw password (must be hashed before saving to DB)",
+        description="Optional manual password; if not provided, a random one will be generated",
     )
 
 
@@ -365,6 +365,17 @@ class UserResponse(UserBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreatedResponse(UserResponse):
+    """
+    Schema for reading User data upon creation.
+    INCLUDES the generated password.
+    """
+
+    generated_password: Optional[str] = Field(
+        None, description="Generated password if one was created"
+    )
 
 
 # ==========================
