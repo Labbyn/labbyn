@@ -17,6 +17,7 @@ class UserTypeEnum(str, Enum):
     """
 
     ADMIN = "admin"
+    GROUP_ADMIN = "group_admin"
     USER = "user"
 
 
@@ -316,6 +317,7 @@ class UserBase(BaseModel):
     surname: str = Field(..., max_length=80, description="User's last name")
     login: str = Field(..., max_length=30, description="Unique login username")
     email: Optional[EmailStr] = Field(None, description="User's email address")
+    user_type: UserTypeEnum = Field(..., max_length=50, description="User's role in the system")
     team_id: Optional[int] = Field(
         None, description="ID of the team the user belongs to"
     )

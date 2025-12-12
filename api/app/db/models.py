@@ -205,7 +205,7 @@ class User(Base):
         nullable=False,
         default=UserType.USER,
     )
-    force_password_chage = Column(Boolean, nullable=False, default=False)
+    force_password_change = Column(Boolean, nullable=False, default=False)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)
