@@ -7,12 +7,7 @@ from app.db.models import (
     User,
     UserType,
 )
-from app.db.schemas import (
-    UserCreate,
-    UserResponse,
-    UserUpdate,
-    UserCreatedResponse
-)
+from app.db.schemas import UserCreate, UserResponse, UserUpdate, UserCreatedResponse
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
 from fastapi import APIRouter, Depends, HTTPException, status

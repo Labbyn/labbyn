@@ -21,6 +21,7 @@ from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
 from app.utils.database_service import init_super_user
 
+
 @asynccontextmanager
 async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
     """

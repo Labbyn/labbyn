@@ -30,6 +30,7 @@ def set_user_context(db: Session, user_id: Optional[int] = None):
     if user_id:
         db.info["user_id"] = user_id
 
+
 def handle_commit(db: Session):
     """
     Commits the transaction handling Optimistic Locking.
@@ -45,7 +46,8 @@ def handle_commit(db: Session):
             detail="This entity is being modified by another user. Try again.",
         ) from exc
 
-def init_super_user(db:Session):
+
+def init_super_user(db: Session):
     """
     Initializes a super user if none exists.
     :param db: The current database session.
@@ -54,15 +56,16 @@ def init_super_user(db:Session):
     if not super_user:
         admin_user = models.User(
             login="Service",
-            name ="Service Account",
-            surname = "System",
+            name="Service Account",
+            surname="System",
             password=hash_password("Service"),
             user_type=models.UserType.ADMIN,
-            force_password_change = True,
+            force_password_change=True,
         )
         db.add(admin_user)
         db.commit()
         db.refresh(admin_user)
+
 
 # ==========================
 #  GENERIC TABLES OPERATIONS
@@ -243,7 +246,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     :return: The newly created user instance.
     """
     user_data = user.model_dump()
-    user_data["password"] = (user_data["password"])
+    user_data["password"] = user_data["password"]
 
     db_obj = models.User(**user_data)
     db.add(db_obj)
