@@ -174,8 +174,11 @@ def get_history_logs(limit=200, db: Session = Depends(get_db)):
 
     return results
 
+
 @router.post(
-    "/db/history/{history_id}/rollback", status_code=status.HTTP_200_OK, tags=["History"]
+    "/db/history/{history_id}/rollback",
+    status_code=status.HTTP_200_OK,
+    tags=["History"],
 )
 def rollback_history_entry(history_id: int, db: Session = Depends(get_db)):
     """

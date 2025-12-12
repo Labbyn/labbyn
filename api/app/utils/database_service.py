@@ -14,6 +14,7 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from app.db import schemas
 from app.db import models
+
 # pylint: disable=unused-import
 import app.db.listeners
 

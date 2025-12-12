@@ -3,7 +3,12 @@ import uuid
 import pytest
 from app.db import models, schemas
 from app.utils import database_service as service
-from app.routers.database_history_router import _rollback_create, _rollback_delete, _rollback_update
+from app.routers.database_history_router import (
+    _rollback_create,
+    _rollback_delete,
+    _rollback_update,
+)
+
 
 def unique_str(prefix: str):
     """
@@ -12,6 +17,7 @@ def unique_str(prefix: str):
     :return: Prefix along with random name
     """
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
+
 
 @pytest.mark.smoke
 @pytest.mark.database
@@ -33,7 +39,7 @@ def test_history_full_cycle_with_rollback(db_session):
             surname="Tester",
             login=unique_str("Admin"),
             password="adminpass",
-            user_type=models.UserType.ADMIN
+            user_type=models.UserType.ADMIN,
         ),
     )
     admin_id = admin.id
@@ -49,8 +55,8 @@ def test_history_full_cycle_with_rollback(db_session):
             login=unique_login,
             password="password123",
             email=original_email,
-            user_type=models.UserType.USER
-        )
+            user_type=models.UserType.USER,
+        ),
     )
 
     user_id = user.id
@@ -61,7 +67,7 @@ def test_history_full_cycle_with_rollback(db_session):
         .filter(
             models.History.entity_id == user_id,
             models.History.entity_type == models.EntityType.USER,
-            models.History.action == models.ActionType.CREATE
+            models.History.action == models.ActionType.CREATE,
         )
         .first()
     )
@@ -72,14 +78,14 @@ def test_history_full_cycle_with_rollback(db_session):
         db_session,
         user_id,
         schemas.UserUpdate(email=new_email),
-        current_user_id=admin_id
+        current_user_id=admin_id,
     )
 
     log_update = (
         db_session.query(models.History)
         .filter(
             models.History.entity_id == user_id,
-            models.History.action == models.ActionType.UPDATE
+            models.History.action == models.ActionType.UPDATE,
         )
         .order_by(models.History.timestamp.desc())
         .first()
@@ -88,12 +94,7 @@ def test_history_full_cycle_with_rollback(db_session):
     assert "email" in log_update.extra_data
     assert log_update.extra_data["email"]["new"] == new_email
 
-    service.delete_entity(
-        db_session,
-        models.User,
-        user_id,
-        user_id=admin_id
-    )
+    service.delete_entity(db_session, models.User, user_id, user_id=admin_id)
 
     deleted_user = service.get_entity_by_id(db_session, models.User, user_id)
     assert deleted_user is None
@@ -102,7 +103,7 @@ def test_history_full_cycle_with_rollback(db_session):
         db_session.query(models.History)
         .filter(
             models.History.entity_id == user_id,
-            models.History.action == models.ActionType.DELETE
+            models.History.action == models.ActionType.DELETE,
         )
         .first()
     )
@@ -114,14 +115,20 @@ def test_history_full_cycle_with_rollback(db_session):
 
     restored_user = service.get_entity_by_id(db_session, models.User, user_id)
     assert restored_user is not None, "Rollback DELETE didn't restore the user"
-    assert restored_user.id == user_id, f"Wrong ID after restoring expected: {user_id}, get: {restored_user.id}"
-    assert restored_user.email == new_email , f"Wrong email after restoring expected: {new_email}, get: {restored_user.email}"
+    assert (
+        restored_user.id == user_id
+    ), f"Wrong ID after restoring expected: {user_id}, get: {restored_user.id}"
+    assert (
+        restored_user.email == new_email
+    ), f"Wrong email after restoring expected: {new_email}, get: {restored_user.email}"
 
     msg = _rollback_update(models.User, log_update, db_session)
     db_session.commit()
     db_session.refresh(restored_user)
 
-    assert restored_user.email == original_email, "Rollback UPDATE didn't revert email to original"
+    assert (
+        restored_user.email == original_email
+    ), "Rollback UPDATE didn't revert email to original"
 
     msg = _rollback_create(models.User, log_create, db_session)
     db_session.commit()

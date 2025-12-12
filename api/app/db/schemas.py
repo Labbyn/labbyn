@@ -329,9 +329,9 @@ class UserCreate(UserBase):
     Schema for creating a new User.
     REQUIRES a password field.
     """
+
     user_type: UserType = Field(
-        default=UserType.USER,
-        description="Role of the user (USER, ADMIN, etc.)"
+        default=UserType.USER, description="Role of the user (USER, ADMIN, etc.)"
     )
 
     password: str = Field(
