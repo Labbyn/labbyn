@@ -1,0 +1,24 @@
+---
+- name: Scan Platform
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    - name: Collect platform info
+      setup:
+        filter:
+          - 'ansible_distribution'
+          - 'ansible_distribution_version'
+          - 'ansible_kernel'
+          - 'ansible_processor*'
+          - 'ansible_memory_mb'
+          - 'ansible_mounts'
+      register: platform_facts_filtered
+    - name: Put platform info into template
+      template:
+        src: ./templates/platform_info.j2
+        dest: /tmp/{{ inventory_hostname }}-platform-info.json
+
+    - name: Save the collected facts on the control node
+      copy:
+        src: /tmp/{{ inventory_hostname }}-platform-info.json
+        dest: "./platform_reports/{{ inventory_hostname }}-platform-info.json"
