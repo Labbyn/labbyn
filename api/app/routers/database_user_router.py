@@ -13,22 +13,13 @@ from app.db.schemas import (
     UserUpdate,
 )
 from app.utils.redis_service import acquire_lock
+from app.utils.security import hash_password
 from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(password: str) -> str:
-    """
-    Hash password in bcrypt
-    :param password: Plain password
-    :return: Hashed password
-    """
-    return pwd_context.hash(password)
-
 
 router = APIRouter()
 
