@@ -569,7 +569,7 @@ class HistoryBase(BaseModel):
     can_rollback: bool = Field(
         True, description="Flag indicating if this action can be undone"
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    extra_data: Optional[Dict[str, Any]] = Field(
         None, description="Additional metadata in JSON format"
     )
 
@@ -586,3 +586,33 @@ class HistoryResponse(HistoryBase):
     id: int
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
     model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#       EXTRA MODELS
+# ==========================
+
+
+class UserShortResponse(BaseModel):
+    """
+    Short schema for User data (e.g., in lists or logs).
+    Only login is needed for audit logs.
+    """
+
+    login: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HistoryEnhancedResponse(HistoryResponse):
+    """
+    Enhanced history schema with resolved entity names and user details.
+    Inherits fields like timestamp, action, extra_data from HistoryResponse.
+    """
+
+    entity_name: Optional[str] = Field(
+        None, description="Readable name of the entity (resolved from DB or logs)"
+    )
+
+    user: Optional[UserShortResponse] = Field(
+        None, description="User who performed the action"
+    )
