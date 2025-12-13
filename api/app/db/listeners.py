@@ -1,6 +1,7 @@
 """Database listeners for History logging."""
 
 import json
+from enum import Enum
 from typing import Any, Optional
 from datetime import datetime, date
 from sqlalchemy import event, inspect
@@ -17,6 +18,8 @@ def json_serializer(obj: Any):
     """
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
+    if isinstance(obj, Enum):
+        return obj.value
     return str(obj)
 
 
