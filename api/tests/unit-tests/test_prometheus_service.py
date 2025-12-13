@@ -67,5 +67,5 @@ def test_add_prometheus_target():
     ):
         entry = add_prometheus_target("host1:9100", {"env": "dev"})
 
-    assert entry["target"] == ["host1:9100"]
+    assert entry["targets"] == ["host1:9100"]
     assert entry["labels"]["env"] == {"env": "dev"} or entry["labels"]["env"] == "dev"
