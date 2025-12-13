@@ -1,0 +1,25 @@
+{
+"sample-hostname": {
+    "distribution": {
+        "name": "Ubuntu",
+        "version": "24.04",
+        "kernel" : "1.2.3-generic"
+    },
+    "cpu": {
+        "name": "AMD Ryzen 123",
+        "cores": "8",
+        "count": "1"
+    },
+    "ram_memory": {
+        "real_gb": "16",
+        "swap_gb": "2"
+    },
+    "drives": [
+        {
+            "mount": "/",
+            "device": "/dev/sda1",
+            "size_gb": "1000"
+        }  
+    ]
+}
+}

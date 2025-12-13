@@ -14,16 +14,16 @@
         "real_gb": "{{ (ansible_memory_mb.real.total / 1024) | round(2) }}",
         "swap_gb": "{{ (ansible_memory_mb.swap.total / 1024) | round(2) }}"
     },
+    {% set filtered_drives = ansible_mounts | rejectattr('device', 'match', '/dev/loop.*') | list -%}
     "drives": [
-        {% for drive in ansible_mounts -%}
-        {% if drive.device is not search('/dev/loop*') -%}
-        {
+    {% for drive in filtered_drives %}
+    {
             "mount": "{{drive.mount}}",
             "device": "{{drive.device}}",
             "size_gb": "{{ (drive.size_total / 1024 / 1024 / 1024) | round(2) }}"
-        },
-        {% endif -%}
-        {% endfor %}
+        }{% if not loop.last %},{% endif %}
+    
+    {% endfor %}
 ]
 }
 }

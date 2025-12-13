@@ -4,8 +4,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-User=nobody
-ExecStart=/home/node_exporter
+User=ansible
+ExecStart=/usr/local/bin/node_exporter
 
 [Install]
 WantedBy=default.target

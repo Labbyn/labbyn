@@ -1,0 +1,6 @@
+---
+all:
+  children:
+    test:
+      hosts:
+        test-server:
