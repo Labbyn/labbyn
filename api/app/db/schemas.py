@@ -6,6 +6,9 @@ from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.db.models import UserType
+
+
 # ==========================
 #          ENUMS
 # ==========================
@@ -17,6 +20,7 @@ class UserTypeEnum(str, Enum):
     """
 
     ADMIN = "admin"
+    GROUP_ADMIN = "group_admin"
     USER = "user"
 
 
@@ -316,6 +320,9 @@ class UserBase(BaseModel):
     surname: str = Field(..., max_length=80, description="User's last name")
     login: str = Field(..., max_length=30, description="Unique login username")
     email: Optional[EmailStr] = Field(None, description="User's email address")
+    user_type: UserTypeEnum = Field(
+        ..., max_length=50, description="User's role in the system"
+    )
     team_id: Optional[int] = Field(
         None, description="ID of the team the user belongs to"
     )
@@ -327,11 +334,11 @@ class UserCreate(UserBase):
     REQUIRES a password field.
     """
 
-    password: str = Field(
-        ...,
+    password: Optional[str] = Field(
+        None,
         min_length=6,
         max_length=255,
-        description="Raw password (must be hashed before saving to DB)",
+        description="Optional manual password; if not provided, a random one will be generated",
     )
 
 
@@ -363,6 +370,17 @@ class UserResponse(UserBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreatedResponse(UserResponse):
+    """
+    Schema for reading User data upon creation.
+    INCLUDES the generated password.
+    """
+
+    generated_password: Optional[str] = Field(
+        None, description="Generated password if one was created"
+    )
 
 
 # ==========================
@@ -569,7 +587,7 @@ class HistoryBase(BaseModel):
     can_rollback: bool = Field(
         True, description="Flag indicating if this action can be undone"
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    extra_data: Optional[Dict[str, Any]] = Field(
         None, description="Additional metadata in JSON format"
     )
 
@@ -586,3 +604,33 @@ class HistoryResponse(HistoryBase):
     id: int
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
     model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#       EXTRA MODELS
+# ==========================
+
+
+class UserShortResponse(BaseModel):
+    """
+    Short schema for User data (e.g., in lists or logs).
+    Only login is needed for audit logs.
+    """
+
+    login: str
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HistoryEnhancedResponse(HistoryResponse):
+    """
+    Enhanced history schema with resolved entity names and user details.
+    Inherits fields like timestamp, action, extra_data from HistoryResponse.
+    """
+
+    entity_name: Optional[str] = Field(
+        None, description="Readable name of the entity (resolved from DB or logs)"
+    )
+
+    user: Optional[UserShortResponse] = Field(
+        None, description="User who performed the action"
+    )

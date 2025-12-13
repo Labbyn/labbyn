@@ -1,0 +1,350 @@
+{
+	"info": {
+		"_postman_id": "labbyn-history-feature-collection",
+		"name": "Labbyn History & Rollback Tests (Short ID)",
+		"description": "Fully automated test suite for history logging and rollback. Uses a short random suffix (generated via script) instead of full GUID to respect DB column limits (login max 30 chars).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Data Generation (Preparation)",
+			"item": [
+				{
+					"name": "Step 1: Create User (Random Short ID)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"var randomSuffix = Math.random().toString(36).substring(2, 10);",
+									"pm.collectionVariables.set(\"unique_id\", randomSuffix);",
+									"console.log(\"Generated unique_id suffix: \" + randomSuffix);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set(\"current_user_id\", jsonData.id);",
+									"console.log(\"Created user with ID: \" + jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Test\",\n    \"surname\": \"Automated\",\n    \"login\": \"user_{{unique_id}}\",\n    \"password\": \"pass123\",\n    \"email\": \"user_{{unique_id}}@test.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/db/users/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"users",
+								""
+							]
+						},
+						"description": "Creates a user with a generated short suffix in login/email to avoid conflicts and length limits."
+					}
+				},
+				{
+					"name": "Step 2: Update User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"changed_{{unique_id}}@test.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/db/users/{{current_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"users",
+								"{{current_user_id}}"
+							]
+						},
+						"description": "Updates the user created in Step 1 using the captured ID."
+					}
+				},
+				{
+					"name": "Step 3: Delete User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/db/users/{{current_user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"users",
+								"{{current_user_id}}"
+							]
+						},
+						"description": "Deletes the user created in Step 1."
+					}
+				}
+			]
+		},
+		{
+			"name": "2. History Analysis",
+			"item": [
+				{
+					"name": "Get & Find Log IDs",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"var targetId = pm.collectionVariables.get(\"current_user_id\");",
+									"",
+									"// Filter history logs to find entries related to our specific user ID",
+									"// We look for 3 actions: DELETE, UPDATE, CREATE",
+									"",
+									"var logDelete = jsonData.find(log => log.entity_id == targetId && log.action == \"delete\");",
+									"var logUpdate = jsonData.find(log => log.entity_id == targetId && log.action == \"update\");",
+									"var logCreate = jsonData.find(log => log.entity_id == targetId && log.action == \"create\");",
+									"",
+									"if (logDelete) {",
+									"    pm.collectionVariables.set(\"hist_id_delete\", logDelete.id);",
+									"    console.log(\"Found DELETE Log ID: \" + logDelete.id);",
+									"} else {",
+									"    console.log(\"DELETE log not found for ID \" + targetId);",
+									"}",
+									"",
+									"if (logUpdate) {",
+									"    pm.collectionVariables.set(\"hist_id_update\", logUpdate.id);",
+									"    console.log(\"Found UPDATE Log ID: \" + logUpdate.id);",
+									"} else {",
+									"    console.log(\"UPDATE log not found for ID \" + targetId);",
+									"}",
+									"",
+									"if (logCreate) {",
+									"    pm.collectionVariables.set(\"hist_id_create\", logCreate.id);",
+									"    console.log(\"Found CREATE Log ID: \" + logCreate.id);",
+									"} else {",
+									"    console.log(\"CREATE log not found for ID \" + targetId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/db/history/?limit=50",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"history",
+								""
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							]
+						},
+						"description": "Fetches recent history and automatically extracts the Log IDs for the specific user we just manipulated."
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Automatic Rollback",
+			"item": [
+				{
+					"name": "Rollback DELETE (Restore)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/db/history/{{hist_id_delete}}/rollback",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"history",
+								"{{hist_id_delete}}",
+								"rollback"
+							]
+						},
+						"description": "Undoes the DELETE action. The user should reappear in the database."
+					}
+				},
+				{
+					"name": "Rollback UPDATE (Undo Change)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/db/history/{{hist_id_update}}/rollback",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"history",
+								"{{hist_id_update}}",
+								"rollback"
+							]
+						},
+						"description": "Undoes the UPDATE action. The email should revert to the original random value."
+					}
+				},
+				{
+					"name": "Rollback CREATE (Delete)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/db/history/{{hist_id_create}}/rollback",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"db",
+								"history",
+								"{{hist_id_create}}",
+								"rollback"
+							]
+						},
+						"description": "Undoes the CREATE action. The user should be deleted from the database."
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "current_user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "unique_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hist_id_create",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hist_id_update",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "hist_id_delete",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

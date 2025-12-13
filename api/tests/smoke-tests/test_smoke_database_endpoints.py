@@ -40,8 +40,8 @@ def test_create_user_flow(test_client):
         "name": "API",
         "surname": "Tester",
         "login": login,
-        "password": "strongpassword123",
         "email": f"{login}@example.com",
+        "user_type": "user",
     }
 
     response = test_client.post("/db/users/", json=payload)
@@ -97,7 +97,7 @@ def test_resource_chain_creation(test_client):
             "name": "Admin",
             "surname": "Team",
             "login": unique_str("adm"),
-            "password": "securepassword123",
+            "user_type": "admin",
         },
     )
     assert user_res.status_code == 201, f"User creation failed: {user_res.text}"
