@@ -32,7 +32,7 @@
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
-						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Jan\",\n    \"surname\": \"Kowalski\",\n    \"login\": \"admin\",\n    \"password\": \"supersecret\",\n    \"email\": \"admin@labbyn.com\"\n}" },
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"Jan\",\n    \"surname\": \"Kowalski\",\n    \"login\": \"admin\",\n    \"email\": \"admin@labbyn.com\"\n   \"user_type\": \"admin\"\n " },
 						"url": "{{base_url}}/db/users/"
 					}
 				},
