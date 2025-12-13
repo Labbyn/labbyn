@@ -20,6 +20,7 @@ class UserTypeEnum(str, Enum):
     """
 
     ADMIN = "admin"
+    GROUP_ADMIN = "group_admin"
     USER = "user"
 
 
@@ -319,6 +320,9 @@ class UserBase(BaseModel):
     surname: str = Field(..., max_length=80, description="User's last name")
     login: str = Field(..., max_length=30, description="Unique login username")
     email: Optional[EmailStr] = Field(None, description="User's email address")
+    user_type: UserTypeEnum = Field(
+        ..., max_length=50, description="User's role in the system"
+    )
     team_id: Optional[int] = Field(
         None, description="ID of the team the user belongs to"
     )
@@ -330,15 +334,11 @@ class UserCreate(UserBase):
     REQUIRES a password field.
     """
 
-    user_type: UserType = Field(
-        default=UserType.USER, description="Role of the user (USER, ADMIN, etc.)"
-    )
-
-    password: str = Field(
-        ...,
+    password: Optional[str] = Field(
+        None,
         min_length=6,
         max_length=255,
-        description="Raw password (must be hashed before saving to DB)",
+        description="Optional manual password; if not provided, a random one will be generated",
     )
 
 
@@ -370,6 +370,17 @@ class UserResponse(UserBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreatedResponse(UserResponse):
+    """
+    Schema for reading User data upon creation.
+    INCLUDES the generated password.
+    """
+
+    generated_password: Optional[str] = Field(
+        None, description="Generated password if one was created"
+    )
 
 
 # ==========================
