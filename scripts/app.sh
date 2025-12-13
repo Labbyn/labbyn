@@ -34,7 +34,7 @@ stop_app() {
 
 delete_app() {
     echo "WARNING: This will permanently delete the app containers and images."
-    read -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
+    read -r -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
 
     if [[ "$CONFIRM" != "yes" ]]; then
         echo "Deletion aborted."
