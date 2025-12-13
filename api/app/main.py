@@ -16,7 +16,7 @@ from app.routers import (
     database_room_router,
     database_team_router,
     database_user_router,
-    ansible_router
+    ansible_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 

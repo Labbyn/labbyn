@@ -3,7 +3,7 @@ FROM python:3.12-alpine
 WORKDIR /code
 
 RUN apk add --no-cache postgresql17-client=17.7-r0 \
-    openssh-client
+    openssh-client=10.2_p1-r0
 
 COPY ./requirements.txt /code/requirements.txt
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt

@@ -18,9 +18,7 @@ class HostRequest(BaseModel):
     extra_vars: dict
 
 
-def run_playbook(
-    playbook_path: str, host: str, extra_vars: dict
-):
+def run_playbook(playbook_path: str, host: str, extra_vars: dict):
     """
     Helper function to run an Ansible playbook on a single host dynamically.
     """
