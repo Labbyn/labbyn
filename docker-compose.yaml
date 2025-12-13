@@ -20,6 +20,7 @@ services:
       - db
     volumes:
       - ./monitoring/prometheus-config:/app/monitoring/prometheus-config
+      - ~/.ssh:/root/.ssh
   db:
     image: postgres:17
     env_file:

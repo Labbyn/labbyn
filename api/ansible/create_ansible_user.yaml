@@ -1,7 +1,6 @@
 ---
--
-  name: Create Ansible User
-  hosts: test
+- name: Create Ansible User
+  hosts: all
   become: yes
 
   vars:

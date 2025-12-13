@@ -1,6 +1,6 @@
 ---
 - name: Scan Platform
-  hosts: test
+  hosts: all
   gather_facts: no
   tasks:
     - name: Collect platform info

@@ -1,6 +1,6 @@
 ---
--
-  hosts: test
+- name: Deploy Node Exporter
+  hosts: all
   vars:
     node_exporter_version: 1.10.2
   become: yes
@@ -34,3 +34,4 @@
     - name: Reload systemd 
       systemd:
         daemon_reload: yes
+        
