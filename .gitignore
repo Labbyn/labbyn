@@ -9,3 +9,5 @@ db/db_data/
 
 # Pycharm project files
 .idea/
+
+api/ansible/platform_reports/*.json

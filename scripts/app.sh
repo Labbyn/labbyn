@@ -1,7 +1,6 @@
 #!/bin/bash
 set -e
 
-# Config
 COMPOSE_FILE="../docker-compose.yaml"
 
 # Enable development mode if --dev flag is provided
@@ -11,7 +10,7 @@ if [[ "$2" == "--dev" ]]; then
     echo "Running in development mode using $COMPOSE_FILE"
 fi
 
-# Function: Deploy app
+
 deploy_app() {
     echo "Deploying Docker Compose app..."
     docker-compose -f $COMPOSE_FILE up -d
@@ -19,7 +18,6 @@ deploy_app() {
     docker-compose -f $COMPOSE_FILE ps
 }
 
-# Function: Update app
 update_app() {
     echo "Updating app..."
     docker-compose -f $COMPOSE_FILE down
@@ -28,17 +26,15 @@ update_app() {
     docker-compose -f $COMPOSE_FILE ps
 }
 
-# Function: Stop app
 stop_app() {
     echo "Stopping app..."
     docker-compose -f $COMPOSE_FILE down
     echo "App stopped"
 }
 
-# Function: Delete app
 delete_app() {
     echo "WARNING: This will permanently delete the app containers and images."
-    read -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
+    read -r -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
 
     if [[ "$CONFIRM" != "yes" ]]; then
         echo "Deletion aborted."
