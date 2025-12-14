@@ -40,6 +40,10 @@ PLAYBOOK_MAP = {
 async def run_playbook(playbook_path: str, host: str, extra_vars: dict):
     """
     Helper function to run an Ansible playbook on a single host dynamically.
+    :param playbook_path: Path to the Ansible playbook
+    :param host: Host IP or hostname
+    :param extra_vars: Extra variables for the playbook
+    :return: Result of the playbook execution
     """
 
     def _run():
