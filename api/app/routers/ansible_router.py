@@ -19,13 +19,16 @@ class HostRequest(BaseModel):
     host: str
     extra_vars: dict
 
+
 class AnsiblePlaybook(str, Enum):
     """
     Pydantic model for Ansible playbook execution request.
     """
+
     create_user = "create_user"
     scan_platform = "scan_platform"
     deploy_agent = "deploy_agent"
+
 
 PLAYBOOK_MAP = {
     AnsiblePlaybook.create_user: "/code/ansible/create_ansible_user.yaml",
@@ -33,22 +36,24 @@ PLAYBOOK_MAP = {
     AnsiblePlaybook.deploy_agent: "/code/ansible/deploy_agent.yaml",
 }
 
+
 async def run_playbook(playbook_path: str, host: str, extra_vars: dict):
     """
     Helper function to run an Ansible playbook on a single host dynamically.
     """
+
     def _run():
         return ansible_runner.run(
             playbook=playbook_path,
             inventory=host,
             extravars=extra_vars,
         )
+
     try:
         r = await asyncio.to_thread(_run)
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to execute Ansible runner: {e}"
+            status_code=500, detail=f"Failed to execute Ansible runner: {e}"
         )
     if r.rc != 0 or r.status != "successful":
         raise HTTPException(
@@ -70,7 +75,7 @@ async def create_ansible_user(request: HostRequest):
     :return: Success or error message
     """
     return await run_playbook(
-        PLAYBOOK_MAP[AnsiblePlaybook.create_user] , request.host, request.extra_vars
+        PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
     )
 
 
@@ -82,7 +87,7 @@ async def scan_platform(request: HostRequest):
     :return: Success or error message
     """
     return await run_playbook(
-        PLAYBOOK_MAP[AnsiblePlaybook.scan_platform] , request.host, request.extra_vars
+        PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars
     )
 
 
@@ -94,7 +99,7 @@ async def deploy_agent(request: HostRequest):
     :return: Success or error message
     """
     return await run_playbook(
-        PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent] , request.host, request.extra_vars
+        PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
     )
 
 
@@ -118,8 +123,7 @@ async def setup_agent(request: HostRequest):
 
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Unexpected error during setup_agent workflow: {e}"
+            status_code=500, detail=f"Unexpected error during setup_agent workflow: {e}"
         )
 
     return {
