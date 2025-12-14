@@ -49,7 +49,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "One",
                 "login": unique_str("r1"),
-                "password": "password123",
+                "user_type": "user",
             },
         )
         user1_id = u1.json()["id"]
@@ -60,7 +60,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "Two",
                 "login": unique_str("r2"),
-                "password": "password123",
+                "user_type": "user",
             },
         )
         user2_id = u2.json()["id"]

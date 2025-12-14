@@ -62,7 +62,8 @@ def test_machine_full_lifecycle(db_session):
             name="Test",
             surname="User",
             login=generate_unique_name("User"),
-            password="securepassword",
+            password="SecretPassword123!",
+            user_type="user",
         ),
     )
     author_id = author.id
