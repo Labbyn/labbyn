@@ -50,6 +50,15 @@ async def run_playbook(playbook_path: str, host: str, extra_vars: dict):
             status_code=500,
             detail=f"Failed to execute Ansible runner: {e}"
         )
+    if r.rc != 0 or r.status != "successful":
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Ansible playbook execution failed",
+                "status": r.status,
+                "rc": r.rc,
+            },
+        )
     return {"status": r.status, "rc": r.rc}
 
 
