@@ -3,8 +3,10 @@ Router for Ansible playbooks: creating Ansible user, gathering platform informat
 """
 
 import ansible_runner
-from fastapi import APIRouter
+import asyncio
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from enum import Enum
 
 router = APIRouter()
 
@@ -17,12 +19,37 @@ class HostRequest(BaseModel):
     host: str
     extra_vars: dict
 
+class AnsiblePlaybook(str, Enum):
+    """
+    Pydantic model for Ansible playbook execution request.
+    """
+    create_user = "create_user"
+    scan_platform = "scan_platform"
+    deploy_agent = "deploy_agent"
 
-def run_playbook(playbook_path: str, host: str, extra_vars: dict):
+PLAYBOOK_MAP = {
+    AnsiblePlaybook.create_user: "/code/ansible/create_ansible_user.yaml",
+    AnsiblePlaybook.scan_platform: "/code/ansible/scan_platform.yaml",
+    AnsiblePlaybook.deploy_agent: "/code/ansible/deploy_agent.yaml",
+}
+
+async def run_playbook(playbook_path: str, host: str, extra_vars: dict):
     """
     Helper function to run an Ansible playbook on a single host dynamically.
     """
-    r = ansible_runner.run(playbook=playbook_path, inventory=host, extravars=extra_vars)
+    def _run():
+        return ansible_runner.run(
+            playbook=playbook_path,
+            inventory=host,
+            extravars=extra_vars,
+        )
+    try:
+        r = await asyncio.to_thread(_run)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to execute Ansible runner: {e}"
+        )
     return {"status": r.status, "rc": r.rc}
 
 
@@ -33,8 +60,8 @@ async def create_ansible_user(request: HostRequest):
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
-    return run_playbook(
-        "/code/ansible/create_ansible_user.yaml", request.host, request.extra_vars
+    return await run_playbook(
+        PLAYBOOK_MAP[AnsiblePlaybook.create_user] , request.host, request.extra_vars
     )
 
 
@@ -45,8 +72,8 @@ async def scan_platform(request: HostRequest):
     :param reqest: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
-    return run_playbook(
-        "/code/ansible/scan_platform.yaml", request.host, request.extra_vars
+    return await run_playbook(
+        PLAYBOOK_MAP[AnsiblePlaybook.scan_platform] , request.host, request.extra_vars
     )
 
 
@@ -57,8 +84,8 @@ async def deploy_agent(request: HostRequest):
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
-    return run_playbook(
-        "/code/ansible/deploy_agent.yaml", request.host, request.extra_vars
+    return await run_playbook(
+        PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent] , request.host, request.extra_vars
     )
 
 
@@ -69,18 +96,22 @@ async def setup_agent(request: HostRequest):
     :param request: HostRequest containing the host IP or hostname
     :return: Combined results of both steps
     """
+    try:
+        user_result = await run_playbook(
+            PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
+        )
 
-    user_result = run_playbook(
-        "/code/ansible/create_ansible_user.yaml", request.host, request.extra_vars
-    )
-    if user_result["status"] == "error":
-        return {"status": "failed_at_user_creation", "details": user_result}
+        deploy_result = await run_playbook(
+            PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
+        )
+    except HTTPException:
+        raise
 
-    deploy_result = run_playbook(
-        "/code/ansible/deploy_agent.yaml", request.host, request.extra_vars
-    )
-    if deploy_result["status"] == "error":
-        return {"status": "failed_at_deployment", "details": deploy_result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error during setup_agent workflow: {e}"
+        )
 
     return {
         "user_creation": user_result,
