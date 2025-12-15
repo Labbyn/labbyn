@@ -21,6 +21,7 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY *.ini /code/
 COPY start-api.sh /code/
 COPY ./alembic /code/alembic
+COPY ./tests /code/tests
 COPY ./app /code/app
 COPY ./ansible /code/ansible
 RUN mkdir -p /code/alembic/versions && \

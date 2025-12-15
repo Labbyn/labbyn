@@ -2,7 +2,6 @@
 set -e
 
 COMPOSE_FILE="../docker-compose.yaml"
-COMPOSE_FILE_DEV_FLAG=""
 COMPOSE_FILE_DEV=""
 
 SERVICE=""
@@ -14,7 +13,6 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --dev)
             COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
-            COMPOSE_FILE_DEV_FLAG="-f"
             echo "Running in development mode with $COMPOSE_FILE_DEV"
             shift
             ;;
