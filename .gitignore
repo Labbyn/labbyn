@@ -5,6 +5,6 @@
 .idea/
 
 api/ansible/platform_reports/*.json
-
+api/alembic/versions/*.py
 .vagrant
 *.log

@@ -24,7 +24,6 @@ COPY ./alembic /code/alembic
 COPY ./tests /code/tests
 COPY ./app /code/app
 COPY ./ansible /code/ansible
-RUN mkdir -p /code/alembic/versions && \
-    chmod +x /code/start-api.sh
+RUN chmod +x /code/start-api.sh
 
 CMD ["/code/start-api.sh"]
