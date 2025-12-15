@@ -2,32 +2,34 @@
 set -e
 
 COMPOSE_FILE="../docker-compose.yaml"
+COMPOSE_FILE_DEV_FLAG=""
 COMPOSE_FILE_DEV=""
 
 # Enable development mode if --dev flag is provided
 if [[ "$2" == "--dev" ]]; then
-    COMPOSE_FILE_DEV="-f ../docker-compose.dev.yaml"
+    COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
+    COMPOSE_FILE_DEV_FLAG="-f"
     echo "Running in development mode with $COMPOSE_FILE_DEV"
 fi
 
 
 deploy_app() {
     echo "Deploying Docker Compose app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" up -d
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" up -d
     echo "App deployed!"
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" ps
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" ps
 }
 
 update_app() {
     echo "Updating app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" up -d --build
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" up -d --build
     echo "App updated!"
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" ps
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" ps
 }
 
 stop_app() {
     echo "Stopping app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" stop
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" stop
     echo "App stopped"
 }
 
@@ -41,7 +43,7 @@ delete_app() {
     fi
 
     echo "Deleting app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV" down -v --rmi all
+    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" down -v --rmi all
     echo "App deleted"
 }
 
