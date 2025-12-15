@@ -13,7 +13,7 @@ export ALEMBIC_CONFIG=/code/alembic.ini
 echo "Resetting Alembic history to 'base'..."
 alembic stamp base
 
-echo "Attempting to create a temporary Alembic revision based on current models..."
+echo "Attempting to create a new Alembic revision based on current models..."
 alembic revision --autogenerate -m "Auto init on start"
 
 echo "Applying database migrations..."
