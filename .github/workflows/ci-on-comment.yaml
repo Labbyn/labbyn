@@ -57,6 +57,8 @@ jobs:
   run-api-test-set:
     if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test api'))
     uses: ./.github/workflows/ci-api.yaml
+    with:
+      environment: 'dev'
   run-frontend-test-set:
     if: github.event.issue.pull_request && (contains(github.event.comment.body, '/test all') || contains(github.event.comment.body, '/test frontend'))
     uses: ./.github/workflows/ci-frontend.yaml

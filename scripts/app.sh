@@ -5,12 +5,26 @@ COMPOSE_FILE="../docker-compose.yaml"
 COMPOSE_FILE_DEV_FLAG=""
 COMPOSE_FILE_DEV=""
 
-# Enable development mode if --dev flag is provided
-if [[ "$2" == "--dev" ]]; then
-    COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
-    COMPOSE_FILE_DEV_FLAG="-f"
-    echo "Running in development mode with $COMPOSE_FILE_DEV"
-fi
+SERVICE=""
+
+COMMAND="$1"
+shift
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dev)
+            COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
+            COMPOSE_FILE_DEV_FLAG="-f"
+            echo "Running in development mode with $COMPOSE_FILE_DEV"
+            shift
+            ;;
+        *)
+            SERVICE="$1"
+            shift
+            ;;
+    esac
+done
+
 
 run_compose() {
     if [[ -n "$COMPOSE_FILE_DEV" ]]; then
@@ -22,23 +36,43 @@ run_compose() {
 
 
 deploy_app() {
-    echo "Deploying Docker Compose app..."
-    run_compose up -d
-    echo "App deployed!"
-    run_compose ps
+    if [[ -n "$SERVICE" ]]; then
+        echo "Deploying specific service: $SERVICE"
+        run_compose up -d "$SERVICE"
+        echo "Specific service deployed!"
+        run_compose ps "$SERVICE"
+    else
+        echo "Deploying Docker Compose app..."
+        run_compose up -d
+        echo "App deployed!"
+        run_compose ps
+    fi
 }
 
 update_app() {
-    echo "Updating app..."
-    run_compose up -d --build
-    echo "App updated!"
-    run_compose ps
+    if [[ -n "$SERVICE" ]]; then
+        echo "Updating specific service: $SERVICE"
+        run_compose up -d --build "$SERVICE"
+        echo "Specific service updated!"
+        run_compose ps "$SERVICE"
+    else
+        echo "Updating app..."
+        run_compose up -d --build
+        echo "App updated!"
+        run_compose ps
+    fi
 }
 
 stop_app() {
-    echo "Stopping app..."
-    run_compose stop
-    echo "App stopped"
+    if [[ -n "$SERVICE" ]]; then
+        echo "Stopping specific service: $SERVICE"
+        run_compose stop "$SERVICE"
+        echo "Specific service stopped!"
+    else
+        echo "Stopping app..."
+        run_compose stop
+        echo "App stopped"
+    fi
 }
 
 delete_app() {
@@ -55,7 +89,7 @@ delete_app() {
     echo "App deleted"
 }
 
-case "$1" in
+case "$COMMAND" in
     deploy)
         deploy_app
         ;;
@@ -69,7 +103,7 @@ case "$1" in
         delete_app
         ;;
     *)
-        echo "Usage: $0 {deploy|update|stop|delete}"
+        echo "Usage: $0 {deploy|update|stop|delete} [--dev] [service]"
         exit 1
         ;;
 esac

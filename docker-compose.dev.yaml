@@ -11,6 +11,9 @@ services:
       - ./frontend:/app
       - /app/node_modules
   api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
     ports:
       - "8000:8000"
     volumes:
