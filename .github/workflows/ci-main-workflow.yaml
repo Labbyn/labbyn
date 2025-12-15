@@ -6,6 +6,8 @@ on:
 jobs:
     ci-api:
         uses: ./.github/workflows/ci-api.yaml
+        with:
+          environment: 'main'
     ci-frontend:
         uses: ./.github/workflows/ci-frontend.yaml
     ci-prometheus:

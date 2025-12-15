@@ -1,20 +1,33 @@
 name: CI API Action
 on:
   workflow_call:
+    inputs:
+      environment:
+        type: string
+        description: 'The environment to run tests against'
+        required: true
+        default: 'dev'
 jobs:
     test-api:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
               uses: actions/checkout@v5
+            - name: Set Docker Compose files
+              run: |
+                COMPOSE_FILES="-f docker-compose.yaml"
+                if [ "${{ inputs.environment }}" == "dev" ]; then
+                  COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.dev.yaml"
+                fi
+                echo "COMPOSE_FILES=$COMPOSE_FILES" >> $GITHUB_ENV
             - name: Start application
-              run: docker compose up api monitoring redis -d
+              run: docker compose $COMPOSE_FILES up api monitoring redis -d
             - name: Wait for services
               run: sleep 15
             - name: Prepare API container for tests
-              run: docker compose exec api apk add --no-cache redis curl
+              run: docker compose $COMPOSE_FILES exec api apk add --no-cache redis curl
             - name: Run tests
               run: |
-                docker compose exec api pytest tests
+                docker compose $COMPOSE_FILES exec api pytest tests
             - name: Stop application
-              run: docker compose down
+              run: docker $COMPOSE_FILES compose down

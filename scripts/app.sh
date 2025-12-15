@@ -12,24 +12,32 @@ if [[ "$2" == "--dev" ]]; then
     echo "Running in development mode with $COMPOSE_FILE_DEV"
 fi
 
+run_compose() {
+    if [[ -n "$COMPOSE_FILE_DEV" ]]; then
+        docker-compose -f "$COMPOSE_FILE" -f "$COMPOSE_FILE_DEV" "$@"
+    else
+        docker-compose -f "$COMPOSE_FILE" "$@"
+    fi
+}
+
 
 deploy_app() {
     echo "Deploying Docker Compose app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" up -d
+    run_compose up -d
     echo "App deployed!"
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" ps
+    run_compose ps
 }
 
 update_app() {
     echo "Updating app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" up -d --build
+    run_compose up -d --build
     echo "App updated!"
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" ps
+    run_compose ps
 }
 
 stop_app() {
     echo "Stopping app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" stop
+    run_compose stop
     echo "App stopped"
 }
 
@@ -43,7 +51,7 @@ delete_app() {
     fi
 
     echo "Deleting app..."
-    docker-compose -f $COMPOSE_FILE "$COMPOSE_FILE_DEV_FLAG" "$COMPOSE_FILE_DEV" down -v --rmi all
+    run_compose down -v --rmi all
     echo "App deleted"
 }
 

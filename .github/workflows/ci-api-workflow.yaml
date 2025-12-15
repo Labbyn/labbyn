@@ -12,3 +12,5 @@ concurrency:
 jobs:
     test-api:
           uses: ./.github/workflows/ci-api.yaml
+          with:
+            environment: 'dev'
