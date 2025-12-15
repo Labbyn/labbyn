@@ -10,6 +10,9 @@ echo "Database is ready!"
 export PYTHONPATH=/code
 export ALEMBIC_CONFIG=/code/alembic.ini
 
+echo "Ensuring Alembic versions directory exists..."
+mkdir -p /code/alembic/versions
+
 echo "Resetting Alembic history to 'base'..."
 alembic stamp base
 
