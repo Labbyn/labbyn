@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import type { Document } from '@/types/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
-import type { Document } from '@/types/types'
 
 interface DocumentEditorProps {
   document: Document

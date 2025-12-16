@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LabsRouteImport } from './routes/labs'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
@@ -23,6 +24,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const LabsRoute = LabsRouteImport.update({
   id: '/labs',
   path: '/labs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,6 +49,7 @@ const InventoryIndexRoute = InventoryIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
   '/inventory': typeof InventoryIndexRoute
@@ -50,6 +57,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
   '/inventory': typeof InventoryIndexRoute
@@ -58,6 +66,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
   '/inventory/': typeof InventoryIndexRoute
@@ -65,14 +74,22 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/labs' | '/settings' | '/inventory' | '/users'
+  fullPaths: '/' | '/docs' | '/labs' | '/settings' | '/inventory' | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/labs' | '/settings' | '/inventory' | '/users'
-  id: '__root__' | '/' | '/labs' | '/settings' | '/inventory/' | '/users/'
+  to: '/' | '/docs' | '/labs' | '/settings' | '/inventory' | '/users'
+  id:
+    | '__root__'
+    | '/'
+    | '/docs'
+    | '/labs'
+    | '/settings'
+    | '/inventory/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DocsRoute: typeof DocsRoute
   LabsRoute: typeof LabsRoute
   SettingsRoute: typeof SettingsRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
@@ -93,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/labs'
       fullPath: '/labs'
       preLoaderRoute: typeof LabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -121,6 +145,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DocsRoute: DocsRoute,
   LabsRoute: LabsRoute,
   SettingsRoute: SettingsRoute,
   InventoryIndexRoute: InventoryIndexRoute,

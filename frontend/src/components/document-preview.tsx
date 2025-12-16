@@ -1,8 +1,8 @@
 import { Edit2 } from 'lucide-react'
 import { MarkdownRenderer } from './markdown-renderer'
+import type { Document } from '@/types/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import type { Document } from '@/types/types'
 
 interface DocumentPreviewProps {
   document: Document
