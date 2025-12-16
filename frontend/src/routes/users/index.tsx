@@ -165,8 +165,8 @@ function RouteComponent() {
   return (
     <div className="h-screen w-full z-1 overflow-hidden">
       <ScrollArea className="h-full">
-        <div className='p-6'>
-          <DataTable columns={columns} data={users} /> 
+        <div className="p-6">
+          <DataTable columns={columns} data={users} />
         </div>
       </ScrollArea>
     </div>
