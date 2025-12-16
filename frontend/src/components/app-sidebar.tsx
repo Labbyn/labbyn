@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar'
+import { Link, useLocation } from '@tanstack/react-router'
 import { SearchForm } from './search-form'
 import {
   Sidebar,
@@ -33,42 +34,42 @@ const items = [
   },
   {
     title: 'Labs',
-    url: 'labs',
+    url: '/labs',
     icon: Server,
   },
   {
     title: 'Inventory',
-    url: 'inventory',
+    url: '/inventory',
     icon: Cable,
   },
   {
     title: 'History',
-    url: 'history',
+    url: '/history',
     icon: GitBranch,
   },
   {
     title: 'Users',
-    url: 'users',
+    url: '/users',
     icon: Users,
   },
   {
     title: 'Settings',
-    url: 'settings',
+    url: '/settings',
     icon: Settings,
   },
   {
     title: 'Admin',
-    url: 'admin',
+    url: '/admin',
     icon: UserStar,
   },
   {
     title: 'Documentation',
-    url: 'docs',
+    url: '/docs',
     icon: BookText,
   },
   {
     title: 'Import & Export',
-    url: 'import-export',
+    url: '/import-export',
     icon: FolderInput,
   },
 ]
@@ -80,6 +81,10 @@ const user = {
 }
 
 export function AppSidebar() {
+  const pathname = useLocation({
+    select: (location) => location.pathname,
+  })
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -106,11 +111,15 @@ export function AppSidebar() {
               </SidebarMenuItem>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.url}
+                    tooltip={item.title}
+                  >
+                    <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
