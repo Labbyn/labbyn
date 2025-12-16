@@ -398,6 +398,7 @@ class MachinesBase(BaseModel):
         ..., description="ID of the room where machine is located"
     )
     mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
+    ip_address: Optional[str] = Field(None, max_length=15, description="IP Address")
     pdu_port: Optional[int] = Field(
         None, description="Power Distribution Unit port number"
     )
