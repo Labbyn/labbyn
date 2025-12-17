@@ -527,7 +527,7 @@ function RouteComponent() {
               <ScrollArea className="w-full">
                 <div className="flex w-max space-x-3 px-6 pb-4">
                   {lab.racks.map((rack) => (
-                    <Link to={'/map'}>
+                    <Link to={'/'}>
                       <div className="group relative flex flex-col justify-between w-40 h-[100px] p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
@@ -559,7 +559,7 @@ function RouteComponent() {
 
             <CardFooter>
               <Button asChild className="w-full">
-                <Link to="/map">
+                <Link to="/">
                   <Map className="mr-2 h-4 w-4" />
                   View on Map
                   <ArrowRight className="ml-auto h-4 w-4" />
