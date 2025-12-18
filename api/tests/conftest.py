@@ -3,6 +3,7 @@
 import asyncio
 import uuid
 from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
 import redis.asyncio as redis_asyncio
@@ -86,3 +87,20 @@ def refresh_redis_client(monkeypatch):
     except Exception:
         # If we catch any exception that means redis loop is already deactived.
         pass
+
+
+@pytest.fixture(scope="function")
+def mock_ansible_success(monkeypatch):
+    """
+    Mock ansible runner to always return success.
+    :param monkeypatch: Monkey patching fixture
+    :return: Ansible runner mock
+    """
+    mock_run = MagicMock()
+    mock_result = MagicMock()
+    mock_result.rc = 0
+    mock_result.status = "successful"
+    mock_run.return_value = mock_result
+
+    monkeypatch.setattr("app.utils.ansible_service.ansible_runner.run", mock_run)
+    return mock_run
