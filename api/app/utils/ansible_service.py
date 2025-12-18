@@ -85,11 +85,8 @@ async def run_playbook_task(playbook_path: str, host: str | list, extra_vars: di
     else:
         hosts_list = host
 
-    host_dict = {
-        "all": {
-            "hosts": {h: {} for h in hosts_list}
-        }
-    }
+    host_dict = {"all": {"hosts": {h: {} for h in hosts_list}}}
+
     def _run():
         return ansible_runner.run(
             playbook=playbook_path,

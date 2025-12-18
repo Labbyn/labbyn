@@ -13,6 +13,7 @@ from app.utils import redis_service
 from app.utils.redis_service import REDIS_URL
 from app.utils.redis_service import redis_manager
 
+
 @pytest.fixture(scope="module")
 def test_client():
     """
@@ -58,9 +59,9 @@ def unique_category_name():
 @pytest.fixture(scope="function")
 async def refresh_redis_client(monkeypatch):
     """
-   Refresh redis client connection (for CI tests)
-    :param monkeypatch: Monkey patching fixture
-    :return: New redis client connection
+    Refresh redis client connection (for CI tests)
+     :param monkeypatch: Monkey patching fixture
+     :return: New redis client connection
     """
     redis_manager.client = None
     redis_manager._loop = None

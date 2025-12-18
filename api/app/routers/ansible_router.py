@@ -136,7 +136,9 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
     if not request.hosts:
         raise HTTPException(status_code=400, detail="Host list cannot be empty.")
 
-    await run_playbook_task(PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.hosts, request.extra_vars)
+    await run_playbook_task(
+        PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.hosts, request.extra_vars
+    )
 
     results = []
 
@@ -223,7 +225,9 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
 
 
 @router.post("/ansible/machine/{machine_id}/refresh")
-async def refresh_machine_hardware(request: HostRequest, machine_id: int, db: Session = Depends(get_db)):
+async def refresh_machine_hardware(
+    request: HostRequest, machine_id: int, db: Session = Depends(get_db)
+):
     """
     Refreshes hardware data for a specific machine from the database.
     Useful when components are replaced (e.g. CPU, RAM).
@@ -234,14 +238,15 @@ async def refresh_machine_hardware(request: HostRequest, machine_id: int, db: Se
     if not request.host:
         raise HTTPException(status_code=400, detail="Host cannot be empty.")
 
-
     machine = db.query(Machines).filter(Machines.id == machine_id).first()
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
 
     host_address = machine.name
 
-    await run_playbook_task(PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars)
+    await run_playbook_task(
+        PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars
+    )
 
     try:
         specs = parse_platform_report(host_address)
