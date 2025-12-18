@@ -1,9 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import type { Document } from '@/types/types'
 import { DocumentList } from '@/components/document-list'
 import { DocumentEditor } from '@/components/document-editor'
 import { DocumentPreview } from '@/components/document-preview'
-import type { Document } from '@/types/types'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export const Route = createFileRoute('/docs')({
   component: RouteComponent,
@@ -524,41 +525,50 @@ s26990, s26985, s27081, s27549`,
   }
 
   return (
-    <div className=" w-full p-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-2">
-          <DocumentList
-            documents={documents}
-            selectedDoc={selectedDoc}
-            onSelectDocument={handleSelectDocument}
-            onCreateDocument={handleCreateDocument}
-            onDeleteDocument={handleDelete}
-          />
+    <div className="h-auto xl:h-screen w-full xl:overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-5 h-full">
+        <div className="xl:col-span-2 h-full xl:overflow-y-hidden">
+          <ScrollArea className="h-full" dir="rtl">
+            <div className="p-4 pb-0 xl:p-6 xl:pb-6 xl:pr-3" dir="ltr">
+              <DocumentList
+                documents={documents}
+                selectedDoc={selectedDoc}
+                onSelectDocument={handleSelectDocument}
+                onCreateDocument={handleCreateDocument}
+                onDeleteDocument={handleDelete}
+              />
+            </div>
+          </ScrollArea>
         </div>
-
-        <div className="lg:col-span-3">
+        <div className="xl:col-span-3 w-full h-full xl:overflow-hidden">
           {selectedDoc ? (
-            isEditing ? (
-              <DocumentEditor
-                document={selectedDoc}
-                onSave={handleSave}
-                onCancel={() => setIsEditing(false)}
-              />
-            ) : (
-              <DocumentPreview
-                document={selectedDoc}
-                onEdit={() => setIsEditing(true)}
-              />
-            )
+            <ScrollArea className="h-full">
+              <div className="p-4 xl:p-6 xl:pl-3">
+                {isEditing ? (
+                  <DocumentEditor
+                    document={selectedDoc}
+                    onSave={handleSave}
+                    onCancel={() => setIsEditing(false)}
+                  />
+                ) : (
+                  <DocumentPreview
+                    document={selectedDoc}
+                    onEdit={() => setIsEditing(true)}
+                  />
+                )}
+              </div>
+            </ScrollArea>
           ) : (
-            <div className="flex h-8/12 items-center justify-center rounded-xl border-2 border-dashed border-border p-12 text-center">
-              <div>
-                <p className="text-foreground/60 font-medium">
-                  No document selected
-                </p>
-                <p className="text-sm text-foreground/40 mt-1">
-                  Select a document from the list to view or edit
-                </p>
+            <div className="h-full p-4 xl:p-6 xl:pl-3">
+              <div className="h-full flex flex-col p-6 items-center justify-center text-center rounded-xl border-2 border-dashed border-border">
+                <div>
+                  <p className="text-foreground/60 font-medium">
+                    No document selected
+                  </p>
+                  <p className="text-sm text-foreground/40 mt-1">
+                    Select a document from the list to view or edit
+                  </p>
+                </div>
               </div>
             </div>
           )}
