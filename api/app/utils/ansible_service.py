@@ -7,7 +7,7 @@ import asyncio
 import ansible_runner
 from fastapi import HTTPException
 
-REPORTS_DIR = "./platform_reports"
+REPORTS_DIR = "/code/ansible/platform_reports"
 PLAYBOOK_DIR = "/code/ansible"
 
 
@@ -23,6 +23,7 @@ def parse_platform_report(hostname: str) -> dict:
     if not os.path.exists(report_path):
         raise FileNotFoundError(f"Report not found for {hostname} at {report_path}")
 
+    asyncio.sleep(1)
     try:
         with open(report_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -70,40 +71,45 @@ def parse_platform_report(hostname: str) -> dict:
         raise ValueError(f"Error parsing report for {hostname}: {str(e)}") from e
 
 
-async def run_playbook_task(
-    playbook_name: str, inventory: list | str, extra_vars: dict
-):
+async def run_playbook_task(playbook_path: str, host: str | list, extra_vars: dict):
     """
-    Wrapper for ansible_runner running in a separate thread to avoid blocking API.
-    :param playbook_name: Name of the Ansible playbook to run
-    :param inventory: List of hosts or inventory string
-    :param extra_vars: Extra variables to pass to Ansible
-    :return: ansible_runner.Runner object
+    Helper function to run an Ansible playbook on a single host dynamically.
+    :param playbook_path: Path to the Ansible playbook
+    :param host: Host IP or hostname
+    :param extra_vars: Extra variables for the playbook
+    :return: Result of the playbook execution
     """
 
-    if isinstance(inventory, list):
-        hosts_str = ",".join(inventory)
-        if len(inventory) > 0 and not hosts_str.endswith(","):
-            hosts_str += ","
+    if isinstance(host, str):
+        hosts_list = [h.strip() for h in host.split(",") if h.strip()]
     else:
-        hosts_str = inventory
-        if not hosts_str.endswith(","):
-            hosts_str += ","
+        hosts_list = host
 
+    host_dict = {
+        "all": {
+            "hosts": {h: {} for h in hosts_list}
+        }
+    }
     def _run():
         return ansible_runner.run(
-            private_data_dir="/code",
-            playbook=os.path.join(PLAYBOOK_DIR, playbook_name),
-            inventory=hosts_str,
+            playbook=playbook_path,
+            inventory=host_dict,
             extravars=extra_vars,
-            quiet=True,
         )
 
-    runner = await asyncio.to_thread(_run)
-
-    if runner.rc != 0:
+    try:
+        r = await asyncio.to_thread(_run)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to execute Ansible runner: {e}"
+        )
+    if r.rc != 0 or r.status != "successful":
         raise HTTPException(
             status_code=500,
-            detail=f"Ansible execution failed. RC: {runner.rc}",
+            detail={
+                "message": "Ansible playbook execution failed",
+                "status": r.status,
+                "rc": r.rc,
+            },
         )
-    return runner
+    return {"status": r.status, "rc": r.rc}

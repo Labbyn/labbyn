@@ -26,7 +26,7 @@ class HostRequest(BaseModel):
     Pydantic model for a host input.
     """
 
-    host: str
+    host: str | list
     extra_vars: dict
 
 
@@ -120,7 +120,7 @@ async def setup_agent(request: HostRequest):
 
 
 @router.post("/ansible/discovery")
-async def discover_hosts(req: DiscoveryRequest, db: Session = Depends(get_db)):
+async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db)):
     """
     Discovery:
     1. Scans provided hosts (IP/Hostname) using Ansible (playbook 'scan_platform').
@@ -133,10 +133,10 @@ async def discover_hosts(req: DiscoveryRequest, db: Session = Depends(get_db)):
     :param db: Active database session
     :return: Summary of created/updated hosts
     """
-    if not req.hosts:
+    if not request.hosts:
         raise HTTPException(status_code=400, detail="Host list cannot be empty.")
 
-    await run_playbook_task(AnsiblePlaybook.scan_platform, req.hosts, req.extra_vars)
+    await run_playbook_task(PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.hosts, request.extra_vars)
 
     results = []
 
@@ -148,7 +148,7 @@ async def discover_hosts(req: DiscoveryRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(default_room)
 
-    for host in req.hosts:
+    for host in request.hosts:
         try:
             specs = parse_platform_report(host)
 
@@ -187,8 +187,9 @@ async def discover_hosts(req: DiscoveryRequest, db: Session = Depends(get_db)):
 
                     if has_changes:
                         meta.last_update = datetime.now()
-
-                results.append({"host": host, "status": "updated"})
+                        results.append({"host": host, "status": "updated"})
+                    else:
+                        results.append({"host": host, "status": "no_changes"})
 
             else:
                 new_meta = Metadata(
@@ -222,7 +223,7 @@ async def discover_hosts(req: DiscoveryRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/ansible/machine/{machine_id}/refresh")
-async def refresh_machine_hardware(machine_id: int, db: Session = Depends(get_db)):
+async def refresh_machine_hardware(request: HostRequest, machine_id: int, db: Session = Depends(get_db)):
     """
     Refreshes hardware data for a specific machine from the database.
     Useful when components are replaced (e.g. CPU, RAM).
@@ -230,13 +231,17 @@ async def refresh_machine_hardware(machine_id: int, db: Session = Depends(get_db
     :param db: Active database session
     :return: Success message with updated specs or error details
     """
+    if not request.host:
+        raise HTTPException(status_code=400, detail="Host cannot be empty.")
+
+
     machine = db.query(Machines).filter(Machines.id == machine_id).first()
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
 
     host_address = machine.name
 
-    await run_playbook_task(AnsiblePlaybook.scan_platform, [host_address], {})
+    await run_playbook_task(PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars)
 
     try:
         specs = parse_platform_report(host_address)
