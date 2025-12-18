@@ -2,9 +2,9 @@
 
 import pytest
 
-pytestmark = [pytest.mark.smoke, pytest.mark.asyncio, pytest.mark.prometheus]
+pytestmark = [pytest.mark.smoke, pytest.mark.prometheus]
 
-
+@pytest.mark.asyncio
 async def test_prometheus_instances_endpoint(test_client):
     """Smoke test for /prometheus/instances endpoint."""
     response = test_client.get("/prometheus/instances")
@@ -13,7 +13,7 @@ async def test_prometheus_instances_endpoint(test_client):
     assert "instances" in data
     assert isinstance(data["instances"], list)
 
-
+@pytest.mark.asyncio
 async def test_prometheus_hosts_endpoint(test_client):
     """Smoke test for /prometheus/hosts endpoint."""
     response = test_client.get("/prometheus/hosts")
@@ -22,7 +22,7 @@ async def test_prometheus_hosts_endpoint(test_client):
     assert "hosts" in data
     assert isinstance(data["hosts"], list)
 
-
+@pytest.mark.asyncio
 async def test_prometheus_metrics_endpoint(test_client):
     """Smoke test for /prometheus/metrics endpoint."""
     response = test_client.get("/prometheus/metrics")
@@ -33,8 +33,8 @@ async def test_prometheus_metrics_endpoint(test_client):
         assert key in data
         assert isinstance(data[key], list)
 
-
-def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
+@pytest.mark.asyncio
+async def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """Smoke test for /ws/metrics WebSocket endpoint."""
     with test_client.websocket_connect("/ws/metrics") as websocket:
         message = websocket.receive_json()
