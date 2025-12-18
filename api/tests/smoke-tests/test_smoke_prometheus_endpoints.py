@@ -2,9 +2,9 @@
 
 import pytest
 
+pytestmark = [pytest.mark.smoke, pytest.mark.asyncio, pytest.mark.prometheus]
 
-@pytest.mark.smoke
-@pytest.mark.asyncio
+
 async def test_prometheus_instances_endpoint(test_client):
     """Smoke test for /prometheus/instances endpoint."""
     response = test_client.get("/prometheus/instances")
@@ -14,8 +14,6 @@ async def test_prometheus_instances_endpoint(test_client):
     assert isinstance(data["instances"], list)
 
 
-@pytest.mark.smoke
-@pytest.mark.asyncio
 async def test_prometheus_hosts_endpoint(test_client):
     """Smoke test for /prometheus/hosts endpoint."""
     response = test_client.get("/prometheus/hosts")
@@ -25,8 +23,6 @@ async def test_prometheus_hosts_endpoint(test_client):
     assert isinstance(data["hosts"], list)
 
 
-@pytest.mark.smoke
-@pytest.mark.asyncio
 async def test_prometheus_metrics_endpoint(test_client):
     """Smoke test for /prometheus/metrics endpoint."""
     response = test_client.get("/prometheus/metrics")
@@ -38,7 +34,6 @@ async def test_prometheus_metrics_endpoint(test_client):
         assert isinstance(data[key], list)
 
 
-@pytest.mark.smoke
 def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """Smoke test for /ws/metrics WebSocket endpoint."""
     with test_client.websocket_connect("/ws/metrics") as websocket:
@@ -49,7 +44,6 @@ def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
             assert isinstance(message[key], (dict, list))
 
 
-@pytest.mark.smoke
 def test_prometheus_target_endpoint_connection(test_client):
     """Smoke test for /prometheus/target endpoint."""
     payload = {"instance": "dummy:9100", "labels": {"env": "ci-test"}}

@@ -10,6 +10,9 @@ from app.routers.database_history_router import (
 )
 
 
+pytestmark = [pytest.mark.smoke, pytest.mark.database]
+
+
 def unique_str(prefix: str):
     """
     Generate random name to avoid unique fields.
@@ -19,8 +22,6 @@ def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
 def test_history_full_cycle_with_rollback(db_session):
     """
     Test full history cycle with rollbacks:

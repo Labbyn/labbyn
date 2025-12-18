@@ -5,6 +5,9 @@ from app.utils.ansible_service import REPORTS_DIR
 from app.db.models import Machines, Rooms, Metadata
 
 
+pytestmark = [pytest.mark.smoke, pytest.mark.api, pytest.mark.ansible]
+
+
 def helper_write_report(
     hostname: str, os_name: str = "Ubuntu 22.04", cpu_name: str = "Intel Test"
 ):
@@ -21,7 +24,7 @@ def helper_write_report(
                 "name": os_name.split()[0],
                 "version": os_name.split()[1] if len(os_name.split()) > 1 else "",
             },
-            "cpu": {"name": cpu_name, "cores":4},
+            "cpu": {"name": cpu_name, "cores": 4},
             "ram_memory": {"real_gb": 4},
             "drives": [{"mount": "/", "size_gb": 20}],
             "network": {"mac": "00:00:00:00:00:00", "ip": hostname},
@@ -33,7 +36,7 @@ def helper_write_report(
         json.dump(report_data, f)
 
 
-@pytest.mark.smoke
+@pytest.mark.database
 def test_discovery_flow(test_client, db_session, mock_ansible_success):
     """
     Verifies that the API creates machine records in the database based on mock reports
@@ -57,6 +60,7 @@ def test_discovery_flow(test_client, db_session, mock_ansible_success):
     assert "Intel Test" in machine.cpu
 
 
+@pytest.mark.database
 def test_refresh_flow(test_client, db_session, mock_ansible_success):
     """
     Tests the hardware refresh logic by:
@@ -83,7 +87,9 @@ def test_refresh_flow(test_client, db_session, mock_ansible_success):
         "host": test_ip,
         "extra_vars": {"ansible_user": "test", "ansible_password": "v"},
     }
-    response = test_client.post(f"/ansible/machine/{machine_id}/refresh", json=refresh_payload)
+    response = test_client.post(
+        f"/ansible/machine/{machine_id}/refresh", json=refresh_payload
+    )
 
     assert response.status_code == 200
     assert response.json()["message"] == "Machine hardware info updated successfully"
@@ -94,7 +100,6 @@ def test_refresh_flow(test_client, db_session, mock_ansible_success):
     assert updated_machine.cpu == f"{cpu_name} (4 cores)"
 
 
-@pytest.mark.smoke
 def test_create_user_simple(test_client, mock_ansible_success):
     """Tests the basic execution of the user creation endpoint."""
     payload = {

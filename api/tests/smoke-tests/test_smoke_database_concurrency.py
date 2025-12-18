@@ -14,10 +14,14 @@ def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
-@pytest.mark.asyncio
+pytestmark = [
+    pytest.mark.smoke,
+    pytest.mark.database,
+    pytest.mark.api,
+    pytest.mark.asyncio,
+]
+
+
 async def test_rental_race_condition():
     """
     Test Race Condition:

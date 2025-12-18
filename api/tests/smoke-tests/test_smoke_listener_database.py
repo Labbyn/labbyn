@@ -6,9 +6,9 @@ from app.db import models
 # pylint: disable=unused-import
 import app.db.listeners
 
+pytestmark = [pytest.mark.smoke, pytest.mark.database]
 
-@pytest.mark.smoke
-@pytest.mark.database
+
 def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
     """
     Test full lifecycle of Entity for listener
