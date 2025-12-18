@@ -1,14 +1,17 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ExternalLink, Smile } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { ArrowRight, Map, Server, User } from 'lucide-react'
 import {
   Card,
   CardAction,
+  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/labs')({
   component: RouteComponent,
@@ -38,14 +41,6 @@ const data = [
             ip_address: '10.1.1.1',
             mac_address: '0A:1B:2C:3D:4E:02',
             status: 'Online',
-          },
-          {
-            device_id: 'QC-QPU-001',
-            hostname: 'qpu-analyzer-01',
-            device_type: 'QPU Interface',
-            ip_address: '10.1.1.12',
-            mac_address: '0A:1B:2C:3D:4E:03',
-            status: 'Calibrating',
           },
         ],
       },
@@ -94,23 +89,67 @@ const data = [
         ],
       },
       {
-        id: 'QC-RACK-04',
-        tags: ['Control', 'Redundant', 'Infrastructure'],
+        id: 'QC-RACK-01',
+        tags: ['Control', 'QPU-Interface', 'Core'],
         devices: [
           {
-            device_id: 'QC-SVR-004',
-            hostname: 'qctrl-secondary-01',
+            device_id: 'QC-SVR-001',
+            hostname: 'qctrl-master-01',
             device_type: 'Control Server',
-            ip_address: '10.1.1.11',
-            mac_address: '0A:1B:2C:3D:4E:04',
-            status: 'Standby',
+            ip_address: '10.1.1.10',
+            mac_address: '0A:1B:2C:3D:4E:01',
+            status: 'Online',
           },
           {
-            device_id: 'QC-NET-002',
-            hostname: 'qclab-switch-02',
+            device_id: 'QC-NET-001',
+            hostname: 'qclab-switch-01',
             device_type: 'Network Switch',
-            ip_address: '10.1.1.2',
-            mac_address: '0A:1B:2C:3D:4E:05',
+            ip_address: '10.1.1.1',
+            mac_address: '0A:1B:2C:3D:4E:02',
+            status: 'Online',
+          },
+        ],
+      },
+      {
+        id: 'QC-RACK-02',
+        tags: ['Storage', 'Simulation', 'Compute'],
+        devices: [
+          {
+            device_id: 'QC-STO-001',
+            hostname: 'qdata-storage-01',
+            device_type: 'Storage Array',
+            ip_address: '10.1.1.50',
+            mac_address: '0A:1B:2C:3D:4E:10',
+            status: 'Online',
+          },
+          {
+            device_id: 'QC-SVR-002',
+            hostname: 'qsim-node-01',
+            device_type: 'Simulation Server',
+            ip_address: '10.1.1.20',
+            mac_address: '0A:1B:2C:3D:4E:11',
+            status: 'Online',
+          },
+        ],
+      },
+      {
+        id: 'QC-RACK-03',
+        tags: ['Simulation', 'Compute', 'PDU-A'],
+        devices: [
+          {
+            device_id: 'QC-SVR-003',
+            hostname: 'qsim-node-02',
+            device_type: 'Simulation Server',
+            ip_address: '10.1.1.21',
+            mac_address: '0A:1B:2C:3D:4E:12',
+            status: 'Online',
+          },
+          {
+            device_id: 'QC-PDU-001',
+            hostname: 'qpdu-01a',
+            device_type: 'PDU',
+            ip_address: '10.1.1.250',
+            mac_address: '0A:1B:2C:3D:4E:F0',
             status: 'Online',
           },
         ],
@@ -207,28 +246,6 @@ const data = [
             device_type: 'Network Switch',
             ip_address: '10.2.1.2',
             mac_address: 'F1:E2:D3:C4:B5:A8',
-            status: 'Online',
-          },
-        ],
-      },
-      {
-        id: 'AI-RACK-B2',
-        tags: ['Storage-Bulk', 'Management'],
-        devices: [
-          {
-            device_id: 'AI-STO-002',
-            hostname: 'ai-bulk-storage-01',
-            device_type: 'Storage Array',
-            ip_address: '10.2.1.101',
-            mac_address: 'F1:E2:D3:C4:B5:A9',
-            status: 'Online',
-          },
-          {
-            device_id: 'AI-SVR-001',
-            hostname: 'ai-mgmt-server-01',
-            device_type: 'Management Server',
-            ip_address: '10.2.1.200',
-            mac_address: 'F1:E2:D3:C4:B5:AA',
             status: 'Online',
           },
         ],
@@ -407,28 +424,6 @@ const data = [
           },
         ],
       },
-      {
-        id: 'ROBO-RACK-02',
-        tags: ['Vision-Processing', 'GPU', 'Storage'],
-        devices: [
-          {
-            device_id: 'RBO-SVR-002',
-            hostname: 'robo-vision-proc-01',
-            device_type: 'GPU Server',
-            ip_address: '10.4.1.11',
-            mac_address: 'R0:B0:01:01:01:03',
-            status: 'Processing',
-          },
-          {
-            device_id: 'RBO-STO-001',
-            hostname: 'robo-storage-01',
-            device_type: 'Storage Array',
-            ip_address: '10.4.1.50',
-            mac_address: 'R0:B0:01:01:01:04',
-            status: 'Online',
-          },
-        ],
-      },
     ],
   },
   {
@@ -501,37 +496,79 @@ const data = [
 
 function RouteComponent() {
   return (
-    <div className="grid grid-cols-2 gap-4 p-4">
-      {data.map((lab) => (
-        <Card>
-          <CardHeader>
-            <CardDescription>Lab name</CardDescription>
-            <CardTitle>{lab.name}</CardTitle>
-            <CardAction className="flex gap-1">
-              {lab.tags.map((tag) => (
-                <Badge>
-                  {tag}
-                  <Smile />
-                </Badge>
-              ))}
-            </CardAction>
-          </CardHeader>
-          <CardFooter className="gap-4">
-            {lab.racks.map((rack) => (
-              <Card className="w-full">
-                <CardHeader>
-                  <CardDescription>Rack name</CardDescription>
-                  <CardTitle>{rack.id}</CardTitle>
-                  <CardAction>
-                    <ExternalLink className="size-4" />
-                  </CardAction>
-                </CardHeader>
-                <CardFooter>Devices: {rack.devices.length}</CardFooter>
-              </Card>
-            ))}
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
+    <ScrollArea className="h-screen w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6 w-full">
+        {data.map((lab) => (
+          <Card>
+            <CardHeader>
+              <div className="space-y-1">
+                <CardTitle className="text-xl font-bold text-primary">
+                  {lab.name}
+                </CardTitle>
+                <CardDescription className="flex items-center gap-1.5 text-xs">
+                  <User className="h-3 w-3" />
+                  Owner:{' '}
+                  <span className="font-medium text-foreground">
+                    "Adrian K."
+                  </span>
+                </CardDescription>
+              </div>
+              <CardAction>
+                <Badge variant="outline">{lab.racks.length} Racks</Badge>
+              </CardAction>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="flex items-center gap-2 mb-3 pb-3 px-6">
+                <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                  Recently Visited Racks
+                </span>
+                <div className="h-px bg-border flex-1" />
+              </div>
+              <ScrollArea className="w-full">
+                <div className="flex w-max space-x-3 px-6 pb-4">
+                  {lab.racks.map((rack) => (
+                    <Link to={'/'}>
+                      <div className="group relative flex flex-col justify-between w-40 h-[100px] p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
+                            <Server className="h-4 w-4" />
+                            <span className="text-xs font-medium">Rack ID</span>
+                          </div>
+                          <p className="font-mono text-sm font-bold truncate">
+                            {rack.id}
+                          </p>
+                        </div>
+                        <div className="flex justify-between items-center mt-auto pt-2">
+                          <span className="text-[10px] text-muted-foreground">
+                            {rack.devices.length} Devices
+                          </span>
+                          <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {lab.racks.length === 0 && (
+                    <div className="flex items-center justify-center w-[160px] h-[100px] text-xs text-muted-foreground border border-dashed rounded-lg">
+                      No racks found
+                    </div>
+                  )}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </CardContent>
+
+            <CardFooter>
+              <Button asChild className="w-full">
+                <Link to="/">
+                  <Map className="mr-2 h-4 w-4" />
+                  View on Map
+                  <ArrowRight className="ml-auto h-4 w-4" />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </ScrollArea>
   )
 }
