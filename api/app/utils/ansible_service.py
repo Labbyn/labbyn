@@ -58,6 +58,7 @@ def parse_platform_report(hostname: str) -> dict:
         has_node_exporter = meta.get("has_agent", False)
 
         return {
+            "name": root_key,
             "os": os_str,
             "cpu": cpu_str,
             "ram": ram_str,

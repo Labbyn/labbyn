@@ -251,7 +251,15 @@ async def refresh_machine_hardware(
 
     try:
         specs = parse_platform_report(host_address)
-        machine_fields = ["os", "cpu", "ram", "disk", "mac_address", "ip_address", "hostname"]
+        machine_fields = [
+            "os",
+            "cpu",
+            "ram",
+            "disk",
+            "mac_address",
+            "ip_address",
+            "name",
+        ]
         has_changes = False
 
         for field in machine_fields:
