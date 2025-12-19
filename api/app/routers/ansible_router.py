@@ -212,6 +212,7 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
                     ram=specs["ram"],
                     disk=specs["disk"],
                     mac_address=specs["mac_address"],
+                    ip_address=specs["ip_address"],
                     added_on=datetime.now(),
                 )
                 db.add(new_machine)
@@ -250,23 +251,14 @@ async def refresh_machine_hardware(
 
     try:
         specs = parse_platform_report(host_address)
-
+        machine_fields = ["os", "cpu", "ram", "disk", "mac_address", "ip_address", "hostname"]
         has_changes = False
-        if machine.os != specs["os"]:
-            machine.os = specs["os"]
-            has_changes = True
-        if machine.cpu != specs["cpu"]:
-            machine.cpu = specs["cpu"]
-            has_changes = True
-        if machine.ram != specs["ram"]:
-            machine.ram = specs["ram"]
-            has_changes = True
-        if machine.disk != specs["disk"]:
-            machine.disk = specs["disk"]
-            has_changes = True
-        if machine.mac_address != specs["mac_address"]:
-            machine.mac_address = specs["mac_address"]
-            has_changes = True
+
+        for field in machine_fields:
+            new_value = specs.get(field)
+            if getattr(machine, field) != new_value:
+                setattr(machine, field, new_value)
+                has_changes = True
 
         meta = db.query(Metadata).filter(Metadata.id == machine.metadata_id).first()
         if meta:
