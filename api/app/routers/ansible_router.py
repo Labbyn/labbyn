@@ -298,28 +298,29 @@ async def refresh_machine_hardware(
             status_code=500, detail=f"Failed to process scan report: {str(e)}"
         ) from e
 
+
 @router.post("/ansible/machine/{machine_id}/cleanup")
 async def cleanup_machine(
-        machine_id: int, request: HostRequest, db: Session = Depends(get_db)
+    machine_id: int, request: HostRequest, db: Session = Depends(get_db)
 ):
     """
      Delete ansible agent and node exporter from the machine and update metadata accordingly.
     :param machine_id: ID of the machine to clean up
     :param request: HostRequest containing extra variables for Ansible
     :param db: Active database session
-     """
+    """
     async with acquire_lock(f"machine_lock:{machine_id}"):
         machine = db.query(Machines).filter(Machines.id == machine_id).first()
         if not machine:
-            raise HTTPException(status_code=404, detail="Machine not found in Database.")
+            raise HTTPException(
+                status_code=404, detail="Machine not found in Database."
+            )
 
         host = request.host
 
         try:
             ansible_result = await run_playbook_task(
-                PLAYBOOK_MAP[AnsiblePlaybook.delete_agent],
-                host,
-                request.extra_vars
+                PLAYBOOK_MAP[AnsiblePlaybook.delete_agent], host, request.extra_vars
             )
 
             meta = db.query(Metadata).filter(Metadata.id == machine.metadata_id).first()
@@ -333,11 +334,10 @@ async def cleanup_machine(
 
             return {
                 "message": f"Host {host} was cleaned.",
-                "ansible_status": ansible_result
+                "ansible_status": ansible_result,
             }
 
         except Exception as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"Failed to cleanup machine: {str(e)}"
+                status_code=500, detail=f"Failed to cleanup machine: {str(e)}"
             ) from e

@@ -111,4 +111,3 @@ async def run_playbook_task(playbook_path: str, host: str | list, extra_vars: di
             },
         )
     return {"status": r.status, "rc": r.rc}
-
