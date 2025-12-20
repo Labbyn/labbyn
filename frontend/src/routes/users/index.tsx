@@ -3,6 +3,7 @@ import { ArrowUpDown } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 export const Route = createFileRoute('/users/')({
   component: RouteComponent,
@@ -162,8 +163,12 @@ export const columns: Array<ColumnDef<User>> = [
 
 function RouteComponent() {
   return (
-    <div className="p-4">
-      <DataTable columns={columns} data={users} />
+    <div className="h-screen w-full z-1 overflow-hidden">
+      <ScrollArea className="h-full">
+        <div className="p-6">
+          <DataTable columns={columns} data={users} />
+        </div>
+      </ScrollArea>
     </div>
   )
 }

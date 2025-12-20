@@ -11,9 +11,12 @@ from typing import Optional, Type
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
-
+from app.utils.security import hash_password
 from app.db import schemas
 from app.db import models
+
+# pylint: disable=unused-import
+import app.db.listeners
 
 
 # ==========================
@@ -31,18 +34,6 @@ def set_user_context(db: Session, user_id: Optional[int] = None):
         db.info["user_id"] = user_id
 
 
-def _hash_password(password: str):
-    """
-    Hashes the provided password.
-    Currently a placeholder returning None.
-
-    :param password: The plain text password.
-    :return: Hashed password string
-    """
-    # TODO Hashing passwords
-    return password
-
-
 def handle_commit(db: Session):
     """
     Commits the transaction handling Optimistic Locking.
@@ -57,6 +48,26 @@ def handle_commit(db: Session):
             status_code=status.HTTP_409_CONFLICT,
             detail="This entity is being modified by another user. Try again.",
         ) from exc
+
+
+def init_super_user(db: Session):
+    """
+    Initializes a super user if none exists.
+    :param db: The current database session.
+    """
+    super_user = db.query(models.User).filter(models.User.login == "Service").first()
+    if not super_user:
+        admin_user = models.User(
+            login="Service",
+            name="Service Account",
+            surname="System",
+            password=hash_password("Service"),
+            user_type=models.UserType.ADMIN,
+            force_password_change=True,
+        )
+        db.add(admin_user)
+        db.commit()
+        db.refresh(admin_user)
 
 
 # ==========================
@@ -238,7 +249,7 @@ def create_user(db: Session, user: schemas.UserCreate):
     :return: The newly created user instance.
     """
     user_data = user.model_dump()
-    user_data["password"] = _hash_password(user_data["password"])
+    user_data["password"] = user_data["password"]
 
     db_obj = models.User(**user_data)
     db.add(db_obj)
@@ -271,7 +282,7 @@ def update_user(
     update_data = user_update.model_dump(exclude_unset=True)
 
     if "password" in update_data and update_data["password"]:
-        update_data["password"] = _hash_password(update_data["password"])
+        update_data["password"] = hash_password(update_data["password"])
 
     for key, value in update_data.items():
         setattr(db_obj, key, value)

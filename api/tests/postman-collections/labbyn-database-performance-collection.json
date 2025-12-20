@@ -68,7 +68,7 @@
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
-						"body": { "mode": "raw", "raw": "{\n    \"name\": \"{{$randomFirstName}}\",\n    \"surname\": \"{{$randomLastName}}\",\n    \"login\": \"u_{{uid}}\",\n    \"password\": \"pass123\",\n    \"email\": \"{{uid}}@test.com\"\n}" },
+						"body": { "mode": "raw", "raw": "{\n    \"name\": \"{{$randomFirstName}}\",\n    \"surname\": \"{{$randomLastName}}\",\n    \"login\": \"u_{{uid}}\",\n  \"email\": \"{{uid}}@test.com\",\n  \"user_type\": \"user\"\n}" },
 						"url": "{{base_url}}/db/users/"
 					}
 				},

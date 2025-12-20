@@ -1,5 +1,5 @@
 """Redis service for caching using aioredis."""
-
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -15,23 +15,45 @@ COLLECT_TIMEOUT = int(os.getenv("COLLECT_TIMEOUT"))
 
 # pylint: disable=too-few-public-methods
 class RedisClientManager:
-    """
-    Singleton class to manage Redis Connection
-    """
+    """Singleton class to manage Redis Connection"""
 
     def __init__(self):
         self.client = None
+        self._loop = None
 
     async def get_client(self):
-        """
-        Initialize or return existing redis client
-        :return: Existing redis client
-        """
+        """Get a singleton Redis client instance."""
+        try:
+            current_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return await aioredis.from_url(REDIS_URL, decode_responses=True)
+        if self.client is not None and self._loop is not current_loop:
+            self.client = None
+            self._loop = None
+
         if self.client is None:
             self.client = await aioredis.from_url(
                 REDIS_URL, encoding="utf-8", decode_responses=True
             )
+            self._loop = current_loop
+
         return self.client
+
+    async def close(self):
+        """Close the Redis client connection."""
+        if self.client is not None:
+            try:
+                current_loop = asyncio.get_running_loop()
+                if self._loop is current_loop:
+                    await self.client.aclose()
+            except Exception:
+                pass
+            finally:
+                self.client = None
+                self._loop = None
+
+
+redis_manager = RedisClientManager()
 
 
 redis_manager = RedisClientManager()

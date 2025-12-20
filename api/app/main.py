@@ -16,8 +16,15 @@ from app.routers import (
     database_room_router,
     database_team_router,
     database_user_router,
+    database_history_router,
+    ansible_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
+from app.database import SessionLocal
+from app.utils.database_service import init_super_user
+
+# pylint: disable=unused-import
+import app.db.listeners
 
 
 @asynccontextmanager
@@ -28,6 +35,11 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
     :param app: FastAPI application instance
     :return: None
     """
+    db = SessionLocal()
+    try:
+        init_super_user(db)
+    finally:
+        db.close()
     status_task = asyncio.create_task(status_worker())
     metrics_task = asyncio.create_task(metrics_worker())
     try:
@@ -50,3 +62,5 @@ app.include_router(database_rental_router.router)
 app.include_router(database_room_router.router)
 app.include_router(database_team_router.router)
 app.include_router(database_user_router.router)
+app.include_router(database_history_router.router)
+app.include_router(ansible_router.router)

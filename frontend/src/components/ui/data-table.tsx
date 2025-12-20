@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -5,14 +6,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-
-import React from 'react'
-import { Input } from './input'
 import type {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table'
+
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -25,16 +25,24 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>
   data: Array<TData>
+
+  onRowClick?: (row: TData) => void
+  selectedId?: string
+  actionElement?: React.ReactNode
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends { id: string }, TValue>({
   columns,
   data,
+  onRowClick,
+  selectedId,
+  actionElement,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
+
   const table = useReactTable({
     data,
     columns,
@@ -50,20 +58,23 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div>
-      <div className="flex items-center py-4">
+    <div className="flex h-full flex-col gap-4">
+      <div className="flex flex-col gap-2 flex-none">
+        {actionElement && <div className="w-full">{actionElement}</div>}
+
         <Input
           placeholder="Filter by name..."
           value={table.getColumn('name')?.getFilterValue() as string}
           onChange={(event) =>
             table.getColumn('name')?.setFilterValue(event.target.value)
           }
-          className="max-w-sm"
+          className="w-full"
         />
       </div>
-      <div className="overflow-hidden rounded-md border">
+
+      <div className="relative flex-1 rounded-md border overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-secondary sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
@@ -86,7 +97,12 @@ export function DataTable<TData, TValue>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
+                  data-state={
+                    row.original.id === selectedId ? 'selected' : undefined
+                  }
+                  className="cursor-pointer"
+                  // Handle click interaction
+                  onClick={() => onRowClick && onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

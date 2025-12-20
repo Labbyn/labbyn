@@ -1,0 +1,35 @@
+{
+"{{ inventory_hostname }}": {
+    "distribution": {
+        "name": "{{ ansible_distribution }}",
+        "version": "{{ ansible_distribution_version }}",
+        "kernel" : "{{ ansible_kernel }}"
+    },
+    "cpu": {
+        "name": "{{ ansible_processor[2] | default("N/A") }}",
+        "cores": "{{ ansible_processor_cores }}",
+        "count": "{{ ansible_processor_count }}"
+    },
+    "ram_memory": {
+        "real_gb": "{{ (ansible_memory_mb.real.total / 1024) | round(2) }}",
+        "swap_gb": "{{ (ansible_memory_mb.swap.total / 1024) | round(2) }}"
+    },
+    {% set filtered_drives = ansible_mounts | rejectattr('device', 'match', '/dev/loop.*') | list -%}
+    "drives": [
+    {% for drive in filtered_drives %}{
+            "mount": "{{drive.mount}}",
+            "device": "{{drive.device}}",
+            "size_gb": "{{ (drive.size_total / 1024 / 1024 / 1024) | round(2) }}"
+        }{% if not loop.last %},{% endif %}
+    
+    {% endfor %}
+    ],
+    "network": {
+        "ip": "{{ ansible_default_ipv4.address | default('Unknown') }}",
+        "mac": "{{ ansible_default_ipv4.macaddress | default('Unknown') }}"
+    },
+    "metadata": {
+        "has_agent": {{ 'true' if node_exporter_check is defined and not node_exporter_check.failed else 'false' }}
+    }
+}
+}

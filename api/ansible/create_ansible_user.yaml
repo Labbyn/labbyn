@@ -1,0 +1,43 @@
+---
+- name: Create Ansible User
+  hosts: all
+  become: yes
+
+  vars:
+    ansible_user_name: ansible
+    ansible_user_shell: /bin/bash
+    local_ssh_key_directory: ~/.ssh/
+
+  tasks:
+    - name: Ensure ansible user exists
+      user:
+        name: "{{ ansible_user_name }}"
+        shell: "{{ ansible_user_shell }}"
+        state: present
+
+    - name: Add user to sudo group
+      user:
+        name: ansible
+        groups: sudo
+        append: yes
+    
+    - name: Grant passwordless sudo accesa
+      lineinfile:
+        path: /etc/sudoers
+        line: '{{ ansible_user_name }} ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
+        state: present
+
+    - name: Ensure .ssh directory exists for new ansible user
+      file:
+        path: "/home/{{ ansible_user_name }}/.ssh"
+        state: directory
+        owner: "{{ ansible_user_name }}"
+        group: "{{ ansible_user_name }}"
+        mode: '0700'
+
+    - name: Copy public keys to the remote
+      authorized_key:
+        key: "{{ lookup('file', item) }}"
+        user: "{{ ansible_user_name }}"
+      loop: "{{ query('fileglob', local_ssh_key_directory + '*.pub') }}"

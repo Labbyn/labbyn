@@ -1,11 +1,10 @@
-# node modules
-web/app/node_modules/
-
 # python bytecode caches
 **/__pycache__/
 
-# database data
-db/db_data/
-
 # Pycharm project files
 .idea/
+
+api/ansible/platform_reports/*.json
+api/alembic/versions/*.py
+.vagrant
+*.log

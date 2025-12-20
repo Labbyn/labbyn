@@ -22,10 +22,11 @@ Base = declarative_base()
 # pylint: disable=too-few-public-methods
 
 
-class UserType(PyEnum):
+class UserType(str, PyEnum):
     """User types in the system."""
 
     ADMIN = "admin"
+    GROUP_ADMIN = "group_admin"
     USER = "user"
 
 
@@ -36,7 +37,7 @@ class EntityType(PyEnum):
     INVENTORY = "inventory"
     ROOM = "room"
     USER = "user"
-    CATEGORIES = "category"
+    CATEGORIES = "categories"
 
 
 class ActionType(PyEnum):
@@ -113,6 +114,7 @@ class Machines(Base):
     name = Column(String(100), nullable=False, unique=True)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     mac_address = Column(String(17), nullable=True)
+    ip_address = Column(String(15), nullable=True)
     pdu_port = Column(Integer, nullable=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     os = Column(String(30), nullable=True)
@@ -204,7 +206,7 @@ class User(Base):
         nullable=False,
         default=UserType.USER,
     )
-
+    force_password_change = Column(Boolean, nullable=False, default=False)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)

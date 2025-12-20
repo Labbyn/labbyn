@@ -4,6 +4,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@plugin "@tailwindcss/typography";
+
 body {
   @apply m-0;
   font-family:

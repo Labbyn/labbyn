@@ -8,6 +8,8 @@ import uuid
 import pytest
 from app.main import app
 
+pytestmark = [pytest.mark.smoke, pytest.mark.api, pytest.mark.database]
+
 
 def unique_str(prefix: str):
     """
@@ -18,18 +20,12 @@ def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
 def test_health_check(test_client):
     """Basic check to ensure the app is handling requests."""
     response = test_client.get("/")
     assert response.status_code in [200, 404]
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
 def test_create_user_flow(test_client):
     """
     Test 1: Create User via API (201 Created)
@@ -40,8 +36,8 @@ def test_create_user_flow(test_client):
         "name": "API",
         "surname": "Tester",
         "login": login,
-        "password": "strongpassword123",
         "email": f"{login}@example.com",
+        "user_type": "user",
     }
 
     response = test_client.post("/db/users/", json=payload)
@@ -59,9 +55,6 @@ def test_create_user_flow(test_client):
     assert get_res.json()["name"] == "API"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
 def test_validation_error_handler(test_client):
     """
     Ensure Pydantic validation is working.
@@ -72,9 +65,6 @@ def test_validation_error_handler(test_client):
     assert "detail" in response.json()
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
 def test_resource_chain_creation(test_client):
     """
     Tests dependencies: Room -> Metadata -> Team -> User -> Machine
@@ -97,7 +87,7 @@ def test_resource_chain_creation(test_client):
             "name": "Admin",
             "surname": "Team",
             "login": unique_str("adm"),
-            "password": "securepassword123",
+            "user_type": "admin",
         },
     )
     assert user_res.status_code == 201, f"User creation failed: {user_res.text}"

@@ -1,44 +1,81 @@
 #!/bin/bash
 set -e
 
-# Config
 COMPOSE_FILE="../docker-compose.yaml"
+COMPOSE_FILE_DEV=""
 
-# Enable development mode if --dev flag is provided
-if [[ "$2" == "--dev" ]]; then
-    COMPOSE_FILE="../docker-compose-dev.yaml"
-    shift
-    echo "Running in development mode using $COMPOSE_FILE"
-fi
+SERVICE=""
 
-# Function: Deploy app
+COMMAND="$1"
+shift
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dev)
+            COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
+            echo "Running in development mode with $COMPOSE_FILE_DEV"
+            shift
+            ;;
+        *)
+            SERVICE="$1"
+            shift
+            ;;
+    esac
+done
+
+
+run_compose() {
+    if [[ -n "$COMPOSE_FILE_DEV" ]]; then
+        docker-compose -f "$COMPOSE_FILE" -f "$COMPOSE_FILE_DEV" "$@"
+    else
+        docker-compose -f "$COMPOSE_FILE" "$@"
+    fi
+}
+
+
 deploy_app() {
-    echo "Deploying Docker Compose app..."
-    docker-compose -f $COMPOSE_FILE up -d
-    echo "App deployed!"
-    docker-compose -f $COMPOSE_FILE ps
+    if [[ -n "$SERVICE" ]]; then
+        echo "Deploying specific service: $SERVICE"
+        run_compose up -d "$SERVICE"
+        echo "Specific service deployed!"
+        run_compose ps "$SERVICE"
+    else
+        echo "Deploying Docker Compose app..."
+        run_compose up -d
+        echo "App deployed!"
+        run_compose ps
+    fi
 }
 
-# Function: Update app
 update_app() {
-    echo "Updating app..."
-    docker-compose -f $COMPOSE_FILE down
-    docker-compose -f $COMPOSE_FILE up -d --build
-    echo "App updated!"
-    docker-compose -f $COMPOSE_FILE ps
+    if [[ -n "$SERVICE" ]]; then
+        echo "Updating specific service: $SERVICE"
+        run_compose up -d --build "$SERVICE"
+        echo "Specific service updated!"
+        run_compose ps "$SERVICE"
+    else
+        echo "Updating app..."
+        run_compose up -d --build
+        echo "App updated!"
+        run_compose ps
+    fi
 }
 
-# Function: Stop app
 stop_app() {
-    echo "Stopping app..."
-    docker-compose -f $COMPOSE_FILE down
-    echo "App stopped"
+    if [[ -n "$SERVICE" ]]; then
+        echo "Stopping specific service: $SERVICE"
+        run_compose stop "$SERVICE"
+        echo "Specific service stopped!"
+    else
+        echo "Stopping app..."
+        run_compose stop
+        echo "App stopped"
+    fi
 }
 
-# Function: Delete app
 delete_app() {
     echo "WARNING: This will permanently delete the app containers and images."
-    read -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
+    read -r -p "Are you sure you want to continue? Type 'yes' to confirm: " CONFIRM
 
     if [[ "$CONFIRM" != "yes" ]]; then
         echo "Deletion aborted."
@@ -46,12 +83,11 @@ delete_app() {
     fi
 
     echo "Deleting app..."
-    docker-compose -f $COMPOSE_FILE down -v
-    docker-compose -f $COMPOSE_FILE down --rmi all
+    run_compose down -v --rmi all
     echo "App deleted"
 }
 
-case "$1" in
+case "$COMMAND" in
     deploy)
         deploy_app
         ;;
@@ -65,7 +101,7 @@ case "$1" in
         delete_app
         ;;
     *)
-        echo "Usage: $0 {deploy|update|stop|delete}"
+        echo "Usage: $0 {deploy|update|stop|delete} [--dev] [service]"
         exit 1
         ;;
 esac

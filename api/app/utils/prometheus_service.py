@@ -148,7 +148,7 @@ def add_prometheus_target(instance: str, labels: dict):
     Add a new target to the Prometheus targets file.
     :param new_target: Target dictionary to add
     """
-    entry = {"target": [instance], "labels": labels}
+    entry = {"targets": [instance], "labels": labels}
     with _targets_lock:
         targets = load_targets_file()
         targets.append(entry)
