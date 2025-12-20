@@ -1,8 +1,11 @@
 import pytest
 import subprocess
 
+pytestmark = [
+    pytest.mark.smoke,
+]
 
-@pytest.mark.smoke
+
 def test_redis_connection():
     """Test connection to redis service"""
     cmd = "redis-cli -h redis -p 6379 ping"

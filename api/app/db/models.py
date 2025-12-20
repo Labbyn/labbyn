@@ -114,6 +114,7 @@ class Machines(Base):
     name = Column(String(100), nullable=False, unique=True)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     mac_address = Column(String(17), nullable=True)
+    ip_address = Column(String(15), nullable=True)
     pdu_port = Column(Integer, nullable=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     os = Column(String(30), nullable=True)

@@ -12,6 +12,15 @@
           - 'ansible_processor*'
           - 'ansible_memory_mb'
           - 'ansible_mounts'
+          - 'ansible_default_ipv4'
+
+    - name: Check if Node Exporter is running
+      wait_for:
+        port: 9100
+        timeout: 1
+        msg: "Checking for Node Exporter"
+      register: node_exporter_check
+      ignore_errors: yes
 
     - name: Put platform info into template
       template:
