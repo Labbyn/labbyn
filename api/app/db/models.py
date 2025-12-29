@@ -14,7 +14,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
-
+from fastapi_users.db import SQLAlchemyBaseUserTable
+from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTable
 Base = declarative_base()
 
 
@@ -182,7 +183,7 @@ class Teams(Base):
     users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
 
 
-class User(Base):
+class User(SQLAlchemyBaseUserTable[int], Base):
     """
     User model representing users in the system.
     """
@@ -198,8 +199,13 @@ class User(Base):
         nullable=True,
     )
     login = Column(String(30), nullable=False, unique=True)
-    password = Column(String(255), nullable=False)
-    email = Column(String(100), nullable=True, unique=True)
+    email = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+
+    # FastAPI Users fields
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_superuser = Column(Boolean, default=False, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
 
     user_type = Column(
         Enum(UserType, name="user_type_enum", create_type=True),
@@ -207,7 +213,6 @@ class User(Base):
         default=UserType.USER,
     )
     force_password_change = Column(Boolean, nullable=False, default=False)
-    api_token = Column(String(255), nullable=True, unique=True)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)
@@ -219,6 +224,13 @@ class User(Base):
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
+class AccessToken(SQLAlchemyBaseAccessTokenTable[int], Base):
+    """
+    AccessToken model for FastAPI Users access tokens.
+    """
+
+    __tablename__ = "access_tokens"
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, ondelete="CASCADE")
 
 class Rentals(Base):
     """

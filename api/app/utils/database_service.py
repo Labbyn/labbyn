@@ -8,6 +8,7 @@ and optimistic locking handling using SQLAlchemy sessions.
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Type
 
+from ansible_collections.amazon.aws.plugins.modules.ec2_vpc_peering import is_active
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
@@ -61,8 +62,11 @@ def init_super_user(db: Session):
             login="Service",
             name="Service Account",
             surname="System",
-            password=hash_password("Service"),
+            hashed_password=hash_password("Service"),
             user_type=models.UserType.ADMIN,
+            is_active=True,
+            is_superuser=True,
+            is_verified=True,
             force_password_change=True,
         )
         db.add(admin_user)

@@ -40,11 +40,22 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Login already exists."
         )
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already exists."
+        )
 
     raw_password = generate_starting_password()
     hashed_pw = hash_password(raw_password)
     user_dict = user_data.model_dump(exclude={"password"})
-    new_user = User(**user_dict, password=hashed_pw, force_password_change=True)
+    new_user = User(
+        **user_dict,
+        hashed_password=hashed_pw,
+        force_password_change=True,
+        is_active=True,
+        is_verified=False,
+        is_superuser = (user_data.user_type == UserType.ADMIN)
+    )
 
     try:
         db.add(new_user)
@@ -105,7 +116,8 @@ async def update_user(
 
         data = user_data.model_dump(exclude_unset=True)
         if "password" in data:
-            data["password"] = hash_password(data["password"])
+            new_plain_password = data.pop("password")
+            data["hashed_password"] = hash_password(new_plain_password)
 
         for k, v in data.items():
             setattr(user, k, v)

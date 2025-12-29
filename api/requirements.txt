@@ -10,3 +10,5 @@ psycopg2-binary==2.9.11
 passlib == 1.7.4
 ansible-runner==2.4.2
 ansible == 13.1.0
+fastapi-users==15.0.3
+fastapi_users_db_sqlalchemy==7.0.0
