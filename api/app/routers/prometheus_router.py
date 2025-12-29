@@ -3,10 +3,12 @@
 import json
 import asyncio
 import os
+from typing import Optional, List
+
 from dotenv import load_dotenv
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from pydantic import BaseModel
-
+from urllib.parse import unquote
 from ..utils.prometheus_service import (
     fetch_prometheus_metrics,
     DEFAULT_QUERIES,
@@ -87,12 +89,15 @@ async def metrics_worker():
 
 
 @router.websocket("/ws/metrics")
-async def websocket_endpoint(ws: WebSocket):
+async def websocket_endpoint(
+    ws: WebSocket, instance: str = Query(None, description="Filter by instance")
+):
     """
     WebSocket endpoint to push metrics data to front-end.
     Websocket will send cached metrics data at regular intervals,
     to reduce load on API server and Prometheus.
     :param ws: WebSocket connection
+    :param instance: Optional instance filter
     :return: None
     """
     manager.websocket = ws
@@ -104,13 +109,45 @@ async def websocket_endpoint(ws: WebSocket):
 
             status_parsed = json.loads(status_data) if status_data else {}
             metrics_parsed = json.loads(metrics_data) if metrics_data else {}
-
-            payload = {
-                "statuses": status_parsed.get("status", []),
-                "metrics": metrics_parsed,
-            }
+            if instance:
+                target = unquote(instance)
+                statuses = status_parsed.get("status", [])
+                is_online = any(
+                    s["instance"] == target and s["value"] == 1.0 for s in statuses
+                )
+                payload = {
+                    "instance": target,
+                    "online": is_online,
+                    "cpu": next(
+                        (
+                            m["value"]
+                            for m in metrics_parsed.get("cpu_usage", [])
+                            if m["instance"] == target
+                        ),
+                        None,
+                    ),
+                    "memory": next(
+                        (
+                            m["value"]
+                            for m in metrics_parsed.get("memory_usage", [])
+                            if m["instance"] == target
+                        ),
+                        None,
+                    ),
+                    "disks": [
+                        {"value": round(m["value"], 2), "timestamp": m["timestamp"]}
+                        for m in metrics_parsed.get("disk_usage", [])
+                        if m["instance"] == target
+                    ],
+                }
+            else:
+                payload = {
+                    "statuses": status_parsed.get("status", []),
+                    "metrics": metrics_parsed,
+                }
             await ws.send_json(payload)
             await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
+
     except WebSocketDisconnect:
         manager.disconnect()
 
@@ -145,17 +182,29 @@ async def get_prometheus_hosts():
 
 
 @router.get("/prometheus/metrics")
-async def get_prometheus_metrics(
-    instances: str = Query(None, description="Comma separated instances")
+async def get_prometheus_all_metrics(
+    instances: Optional[List[str]] = Query(
+        None,
+        description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
+    )
 ):
     """
     Fetch metrics for selected instances directly from Prometheus (bypasses cache).
-    :param hosts: List of instances as comma separated string
+    :param instances: List of instances as comma separated string
     :return: Metrics data for selected instances, or all if none specified
     """
-    instances_list = instances.split(",") if instances else None
+    if not instances:
+        return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=None)
+
+    processed_instances = []
+    for item in instances:
+        if "," in item:
+            processed_instances.extend([unquote(i.strip()) for i in item.split(",")])
+        else:
+            processed_instances.append(unquote(item.strip()))
+
     metrics_data = await fetch_prometheus_metrics(
-        list(DEFAULT_QUERIES.keys()), hosts=instances_list
+        list(DEFAULT_QUERIES.keys()), hosts=processed_instances
     )
     return metrics_data
 
@@ -168,6 +217,9 @@ async def add_prometheus_new_target(target: PrometheusTarget):
     :return: Success message
     """
     try:
+
+        if ":" not in target.instance or ":9090" in target.instance:
+            target.instance = f"{target.instance}:9100"
         entry = add_prometheus_target(target.instance, target.labels)
     except TargetSaveError as e:
         return {"error": str(e)}
