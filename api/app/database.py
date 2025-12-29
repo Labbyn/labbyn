@@ -1,10 +1,14 @@
 """Main application entry point for the database server."""
 
 import os
+
+from fastapi import Depends
+from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-
+from app.db.models import User, AccessToken
 # pylint: disable=unused-import
 import app.db.listeners
 
@@ -33,3 +37,17 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_user_db(session = Depends(get_db)):
+    """
+    Dependency generator that yields a database session for user operations.
+    Ensures the session is closed after the request is finished.
+    """
+    yield SQLAlchemyUserDatabase(session, User)
+
+def get_access_token_db(session=Depends(get_db)):
+    """
+    Dependency generator that yields a database session for access token operations.
+    Ensures the session is closed after the request is finished.
+    """
+    yield SQLAlchemyAccessTokenDatabase(session, AccessToken)

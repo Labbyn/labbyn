@@ -3,6 +3,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 
+import fastapi_users
 from fastapi import FastAPI
 
 from app.routers import (
@@ -25,6 +26,10 @@ from app.utils.database_service import init_super_user
 
 # pylint: disable=unused-import
 import app.db.listeners
+
+from app.auth.auth_config import auth_backend
+from app.db.schemas import UserRead
+from app.db.schemas import UserUpdate
 
 
 @asynccontextmanager
@@ -52,6 +57,8 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
 
 app = FastAPI(lifespan=lifespan)
 
+app.include_router(fastapi_users.get_auth_router(auth_backend), prefix="/auth/", tags=["auth"])
+app.include_router(fastapi_users.get_users_router(UserRead, UserUpdate), prefix="/users", tags=["users"])
 app.include_router(prometheus_router.router)
 app.include_router(database_category_router.router)
 app.include_router(database_inventory_router.router)
