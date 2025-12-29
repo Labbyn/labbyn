@@ -230,7 +230,7 @@ class AccessToken(SQLAlchemyBaseAccessTokenTable[int], Base):
     """
 
     __tablename__ = "access_tokens"
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, ondelete="CASCADE")
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
 
 class Rentals(Base):
     """

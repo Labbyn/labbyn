@@ -1,9 +1,8 @@
 import secrets
 import string
-from passlib.context import CryptContext
+from fastapi_users.password import PasswordHelper
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+password_helper = PasswordHelper()
 
 def hash_password(password: str):
     """
@@ -11,7 +10,7 @@ def hash_password(password: str):
     :param password: Plain password
     :return: Hashed password
     """
-    return pwd_context.hash(password)
+    return password_helper.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str):
@@ -21,8 +20,8 @@ def verify_password(plain_password: str, hashed_password: str):
     :param hashed_password: Hashed password
     :return: True if match, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
-
+    status, _ = password_helper.verify_and_update(plain_password, hashed_password)
+    return status
 
 def generate_starting_password(lenght: int = 8):
     """

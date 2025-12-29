@@ -11,12 +11,10 @@ from app.db.schemas import UserCreate, UserResponse, UserUpdate, UserCreatedResp
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
 from fastapi import APIRouter, Depends, HTTPException, status
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from app.utils.security import hash_password, generate_starting_password
+from app.db.schemas import UserRead
 
-from api.app.db.schemas import UserRead
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter()
 
