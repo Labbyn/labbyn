@@ -1,0 +1,31 @@
+---
+- name: Remove Node Exporter Agent
+  hosts: all
+  become: yes
+  tasks:
+    - name: Stop and disable Node Exporter service
+      systemd:
+        name: node_exporter
+        state: stopped
+        enabled: no
+      ignore_errors: yes
+
+    - name: Remove systemd service file
+      file:
+        path: /etc/systemd/system/node_exporter.service
+        state: absent
+      notify: Reload systemd
+
+    - name: Remove Node Exporter binary
+      file:
+        path: /usr/local/bin/node_exporter
+        state: absent
+
+    - name: Remove any leftover installation files in /tmp
+      shell: "rm -rf /tmp/node_exporter*"
+      ignore_errors: yes
+
+  handlers:
+    - name: Reload systemd
+      systemd:
+        daemon_reload: yes
