@@ -207,6 +207,7 @@ class User(Base):
         default=UserType.USER,
     )
     force_password_change = Column(Boolean, nullable=False, default=False)
+    api_token = Column(String(255), nullable=True, unique=True)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)

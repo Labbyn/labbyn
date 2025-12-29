@@ -382,6 +382,29 @@ class UserCreatedResponse(UserResponse):
         None, description="Generated password if one was created"
     )
 
+class LoginRequest(BaseModel):
+    """
+    Schema for user login request.
+    """
+    login: str
+    password: Optional[str] = None
+
+class LoginResponse(BaseModel):
+    """
+    Schema for user login response.
+    """
+    access_token: str
+    token_type: str = "bearer"
+    force_password_change: bool
+    user_type: UserTypeEnum
+    username: Optional[str] = None
+
+class FirstChangePasswordRequest(BaseModel):
+    """
+    Schema for changing password on first login.
+    """
+    old_password: str
+    new_password: str
 
 # ==========================
 #          MACHINES
