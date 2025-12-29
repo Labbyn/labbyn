@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from api.app.db.schemas import UserRead
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -70,7 +71,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         ) from e
 
 
-@router.get("/db/users/", response_model=List[UserResponse], tags=["Users"])
+@router.get("/db/users/", response_model=List[UserRead], tags=["Users"])
 def get_users(db: Session = Depends(get_db)):
     """
     Fetch all users
@@ -80,7 +81,7 @@ def get_users(db: Session = Depends(get_db)):
     return db.query(User).all()
 
 
-@router.get("/db/users/{user_id}", response_model=UserResponse, tags=["Users"])
+@router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     """
     Fetch specific user by ID
@@ -96,7 +97,7 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return user
 
 
-@router.put("/db/users/{user_id}", response_model=UserResponse, tags=["Users"])
+@router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 async def update_user(
     user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)
 ):
