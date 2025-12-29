@@ -1,0 +1,20 @@
+---
+- name: Remove Ansible User
+  hosts: all
+  become: yes
+  vars:
+    ansible_user_name: ansible
+  tasks:
+    - name: Remove passwordless sudo access for ansible user
+      lineinfile:
+        path: /etc/sudoers
+        regexp: '^{{ ansible_user_name }} ALL=\(ALL\) NOPASSWD: ALL'
+        state: absent
+        validate: 'visudo -cf %s'
+
+    - name: Remove ansible user and its home directory
+      user:
+        name: "{{ ansible_user_name }}"
+        state: absent
+        remove: yes
+        force: yes

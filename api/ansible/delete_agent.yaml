@@ -1,9 +1,7 @@
 ---
-- name: Remove Node Exporter and Ansible User
+- name: Remove Node Exporter Agent
   hosts: all
   become: yes
-  vars:
-    ansible_user_name: ansible
   tasks:
     - name: Stop and disable Node Exporter service
       systemd:
@@ -23,23 +21,9 @@
         path: /usr/local/bin/node_exporter
         state: absent
 
-    - name: Remove passwordless sudo access for ansible user
-      lineinfile:
-        path: /etc/sudoers
-        regexp: '^{{ ansible_user_name }} ALL=\(ALL\) NOPASSWD: ALL'
-        state: absent
-        validate: 'visudo -cf %s'
-
     - name: Remove any leftover installation files in /tmp
       shell: "rm -rf /tmp/node_exporter*"
       ignore_errors: yes
-
-    - name: Remove ansible user and its home directory
-      user:
-        name: "{{ ansible_user_name }}"
-        state: absent
-        remove: yes
-        force: yes
 
   handlers:
     - name: Reload systemd

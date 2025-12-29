@@ -41,6 +41,7 @@ class AnsiblePlaybook(str, Enum):
     scan_platform = "scan_platform"
     deploy_agent = "deploy_agent"
     delete_agent = "delete_agent"
+    delete_ansible = "delete_ansible"
 
 
 class DiscoveryRequest(BaseModel):
@@ -55,6 +56,7 @@ PLAYBOOK_MAP = {
     AnsiblePlaybook.scan_platform: "/code/ansible/scan_platform.yaml",
     AnsiblePlaybook.deploy_agent: "/code/ansible/deploy_agent.yaml",
     AnsiblePlaybook.delete_agent: "/code/ansible/delete_agent.yaml",
+    AnsiblePlaybook.delete_ansible: "/code/ansible/delete_ansible.yaml",
 }
 
 
@@ -319,8 +321,11 @@ async def cleanup_machine(
         host = request.host
 
         try:
-            ansible_result = await run_playbook_task(
+            agent_result = await run_playbook_task(
                 PLAYBOOK_MAP[AnsiblePlaybook.delete_agent], host, request.extra_vars
+            )
+            ansible_result = await run_playbook_task(
+                PLAYBOOK_MAP[AnsiblePlaybook.delete_ansible], host, request.extra_vars
             )
 
             meta = db.query(Metadata).filter(Metadata.id == machine.metadata_id).first()
@@ -334,10 +339,53 @@ async def cleanup_machine(
 
             return {
                 "message": f"Host {host} was cleaned.",
-                "ansible_status": ansible_result,
+                "agent_result": agent_result,
+                "ansible_result": ansible_result,
             }
 
         except Exception as e:
             raise HTTPException(
                 status_code=500, detail=f"Failed to cleanup machine: {str(e)}"
+            ) from e
+
+
+@router.post("/ansible/machine/{machine_id}/remove_agent")
+async def remove_agent(
+    machine_id: int, request: HostRequest, db: Session = Depends(get_db)
+):
+    """
+     Delete node exporter from the machine and update metadata accordingly.
+    :param machine_id: ID of the machine to clean up
+    :param request: HostRequest containing extra variables for Ansible
+    :param db: Active database session
+    """
+    async with acquire_lock(f"machine_lock:{machine_id}"):
+        machine = db.query(Machines).filter(Machines.id == machine_id).first()
+        if not machine:
+            raise HTTPException(
+                status_code=404, detail="Machine not found in Database."
+            )
+
+        host = request.host
+
+        try:
+            agent_result = await run_playbook_task(
+                PLAYBOOK_MAP[AnsiblePlaybook.delete_agent], host, request.extra_vars
+            )
+
+            meta = db.query(Metadata).filter(Metadata.id == machine.metadata_id).first()
+            if meta:
+                meta.agent_prometheus = False
+                meta.last_update = datetime.now().date()
+
+            db.commit()
+
+            return {
+                "message": f"Node Exporter was removed from host {host}.",
+                "agent_result": agent_result,
+            }
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Failed to remove agent from machine: {str(e)}"
             ) from e
