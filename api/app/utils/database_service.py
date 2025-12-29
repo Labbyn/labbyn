@@ -62,7 +62,7 @@ def init_super_user(db: Session):
             login="Service",
             name="Service Account",
             surname="System",
-            email="service@localhost",
+            email="service@labbyn.service",
             hashed_password=hash_password("Service"),
             user_type=models.UserType.ADMIN,
             is_active=True,
