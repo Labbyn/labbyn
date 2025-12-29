@@ -14,7 +14,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
-from fastapi_users.db import SQLAlchemyBaseUserTable
+from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTable
 Base = declarative_base()
 
