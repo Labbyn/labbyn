@@ -412,7 +412,7 @@ class UserCreate(schemas.BaseUserCreate):
     login: str = Field(..., max_length=30)
     team_id: Optional[int] = None
     user_type: UserTypeEnum = UserTypeEnum.USER
-
+    password: Optional[str] = Field(None, min_length=6, max_length=255)
 
 class UserUpdate(schemas.BaseUserUpdate):
     """

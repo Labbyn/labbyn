@@ -47,7 +47,7 @@ def test_history_full_cycle_with_rollback(db_session):
     admin_id = admin.id
 
     unique_login = unique_str("HistoryUser")
-    original_email = f"{unique_login}@test.com"
+    original_email = f"{unique_login}@labbyn.service"
 
     user = service.create_user(
         db_session,

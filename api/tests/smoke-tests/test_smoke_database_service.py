@@ -61,7 +61,7 @@ def test_machine_full_lifecycle(db_session):
             surname="User",
             login=generate_unique_name("User"),
             password="SecretPassword123!",
-            email=f"{generate_unique_name('user')}@test.local",
+            email=f"{generate_unique_name('user')}@labbyn.service",
             user_type="user",
         ),
     )

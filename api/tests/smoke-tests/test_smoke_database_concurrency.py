@@ -53,7 +53,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "One",
                 "login": unique_str("r1"),
-                "email": f"{unique_str('r1')}@test.local",
+                "email": f"{unique_str('r1')}@labbyn.service",
                 "user_type": "user",
             },
         )
@@ -65,7 +65,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "Two",
                 "login": unique_str("r2"),
-                "email": f"{unique_str('r2')}@test.local",
+                "email": f"{unique_str('r2')}@labbyn.test",
                 "user_type": "user",
             },
         )

@@ -36,7 +36,7 @@ def test_create_user_flow(test_client):
         "name": "API",
         "surname": "Tester",
         "login": login,
-        "email": f"{login}@example.com",
+        "email": f"{login}@labbyn.service",
         "user_type": "user",
     }
 
@@ -87,7 +87,7 @@ def test_resource_chain_creation(test_client):
             "name": "Admin",
             "surname": "Team",
             "login": unique_str("adm"),
-            "email": f"{unique_str('adm')}@example.com",
+            "email": f"{unique_str('adm')}@labbyn.test",
             "user_type": "admin",
         },
     )
