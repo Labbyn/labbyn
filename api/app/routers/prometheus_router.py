@@ -89,7 +89,9 @@ async def metrics_worker():
 
 
 @router.websocket("/ws/metrics")
-async def websocket_endpoint(ws: WebSocket, instance: str = Query(None, description="Filter by instance")):
+async def websocket_endpoint(
+    ws: WebSocket, instance: str = Query(None, description="Filter by instance")
+):
     """
     WebSocket endpoint to push metrics data to front-end.
     Websocket will send cached metrics data at regular intervals,
@@ -110,18 +112,33 @@ async def websocket_endpoint(ws: WebSocket, instance: str = Query(None, descript
             if instance:
                 target = unquote(instance)
                 statuses = status_parsed.get("status", [])
-                is_online = any(s["instance"] == target and s["value"] == 1.0 for s in statuses)
+                is_online = any(
+                    s["instance"] == target and s["value"] == 1.0 for s in statuses
+                )
                 payload = {
                     "instance": target,
                     "online": is_online,
-                    "cpu": next((m["value"] for m in metrics_parsed.get("cpu_usage", []) if m["instance"] == target),
-                                None),
+                    "cpu": next(
+                        (
+                            m["value"]
+                            for m in metrics_parsed.get("cpu_usage", [])
+                            if m["instance"] == target
+                        ),
+                        None,
+                    ),
                     "memory": next(
-                        (m["value"] for m in metrics_parsed.get("memory_usage", []) if m["instance"] == target), None),
+                        (
+                            m["value"]
+                            for m in metrics_parsed.get("memory_usage", [])
+                            if m["instance"] == target
+                        ),
+                        None,
+                    ),
                     "disks": [
                         {"value": round(m["value"], 2), "timestamp": m["timestamp"]}
-                        for m in metrics_parsed.get("disk_usage", []) if m["instance"] == target
-                    ]
+                        for m in metrics_parsed.get("disk_usage", [])
+                        if m["instance"] == target
+                    ],
                 }
             else:
                 payload = {
@@ -168,7 +185,7 @@ async def get_prometheus_hosts():
 async def get_prometheus_all_metrics(
     instances: Optional[List[str]] = Query(
         None,
-        description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)"
+        description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
     )
 ):
     """
@@ -187,8 +204,7 @@ async def get_prometheus_all_metrics(
             processed_instances.append(unquote(item.strip()))
 
     metrics_data = await fetch_prometheus_metrics(
-        list(DEFAULT_QUERIES.keys()),
-        hosts=processed_instances
+        list(DEFAULT_QUERIES.keys()), hosts=processed_instances
     )
     return metrics_data
 
