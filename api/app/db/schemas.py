@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.db.models import UserType
-
+from fastapi_users import schemas
 
 # ==========================
 #          ENUMS
@@ -382,29 +382,48 @@ class UserCreatedResponse(UserResponse):
         None, description="Generated password if one was created"
     )
 
-class LoginRequest(BaseModel):
+# ==========================
+#      FASTAPI-USERS
+# ==========================
+
+class UserRead(schemas.BaseUser[int]):
     """
-    Schema for user login request.
+    Schema for reading user data.
+    Inherits from fastapi-users BaseUser schema.
     """
+    name: str
+    surname: str
     login: str
-    password: Optional[str] = None
-
-class LoginResponse(BaseModel):
-    """
-    Schema for user login response.
-    """
-    access_token: str
-    token_type: str = "bearer"
-    force_password_change: bool
+    team_id: Optional[int]
     user_type: UserTypeEnum
-    username: Optional[str] = None
+    force_password_change: bool
+    version_id: int
 
-class FirstChangePasswordRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreate(schemas.BaseUserCreate):
     """
-    Schema for changing password on first login.
+    Schema for creating a new user.
+    Inherits from fastapi-users BaseUserCreate schema.
     """
-    old_password: str
-    new_password: str
+    name: str = Field(..., max_length=50)
+    surname: str = Field(..., max_length=80)
+    login: str = Field(..., max_length=30)
+    team_id: Optional[int] = None
+    user_type: UserTypeEnum = UserTypeEnum.USER
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    """
+    Schema for updating user data.
+    Inherits from fastapi-users BaseUserUpdate schema.
+    """
+    name: Optional[str] = None
+    surname: Optional[str] = None
+    team_id: Optional[int] = None
+    login: Optional[str] = None
+
 
 # ==========================
 #          MACHINES
