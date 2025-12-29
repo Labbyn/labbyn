@@ -1,5 +1,5 @@
+"""User manager module for handling user authentication and management."""
 import os
-from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi.params import Depends
@@ -13,32 +13,51 @@ AUTH_SECRET = os.getenv("AUTH_SECRET")
 
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+    """Custom user manager for handling user authentication and management."""
     reset_password_token_secret = AUTH_SECRET
     verification_token_secret = AUTH_SECRET
 
     async def get_by_login(self, login: str):
+        """Retrieve a user by their login.
+        :param login: The login of the user to retrieve.
+        :return: The User instance if found.
+        """
         query = select(User).where(User.login == login)
-        result = self.user_db.session.execute(query)
+        result = await self.user_db.session.execute(query)
         user = result.scalar_one_or_none()
         if user is None:
             raise exceptions.UserNotExists(f"User {login} not found.")
-        return User
+        return user
 
-    async def authenticate_user(self, credentials, request: None):
+    async def authenticate(self, credentials):
+        """Authenticate a user with given credentials.
+        :param credentials: The credentials to authenticate.
+        :return: The authenticated User instance or None if authentication fails.
+        """
         try:
             user = await self.get_by_login(credentials.username)
         except exceptions.UserNotExists:
             self.password_helper.hash(credentials.password)
             return None
 
-        if await self.validate_password(credentials.password, user) and user.is_active:
-            return user
+        verified, updated_password = self.password_helper.verify_and_update(credentials.password, user.hashed_password)
+        if not verified or not user.is_active:
+            return None
 
-        return None
+        return user
 
     async def on_after_login(self, user: User, request=None, response=None):
+        """Hook called after a user successfully logs in.
+        :param user: The user to login to.
+        :param request: The request object.
+        :param response: The response object.
+        """
         print(f"User {user.email} logged in.")
 
 
 async def get_user_manager(user_db=Depends(get_user_db)):
+    """Dependency generator that yields a UserManager instance.
+    :param user_db: Database dependency instance.
+    :return: UserManager instance.
+    """
     yield UserManager(user_db)
