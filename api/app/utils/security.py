@@ -1,3 +1,4 @@
+"""Utility functions for password hashing and verification."""
 import secrets
 import string
 from fastapi_users.password import PasswordHelper

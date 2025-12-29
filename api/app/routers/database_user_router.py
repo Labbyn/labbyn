@@ -7,14 +7,12 @@ from app.db.models import (
     User,
     UserType,
 )
-from app.db.schemas import UserCreate, UserResponse, UserUpdate, UserCreatedResponse
+from app.db.schemas import UserCreate, UserUpdate, UserCreatedResponse
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
+from app.db.schemas import UserRead
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.utils.security import hash_password, generate_starting_password
-from app.db.schemas import UserRead
-
 
 router = APIRouter()
 
@@ -53,7 +51,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         force_password_change=True,
         is_active=True,
         is_verified=False,
-        is_superuser = (user_data.user_type == UserType.ADMIN)
+        is_superuser=(user_data.user_type == UserType.ADMIN),
     )
 
     try:

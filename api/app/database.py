@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from app.db.models import User, AccessToken
+
 # pylint: disable=unused-import
 import app.db.listeners
 
@@ -24,10 +25,18 @@ DB_URL = os.getenv("DATABASE_URL", "url")
 
 # ---- ASYNC ENGINE (LOGINS, USERS, TOKENS)
 async_engine = create_async_engine(
-    DB_URL.replace("postgresql+psycopg2", "postgresql+asyncpg"), pool_pre_ping=True, pool_size=50, max_overflow=60, pool_timeout=1800
+    DB_URL.replace("postgresql+psycopg2", "postgresql+asyncpg"),
+    pool_pre_ping=True,
+    pool_size=50,
+    max_overflow=60,
+    pool_timeout=1800,
 )
 AsyncSessionLocal = async_sessionmaker(
-    autocommit=False, autoflush=False, bind=async_engine, class_=AsyncSession, expire_on_commit=False
+    autocommit=False,
+    autoflush=False,
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
 )
 
 # ---- SYNC ENGINE (COMMON DB OPERATIONS)
@@ -48,6 +57,7 @@ def get_db():
     finally:
         db.close()
 
+
 async def get_async_db():
     """
     Dependency generator that yields an asynchronous database session.
@@ -56,7 +66,8 @@ async def get_async_db():
     async with AsyncSessionLocal() as session:
         yield session
 
-async def get_user_db(session = Depends(get_async_db)):
+
+async def get_user_db(session=Depends(get_async_db)):
     """
     Dependency generator that yields a database session for user operations.
     Ensures the session is closed after the request is finished.
@@ -64,6 +75,7 @@ async def get_user_db(session = Depends(get_async_db)):
     :return: SQLAlchemyUserDatabase instance
     """
     yield SQLAlchemyUserDatabase(session, User)
+
 
 async def get_access_token_db(session=Depends(get_async_db)):
     """

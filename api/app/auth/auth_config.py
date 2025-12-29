@@ -1,13 +1,13 @@
 """Authentication configuration using database tokens."""
+
 from fastapi import Depends
 from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport
 from fastapi_users.authentication.strategy.db import DatabaseStrategy
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 
-from app.db.models import User, AccessToken
+from app.db.models import User
 from app.auth.manager import get_user_manager
-from app.database import get_db
 
 from app.database import get_access_token_db
 
@@ -23,6 +23,7 @@ def get_database_strategy(
     :return: DatabaseStrategy instance
     """
     return DatabaseStrategy(access_token_db, lifetime_seconds=None)
+
 
 auth_backend = AuthenticationBackend(
     name="database-tokens",

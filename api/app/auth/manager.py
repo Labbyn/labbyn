@@ -1,4 +1,5 @@
 """User manager module for handling user authentication and management."""
+
 import os
 
 from dotenv import load_dotenv
@@ -14,6 +15,7 @@ AUTH_SECRET = os.getenv("AUTH_SECRET")
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     """Custom user manager for handling user authentication and management."""
+
     reset_password_token_secret = AUTH_SECRET
     verification_token_secret = AUTH_SECRET
 
@@ -40,17 +42,17 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
             self.password_helper.hash(credentials.password)
             return None
 
-        verified, updated_password = self.password_helper.verify_and_update(credentials.password, user.hashed_password)
+        verified, _ = self.password_helper.verify_and_update(
+            credentials.password, user.hashed_password
+        )
         if not verified or not user.is_active:
             return None
 
         return user
 
-    async def on_after_login(self, user: User, request=None, response=None):
+    async def on_after_login(self, user: User):
         """Hook called after a user successfully logs in.
         :param user: The user to login to.
-        :param request: The request object.
-        :param response: The response object.
         """
         print(f"User {user.email} logged in.")
 
