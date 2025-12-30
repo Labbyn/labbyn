@@ -52,11 +52,11 @@ class DiscoveryRequest(BaseModel):
 
 
 PLAYBOOK_MAP = {
-    AnsiblePlaybook.create_user: "/code/ansible/create_ansible_user.yaml",
-    AnsiblePlaybook.scan_platform: "/code/ansible/scan_platform.yaml",
-    AnsiblePlaybook.deploy_agent: "/code/ansible/deploy_agent.yaml",
-    AnsiblePlaybook.delete_agent: "/code/ansible/delete_agent.yaml",
-    AnsiblePlaybook.delete_ansible: "/code/ansible/delete_ansible.yaml",
+    AnsiblePlaybook.create_user: f"{PLAYBOOK_DIR}/create_ansible_user.yaml",
+    AnsiblePlaybook.scan_platform: f"{PLAYBOOK_DIR}/scan_platform.yaml",
+    AnsiblePlaybook.deploy_agent: f"{PLAYBOOK_DIR}/deploy_agent.yaml",
+    AnsiblePlaybook.delete_agent: f"{PLAYBOOK_DIR}/delete_agent.yaml",
+    AnsiblePlaybook.delete_ansible: f"{PLAYBOOK_DIR}/delete_ansible.yaml",
 }
 
 
