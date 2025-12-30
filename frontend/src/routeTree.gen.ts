@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as User_dashboardRouteImport } from './routes/user_dashboard'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LabsRouteImport } from './routes/labs'
 import { Route as DocsRouteImport } from './routes/docs'
@@ -16,6 +17,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as InventoryIndexRouteImport } from './routes/inventory/index'
 
+const User_dashboardRoute = User_dashboardRouteImport.update({
+  id: '/user_dashboard',
+  path: '/user_dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/inventory': typeof InventoryIndexRoute
   '/users': typeof UsersIndexRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/inventory': typeof InventoryIndexRoute
   '/users': typeof UsersIndexRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/docs': typeof DocsRoute
   '/labs': typeof LabsRoute
   '/settings': typeof SettingsRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/inventory/': typeof InventoryIndexRoute
   '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs' | '/labs' | '/settings' | '/inventory' | '/users'
+  fullPaths:
+    | '/'
+    | '/docs'
+    | '/labs'
+    | '/settings'
+    | '/user_dashboard'
+    | '/inventory'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs' | '/labs' | '/settings' | '/inventory' | '/users'
+  to:
+    | '/'
+    | '/docs'
+    | '/labs'
+    | '/settings'
+    | '/user_dashboard'
+    | '/inventory'
+    | '/users'
   id:
     | '__root__'
     | '/'
     | '/docs'
     | '/labs'
     | '/settings'
+    | '/user_dashboard'
     | '/inventory/'
     | '/users/'
   fileRoutesById: FileRoutesById
@@ -92,12 +116,20 @@ export interface RootRouteChildren {
   DocsRoute: typeof DocsRoute
   LabsRoute: typeof LabsRoute
   SettingsRoute: typeof SettingsRoute
+  User_dashboardRoute: typeof User_dashboardRoute
   InventoryIndexRoute: typeof InventoryIndexRoute
   UsersIndexRoute: typeof UsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/user_dashboard': {
+      id: '/user_dashboard'
+      path: '/user_dashboard'
+      fullPath: '/user_dashboard'
+      preLoaderRoute: typeof User_dashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocsRoute: DocsRoute,
   LabsRoute: LabsRoute,
   SettingsRoute: SettingsRoute,
+  User_dashboardRoute: User_dashboardRoute,
   InventoryIndexRoute: InventoryIndexRoute,
   UsersIndexRoute: UsersIndexRoute,
 }
