@@ -1,5 +1,19 @@
-import { Link, createFileRoute, useNavigate, useSearch } from '@tanstack/react-router'
-import { Archive, ArrowRight, Database, Map, Plus, Server, User, Users } from 'lucide-react'
+import {
+  Link,
+  createFileRoute,
+  useNavigate,
+  useSearch,
+} from '@tanstack/react-router'
+import {
+  Archive,
+  ArrowRight,
+  Database,
+  Map,
+  Plus,
+  Server,
+  User,
+  Users,
+} from 'lucide-react'
 import {
   Card,
   CardAction,
@@ -31,8 +45,8 @@ const IconMap = {
   Map: Map,
   User: User,
   Group: Users,
-  Inventory: Archive
-};
+  Inventory: Archive,
+}
 
 const dashboardData = [
   {
@@ -41,44 +55,44 @@ const dashboardData = [
       {
         type: 'Lab',
         description: {
-            id: '2137-32',
-            location: '/lab/2137-32',
-            tags: ['tag1', 'tag2'],
-        }
+          id: '2137-32',
+          location: '/lab/2137-32',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Server',
         description: {
-            id: 'server-01',
-            location: '/server-01',
-            tags: ['tag1', 'tag2'],
-        }
+          id: 'server-01',
+          location: '/server-01',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Inventory',
         description: {
-            id: '2',
-            location: '/inventory/2',
-            tags: ['tag1', 'tag2'],
-        }
+          id: '2',
+          location: '/inventory/2',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Server',
         description: {
-            id: 'server-01',
-            location: '/server-01',
-            tags: ['tag1', 'tag2'],
-        }
+          id: 'server-01',
+          location: '/server-01',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Inventory',
         description: {
-            id: '2',
-            location: '/inventory/2',
-            tags: ['tag1', 'tag2'],
-        }
-      }
-    ]
+          id: '2',
+          location: '/inventory/2',
+          tags: ['tag1', 'tag2'],
+        },
+      },
+    ],
   },
   {
     name: 'Favorites',
@@ -86,20 +100,20 @@ const dashboardData = [
       {
         type: 'Map',
         description: {
-            id: 'Area 51',
-            location: '/maps/area-51',
-            tags: ['tag1', 'tag2'],
-        }
+          id: 'Area 51',
+          location: '/maps/area-51',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'User',
         description: {
-            id: 'user123',
-            location: '/users/user123',
-            tags: ['tag1', 'tag2'],
-        }
-      }
-    ]
+          id: 'user123',
+          location: '/users/user123',
+          tags: ['tag1', 'tag2'],
+        },
+      },
+    ],
   },
   {
     name: 'Inventories',
@@ -107,20 +121,20 @@ const dashboardData = [
       {
         type: 'Inventory',
         description: {
-            id: '5',
-            location: '/inventory/5',
-            tags: ['tag1', 'tag2'],
-        }
+          id: '5',
+          location: '/inventory/5',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Inventory',
         description: {
-            id: '8',
-            location: '/inventory/8',
-            tags: ['tag1', 'tag2'],
-        }
-      }
-    ]
+          id: '8',
+          location: '/inventory/8',
+          tags: ['tag1', 'tag2'],
+        },
+      },
+    ],
   },
   {
     name: 'Groups',
@@ -128,29 +142,29 @@ const dashboardData = [
       {
         type: 'Group',
         description: {
-            id: 'group-alpha',
-            location: '/groups/group-alpha',
-            tags: ['tag1', 'tag2'],
-        }
+          id: 'group-alpha',
+          location: '/groups/group-alpha',
+          tags: ['tag1', 'tag2'],
+        },
       },
       {
         type: 'Group',
         description: {
-            id: 'group-beta',
-            location: '/groups/group-beta',
-            tags: ['tag1', 'tag2'],
-        }
-      }
-    ]
-  }
+          id: 'group-beta',
+          location: '/groups/group-beta',
+          tags: ['tag1', 'tag2'],
+        },
+      },
+    ],
+  },
 ]
 function RouteComponent() {
   const { views } = Route.useSearch()
-    const navigate = useNavigate()
+  const navigate = useNavigate()
 
-    const visibleDashboardData = dashboardData.filter((section) =>
-    views.includes(section.name)
-    )
+  const visibleDashboardData = dashboardData.filter((section) =>
+    views.includes(section.name),
+  )
   return (
     <ScrollArea className="h-screen w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6 w-full">
@@ -164,9 +178,7 @@ function RouteComponent() {
                 <CardDescription className="flex items-center gap-1.5 text-xs">
                   <User className="h-3 w-3" />
                   Owner:{' '}
-                  <span className="font-medium text-foreground">
-                    User1
-                  </span>
+                  <span className="font-medium text-foreground">User1</span>
                 </CardDescription>
               </div>
               <CardAction>
@@ -188,22 +200,25 @@ function RouteComponent() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
                             {(() => {
-                                const Icon = IconMap[page.type as keyof typeof IconMap];
-                                return <Icon className="h-4 w-4" />;
+                              const Icon =
+                                IconMap[page.type as keyof typeof IconMap]
+                              return <Icon className="h-4 w-4" />
                             })()}
-                            <span className="text-xs font-medium">{page.type} {page.description.id}</span>
+                            <span className="text-xs font-medium">
+                              {page.type} {page.description.id}
+                            </span>
                           </div>
                           <div className="flex flex-wrap gap-1">
-                              {page.description.tags.map((tag) => (
-                                <Badge 
-                                  key={tag} 
-                                  variant="secondary" 
-                                  className="text-[10px] px-1.5 py-0 font-normal h-4 "
-                                >
-                                  {tag}
-                                </Badge>
-                                ))}
-                        </div>
+                            {page.description.tags.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0 font-normal h-4 "
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                         <div className="flex justify-between items-center mt-auto pt-2">
                           <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
@@ -211,7 +226,6 @@ function RouteComponent() {
                       </div>
                     </Link>
                   ))}
-                  
                 </div>
                 <ScrollBar orientation="vertical" />
               </ScrollArea>
@@ -219,52 +233,51 @@ function RouteComponent() {
           </Card>
         ))}
         <Dialog>
-  <DialogTrigger asChild>
-    <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition">
-      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-        <Plus className="h-6 w-6" />
-        <span className="text-sm font-medium">Customize View</span>
-      </div>
-    </Card>
-  </DialogTrigger>
+          <DialogTrigger asChild>
+            <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition">
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Plus className="h-6 w-6" />
+                <span className="text-sm font-medium">Customize View</span>
+              </div>
+            </Card>
+          </DialogTrigger>
 
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Customize Dashboard</DialogTitle>
-    </DialogHeader>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Customize Dashboard</DialogTitle>
+            </DialogHeader>
 
-    <div className="space-y-3">
-      {dashboardData.map((section) => {
-        const enabled = views.includes(section.name)
+            <div className="space-y-3">
+              {dashboardData.map((section) => {
+                const enabled = views.includes(section.name)
 
-        return (
-          <div
-            key={section.name}
-            className="flex items-center justify-between"
-          >
-            <span className="text-sm">{section.name}</span>
-            <Checkbox className= "cursor-pointer"
-              checked={enabled}
-              onCheckedChange={(checked) => {
-                navigate({
-                  search: (prev) => ({
-                    ...prev,
-                    views: checked
-                      ? [...prev.views, section.name]
-                      : prev.views.filter((v) => v !== section.name),
-                  }),
-                })
-              }}
-            />
-          </div>
-        )
-      })}
-    </div>
-  </DialogContent>
-</Dialog>
-
+                return (
+                  <div
+                    key={section.name}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="text-sm">{section.name}</span>
+                    <Checkbox
+                      className="cursor-pointer"
+                      checked={enabled}
+                      onCheckedChange={(checked) => {
+                        navigate({
+                          search: (prev) => ({
+                            ...prev,
+                            views: checked
+                              ? [...prev.views, section.name]
+                              : prev.views.filter((v) => v !== section.name),
+                          }),
+                        })
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </ScrollArea>
   )
 }
-
