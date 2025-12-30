@@ -1,4 +1,5 @@
 """Database models for the application using SQLAlchemy ORM."""
+
 from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
@@ -16,6 +17,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyBaseAccessTokenTable
+
 Base = declarative_base()
 
 
@@ -224,6 +226,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
+
 class AccessToken(SQLAlchemyBaseAccessTokenTable[int], Base):
     """
     AccessToken model for FastAPI Users access tokens.
@@ -231,6 +234,7 @@ class AccessToken(SQLAlchemyBaseAccessTokenTable[int], Base):
 
     __tablename__ = "access_tokens"
     user_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+
 
 class Rentals(Base):
     """

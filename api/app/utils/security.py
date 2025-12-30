@@ -1,9 +1,11 @@
 """Utility functions for password hashing and verification."""
+
 import secrets
 import string
 from fastapi_users.password import PasswordHelper
 
 password_helper = PasswordHelper()
+
 
 def hash_password(password: str):
     """
@@ -23,6 +25,7 @@ def verify_password(plain_password: str, hashed_password: str):
     """
     status, _ = password_helper.verify_and_update(plain_password, hashed_password)
     return status
+
 
 def generate_starting_password(lenght: int = 8):
     """

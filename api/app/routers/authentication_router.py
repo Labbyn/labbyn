@@ -13,9 +13,9 @@ current_user = fastapi_users.current_user(active=True)
 
 @router.post("/auth/setup-password")
 async def setup_first_password(
-        data: FirstChangePasswordRequest,
-        user: User = Depends(current_user),
-        db: Session = Depends(get_db)
+    data: FirstChangePasswordRequest,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
 ):
 
     if not user.force_password_change:

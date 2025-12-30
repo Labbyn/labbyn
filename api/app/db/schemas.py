@@ -382,15 +382,18 @@ class UserCreatedResponse(UserResponse):
         None, description="Generated password if one was created"
     )
 
+
 # ==========================
 #      FASTAPI-USERS
 # ==========================
+
 
 class UserRead(schemas.BaseUser[int]):
     """
     Schema for reading user data.
     Inherits from fastapi-users BaseUser schema.
     """
+
     name: str
     surname: str
     login: str
@@ -407,6 +410,7 @@ class UserCreate(schemas.BaseUserCreate):
     Schema for creating a new user.
     Inherits from fastapi-users BaseUserCreate schema.
     """
+
     name: str = Field(..., max_length=50)
     surname: str = Field(..., max_length=80)
     login: str = Field(..., max_length=30)
@@ -414,11 +418,13 @@ class UserCreate(schemas.BaseUserCreate):
     user_type: UserTypeEnum = UserTypeEnum.USER
     password: Optional[str] = Field(None, min_length=6, max_length=255)
 
+
 class UserUpdate(schemas.BaseUserUpdate):
     """
     Schema for updating user data.
     Inherits from fastapi-users BaseUserUpdate schema.
     """
+
     name: Optional[str] = None
     surname: Optional[str] = None
     team_id: Optional[int] = None
