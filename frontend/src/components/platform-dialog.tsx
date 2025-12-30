@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Cpu, Loader2 } from "lucide-react";
-import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useState } from 'react'
+import { Cpu, Loader2 } from 'lucide-react'
+import { useForm } from '@tanstack/react-form'
+import { useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import {
   Dialog,
@@ -13,70 +13,89 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { SidebarMenuButton } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog'
+import { SidebarMenuButton } from '@/components/ui/sidebar'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 export function AddPlatformDialog() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
-const ENDPOINTS = {
-  default: "TO DO just add record to db",
-  scan: "http://localhost:8000/ansible/scan_platform",
-  deploy: "http://localhost:8000/ansible/setup_agent",
-}
-
+  const ENDPOINTS = {
+    default: 'TO DO just add record to db',
+    scan: 'http://localhost:8000/ansible/scan_platform',
+    deploy: 'http://localhost:8000/ansible/setup_agent',
+  }
 
   const mutation = useMutation({
     mutationFn: async (values: any) => {
       const payload = {
-      host: values.hostname,
-      extra_vars: {
-        ansible_user: values.login,
-        ansible_password: values.password,
-        ansible_become_password: values.password,
+        host: values.hostname,
+        extra_vars: {
+          ansible_user: values.login,
+          ansible_password: values.password,
+          ansible_become_password: values.password,
+        },
       }
-    }
-      const response = await fetch("http://localhost:8000/ansible/setup_agent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const results: any[] = []
 
-      if (!response.ok) {
-        throw new Error(await response.text() || "Failed to setup agent");
+      if (values.scanPlatform) {
+        const response = await fetch(ENDPOINTS.scan, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          throw new Error((await response.text()) || 'Failed to scan platform')
+        }
+        results.push(await response.json())
       }
-      return response.json();
+
+      if (values.deployAgent) {
+        const response = await fetch(ENDPOINTS.deploy, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+
+        if (!response.ok) {
+          throw new Error((await response.text()) || 'Failed to setup agent')
+        }
+        results.push(await response.json())
+      }
+      if (!values.scanPlatform && !values.deployAgent) {
+        // Just add platform to DB
+      }
+      return results
     },
     onSuccess: () => {
-      toast.success("Platform added successfully!", {
-        description: "All tasks successfully completed.",
-      });
-      setOpen(false);
-      form.reset();
+      toast.success('Platform added successfully!', {
+        description: 'All tasks successfully completed.',
+      })
+      form.reset()
     },
     onError: (error: Error) => {
-      toast.error("Deployment failed", {
+      toast.error('Deployment failed', {
         description: error.message,
-      });
+      })
     },
-  });
+  })
 
   const form = useForm({
     defaultValues: {
-      hostname: "",
+      hostname: '',
       scanPlatform: false,
       deployAgent: false,
-      login: "",
-      password: "",
+      login: '',
+      password: '',
     },
     onSubmit: async ({ value }) => {
-      mutation.mutate(value);
+      mutation.mutate(value)
     },
-  });
+  })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -97,9 +116,9 @@ const ENDPOINTS = {
 
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            form.handleSubmit();
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
           }}
           className="space-y-6 py-4"
         >
@@ -131,7 +150,9 @@ const ENDPOINTS = {
                     checked={field.state.value}
                     onCheckedChange={(checked) => field.handleChange(!!checked)}
                   />
-                  <Label htmlFor={field.name} className="cursor-pointer">Scan Platform</Label>
+                  <Label htmlFor={field.name} className="cursor-pointer">
+                    Scan Platform
+                  </Label>
                 </div>
               )}
             />
@@ -144,7 +165,9 @@ const ENDPOINTS = {
                     checked={field.state.value}
                     onCheckedChange={(checked) => field.handleChange(!!checked)}
                   />
-                  <Label htmlFor={field.name} className="cursor-pointer">Deploy Agent</Label>
+                  <Label htmlFor={field.name} className="cursor-pointer">
+                    Deploy Agent
+                  </Label>
                 </div>
               )}
             />
@@ -152,9 +175,12 @@ const ENDPOINTS = {
 
           {/* Conditional Credentials Section */}
           <form.Subscribe
-            selector={(state) => [state.values.scanPlatform, state.values.deployAgent]}
+            selector={(state) => [
+              state.values.scanPlatform,
+              state.values.deployAgent,
+            ]}
             children={([scan, deploy]) => {
-              if (!scan && !deploy) return null;
+              if (!scan && !deploy) return null
               return (
                 <div className="grid gap-4 border-t pt-4 animate-in fade-in slide-in-from-top-2">
                   <form.Field
@@ -187,22 +213,26 @@ const ENDPOINTS = {
                     )}
                   />
                 </div>
-              );
+              )
             }}
           />
 
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={mutation.isPending}
+          >
             {mutation.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Deploying...
               </>
             ) : (
-              "Add Platform"
+              'Add Platform'
             )}
           </Button>
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
