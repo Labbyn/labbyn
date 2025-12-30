@@ -39,7 +39,7 @@ def test_history_full_cycle_with_rollback(db_session):
             name="Admin",
             surname="Tester",
             login=unique_str("Admin"),
-            email=f"{unique_str('admin')}@test.local",
+            email=f"{unique_str('admin')}@labbyn.service",
             password="adminpass",
             user_type=models.UserType.ADMIN,
         ),

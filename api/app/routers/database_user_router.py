@@ -44,7 +44,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
     raw_password = generate_starting_password()
     hashed_pw = hash_password(raw_password)
-    user_dict = user_data.model_dump(exclude={"password"})
+    user_dict = user_data.model_dump(exclude={"password", "is_active", "is_superuser", "is_verified"})
     new_user = User(
         **user_dict,
         hashed_password=hashed_pw,

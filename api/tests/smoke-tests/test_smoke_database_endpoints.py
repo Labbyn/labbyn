@@ -87,7 +87,7 @@ def test_resource_chain_creation(test_client):
             "name": "Admin",
             "surname": "Team",
             "login": unique_str("adm"),
-            "email": f"{unique_str('adm')}@labbyn.test",
+            "email": f"{unique_str('adm')}@labbyn.service",
             "user_type": "admin",
         },
     )
