@@ -7,15 +7,12 @@ from app.db.models import (
     User,
     UserType,
 )
-from app.db.schemas import UserCreate, UserResponse, UserUpdate, UserCreatedResponse
+from app.db.schemas import UserCreate, UserUpdate, UserCreatedResponse
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
+from app.db.schemas import UserRead
 from fastapi import APIRouter, Depends, HTTPException, status
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 router = APIRouter()
 
@@ -40,11 +37,24 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Login already exists."
         )
+    if db.query(User).filter(User.email == user_data.email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already exists."
+        )
 
     raw_password = generate_starting_password()
     hashed_pw = hash_password(raw_password)
-    user_dict = user_data.model_dump(exclude={"password"})
-    new_user = User(**user_dict, password=hashed_pw, force_password_change=True)
+    user_dict = user_data.model_dump(
+        exclude={"password", "is_active", "is_superuser", "is_verified"}
+    )
+    new_user = User(
+        **user_dict,
+        hashed_password=hashed_pw,
+        force_password_change=True,
+        is_active=True,
+        is_verified=False,
+        is_superuser=(user_data.user_type == UserType.ADMIN),
+    )
 
     try:
         db.add(new_user)
@@ -59,7 +69,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
         ) from e
 
 
-@router.get("/db/users/", response_model=List[UserResponse], tags=["Users"])
+@router.get("/db/users/", response_model=List[UserRead], tags=["Users"])
 def get_users(db: Session = Depends(get_db)):
     """
     Fetch all users
@@ -69,7 +79,7 @@ def get_users(db: Session = Depends(get_db)):
     return db.query(User).all()
 
 
-@router.get("/db/users/{user_id}", response_model=UserResponse, tags=["Users"])
+@router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     """
     Fetch specific user by ID
@@ -85,7 +95,7 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return user
 
 
-@router.put("/db/users/{user_id}", response_model=UserResponse, tags=["Users"])
+@router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 async def update_user(
     user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)
 ):
@@ -105,7 +115,8 @@ async def update_user(
 
         data = user_data.model_dump(exclude_unset=True)
         if "password" in data:
-            data["password"] = hash_password(data["password"])
+            new_plain_password = data.pop("password")
+            data["hashed_password"] = hash_password(new_plain_password)
 
         for k, v in data.items():
             setattr(user, k, v)
