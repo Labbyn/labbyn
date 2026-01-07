@@ -20,7 +20,8 @@ if [ -f "$ENV_FILE" ]; then
         echo "AUTH_SECRET=$NEW_SECRET" >> "$ENV_FILE"
         echo "AUTH_SECRET generated successfully."
     fi
-    export AUTH_SECRET=$(grep "^AUTH_SECRET=" "$ENV_FILE" | cut -d'=' -f2)
+    AUTH_SECRET=$(grep "^AUTH_SECRET=" "$ENV_FILE" | cut -d'=' -f2)
+    export AUTH_SECRET
 fi
 
 export PYTHONPATH=/code
