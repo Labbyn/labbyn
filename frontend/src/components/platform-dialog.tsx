@@ -21,7 +21,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
   const ENDPOINTS = {
-    addToDB: `http://${import.meta.env.VITE_API_URL}/db/machines`,
+    addMachineToDB: `http://${import.meta.env.VITE_API_URL}/db/machines`,
+    addMetadataToDB: `http://${import.meta.env.VITE_API_URL}/db/metadata`,
     scan: `http://${import.meta.env.VITE_API_URL}/ansible/discovery`,
     deploy: `http://${import.meta.env.VITE_API_URL}/ansible/setup_agent`,
     updatePrometheus: `http://${import.meta.env.VITE_API_URL}/prometheus/target`,
@@ -48,6 +49,37 @@ export function AddPlatformDialog() {
     mutationFn: async (values: any) => {
 
       const results = []
+
+      if (values.addToDB) {
+        const metadataPayload = {
+          agent_prometheus: false,
+          ansible_access: false,
+          ansible_root_access: false,
+        }
+
+        const metadataResponse = await authorizedFetch(ENDPOINTS.addMetadataToDB, metadataPayload, "Metadata add failed")
+        
+        results.push(metadataResponse)
+
+        const dbPayload = {
+          name: values.name || null,
+          ip_address: values.ip || null,
+          mac_address: values.mac || null,
+          localization_id: values.location || null,
+          pdu_port: values.pdu_port || null,
+          team_id: values.team || null,
+          os: values.os || null,
+          serial_number: values.sn || null,
+          note: values.note || null,
+          cpu: values.cpu || null,
+          ram: values.ram || null,
+          disk: values.disk || null,
+          layout_id: values.layout_id || null,
+          metadata_id: metadataResponse.id
+        }
+        
+        results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, dbPayload, "Machine add failed"))
+      }
 
       if (values.deployAgent) {
         const ansiblePayload = {
@@ -104,6 +136,21 @@ export function AddPlatformDialog() {
       deployAgent: false,
       login: '',
       password: '',
+      // only DB
+      addToDb: false,
+      name: '',
+      ip: '',
+      mac: '',
+      location: '',
+      team: null,
+      pdu_port: null,
+      os: '',
+      sn: '',
+      note: '',
+      cpu: '',
+      ram: '',
+      disk: '',
+      layout_id: null,
     },
     onSubmit: async ({ value }) => {
       mutation.mutate(value)
@@ -150,41 +197,75 @@ export function AddPlatformDialog() {
                 />
               </div>
             )}
-          />
+          /> 
+          {/* Options */}            
+          <form.Subscribe
+            selector={(state) => ({
+              addToDB: state.values.addToDB,
+              scan: state.values.scanPlatform,
+              deploy: state.values.deployAgent
+            })}
+            children={(values) => (
+              <div className="flex flex-col gap-3 rounded-md border p-4">
+                <form.Field
+                  name="addToDB"
+                  children={(field) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={field.name}
+                        checked={field.state.value}
+                        disabled={values.scan || values.deploy}
+                        onCheckedChange={(checked) => {
+                          field.handleChange(!!checked)
+                        }}
+                      />
+                      <Label htmlFor={field.name} className={values.scan || values.deploy ? "text-muted-foreground" : "cursor-pointer"}>
+                        Only add to DB (Manual Entry)
+                      </Label>
+                    </div>
+                  )}
+                />
 
-          {/* Options */}
-          <div className="flex flex-col gap-3">
-            <form.Field
-              name="scanPlatform"
-              children={(field) => (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={field.name}
-                    checked={field.state.value}
-                    onCheckedChange={(checked) => field.handleChange(!!checked)}
-                  />
-                  <Label htmlFor={field.name} className="cursor-pointer">
-                    Scan Platform
-                  </Label>
-                </div>
-              )}
-            />
-            <form.Field
-              name="deployAgent"
-              children={(field) => (
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={field.name}
-                    checked={field.state.value}
-                    onCheckedChange={(checked) => field.handleChange(!!checked)}
-                  />
-                  <Label htmlFor={field.name} className="cursor-pointer">
-                    Deploy Prometheus Agent
-                  </Label>
-                </div>
-              )}
-            />
-          </div>
+                <div className="h-[1px] bg-border w-full my-1" />
+
+                {/* 2. Scan Option */}
+                <form.Field
+                  name="scanPlatform"
+                  children={(field) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={field.name}
+                        checked={field.state.value}
+                        disabled={values.addToDB}
+                        onCheckedChange={(checked) => field.handleChange(!!checked)}
+                      />
+                      <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
+                        Scan Platform with Ansible
+                      </Label>
+                    </div>
+                  )}
+                />
+
+                {/* 3. Deploy Option */}
+                <form.Field
+                  name="deployAgent"
+                  children={(field) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={field.name}
+                        checked={field.state.value}
+                        disabled={values.addToDB}
+                        onCheckedChange={(checked) => field.handleChange(!!checked)}
+                      />
+                      <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
+                        Deploy Prometheus Agent
+                      </Label>
+                    </div>
+                  )}
+                />
+              </div>
+            )}
+          />
 
           {/* Conditional Credentials Section */}
           <form.Subscribe
@@ -225,25 +306,146 @@ export function AddPlatformDialog() {
                       </div>
                     )}
                   />
+                  
                 </div>
               )
             }}
           />
+          {/* Conditional: Manual DB Fields (Scrollable) */}
+          <form.Subscribe
+            selector={(state) => state.values.addToDB}
+            children={(isAddToDB) => {
+              if (!isAddToDB) return null
+              return (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 border-t pt-4">
+                  <Label className="text-muted-foreground">Platform details (Optional)</Label>
+                  
+                  {/* Scrollable Container */}
+                  <div className="max-h-[200px] overflow-y-auto pr-2 grid gap-4 border rounded-md p-3 bg-muted/20">
+                    <form.Field name="name" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Name</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Server 1" />
+                      </div>
+                    )} />
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deploying...
-              </>
-            ) : (
-              'Add Platform'
-            )}
-          </Button>
+                    <form.Field name="ip" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>IP Address</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="192.168.0.1" />
+                      </div>
+                    )} />
+
+                    <form.Field name="mac" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>MAC Address</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="00:00:00:00:00" />
+                      </div>
+                    )} />
+
+                    <form.Field name="location" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Location</Label>
+                        <Input id={field.name} value={field.state.value} type="number" min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="1" />
+                      </div>
+                    )} />
+
+                    <form.Field name="team" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Team ID</Label>
+                        <Input id={field.name} value={field.state.value} type="number"  min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="2222" />
+                      </div>
+                    )} />
+                    
+                    <form.Field name="pdu_port" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>PDU Port</Label>
+                        <Input id={field.name} value={field.state.value} type="number"  min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="4" />
+                      </div>
+                    )} />
+
+                    <form.Field name="os" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>OS</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Ubuntu 24.04" />
+                      </div>
+                    )} />
+
+                    <form.Field name="sn" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Serial Number</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="123456789" />
+                      </div>
+                    )} />
+
+                    <form.Field name="note" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Note</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Left USB port is broken" />
+                      </div>
+                    )} />
+
+                    <form.Field name="cpu" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>CPU</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Intel Core i7" />
+                      </div>
+                    )} />
+
+                    <form.Field name="ram" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>RAM memory</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="128GB" />
+                      </div>
+                    )} />
+
+                    <form.Field name="disk" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Disk</Label>
+                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="4TB SSD" />
+                      </div>
+                    )} />
+                    
+                    <form.Field name="layout" children={(field) => (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>Layout</Label>
+                        <Input id={field.name} value={field.state.value} type="number" min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="1" />
+                      </div>
+                    )} />
+
+                  </div>
+                </div>
+              )
+            }}
+          />
+          <form.Subscribe
+            selector={(state) => ({
+              addToDB: state.values.addToDB,
+              scan: state.values.scanPlatform,
+              deploy: state.values.deployAgent,
+            })}
+            children={({ addToDB, scan, deploy }) => {
+              // Check if at least one option is selected
+              const isSelectionEmpty = !addToDB && !scan && !deploy
+
+              return (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={mutation.isPending || isSelectionEmpty}
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    'Add Platform'
+                  )}
+                </Button>
+              )
+            }}
+          />
         </form>
       </DialogContent>
     </Dialog>
