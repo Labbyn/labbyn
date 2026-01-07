@@ -1,5 +1,8 @@
 #!/bin/sh
 
+
+
+
 echo "Waiting for PostgreSQL ($DB_HOST)..."
 until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; do
   echo "Database is unavailable - sleeping"
