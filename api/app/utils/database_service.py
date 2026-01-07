@@ -61,8 +61,12 @@ def init_super_user(db: Session):
             login="Service",
             name="Service Account",
             surname="System",
-            password=hash_password("Service"),
+            email="service@labbyn.service",
+            hashed_password=hash_password("Service"),
             user_type=models.UserType.ADMIN,
+            is_active=True,
+            is_superuser=True,
+            is_verified=True,
             force_password_change=True,
         )
         db.add(admin_user)
@@ -248,10 +252,15 @@ def create_user(db: Session, user: schemas.UserCreate):
     :param user: Pydantic schema containing user data (including password).
     :return: The newly created user instance.
     """
-    user_data = user.model_dump()
-    user_data["password"] = user_data["password"]
+    if db.query(models.User).filter(models.User.login == user.login).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists."
+        )
+    user_data = user.model_dump(exclude={"password"})
+    hashed_pw = hash_password(user.password)
 
-    db_obj = models.User(**user_data)
+    db_obj = models.User(**user_data, hashed_password=hashed_pw)
+
     db.add(db_obj)
     handle_commit(db)
     db.refresh(db_obj)
@@ -281,8 +290,9 @@ def update_user(
 
     update_data = user_update.model_dump(exclude_unset=True)
 
-    if "password" in update_data and update_data["password"]:
-        update_data["password"] = hash_password(update_data["password"])
+    if "password" in update_data:
+        plain_password = update_data.pop("password")
+        update_data["hashed_password"] = hash_password(plain_password)
 
     for key, value in update_data.items():
         setattr(db_obj, key, value)
