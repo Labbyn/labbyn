@@ -41,6 +41,9 @@ import { Button } from '@/components/ui/button'
   return res.json();
 };
 
+// TO DO:
+// add machine to DB after agent deployment 
+// drop list with teams, rooms etc. for manual adding
 
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
@@ -61,7 +64,7 @@ export function AddPlatformDialog() {
         
         results.push(metadataResponse)
 
-        const dbPayload = {
+        const machinePayload = {
           name: values.name || null,
           ip_address: values.ip || null,
           mac_address: values.mac || null,
@@ -78,11 +81,11 @@ export function AddPlatformDialog() {
           metadata_id: metadataResponse.id
         }
         
-        results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, dbPayload, "Machine add failed"))
+        results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, machinePayload, "Machine add failed"))
       }
 
       if (values.deployAgent) {
-        const ansiblePayload = {
+        const deployPayload = {
           host: values.hostname,
           extra_vars: {
           ansible_user: values.login,
@@ -98,12 +101,12 @@ export function AddPlatformDialog() {
             role: 'virtual'
           },
         }
-        results.push(await authorizedFetch(ENDPOINTS.deploy, ansiblePayload, 'Agent deployment failed'));
+        results.push(await authorizedFetch(ENDPOINTS.deploy, deployPayload, 'Agent deployment failed'));
         results.push(await authorizedFetch(ENDPOINTS.updatePrometheus, prometheusPayload, 'Prometheus update failed'));
       }
 
       if (values.scanPlatform) {
-        const ansiblePayload = {
+        const scanPayload = {
           hosts: [values.hostname],
           extra_vars: {
           ansible_user: values.login,
@@ -111,7 +114,7 @@ export function AddPlatformDialog() {
           ansible_become_password: values.password,
         },
       }
-        results.push(await authorizedFetch(ENDPOINTS.scan, ansiblePayload, 'Platform scan failed'));
+        results.push(await authorizedFetch(ENDPOINTS.scan, scanPayload, 'Platform scan failed'));
       }
       
       return results
@@ -153,7 +156,7 @@ export function AddPlatformDialog() {
       layout_id: null,
     },
     onSubmit: async ({ value }) => {
-      mutation.mutate(value)
+      await mutation.mutate(value)
     },
   })
 
@@ -240,7 +243,7 @@ export function AddPlatformDialog() {
                         onCheckedChange={(checked) => field.handleChange(!!checked)}
                       />
                       <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
-                        Scan Platform with Ansible
+                        Scan Platform
                       </Label>
                     </div>
                   )}
