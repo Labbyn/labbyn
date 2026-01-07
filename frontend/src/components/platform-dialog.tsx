@@ -22,9 +22,9 @@ import { Button } from '@/components/ui/button'
 
   const ENDPOINTS = {
     addToDB: `http://${import.meta.env.VITE_API_URL}/db/machines`,
-    addMetadata: `http://${import.meta.env.VITE_API_URL}/db/metadata`,
-    scan: `http://${import.meta.env.VITE_API_URL}/ansible/scan_platform`,
-    deploy: `http://${import.meta.env.VITE_API_URL}/ansible/setup_agent`
+    scan: `http://${import.meta.env.VITE_API_URL}/ansible/discovery`,
+    deploy: `http://${import.meta.env.VITE_API_URL}/ansible/setup_agent`,
+    updatePrometheus: `http://${import.meta.env.VITE_API_URL}/prometheus/target`,
   }
 
   const authorizedFetch = async (url: string, body: any, errorMsg: string) => {
@@ -49,60 +49,39 @@ export function AddPlatformDialog() {
 
       const results = []
 
-      const ansiblePayload = {
-        host: values.hostname,
-        extra_vars: {
+      if (values.deployAgent) {
+        const ansiblePayload = {
+          host: values.hostname,
+          extra_vars: {
           ansible_user: values.login,
           ansible_password: values.password,
           ansible_become_password: values.password,
         },
       }
-
-      const metadataPayload = {
-        agent_prometheus: values.deployAgent || false,
-        ansible_access: values.scanPlatform || values.deployAgent,
-        ansible_root_access: values.deployAgent || false
+        const prometheusPayload = {
+          instance: `${values.hostname}:9100`,
+          labels: {
+            env: 'virtual',
+            host: values.hostname,
+            role: 'virtual'
+          },
+        }
+        results.push(await authorizedFetch(ENDPOINTS.deploy, ansiblePayload, 'Agent deployment failed'));
+        results.push(await authorizedFetch(ENDPOINTS.updatePrometheus, prometheusPayload, 'Prometheus update failed'));
       }
-
 
       if (values.scanPlatform) {
+        const ansiblePayload = {
+          hosts: [values.hostname],
+          extra_vars: {
+          ansible_user: values.login,
+          ansible_password: values.password,
+          ansible_become_password: values.password,
+        },
+      }
         results.push(await authorizedFetch(ENDPOINTS.scan, ansiblePayload, 'Platform scan failed'));
       }
-
-      if (values.deployAgent) {
-        results.push(await authorizedFetch(ENDPOINTS.deploy, ansiblePayload, 'Agent deployment failed'));
-      }
-      const metadata = await authorizedFetch(ENDPOINTS.addMetadata, metadataPayload, 'Failed to save metadata');      
-      results.push(metadata);
-      try {
-        const dbPayload = {
-          name: values.hostname,
-          localization_id: null,
-          mac_address: null,
-          ip_address: values.hostname,
-          pdu_port: null,
-          team_id: null,
-          os: null,
-          serial_number: null,
-          note: null,
-          cpu: null,
-          ram: null,
-          disk: null,
-          metadata_id: metadata.id,
-          layout_id: null,
-        }
-
-        const machine = await authorizedFetch(ENDPOINTS.addToDB, dbPayload, 'Failed to save machine to database');
-        results.push(machine);
-      // xD rollback in case of failure
-      } catch (error) {
-        try{
-          await fetch(`${ENDPOINTS.addMetadata}/${metadata.id}`, { method: 'DELETE' });
-        } catch (error){
-          throw new Error('Failed to rollback metadata: ' + (error as Error).message);
-        }
-        throw error;
-      }
+      
       return results
     },
     onSuccess: () => {
@@ -200,7 +179,7 @@ export function AddPlatformDialog() {
                     onCheckedChange={(checked) => field.handleChange(!!checked)}
                   />
                   <Label htmlFor={field.name} className="cursor-pointer">
-                    Deploy Agent
+                    Deploy Prometheus Agent
                   </Label>
                 </div>
               )}
