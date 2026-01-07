@@ -28,9 +28,9 @@ import { Button } from '@/components/ui/button'
     updatePrometheus: `http://${import.meta.env.VITE_API_URL}/prometheus/target`,
   }
 
-  const authorizedFetch = async (url: string, body: any, errorMsg: string) => {
+  const authorizedFetch = async (url: string, method: string, body: any, errorMsg: string) => {
   const res = await fetch(url, {
-    method: 'POST',
+    method: method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
@@ -42,8 +42,9 @@ import { Button } from '@/components/ui/button'
 };
 
 // TO DO:
-// add machine to DB after agent deployment 
+// input validation (IP, MAC)
 // drop list with teams, rooms etc. for manual adding
+// small refactor for security/good practices 
 
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
@@ -60,28 +61,32 @@ export function AddPlatformDialog() {
           ansible_root_access: false,
         }
 
-        const metadataResponse = await authorizedFetch(ENDPOINTS.addMetadataToDB, metadataPayload, "Metadata add failed")
+        const metadataResponse = await authorizedFetch(ENDPOINTS.addMetadataToDB, "POST", metadataPayload, "Metadata add failed")
         
         results.push(metadataResponse)
 
         const machinePayload = {
-          name: values.name || null,
-          ip_address: values.ip || null,
-          mac_address: values.mac || null,
-          localization_id: values.location || null,
-          pdu_port: values.pdu_port || null,
-          team_id: values.team || null,
-          os: values.os || null,
-          serial_number: values.sn || null,
-          note: values.note || null,
-          cpu: values.cpu || null,
-          ram: values.ram || null,
-          disk: values.disk || null,
-          layout_id: values.layout_id || null,
+          name: values.name || values.hostname,
+          ip_address: values.ip || undefined,
+          mac_address: values.mac || undefined,
+          localization_id: values.location ? Number(values.location) : 1,
+          pdu_port: values.pdu_port ? Number(values.pdu_port) : undefined,
+          team_id: values.team ? Number(values.team) : undefined,
+          os: values.os || undefined,
+          serial_number: values.sn || undefined,
+          note: values.note || undefined,
+          cpu: values.cpu || undefined,
+          ram: values.ram || undefined,
+          disk: values.disk || undefined,
+          layout_id: values.layout ? Number(values.layout) : undefined,
           metadata_id: metadataResponse.id
         }
+        try{
+          results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, "POST", machinePayload, "Machine add failed"))
+        } catch (error) {
+          authorizedFetch(`${ENDPOINTS.addMetadataToDB}/${metadataResponse.id}`, "DELETE", {}, "Machine add failed")
+        }
         
-        results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, machinePayload, "Machine add failed"))
       }
 
       if (values.deployAgent) {
@@ -101,8 +106,8 @@ export function AddPlatformDialog() {
             role: 'virtual'
           },
         }
-        results.push(await authorizedFetch(ENDPOINTS.deploy, deployPayload, 'Agent deployment failed'));
-        results.push(await authorizedFetch(ENDPOINTS.updatePrometheus, prometheusPayload, 'Prometheus update failed'));
+        results.push(await authorizedFetch(ENDPOINTS.deploy, "POST", deployPayload, 'Agent deployment failed'));
+        results.push(await authorizedFetch(ENDPOINTS.updatePrometheus, "POST", prometheusPayload, 'Prometheus update failed'));
       }
 
       if (values.scanPlatform) {
@@ -114,7 +119,7 @@ export function AddPlatformDialog() {
           ansible_become_password: values.password,
         },
       }
-        results.push(await authorizedFetch(ENDPOINTS.scan, scanPayload, 'Platform scan failed'));
+        results.push(await authorizedFetch(ENDPOINTS.scan, "POST", scanPayload, 'Platform scan failed'));
       }
       
       return results
@@ -144,16 +149,16 @@ export function AddPlatformDialog() {
       name: '',
       ip: '',
       mac: '',
-      location: '',
-      team: null,
-      pdu_port: null,
+      location: undefined,
+      team: undefined,
+      pdu_port: undefined,
       os: '',
       sn: '',
       note: '',
       cpu: '',
       ram: '',
       disk: '',
-      layout_id: null,
+      layout: undefined,
     },
     onSubmit: async ({ value }) => {
       await mutation.mutate(value)
@@ -210,6 +215,7 @@ export function AddPlatformDialog() {
             })}
             children={(values) => (
               <div className="flex flex-col gap-3 rounded-md border p-4">
+                Add to database
                 <form.Field
                   name="addToDB"
                   children={(field) => (
@@ -217,20 +223,17 @@ export function AddPlatformDialog() {
                       <Checkbox
                         id={field.name}
                         checked={field.state.value}
-                        disabled={values.scan || values.deploy}
+                        disabled={values.scan}
                         onCheckedChange={(checked) => {
                           field.handleChange(!!checked)
                         }}
                       />
-                      <Label htmlFor={field.name} className={values.scan || values.deploy ? "text-muted-foreground" : "cursor-pointer"}>
-                        Only add to DB (Manual Entry)
+                      <Label htmlFor={field.name} className={values.scan ? "text-muted-foreground" : "cursor-pointer"}>
+                        Manual add
                       </Label>
                     </div>
                   )}
                 />
-
-                <div className="h-[1px] bg-border w-full my-1" />
-
                 {/* 2. Scan Option */}
                 <form.Field
                   name="scanPlatform"
@@ -243,13 +246,16 @@ export function AddPlatformDialog() {
                         onCheckedChange={(checked) => field.handleChange(!!checked)}
                       />
                       <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
-                        Scan Platform
+                        Platform scan
                       </Label>
                     </div>
                   )}
                 />
 
+                <div className="h-[1px] bg-border w-full my-1" />
+
                 {/* 3. Deploy Option */}
+                Additional options
                 <form.Field
                   name="deployAgent"
                   children={(field) => (
@@ -257,7 +263,6 @@ export function AddPlatformDialog() {
                       <Checkbox
                         id={field.name}
                         checked={field.state.value}
-                        disabled={values.addToDB}
                         onCheckedChange={(checked) => field.handleChange(!!checked)}
                       />
                       <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
@@ -443,7 +448,7 @@ export function AddPlatformDialog() {
                       Processing...
                     </>
                   ) : (
-                    'Add Platform'
+                    'Apply'
                   )}
                 </Button>
               )
