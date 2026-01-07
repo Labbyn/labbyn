@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Cpu, Loader2 } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import {
@@ -20,18 +20,36 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 
+  const ENDPOINTS = {
+    addToDB: `http://${import.meta.env.VITE_API_URL}/db/machines`,
+    addMetadata: `http://${import.meta.env.VITE_API_URL}/db/metadata`,
+    scan: `http://${import.meta.env.VITE_API_URL}/ansible/scan_platform`,
+    deploy: `http://${import.meta.env.VITE_API_URL}/ansible/setup_agent`
+  }
+
+  const authorizedFetch = async (url: string, body: any, errorMsg: string) => {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || errorMsg);
+  }
+  return res.json();
+};
+
+
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
 
-  const ENDPOINTS = {
-    default: 'TO DO just add record to db',
-    scan: 'http://localhost:8000/ansible/scan_platform',
-    deploy: 'http://localhost:8000/ansible/setup_agent',
-  }
-
   const mutation = useMutation({
     mutationFn: async (values: any) => {
-      const payload = {
+
+      const results = []
+
+      const ansiblePayload = {
         host: values.hostname,
         extra_vars: {
           ansible_user: values.login,
@@ -39,35 +57,51 @@ export function AddPlatformDialog() {
           ansible_become_password: values.password,
         },
       }
-      const results: any[] = []
+
+      const metadataPayload = {
+        agent_prometheus: values.deployAgent || false,
+        ansible_access: values.scanPlatform || values.deployAgent,
+        ansible_root_access: values.deployAgent || false
+      }
+
 
       if (values.scanPlatform) {
-        const response = await fetch(ENDPOINTS.scan, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!response.ok) {
-          throw new Error((await response.text()) || 'Failed to scan platform')
-        }
-        results.push(await response.json())
+        results.push(await authorizedFetch(ENDPOINTS.scan, ansiblePayload, 'Platform scan failed'));
       }
 
       if (values.deployAgent) {
-        const response = await fetch(ENDPOINTS.deploy, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!response.ok) {
-          throw new Error((await response.text()) || 'Failed to setup agent')
-        }
-        results.push(await response.json())
+        results.push(await authorizedFetch(ENDPOINTS.deploy, ansiblePayload, 'Agent deployment failed'));
       }
-      if (!values.scanPlatform && !values.deployAgent) {
-        // Just add platform to DB
+      const metadata = await authorizedFetch(ENDPOINTS.addMetadata, metadataPayload, 'Failed to save metadata');      
+      results.push(metadata);
+      try {
+        const dbPayload = {
+          name: values.hostname,
+          localization_id: null,
+          mac_address: null,
+          ip_address: values.hostname,
+          pdu_port: null,
+          team_id: null,
+          os: null,
+          serial_number: null,
+          note: null,
+          cpu: null,
+          ram: null,
+          disk: null,
+          metadata_id: metadata.id,
+          layout_id: null,
+        }
+
+        const machine = await authorizedFetch(ENDPOINTS.addToDB, dbPayload, 'Failed to save machine to database');
+        results.push(machine);
+      // xD rollback in case of failure
+      } catch (error) {
+        try{
+          await fetch(`${ENDPOINTS.addMetadata}/${metadata.id}`, { method: 'DELETE' });
+        } catch (error){
+          throw new Error('Failed to rollback metadata: ' + (error as Error).message);
+        }
+        throw error;
       }
       return results
     },
@@ -100,7 +134,7 @@ export function AddPlatformDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-1.5! w-auto cursor-pointer">
+        <SidebarMenuButton className="data-[slot=sidebar-menu-button]:p-2! w-50% cursor-pointer">
           <Cpu className="size-5!" />
           <span className="text-base font-semibold">Add Platform</span>
         </SidebarMenuButton>
