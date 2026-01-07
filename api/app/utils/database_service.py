@@ -8,7 +8,6 @@ and optimistic locking handling using SQLAlchemy sessions.
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Type
 
-from ansible_collections.amazon.aws.plugins.modules.ec2_vpc_peering import is_active
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import StaleDataError
