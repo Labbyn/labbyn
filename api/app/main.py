@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 import fastapi_users
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import (
     prometheus_router,
@@ -57,6 +58,34 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Configure CORS middleware temporaryly for local development
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Configure CORS middleware temporaryly for local development
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/auth", tags=["auth"]

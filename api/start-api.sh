@@ -30,8 +30,8 @@ export ALEMBIC_CONFIG=/code/alembic.ini
 echo "Ensuring Alembic versions directory exists..."
 mkdir -p /code/alembic/versions
 
-echo "Resetting Alembic history to 'base'..."
-alembic stamp base
+echo "Resetting Alembic history to 'head'..."
+alembic stamp head
 
 echo "Attempting to create a new Alembic revision based on current models..."
 alembic revision --autogenerate -m "Auto init on start"
