@@ -136,7 +136,7 @@ export function CommandMenu() {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <span className="truncate max-w-[150px]">
+                        <span className="truncate max-w-37.5">
                           {device.location}
                         </span>
                         <span className="border-l pl-2">
