@@ -24,7 +24,7 @@ from app.routers import (
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
-from app.utils.database_service import init_super_user
+from app.utils.database_service import init_super_user, init_virtual_lab
 
 # pylint: disable=unused-import
 import app.db.listeners
@@ -46,6 +46,7 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
     db = SessionLocal()
     try:
         init_super_user(db)
+        init_virtual_lab(db)
     finally:
         db.close()
     status_task = asyncio.create_task(status_worker())
