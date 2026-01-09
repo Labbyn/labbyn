@@ -22,6 +22,16 @@ const router = createRouter({
   scrollRestoration: true,
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
+  defaultPendingMinMs: 25,
+  defaultErrorComponent: () => {
+    return <SomethingWentWrong />
+  },
+  defaultNotFoundComponent: () => {
+    return <PageNotFound />
+  },
+  defaultPendingComponent: () => {
+    return <PageIsLoading />
+  },
 })
 
 // Register the router instance for type safety
