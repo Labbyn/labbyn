@@ -121,7 +121,7 @@ export const columns: Array<ColumnDef<Machine>> = [
     accessorKey: 'notes',
     header: 'Notes',
     cell: ({ row }) => (
-      <div className="max-w-[200px] truncate text-muted-foreground italic">
+      <div className="max-w-50 truncate text-muted-foreground italic">
         {row.getValue('notes') || '-'}
       </div>
     ),

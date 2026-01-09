@@ -1,21 +1,9 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import {
-  Activity,
-  ArrowLeft,
-  CircleAlert,
-  Cpu,
-  MapPin,
-  ShieldCheck,
-} from 'lucide-react'
+import { Activity, ArrowLeft, Cpu, MapPin, ShieldCheck } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { PageNotFound } from '@/components/page-not-found'
@@ -75,7 +63,7 @@ function DeviceDetailComponent() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex items-center gap-4 border-b bg-background/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex items-center gap-4 border-b bg-background/95 px-6 py-4 backdrop-blur supports-backdrop-filter:bg-background/60">
         <Button variant="ghost" size="icon" asChild>
           <Link to="/inventory">
             <ArrowLeft className="h-5 w-5" />

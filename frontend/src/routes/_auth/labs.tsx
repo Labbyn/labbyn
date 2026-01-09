@@ -69,7 +69,7 @@ function RouteComponent() {
                 <div className="flex w-max space-x-3 px-6 pb-4">
                   {lab.racks.map((rack) => (
                     <Link to={'/'}>
-                      <div className="group relative flex flex-col justify-between w-40 h-[100px] p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
+                      <div className="group relative flex flex-col justify-between w-40 h-25 p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
                             <Server className="h-4 w-4" />
@@ -89,7 +89,7 @@ function RouteComponent() {
                     </Link>
                   ))}
                   {lab.racks.length === 0 && (
-                    <div className="flex items-center justify-center w-[160px] h-[100px] text-xs text-muted-foreground border border-dashed rounded-lg">
+                    <div className="flex items-center justify-center w-40 h-25 text-xs text-muted-foreground border border-dashed rounded-lg">
                       No racks found
                     </div>
                   )}
