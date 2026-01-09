@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import { AddPlatformDialog } from './platform-dialog'
 import {
   Sidebar,
   SidebarContent,
@@ -37,7 +38,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { AddPlatformDialog } from './platform-dialog'
 
 const items = [
   {
@@ -84,7 +84,7 @@ const items = [
     title: 'Import & Export',
     url: '/import-export',
     icon: FolderInput,
-  }
+  },
 ]
 
 const user = {
@@ -132,7 +132,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem className="flex flex-row items-center gap-2 p-1">
+          <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
@@ -142,7 +142,6 @@ export function AppSidebar() {
                 <span className="text-base font-semibold">Labbyn</span>
               </a>
             </SidebarMenuButton>
-            <AddPlatformDialog />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -151,6 +150,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <AddPlatformDialog />
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <CommandMenu />
               </SidebarMenuItem>
