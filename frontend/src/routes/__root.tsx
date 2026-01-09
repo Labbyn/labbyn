@@ -5,6 +5,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
+import { Toaster } from '@/components/ui/sonner'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -22,7 +23,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
       <Outlet />
-
+      <Toaster richColors position="top-right" />
       <TanStackDevtools
         config={{
           position: 'bottom-right',

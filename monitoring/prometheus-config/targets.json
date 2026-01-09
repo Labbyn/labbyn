@@ -1,10 +1,12 @@
 [
-    {
-        "targets": ["localhost:9090"],
-        "labels": {
-            "job": "node",
-            "host": "localhost",
-            "team": "some_team"
-        }
+  {
+    "targets": [
+      "localhost:9090"
+    ],
+    "labels": {
+      "job": "node",
+      "host": "localhost",
+      "team": "some_team"
     }
+  }
 ]

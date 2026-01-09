@@ -14,10 +14,14 @@ def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
-@pytest.mark.api
-@pytest.mark.asyncio
+pytestmark = [
+    pytest.mark.smoke,
+    pytest.mark.database,
+    pytest.mark.api,
+    pytest.mark.asyncio,
+]
+
+
 async def test_rental_race_condition():
     """
     Test Race Condition:
@@ -49,6 +53,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "One",
                 "login": unique_str("r1"),
+                "email": f"{unique_str('r1')}@labbyn.service",
                 "user_type": "user",
             },
         )
@@ -60,6 +65,7 @@ async def test_rental_race_condition():
                 "name": "Racer",
                 "surname": "Two",
                 "login": unique_str("r2"),
+                "email": f"{unique_str('r2')}@labbyn.service",
                 "user_type": "user",
             },
         )

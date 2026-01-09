@@ -16,6 +16,8 @@ from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
+pytestmark = [pytest.mark.smoke, pytest.mark.database]
+
 
 def generate_unique_name(prefix: str):
     """
@@ -26,8 +28,6 @@ def generate_unique_name(prefix: str):
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
-@pytest.mark.smoke
-@pytest.mark.database
 def test_database_is_reachable(db_session):
     """
     Test if database is reachable.
@@ -39,8 +39,6 @@ def test_database_is_reachable(db_session):
         pytest.fail(f"Cannot connect to database. Error: {e}")
 
 
-@pytest.mark.smoke
-@pytest.mark.database
 def test_machine_full_lifecycle(db_session):
     """
     Create advanced model object (new Machine).
@@ -63,6 +61,7 @@ def test_machine_full_lifecycle(db_session):
             surname="User",
             login=generate_unique_name("User"),
             password="SecretPassword123!",
+            email=f"{generate_unique_name('user')}@labbyn.service",
             user_type="user",
         ),
     )
@@ -99,8 +98,6 @@ def test_machine_full_lifecycle(db_session):
     assert history.user_id == author_id
 
 
-@pytest.mark.smoke
-@pytest.mark.database
 def test_optimistic_locking_protection(db_session):
     """
     Check if optimistic locking protection is working fine.
