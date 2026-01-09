@@ -21,24 +21,21 @@ interface MyRouterContext {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
-      <SidebarProvider>
-        <AppSidebar />
-        <div className="flex basis-full justify-center place-items-center">
-          <Outlet />
-        </div>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
-      </SidebarProvider>
+      <Outlet />
+
+      <TanStackDevtools
+        config={{
+          position: 'bottom-right',
+          hideUntilHover: true,
+        }}
+        plugins={[
+          {
+            name: 'Tanstack Router',
+            render: <TanStackRouterDevtoolsPanel />,
+          },
+          TanStackQueryDevtools,
+        ]}
+      />
     </>
   ),
 })
