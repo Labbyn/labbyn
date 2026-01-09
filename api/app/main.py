@@ -20,7 +20,7 @@ from app.routers import (
     database_user_router,
     database_history_router,
     ansible_router,
-    dashboard_router
+    dashboard_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
