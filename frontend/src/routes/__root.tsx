@@ -5,11 +5,17 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
-import { AppSidebar } from '@/components/app-sidebar'
-import { SidebarProvider } from '@/components/ui/sidebar'
+
+interface AuthState {
+  isAuthenticated: boolean
+  user: { id: string; username: string; email: string } | null
+  login: (username: string, password: string) => Promise<void>
+  logout: () => void
+}
 
 interface MyRouterContext {
   queryClient: QueryClient
+  auth: AuthState
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
