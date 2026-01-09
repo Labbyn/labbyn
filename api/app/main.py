@@ -20,6 +20,7 @@ from app.routers import (
     database_user_router,
     database_history_router,
     ansible_router,
+    dashboard_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
@@ -73,20 +74,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure CORS middleware temporaryly for local development
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/auth", tags=["auth"]
 )
@@ -107,3 +94,4 @@ app.include_router(database_team_router.router)
 app.include_router(database_user_router.router)
 app.include_router(database_history_router.router)
 app.include_router(ansible_router.router)
+app.include_router(dashboard_router.router)
