@@ -1,12 +1,11 @@
-import { useEffect } from 'react' // 1. Import useEffect
+import { useEffect } from 'react'
 import {
   Link,
   createFileRoute,
   useNavigate,
 } from '@tanstack/react-router'
-import {
-  queryOptions, useSuspenseQuery
-} from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { dashboardQueryOptions } from '@/integrations/user_dashboard/user_dashboard.query'
 import {
   Archive,
   ArrowRight,
@@ -36,135 +35,27 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-
-
 type DashboardSearch = {
   views: string[]
 }
 
-const ENDPOINTS = {
-  showPlatforms: `http://${import.meta.env.VITE_API_URL}/db/machines`
-}
+const DEFAULT_DASHBOARD_VIEWS = [
+  'Machines',
+  'Rooms',
+  'Inventory',
+  'Teams',
+  'Users',
+  'History'
+]
 
 const IconMap = {
-  Lab: Database,
+  Room: Database,
   Server: Server,
-  Map: Map,
+  History: Map,
   User: User,
-  Group: Users,
+  Team: Users,
   Inventory: Archive,
 }
-
-const dashboardData = [
-  {
-    name: 'History',
-    pages: [
-      {
-        type: 'Lab',
-        description: {
-          id: '2137-32',
-          location: '/lab/2137-32',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Server',
-        description: {
-          id: 'server-01',
-          location: '/server-01',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Inventory',
-        description: {
-          id: '2',
-          location: '/inventory/2',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Server',
-        description: {
-          id: 'server-01',
-          location: '/server-01',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Inventory',
-        description: {
-          id: '2',
-          location: '/inventory/2',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-    ],
-  },
-  {
-    name: 'Favorites',
-    pages: [
-      {
-        type: 'Map',
-        description: {
-          id: 'Area 51',
-          location: '/maps/area-51',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'User',
-        description: {
-          id: 'user123',
-          location: '/users/user123',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-    ],
-  },
-  {
-    name: 'Inventories',
-    pages: [
-      {
-        type: 'Inventory',
-        description: {
-          id: '5',
-          location: '/inventory/5',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Inventory',
-        description: {
-          id: '8',
-          location: '/inventory/8',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-    ],
-  },
-  {
-    name: 'Groups',
-    pages: [
-      {
-        type: 'Group',
-        description: {
-          id: 'group-alpha',
-          location: '/groups/group-alpha',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-      {
-        type: 'Group',
-        description: {
-          id: 'group-beta',
-          location: '/groups/group-beta',
-          tags: ['tag1', 'tag2'],
-        },
-      },
-    ],
-  },
-]
 
 export const Route = createFileRoute('/user_dashboard')({
   component: RouteComponent,
@@ -185,12 +76,10 @@ export const Route = createFileRoute('/user_dashboard')({
     }
 
     return {
-      views: dashboardData.map((d) => d.name),
+      views: DEFAULT_DASHBOARD_VIEWS,
     }
   },
 })
-
-
 
 function RouteComponent() {
   const { views } = Route.useSearch()
@@ -201,6 +90,8 @@ function RouteComponent() {
       localStorage.setItem('dashboard_views', JSON.stringify(views))
     }
   }, [views])
+
+  const { data: dashboardData } = useSuspenseQuery(dashboardQueryOptions)
 
   const visibleDashboardData = dashboardData.filter((section) =>
     views.includes(section.name)

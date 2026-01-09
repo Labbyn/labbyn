@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -653,6 +653,25 @@ class HistoryResponse(HistoryBase):
     id: int
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
     model_config = ConfigDict(from_attributes=True)
+
+# ==========================
+#       DASHBOARD MODELS
+# ==========================
+
+class DashboardItem(BaseModel):
+    type: str
+    id: str
+    location: str
+    tags: List[str]
+
+
+class DashboardSection(BaseModel):
+    name: str
+    items: List[DashboardItem]
+
+
+class DashboardResponse(BaseModel):
+    sections: List[DashboardSection]
 
 
 # ==========================
