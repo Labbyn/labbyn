@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from app.db.models import Machines, Rooms, Inventory, Teams, User, History
 
-# TO DO: add proper tags and handling 
+# TO DO: add proper tags and handling
 # pass only data accessable by user
+
 
 def build_dashboard(db: Session):
     machines = db.query(Machines).all()
@@ -17,9 +18,11 @@ def build_dashboard(db: Session):
             "type": "Server",
             "id": machine.name,
             "location": f"/machines/{machine.id}",
-            "tags": [f"Team ID: {str(machine.team_id)}"]
+            "tags": (
+                [f"Team ID: {str(machine.team_id)}"]
                 if machine.team_id is not None
-                else [],
+                else []
+            ),
         }
         for machine in machines
     ]
@@ -29,9 +32,9 @@ def build_dashboard(db: Session):
             "type": "Room",
             "id": room.name,
             "location": f"/rooms/{room.id}",
-            "tags": [f"Room type: {room.room_type}"]
-                if room.room_type is not None
-                else [],
+            "tags": (
+                [f"Room type: {room.room_type}"] if room.room_type is not None else []
+            ),
         }
         for room in rooms
     ]
@@ -41,10 +44,14 @@ def build_dashboard(db: Session):
             "type": "Inventory",
             "id": inventory.name,
             "location": f"/inventory/{inventory.id}",
-            "tags": [f"Category: {inventory.category_id}",
-                    f"Quantity: {inventory.quantity}"]
+            "tags": (
+                [
+                    f"Category: {inventory.category_id}",
+                    f"Quantity: {inventory.quantity}",
+                ]
                 if inventory.category_id is not None and inventory.quantity is not None
-                else [],
+                else []
+            ),
         }
         for inventory in inventories
     ]
@@ -54,9 +61,7 @@ def build_dashboard(db: Session):
             "type": "Team",
             "id": team.name,
             "location": f"/team/{team.id}",
-            "tags": [f"Team ID: {team.id}"]
-                if team.id is not None
-                else [],
+            "tags": [f"Team ID: {team.id}"] if team.id is not None else [],
         }
         for team in teams
     ]
@@ -66,10 +71,11 @@ def build_dashboard(db: Session):
             "type": "User",
             "id": user.name,
             "location": f"/user/{user.id}",
-            "tags": [f"Team ID: {user.team_id}",
-                    f"User type: {user.user_type}"]
+            "tags": (
+                [f"Team ID: {user.team_id}", f"User type: {user.user_type}"]
                 if user.team_id is not None
-                else [],
+                else []
+            ),
         }
         for user in users
     ]
@@ -79,10 +85,14 @@ def build_dashboard(db: Session):
             "type": "History",
             "id": history.action,
             "location": f"/history/{history.id}",
-            "tags": [f"Entity type: {history.entity_type}",
-                    f"Can rollback: {history.can_rollback}"]
+            "tags": (
+                [
+                    f"Entity type: {history.entity_type}",
+                    f"Can rollback: {history.can_rollback}",
+                ]
                 if history.entity_type is not None
-                else [],
+                else []
+            ),
         }
         for history in histories
     ]

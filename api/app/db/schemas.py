@@ -654,9 +654,11 @@ class HistoryResponse(HistoryBase):
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
     model_config = ConfigDict(from_attributes=True)
 
+
 # ==========================
 #       DASHBOARD MODELS
 # ==========================
+
 
 class DashboardItem(BaseModel):
     type: str
