@@ -1,9 +1,12 @@
+import { useEffect } from 'react' // 1. Import useEffect
 import {
   Link,
   createFileRoute,
   useNavigate,
-  useSearch,
 } from '@tanstack/react-router'
+import {
+  queryOptions, useSuspenseQuery
+} from '@tanstack/react-query'
 import {
   Archive,
   ArrowRight,
@@ -19,11 +22,9 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
@@ -35,9 +36,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 
-export const Route = createFileRoute('/user_dashboard')({
-  component: RouteComponent,
-})
+
+
+type DashboardSearch = {
+  views: string[]
+}
+
+const ENDPOINTS = {
+  showPlatforms: `http://${import.meta.env.VITE_API_URL}/db/machines`
+}
 
 const IconMap = {
   Lab: Database,
@@ -158,18 +165,52 @@ const dashboardData = [
     ],
   },
 ]
+
+export const Route = createFileRoute('/user_dashboard')({
+  component: RouteComponent,
+  validateSearch: (search: Record<string, unknown>): DashboardSearch => {
+    if (Array.isArray(search.views)) {
+      return { views: search.views as string[] }
+    }
+
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard_views')
+      if (saved) {
+        try {
+          return { views: JSON.parse(saved) }
+        } catch (e) {
+          console.log(e);  
+        }
+      }
+    }
+
+    return {
+      views: dashboardData.map((d) => d.name),
+    }
+  },
+})
+
+
+
 function RouteComponent() {
   const { views } = Route.useSearch()
   const navigate = useNavigate()
+  
+  useEffect(() => {
+    if (views && views.length > 0) {
+      localStorage.setItem('dashboard_views', JSON.stringify(views))
+    }
+  }, [views])
 
   const visibleDashboardData = dashboardData.filter((section) =>
-    views.includes(section.name),
+    views.includes(section.name)
   )
+
   return (
     <ScrollArea className="h-screen w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6 w-full">
         {visibleDashboardData.map((data) => (
-          <Card>
+          <Card key={data.name}>
             <CardHeader>
               <div className="space-y-1">
                 <CardTitle className="text-xl font-bold text-primary">
@@ -194,8 +235,11 @@ function RouteComponent() {
               </div>
               <ScrollArea className="h-[250px] w-full">
                 <div className="flex flex-col space-y-3 w-full px-4 py-2">
-                  {data.pages.map((page) => (
-                    <Link to={page.description.location}>
+                  {data.pages.map((page, idx) => (
+                    <Link
+                      key={`${page.description.id}-${idx}`}
+                      to={page.description.location}
+                    >
                       <div className="group relative flex flex-row items-center justify-between w-full h-[70px] p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
@@ -232,9 +276,10 @@ function RouteComponent() {
             </CardContent>
           </Card>
         ))}
+
         <Dialog>
           <DialogTrigger asChild>
-            <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition">
+            <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition min-h-[300px]">
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <Plus className="h-6 w-6" />
                 <span className="text-sm font-medium">Customize View</span>
@@ -262,12 +307,17 @@ function RouteComponent() {
                       checked={enabled}
                       onCheckedChange={(checked) => {
                         navigate({
-                          search: (prev) => ({
-                            ...prev,
-                            views: checked
-                              ? [...prev.views, section.name]
-                              : prev.views.filter((v) => v !== section.name),
-                          }),
+                          search: (prev) => {
+                            const currentViews = prev.views || []
+                            return {
+                              ...prev,
+                              views: checked
+                                ? [...currentViews, section.name]
+                                : currentViews.filter(
+                                    (v) => v !== section.name
+                                  ),
+                            }
+                          },
                         })
                       }}
                     />

@@ -30,7 +30,7 @@ import { AddPlatformDialog } from './platform-dialog'
 const items = [
   {
     title: 'Dashboard',
-    url: '/',
+    url: '/user_dashboard',
     icon: LayoutDashboard,
   },
   {
