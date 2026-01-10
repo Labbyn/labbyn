@@ -1,137 +1,224 @@
-'use client'
-
 import { useState } from 'react'
-import { Cpu, Loader2 } from 'lucide-react'
+import { AlertCircle, Cpu, Loader2, Plus, Server } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/components/ui/field'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-  const ENDPOINTS = {
-    addMachineToDB: `http://${import.meta.env.VITE_API_URL}/db/machines`,
-    addMetadataToDB: `http://${import.meta.env.VITE_API_URL}/db/metadata`,
-    scan: `http://${import.meta.env.VITE_API_URL}/ansible/discovery`,
-    deploy: `http://${import.meta.env.VITE_API_URL}/ansible/setup_agent`,
-    updatePrometheus: `http://${import.meta.env.VITE_API_URL}/prometheus/target`,
+// --- Schemas ---
+
+const schemas = {
+  hostname: z.string().min(1, 'Hostname is required').max(255),
+  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
+  mac: z
+    .string()
+    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
+    .optional()
+    .or(z.literal('')),
+}
+
+// --- Validator Helper ---
+
+function zodValidate(schema: z.ZodType<any>) {
+  return ({ value }: { value: any }) => {
+    const result = schema.safeParse(value)
+    if (!result.success) {
+      return { message: result.error.errors[0].message }
+    }
+    return undefined
   }
+}
 
-  const authorizedFetch = async (url: string, method: string, body: any, errorMsg: string) => {
+// --- API Logic ---
+
+const API_URL = import.meta.env.VITE_API_URL || 'localhost:3000'
+
+const ENDPOINTS = {
+  addMachineToDB: `http://${API_URL}/db/machines`,
+  addMetadataToDB: `http://${API_URL}/db/metadata`,
+  scan: `http://${API_URL}/ansible/discovery`,
+  deploy: `http://${API_URL}/ansible/setup_agent`,
+  updatePrometheus: `http://${API_URL}/prometheus/target`,
+}
+
+async function authorizedFetch<T>(
+  url: string,
+  method: string,
+  body: unknown,
+): Promise<T> {
   const res = await fetch(url, {
-    method: method,
+    method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || errorMsg);
-  }
-  return res.json();
-};
+  })
 
-// TO DO:
-// input validation (IP, MAC)
-// drop list with teams, rooms etc. for manual adding
-// small refactor for security/good practices 
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(text || `Request to ${url} failed`)
+  }
+
+  return res.json()
+}
+
+type PlatformFormValues = {
+  hostname: string
+  addToDb: boolean
+  scanPlatform: boolean
+  deployAgent: boolean
+  login?: string
+  password?: string
+  name?: string
+  ip?: string
+  mac?: string
+  location?: number
+  team?: number
+  pdu_port?: number
+  os?: string
+  sn?: string
+  note?: string
+  cpu?: string
+  ram?: string
+  disk?: string
+  layout?: number
+}
+
+async function handlePlatformSubmission(values: PlatformFormValues) {
+  const results = []
+
+  // 1. Add to Database
+  if (values.addToDb) {
+    const metadataPayload = {
+      agent_prometheus: false,
+      ansible_access: false,
+      ansible_root_access: false,
+    }
+
+    const metadataResponse = await authorizedFetch<{ id: number }>(
+      ENDPOINTS.addMetadataToDB,
+      'POST',
+      metadataPayload,
+    )
+    results.push(metadataResponse)
+
+    const machinePayload = {
+      name: values.name || values.hostname,
+      ip_address: values.ip || undefined,
+      mac_address: values.mac || undefined,
+      localization_id: values.location || 1,
+      pdu_port: values.pdu_port,
+      team_id: values.team,
+      os: values.os,
+      serial_number: values.sn,
+      note: values.note,
+      cpu: values.cpu,
+      ram: values.ram,
+      disk: values.disk,
+      layout_id: values.layout,
+      metadata_id: metadataResponse.id,
+    }
+
+    try {
+      results.push(
+        await authorizedFetch(ENDPOINTS.addMachineToDB, 'POST', machinePayload),
+      )
+    } catch (error) {
+      await authorizedFetch(
+        `${ENDPOINTS.addMetadataToDB}/${metadataResponse.id}`,
+        'DELETE',
+        {},
+      ).catch(console.error)
+      throw error
+    }
+  }
+
+  // 2. Deploy Agent
+  if (values.deployAgent) {
+    const deployPayload = {
+      host: values.hostname,
+      extra_vars: {
+        ansible_user: values.login,
+        ansible_password: values.password,
+        ansible_become_password: values.password,
+      },
+    }
+    const prometheusPayload = {
+      instance: `${values.hostname}:9100`,
+      labels: {
+        env: 'virtual',
+        host: values.hostname,
+        role: 'virtual',
+      },
+    }
+
+    results.push(await authorizedFetch(ENDPOINTS.deploy, 'POST', deployPayload))
+    results.push(
+      await authorizedFetch(
+        ENDPOINTS.updatePrometheus,
+        'POST',
+        prometheusPayload,
+      ),
+    )
+  }
+
+  // 3. Scan Platform
+  if (values.scanPlatform) {
+    const scanPayload = {
+      hosts: [values.hostname],
+      extra_vars: {
+        ansible_user: values.login,
+        ansible_password: values.password,
+        ansible_become_password: values.password,
+      },
+    }
+    results.push(await authorizedFetch(ENDPOINTS.scan, 'POST', scanPayload))
+  }
+
+  return results
+}
+
+// --- Component ---
 
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: async (values: any) => {
-
-      const results = []
-
-      if (values.addToDB) {
-        const metadataPayload = {
-          agent_prometheus: false,
-          ansible_access: false,
-          ansible_root_access: false,
-        }
-
-        const metadataResponse = await authorizedFetch(ENDPOINTS.addMetadataToDB, "POST", metadataPayload, "Metadata add failed")
-        
-        results.push(metadataResponse)
-
-        const machinePayload = {
-          name: values.name || values.hostname,
-          ip_address: values.ip || undefined,
-          mac_address: values.mac || undefined,
-          localization_id: values.location ? Number(values.location) : 1,
-          pdu_port: values.pdu_port ? Number(values.pdu_port) : undefined,
-          team_id: values.team ? Number(values.team) : undefined,
-          os: values.os || undefined,
-          serial_number: values.sn || undefined,
-          note: values.note || undefined,
-          cpu: values.cpu || undefined,
-          ram: values.ram || undefined,
-          disk: values.disk || undefined,
-          layout_id: values.layout ? Number(values.layout) : undefined,
-          metadata_id: metadataResponse.id
-        }
-        try{
-          results.push(await authorizedFetch(ENDPOINTS.addMachineToDB, "POST", machinePayload, "Machine add failed"))
-        } catch (error) {
-          authorizedFetch(`${ENDPOINTS.addMetadataToDB}/${metadataResponse.id}`, "DELETE", {}, "Machine add failed")
-        }
-        
-      }
-
-      if (values.deployAgent) {
-        const deployPayload = {
-          host: values.hostname,
-          extra_vars: {
-          ansible_user: values.login,
-          ansible_password: values.password,
-          ansible_become_password: values.password,
-        },
-      }
-        const prometheusPayload = {
-          instance: `${values.hostname}:9100`,
-          labels: {
-            env: 'virtual',
-            host: values.hostname,
-            role: 'virtual'
-          },
-        }
-        results.push(await authorizedFetch(ENDPOINTS.deploy, "POST", deployPayload, 'Agent deployment failed'));
-        results.push(await authorizedFetch(ENDPOINTS.updatePrometheus, "POST", prometheusPayload, 'Prometheus update failed'));
-      }
-
-      if (values.scanPlatform) {
-        const scanPayload = {
-          hosts: [values.hostname],
-          extra_vars: {
-          ansible_user: values.login,
-          ansible_password: values.password,
-          ansible_become_password: values.password,
-        },
-      }
-        results.push(await authorizedFetch(ENDPOINTS.scan, "POST", scanPayload, 'Platform scan failed'));
-      }
-      
-      return results
-    },
+    mutationFn: handlePlatformSubmission,
     onSuccess: () => {
-      toast.success('Platform added successfully!', {
-        description: 'All tasks successfully completed.',
+      toast.success('Platform added successfully', {
+        description: 'All selected operations completed.',
       })
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      setOpen(false)
       form.reset()
     },
     onError: (error: Error) => {
-      toast.error('Deployment failed', {
+      toast.error('Operation failed', {
         description: error.message,
       })
     },
@@ -140,12 +227,11 @@ export function AddPlatformDialog() {
   const form = useForm({
     defaultValues: {
       hostname: '',
+      addToDb: false,
       scanPlatform: false,
       deployAgent: false,
       login: '',
       password: '',
-      // only DB
-      addToDb: false,
       name: '',
       ip: '',
       mac: '',
@@ -159,9 +245,18 @@ export function AddPlatformDialog() {
       ram: '',
       disk: '',
       layout: undefined,
-    },
+    } as PlatformFormValues,
     onSubmit: async ({ value }) => {
-      await mutation.mutate(value)
+      if (
+        (value.scanPlatform || value.deployAgent) &&
+        (!value.login || !value.password)
+      ) {
+        toast.error('Credentials required', {
+          description: 'Please provide sudo login and password.',
+        })
+        return
+      }
+      await mutation.mutateAsync(value)
     },
   })
 
@@ -169,16 +264,18 @@ export function AddPlatformDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton>
-          <Cpu/>
-          Add Platform 2
+          <Cpu className="size-4" />
+          <span>Add Platform</span>
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
+      {/* Added overflow-hidden to clip the footer's square corners */}
+      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[85vh] overflow-hidden">
+        <DialogHeader className="px-6 py-6 pb-2 shrink-0">
           <DialogTitle>Add New Platform</DialogTitle>
           <DialogDescription>
-            Fill in the details below to add a new platform.
+            Configure a new device, deploy agents, or add it to the inventory
+            database.
           </DialogDescription>
         </DialogHeader>
 
@@ -188,259 +285,401 @@ export function AddPlatformDialog() {
             e.stopPropagation()
             form.handleSubmit()
           }}
-          className="space-y-6 py-4"
+          className="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          {/* Hostname Field */}
-          <form.Field
-            name="hostname"
-            children={(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Hostname</Label>
-                <Input
-                  id={field.name}
-                  required
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="e.g. server.name or 192.168.1.1"
-                />
-              </div>
-            )}
-          /> 
-          {/* Options */}            
-          <form.Subscribe
-            selector={(state) => ({
-              addToDB: state.values.addToDB,
-              scan: state.values.scanPlatform,
-              deploy: state.values.deployAgent
-            })}
-            children={(values) => (
-              <div className="flex flex-col gap-3 rounded-md border p-4">
-                Add to database
-                <form.Field
-                  name="addToDB"
-                  children={(field) => (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={field.name}
-                        checked={field.state.value}
-                        disabled={values.scan}
-                        onCheckedChange={(checked) => {
-                          field.handleChange(!!checked)
-                        }}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-6 px-6 py-4">
+              {/* Hostname - Always Required */}
+              <form.Field
+                name="hostname"
+                validators={{ onChange: zodValidate(schemas.hostname) }}
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>
+                      Hostname / IP *
+                    </FieldLabel>
+                    <Input
+                      id={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="e.g. server-01.local"
+                      className={
+                        field.state.meta.errors.length
+                          ? 'border-destructive'
+                          : ''
+                      }
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              />
+
+              {/* Actions Selection */}
+              <FieldSet className="gap-4 rounded-lg border p-4 bg-muted/20">
+                <FieldLegend className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Operations
+                </FieldLegend>
+
+                <form.Subscribe
+                  selector={(state) => [
+                    state.values.addToDb,
+                    state.values.scanPlatform,
+                  ]}
+                  children={([addToDb, scan]) => (
+                    <div className="grid gap-4">
+                      <form.Field
+                        name="addToDb"
+                        children={(field) => (
+                          <div className="flex flex-row items-start space-x-3 space-y-0">
+                            <Checkbox
+                              id="addToDb"
+                              checked={field.state.value}
+                              disabled={scan}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                            />
+                            <div className="space-y-1 leading-none">
+                              <label
+                                htmlFor="addToDb"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                Manual Inventory Entry
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                Manually enter hardware specs into the database.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       />
-                      <Label htmlFor={field.name} className={values.scan ? "text-muted-foreground" : "cursor-pointer"}>
-                        Manual add
-                      </Label>
+
+                      <form.Field
+                        name="scanPlatform"
+                        children={(field) => (
+                          <div className="flex flex-row items-start space-x-3 space-y-0">
+                            <Checkbox
+                              id="scanPlatform"
+                              checked={field.state.value}
+                              disabled={addToDb}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                            />
+                            <div className="space-y-1 leading-none">
+                              <label
+                                htmlFor="scanPlatform"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                Auto-Discovery (Ansible)
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                Scan the host to gather hardware details
+                                automatically.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      />
+
+                      <div className="h-px bg-border/50" />
+
+                      <form.Field
+                        name="deployAgent"
+                        children={(field) => (
+                          <div className="flex flex-row items-start space-x-3 space-y-0">
+                            <Checkbox
+                              id="deployAgent"
+                              checked={field.state.value}
+                              onCheckedChange={(c) => field.handleChange(!!c)}
+                            />
+                            <div className="space-y-1 leading-none">
+                              <label
+                                htmlFor="deployAgent"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                Deploy Prometheus Agent
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                Install Node Exporter and register target.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      />
                     </div>
                   )}
                 />
-                {/* 2. Scan Option */}
-                <form.Field
-                  name="scanPlatform"
-                  children={(field) => (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={field.name}
-                        checked={field.state.value}
-                        disabled={values.addToDB}
-                        onCheckedChange={(checked) => field.handleChange(!!checked)}
-                      />
-                      <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
-                        Platform scan
-                      </Label>
+              </FieldSet>
+
+              {/* Conditional: Credentials */}
+              <form.Subscribe
+                selector={(state) => [
+                  state.values.scanPlatform,
+                  state.values.deployAgent,
+                ]}
+                children={([scan, deploy]) => {
+                  if (!scan && !deploy) return null
+                  return (
+                    <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                      <Alert
+                        variant="default"
+                        className="mb-4 bg-blue-50/50 dark:bg-blue-950/10 border-blue-200 dark:border-blue-800"
+                      >
+                        <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <AlertTitle className="text-blue-800 dark:text-blue-300">
+                          Credentials Required
+                        </AlertTitle>
+                        <AlertDescription className="text-blue-700 dark:text-blue-400">
+                          Sudo access is required to run Ansible playbooks
+                          against the target.
+                        </AlertDescription>
+                      </Alert>
+
+                      <FieldGroup className="grid-cols-2">
+                        <form.Field
+                          name="login"
+                          validators={{
+                            onChangeListenTo: ['scanPlatform', 'deployAgent'],
+                            onChange: ({ value, fieldApi }) => {
+                              const { scanPlatform, deployAgent } =
+                                fieldApi.form.state.values
+                              if ((scanPlatform || deployAgent) && !value) {
+                                return { message: 'Required' }
+                              }
+                              return undefined
+                            },
+                          }}
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                SSH User
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                className={
+                                  field.state.meta.errors.length
+                                    ? 'border-destructive'
+                                    : ''
+                                }
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+                        <form.Field
+                          name="password"
+                          validators={{
+                            onChangeListenTo: ['scanPlatform', 'deployAgent'],
+                            onChange: ({ value, fieldApi }) => {
+                              const { scanPlatform, deployAgent } =
+                                fieldApi.form.state.values
+                              if ((scanPlatform || deployAgent) && !value) {
+                                return { message: 'Required' }
+                              }
+                              return undefined
+                            },
+                          }}
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                SSH Password
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                type="password"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                className={
+                                  field.state.meta.errors.length
+                                    ? 'border-destructive'
+                                    : ''
+                                }
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+                      </FieldGroup>
                     </div>
-                  )}
-                />
+                  )
+                }}
+              />
 
-                <div className="h-[1px] bg-border w-full my-1" />
+              {/* Conditional: Manual DB Fields */}
+              <form.Subscribe
+                selector={(state) => state.values.addToDb}
+                children={(addToDb) => {
+                  if (!addToDb) return null
+                  return (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-300 border-t pt-4">
+                      <div className="flex items-center gap-2">
+                        <Server className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-semibold">
+                          Inventory Details
+                        </h3>
+                      </div>
 
-                {/* 3. Deploy Option */}
-                Additional options
-                <form.Field
-                  name="deployAgent"
-                  children={(field) => (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id={field.name}
-                        checked={field.state.value}
-                        onCheckedChange={(checked) => field.handleChange(!!checked)}
-                      />
-                      <Label htmlFor={field.name} className={values.addToDB ? "text-muted-foreground" : "cursor-pointer"}>
-                        Deploy Prometheus Agent
-                      </Label>
-                    </div>
-                  )}
-                />
-              </div>
-            )}
-          />
-
-          {/* Conditional Credentials Section */}
-          <form.Subscribe
-            selector={(state) => [
-              state.values.scanPlatform,
-              state.values.deployAgent,
-            ]}
-            children={([scan, deploy]) => {
-              if (!scan && !deploy) return null
-              return (
-                <div className="grid gap-4 border-t pt-4 animate-in fade-in slide-in-from-top-2">
-                  <form.Field
-                    name="login"
-                    children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Sudo Login</Label>
-                        <Input
-                          id={field.name}
-                          required
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                      <div className="grid grid-cols-2 gap-4">
+                        <form.Field
+                          name="name"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                Display Name
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                placeholder="Friendly name"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
+                        />
+                        <form.Field
+                          name="ip"
+                          validators={{ onChange: zodValidate(schemas.ip) }}
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                IP Address
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                placeholder="192.168.1.10"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                className={
+                                  field.state.meta.errors.length
+                                    ? 'border-destructive'
+                                    : ''
+                                }
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+                        <form.Field
+                          name="mac"
+                          validators={{ onChange: zodValidate(schemas.mac) }}
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                MAC Address
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                placeholder="AA:BB:CC:DD:EE:FF"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                                className={
+                                  field.state.meta.errors.length
+                                    ? 'border-destructive'
+                                    : ''
+                                }
+                              />
+                              <FieldError errors={field.state.meta.errors} />
+                            </Field>
+                          )}
+                        />
+                        <form.Field
+                          name="location"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                Location ID
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                type="number"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(Number(e.target.value))
+                                }
+                              />
+                            </Field>
+                          )}
                         />
                       </div>
-                    )}
-                  />
-                  <form.Field
-                    name="password"
-                    children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Sudo Password</Label>
-                        <Input
-                          id={field.name}
-                          type="password"
-                          required
-                          value={field.state.value}
-                          onChange={(e) => field.handleChange(e.target.value)}
+
+                      <FieldGroup className="grid-cols-3">
+                        <form.Field
+                          name="cpu"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>CPU</FieldLabel>
+                              <Input
+                                id={field.name}
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
                         />
-                      </div>
-                    )}
-                  />
-                  
-                </div>
-              )
-            }}
-          />
-          {/* Conditional: Manual DB Fields (Scrollable) */}
-          <form.Subscribe
-            selector={(state) => state.values.addToDB}
-            children={(isAddToDB) => {
-              if (!isAddToDB) return null
-              return (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 border-t pt-4">
-                  <Label className="text-muted-foreground">Platform details (Optional)</Label>
-                  
-                  {/* Scrollable Container */}
-                  <div className="max-h-[200px] overflow-y-auto pr-2 grid gap-4 border rounded-md p-3 bg-muted/20">
-                    <form.Field name="name" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Name</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Server 1" />
-                      </div>
-                    )} />
+                        <form.Field
+                          name="ram"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>RAM</FieldLabel>
+                              <Input
+                                id={field.name}
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
+                        />
+                        <form.Field
+                          name="disk"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Disk</FieldLabel>
+                              <Input
+                                id={field.name}
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
+                        />
+                      </FieldGroup>
+                    </div>
+                  )
+                }}
+              />
+            </div>
+          </ScrollArea>
 
-                    <form.Field name="ip" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>IP Address</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="192.168.0.1" />
-                      </div>
-                    )} />
-
-                    <form.Field name="mac" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>MAC Address</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="00:00:00:00:00" />
-                      </div>
-                    )} />
-
-                    <form.Field name="location" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Location</Label>
-                        <Input id={field.name} value={field.state.value} type="number" min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="1" />
-                      </div>
-                    )} />
-
-                    <form.Field name="team" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Team ID</Label>
-                        <Input id={field.name} value={field.state.value} type="number"  min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="2222" />
-                      </div>
-                    )} />
-                    
-                    <form.Field name="pdu_port" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>PDU Port</Label>
-                        <Input id={field.name} value={field.state.value} type="number"  min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="4" />
-                      </div>
-                    )} />
-
-                    <form.Field name="os" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>OS</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Ubuntu 24.04" />
-                      </div>
-                    )} />
-
-                    <form.Field name="sn" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Serial Number</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="123456789" />
-                      </div>
-                    )} />
-
-                    <form.Field name="note" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Note</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Left USB port is broken" />
-                      </div>
-                    )} />
-
-                    <form.Field name="cpu" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>CPU</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="Intel Core i7" />
-                      </div>
-                    )} />
-
-                    <form.Field name="ram" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>RAM memory</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="128GB" />
-                      </div>
-                    )} />
-
-                    <form.Field name="disk" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Disk</Label>
-                        <Input id={field.name} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} placeholder="4TB SSD" />
-                      </div>
-                    )} />
-                    
-                    <form.Field name="layout" children={(field) => (
-                      <div className="grid gap-2">
-                        <Label htmlFor={field.name}>Layout</Label>
-                        <Input id={field.name} value={field.state.value} type="number" min="0" onChange={(e) => field.handleChange(e.target.value)} placeholder="1" />
-                      </div>
-                    )} />
-
-                  </div>
-                </div>
-              )
-            }}
-          />
-          <form.Subscribe
-            selector={(state) => ({
-              addToDB: state.values.addToDB,
-              scan: state.values.scanPlatform,
-              deploy: state.values.deployAgent,
-            })}
-            children={({ addToDB, scan, deploy }) => {
-              // Check if at least one option is selected
-              const isSelectionEmpty = !addToDB && !scan && !deploy
-
-              return (
+          <DialogFooter className="p-6 pt-2 shrink-0 border-t bg-background">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <form.Subscribe
+              selector={(state) => [state.canSubmit]}
+              children={([canSubmit]) => (
                 <Button
                   type="submit"
-                  className="w-full"
-                  disabled={mutation.isPending || isSelectionEmpty}
+                  disabled={!canSubmit || mutation.isPending}
                 >
                   {mutation.isPending ? (
                     <>
@@ -448,12 +687,15 @@ export function AddPlatformDialog() {
                       Processing...
                     </>
                   ) : (
-                    'Apply'
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Platform
+                    </>
                   )}
                 </Button>
-              )
-            }}
-          />
+              )}
+            />
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
