@@ -74,6 +74,19 @@ def init_super_user(db: Session):
         db.refresh(admin_user)
 
 
+def init_virtual_lab(db: Session):
+    """
+    Initializes virtual lab if none exists.
+    :param db: The current database session.
+    """
+    virtual_lab = db.query(models.Rooms).filter(models.Rooms.name == "virtual").first()
+    if not virtual_lab:
+        virtual_lab = models.Rooms(name="virtual", room_type="virtual")
+        db.add(virtual_lab)
+        db.commit()
+        db.refresh(virtual_lab)
+
+
 # ==========================
 #  GENERIC TABLES OPERATIONS
 # ==========================

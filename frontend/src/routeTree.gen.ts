@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as User_dashboardRouteImport } from './routes/user_dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
@@ -24,6 +25,11 @@ import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
 import { Route as AuthDocsDocIdRouteImport } from './routes/_auth/docs/$docId'
 import { Route as AuthInventoryDeviceDeviceidRouteImport } from './routes/_auth/inventory/device/$deviceid'
 
+const User_dashboardRoute = User_dashboardRouteImport.update({
+  id: '/user_dashboard',
+  path: '/user_dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -97,6 +103,7 @@ const AuthInventoryDeviceDeviceidRoute =
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/admin': typeof AuthAdminRoute
   '/docs': typeof AuthDocsRouteWithChildren
   '/history': typeof AuthHistoryRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/admin': typeof AuthAdminRoute
   '/history': typeof AuthHistoryRoute
   '/import-export': typeof AuthImportExportRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
+  '/user_dashboard': typeof User_dashboardRoute
   '/_auth/admin': typeof AuthAdminRoute
   '/_auth/docs': typeof AuthDocsRouteWithChildren
   '/_auth/history': typeof AuthHistoryRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
+    | '/user_dashboard'
     | '/admin'
     | '/docs'
     | '/history'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/user_dashboard'
     | '/admin'
     | '/history'
     | '/import-export'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_auth'
     | '/login'
+    | '/user_dashboard'
     | '/_auth/admin'
     | '/_auth/docs'
     | '/_auth/history'
@@ -192,10 +204,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
+  User_dashboardRoute: typeof User_dashboardRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/user_dashboard': {
+      id: '/user_dashboard'
+      path: '/user_dashboard'
+      fullPath: '/user_dashboard'
+      preLoaderRoute: typeof User_dashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -342,6 +362,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
+  User_dashboardRoute: User_dashboardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

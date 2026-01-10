@@ -42,7 +42,7 @@ import {
 const items = [
   {
     title: 'Dashboard',
-    url: '/',
+    url: '/user_dashboard',
     icon: LayoutDashboard,
   },
   {
