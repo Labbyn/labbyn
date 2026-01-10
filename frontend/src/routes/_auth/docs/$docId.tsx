@@ -31,9 +31,6 @@ function DocDetailComponent() {
     setIsDirty,
   } = useDocsContext()
 
-  console.log('Szukane ID:', docId)
-  console.log('Dostępne dokumenty:', documents)
-
   const selectedDoc = useMemo(
     () => documents.find((d: AppDocument) => d.id === docId),
     [documents, docId],
