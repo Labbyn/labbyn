@@ -2,17 +2,29 @@ import {
   Accessibility,
   BookText,
   Cable,
+  ChevronsUpDown,
   FolderInput,
   GitBranch,
   LayoutDashboard,
+  LogOut,
+  Moon,
   Server,
   Settings,
+  Sun,
   UserStar,
   Users,
 } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar'
 import { Link, useLocation } from '@tanstack/react-router'
-import { SearchForm } from './search-form'
+import React from 'react'
+import { CommandMenu } from './command-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+import { AddPlatformDialog } from './platform-dialog'
 import {
   Sidebar,
   SidebarContent,
@@ -24,8 +36,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
-import { AddPlatformDialog } from './platform-dialog'
 
 const items = [
   {
@@ -72,7 +84,7 @@ const items = [
     title: 'Import & Export',
     url: '/import-export',
     icon: FolderInput,
-  }
+  },
 ]
 
 const user = {
@@ -81,16 +93,46 @@ const user = {
   avatar: 'https://cdn.pfps.gg/pfps/66456-cool-cat.jpeg',
 }
 
+function useTheme() {
+  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('ui-theme') as 'light' | 'dark' | null
+      if (stored) return stored
+
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark'
+      }
+    }
+    return 'light'
+  })
+
+  React.useEffect(() => {
+    const root = window.document.documentElement
+
+    root.classList.remove('light', 'dark')
+    root.classList.add(theme)
+
+    localStorage.setItem('ui-theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
+  }
+
+  return { theme, toggleTheme }
+}
 export function AppSidebar() {
   const pathname = useLocation({
     select: (location) => location.pathname,
   })
+  const { theme, toggleTheme } = useTheme()
+  const { isMobile } = useSidebar()
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem className="flex flex-row items-center gap-2 p-1">
+          <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
@@ -100,16 +142,19 @@ export function AppSidebar() {
                 <span className="text-base font-semibold">Labbyn</span>
               </a>
             </SidebarMenuButton>
-            <AddPlatformDialog />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SearchForm />
+                <AddPlatformDialog />
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <CommandMenu />
               </SidebarMenuItem>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
@@ -125,22 +170,54 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={toggleTheme} tooltip="Toggle Theme">
+                  {theme === 'dark' ? <Moon /> : <Sun />}
+                  <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <SidebarTrigger />
-        <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-          <Avatar className="h-8 w-8 rounded-lg">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-          </Avatar>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">{user.name}</span>
-            <span className="truncate text-xs">{user.email}</span>
-          </div>
-        </div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarTrigger />
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton
+                  size="lg"
+                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate text-xs">{user.email}</span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+                side={isMobile ? 'bottom' : 'right'}
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 size-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   )

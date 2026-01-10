@@ -12,6 +12,22 @@
     <link rel="apple-touch-icon" href="/logo192.png" />
     <link rel="manifest" href="/manifest.json" />
     <title>Labbyn</title>
+    <script>
+      ;(function () {
+        try {
+          const storedTheme = localStorage.getItem('ui-theme')
+          const systemDark = window.matchMedia(
+            '(prefers-color-scheme: dark)',
+          ).matches
+
+          if (storedTheme === 'dark' || (!storedTheme && systemDark)) {
+            document.documentElement.classList.add('dark')
+          } else {
+            document.documentElement.classList.remove('dark')
+          }
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>
