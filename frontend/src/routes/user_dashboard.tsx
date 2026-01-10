@@ -86,9 +86,7 @@ function RouteComponent() {
   const navigate = useNavigate()
   
   useEffect(() => {
-    if (views && views.length > 0) {
-      localStorage.setItem('dashboard_views', JSON.stringify(views))
-    }
+    localStorage.setItem('dashboard_views', JSON.stringify(views))
   }, [views])
 
   const { data: dashboardData } = useSuspenseQuery(dashboardQueryOptions)
@@ -199,13 +197,13 @@ function RouteComponent() {
                       onCheckedChange={(checked) => {
                         navigate({
                           search: (prev) => {
-                            const currentViews = prev.views || []
+                            const currentViews = prev.views
                             return {
                               ...prev,
                               views: checked
                                 ? [...currentViews, section.name]
                                 : currentViews.filter(
-                                    (v) => v !== section.name
+                                    (v) => v !== section.name,
                                   ),
                             }
                           },
