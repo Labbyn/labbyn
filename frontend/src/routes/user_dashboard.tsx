@@ -96,7 +96,7 @@ function RouteComponent() {
   )
 
   return (
-    <ScrollArea className="h-screen w-full">
+    <ScrollArea className="h-full w-full">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6 w-full">
         {visibleDashboardData.map((data) => (
           <Card key={data.name}>
