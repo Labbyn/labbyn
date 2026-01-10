@@ -1,4 +1,4 @@
-import type { Equipment, Wall } from '@/components/canvas'
+import type { Equipment, Wall } from '@/types/types'
 
 export function generateDefaultLabLoadout() {
   const equipment: Array<Equipment> = []

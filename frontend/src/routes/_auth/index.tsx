@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { CanvasComponent3D } from '../../components/canvas'
-import type { Equipment, Wall } from '../../components/canvas'
+import type { Equipment, Wall } from '@/types/types'
 import { generateDefaultLabLoadout } from '@/lib/sample-lab-gen'
 
 export const Route = createFileRoute('/_auth/')({
