@@ -1,8 +1,6 @@
-import type { ApiDashboardResponse } from "./user_dashboard.types"
+import type { ApiDashboardResponse } from './user_dashboard.types'
 
-export function fetchDashboardData(
-  apiData: ApiDashboardResponse
-){
+export function fetchDashboardData(apiData: ApiDashboardResponse) {
   return apiData.sections.map((section) => ({
     name: section.name,
     pages: section.items.map((item) => ({

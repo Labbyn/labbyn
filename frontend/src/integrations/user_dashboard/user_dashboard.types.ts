@@ -1,11 +1,11 @@
 export type ApiDashboardResponse = {
-  sections: {
+  sections: Array<{
     name: string
-    items: {
+    items: Array<{
       type: string
       id: string
       location: string
-      tags: string[]
-    }[]
-  }[]
+      tags: Array<string>
+    }>
+  }>
 }
