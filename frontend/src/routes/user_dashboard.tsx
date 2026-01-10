@@ -83,8 +83,8 @@ export const Route = createFileRoute('/user_dashboard')({
 
 function RouteComponent() {
   const { views } = Route.useSearch()
-  const navigate = useNavigate()
-  
+  const navigate = Route.useNavigate()
+
   useEffect(() => {
     localStorage.setItem('dashboard_views', JSON.stringify(views))
   }, [views])
