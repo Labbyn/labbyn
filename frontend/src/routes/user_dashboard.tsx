@@ -5,7 +5,6 @@ import {
   useNavigate,
 } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { dashboardQueryOptions } from '@/integrations/user_dashboard/user_dashboard.query'
 import {
   Archive,
   ArrowRight,
@@ -16,6 +15,7 @@ import {
   User,
   Users,
 } from 'lucide-react'
+import { dashboardQueryOptions } from '@/integrations/user_dashboard/user_dashboard.query'
 import {
   Card,
   CardAction,
@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/dialog'
 
 type DashboardSearch = {
-  views: string[]
+  views: Array<string>
 }
 
 const DEFAULT_DASHBOARD_VIEWS = [
@@ -45,7 +45,7 @@ const DEFAULT_DASHBOARD_VIEWS = [
   'Inventory',
   'Teams',
   'Users',
-  'History'
+  'History',
 ]
 
 const IconMap = {
@@ -61,7 +61,7 @@ export const Route = createFileRoute('/user_dashboard')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>): DashboardSearch => {
     if (Array.isArray(search.views)) {
-      return { views: search.views as string[] }
+      return { views: search.views as Array<string> }
     }
 
     if (typeof window !== 'undefined') {
@@ -70,7 +70,7 @@ export const Route = createFileRoute('/user_dashboard')({
         try {
           return { views: JSON.parse(saved) }
         } catch (e) {
-          console.log(e);  
+          console.log(e)
         }
       }
     }
@@ -94,7 +94,7 @@ function RouteComponent() {
   const { data: dashboardData } = useSuspenseQuery(dashboardQueryOptions)
 
   const visibleDashboardData = dashboardData.filter((section) =>
-    views.includes(section.name)
+    views.includes(section.name),
   )
 
   return (
@@ -124,14 +124,14 @@ function RouteComponent() {
                 </span>
                 <div className="h-px bg-border flex-1" />
               </div>
-              <ScrollArea className="h-[250px] w-full">
+              <ScrollArea className="h-62.5 w-full">
                 <div className="flex flex-col space-y-3 w-full px-4 py-2">
                   {data.pages.map((page, idx) => (
                     <Link
                       key={`${page.description.id}-${idx}`}
                       to={page.description.location}
                     >
-                      <div className="group relative flex flex-row items-center justify-between w-full h-[70px] p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
+                      <div className="group relative flex flex-row items-center justify-between w-full h-17.5 p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
                             {(() => {
@@ -170,7 +170,7 @@ function RouteComponent() {
 
         <Dialog>
           <DialogTrigger asChild>
-            <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition min-h-[300px]">
+            <Card className="flex items-center justify-center cursor-pointer hover:border-primary/50 transition min-h-75">
               <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <Plus className="h-6 w-6" />
                 <span className="text-sm font-medium">Customize View</span>
