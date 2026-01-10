@@ -1,9 +1,5 @@
 import { useEffect } from 'react'
-import {
-  Link,
-  createFileRoute,
-  useNavigate,
-} from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   Archive,
@@ -57,7 +53,7 @@ const IconMap = {
   Inventory: Archive,
 }
 
-export const Route = createFileRoute('/user_dashboard')({
+export const Route = createFileRoute('/_auth/user_dashboard')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>): DashboardSearch => {
     if (Array.isArray(search.views)) {
