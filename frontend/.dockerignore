@@ -1,2 +1,4 @@
 app/node_modules
 app/build
+dist
+node_modules

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Document } from '@/types/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,15 +9,24 @@ interface DocumentEditorProps {
   document: Document
   onSave: (doc: Document) => void
   onCancel: () => void
+  onDirtyChange?: (isDirty: boolean) => void
 }
 
 export function DocumentEditor({
   document,
   onSave,
   onCancel,
+  onDirtyChange,
 }: DocumentEditorProps) {
   const [name, setName] = useState(document.name)
   const [content, setContent] = useState(document.content)
+
+  useEffect(() => {
+    const isDirty = name !== document.name || content !== document.content
+    if (onDirtyChange) {
+      onDirtyChange(isDirty)
+    }
+  }, [name, content, document, onDirtyChange])
 
   const handleSave = () => {
     onSave({
