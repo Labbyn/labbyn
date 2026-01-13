@@ -1,6 +1,7 @@
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Billboard,
   ContactShadows,
   Environment,
   Grid,
@@ -9,32 +10,22 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
   Stats,
+  Text,
   useKeyboardControls,
 } from '@react-three/drei'
 import { RoundedBoxGeometry } from 'three-stdlib'
 import {
   Box as BoxIcon,
-  Cable,
-  CheckCircle2,
-  Cpu,
-  Layers,
   Map as MapIcon,
-  MousePointer2,
-  RotateCcw,
-  Server,
-  Thermometer,
-  X,
-  Zap,
 } from 'lucide-react'
 import * as THREE from 'three'
 
+import { formatHex } from 'culori'
+import { RackInfoPanel } from './rack-info-panel'
+import { ControlsOverlay } from './controls-overlay'
 import type { Equipment, Wall } from '@/types/types'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Progress } from '@/components/ui/progress'
+
 
 extend({ RoundedBoxGeometry })
 
@@ -221,11 +212,14 @@ function SceneController({
     <MapControls
       ref={controlsRef}
       makeDefault
-      dampingFactor={0.2}
-      minDistance={20}
-      maxDistance={2000}
+      enableDamping={!is2D}
+      dampingFactor={0.05}
+      minDistance={75}
+      maxDistance={750}
       enableZoom={true}
       screenSpacePanning={is2D}
+      maxPolarAngle={Math.PI / 2 - 0.05}
+      minPolarAngle={0}
     />
   )
 }
@@ -327,7 +321,6 @@ function InstancedRacks({ data, onSelect, colors }: any) {
       <instancedMesh
         ref={faceMeshRef}
         args={[undefined, undefined, data.length]}
-        raycast={() => null}
         renderOrder={1}
       >
         <planeGeometry args={[RACK_W - 1, RACK_H - 1]} />
@@ -374,7 +367,7 @@ function WallInstances({
             </mesh>
             <mesh position={[0, 10.1, 0]} renderOrder={1}>
               <boxGeometry args={[len, 0.5, 1.2]} />
-              <meshStandardMaterial color="#888" />
+              <meshStandardMaterial color="#000" />
             </mesh>
           </group>
         )
@@ -447,10 +440,9 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
             dpr={[1, 1.5]}
             gl={{ antialias: true, logarithmicDepthBuffer: true }}
           >
-            <Stats className="!absolute !bottom-0 !left-0 !top-auto !z-0 opacity-0 pointer-events-none" />
-            <color attach="background" args={[colors.background]} />
+            <Stats className="absolute! bottom-0! left-0! top-auto! z-0! opacity-0 pointer-events-none" />
 
-            <PerspectiveCamera makeDefault={!is2D} fov={50} />
+            <PerspectiveCamera makeDefault={!is2D} fov={45} />
             <OrthographicCamera
               makeDefault={is2D}
               zoom={5}
@@ -483,8 +475,8 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
               args={[2000, 2000]}
               cellSize={10}
               sectionSize={100}
-              cellColor={colors.grid}
-              sectionColor={colors.grid}
+              cellColor={colors.primary}
+              sectionColor={colors.primary}
               fadeDistance={is2D ? 10000 : 800}
               infiniteGrid
               renderOrder={-1}
@@ -508,10 +500,11 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
 
             {!is2D && (
               <ContactShadows
-                opacity={0.5}
+                opacity={0.6}
                 scale={200}
-                blur={2}
-                far={20}
+                blur={2.5}
+                far={5}
+                resolution={512}
                 color="#000000"
               />
             )}
