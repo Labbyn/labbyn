@@ -578,6 +578,8 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
               fadeDistance={is2D ? 10000 : 800}
               infiniteGrid
               renderOrder={-1}
+              cellThickness={0.75}
+              sectionThickness={1.25}
             />
 
             <InstancedRacks
