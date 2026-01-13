@@ -336,6 +336,98 @@ function InstancedRacks({ data, onSelect, colors }: any) {
   )
 }
 
+function RackLabels({ data, colors }: { data: Array<Equipment>; colors: any }) {
+  const polesMeshRef = useRef<THREE.InstancedMesh>(null)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+
+  const boxWidth = 12
+  const boxHeight = 4
+  const boxRadius = 1
+  const riseHeight = 8
+
+  const outerGeom = useMemo(
+    () =>
+      new RoundedBoxGeometry(
+        boxWidth + 0.3,
+        boxHeight + 0.3,
+        0.05,
+        8,
+        boxRadius,
+      ),
+    [boxWidth, boxHeight, boxRadius],
+  )
+  const innerGeom = useMemo(
+    () => new RoundedBoxGeometry(boxWidth, boxHeight, 0.1, 8, boxRadius),
+    [boxWidth, boxHeight, boxRadius],
+  )
+
+  useEffect(() => {
+    if (!polesMeshRef.current) return
+
+    data.forEach((item, i) => {
+      const x = item.x / 10
+      const z = item.y / 10
+      const y = RACK_H + riseHeight / 2
+
+      dummy.position.set(x, y, z)
+      dummy.rotation.set(0, 0, 0)
+      dummy.scale.set(1, 1, 1)
+      dummy.updateMatrix()
+      polesMeshRef.current!.setMatrixAt(i, dummy.matrix)
+    })
+
+    polesMeshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, riseHeight, dummy])
+
+  return (
+    <group>
+      {/* INSTANCED POLES */}
+      <instancedMesh
+        ref={polesMeshRef}
+        args={[undefined, undefined, data.length]}
+      >
+        <cylinderGeometry args={[0.1, 0.1, riseHeight, 8]} />
+        <meshStandardMaterial color={colors.primary} />
+      </instancedMesh>
+
+      {/* LABELS */}
+      {data.map((item) => (
+        <group key={item.id} position={[item.x / 10, RACK_H, item.y / 10]}>
+          <Billboard
+            position={[0, riseHeight, 0]}
+            follow={true}
+            lockX={false}
+            lockY={false}
+            lockZ={false}
+          >
+            {/* Border Background (Outer) */}
+            <mesh position={[0, 0, -0.02]} geometry={outerGeom}>
+              <meshStandardMaterial color={colors.primary} />
+            </mesh>
+
+            {/* Main Background (Inner) */}
+            <mesh geometry={innerGeom}>
+              <meshStandardMaterial color={colors.card} />
+            </mesh>
+
+            {/* Text */}
+            <Text
+              position={[0, 0, 0.06]}
+              fontSize={2}
+              fontWeight={800}
+              color={colors.text}
+              anchorX="center"
+              anchorY="middle"
+            >
+              {item.id}
+            </Text>
+          </Billboard>
+        </group>
+      ))}
+    </group>
+  )
+}
+
 function WallInstances({
   walls,
   color,
@@ -487,6 +579,8 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
               onSelect={setSelectedId}
               colors={colors}
             />
+
+            <RackLabels data={equipment} colors={colors} />
 
             <WallInstances walls={walls} color={colors.card} />
 
