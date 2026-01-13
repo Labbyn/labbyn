@@ -41,14 +41,13 @@ const RADIUS = 0.25
 
 function resolveColor(varName: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback
-  const temp = document.createElement('div')
-  temp.style.color = `var(${varName})`
-  temp.style.display = 'none'
-  document.body.appendChild(temp)
-  const computed = getComputedStyle(temp).color
-  document.body.removeChild(temp)
-  if (!computed || computed === '' || computed.includes('var(')) return fallback
-  return computed
+  const style = getComputedStyle(document.documentElement)
+  const color = style.getPropertyValue(varName).trim()
+
+  if (!color) return fallback
+
+  const hex = formatHex(color)
+  return hex || fallback
 }
 
 let cachedTexture: THREE.CanvasTexture | null = null
