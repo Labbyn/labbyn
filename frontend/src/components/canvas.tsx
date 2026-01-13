@@ -297,6 +297,22 @@ function InstancedRacks({ data, onSelect, colors }: any) {
     faceMeshRef.current.instanceMatrix.needsUpdate = true
     if (faceMeshRef.current.instanceColor)
       faceMeshRef.current.instanceColor.needsUpdate = true
+
+    const box = new THREE.Box3()
+    const tempVec = new THREE.Vector3()
+
+    data.forEach((item: any) => {
+      tempVec.set(item.x / 10, RACK_H / 2, item.y / 10)
+      box.expandByPoint(tempVec)
+    })
+
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+    const radius = box.getBoundingSphere(new THREE.Sphere()).radius
+
+    const boundingSphere = new THREE.Sphere(center, radius)
+    bodyMeshRef.current.geometry.boundingSphere = boundingSphere
+    faceMeshRef.current.geometry.boundingSphere = boundingSphere
   }, [data, colors, dummy, color])
 
   return (
@@ -551,16 +567,6 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
               castShadow
             />
             <Environment preset="city" />
-
-            <mesh
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, -0.5, 0]}
-              receiveShadow
-              renderOrder={-2}
-            >
-              <planeGeometry args={[5000, 5000]} />
-              <meshStandardMaterial color="#666666" roughness={0.9} />
-            </mesh>
 
             <Grid
               position={[0, -0.02, 0]}
