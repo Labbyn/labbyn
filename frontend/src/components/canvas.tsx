@@ -146,8 +146,8 @@ function SceneController({
   center: THREE.Vector3
 }) {
   const controlsRef = useRef<any>(null)
-  const { camera } = useThree()
-  const [, getKeys] = useKeyboardControls()
+  const { camera, invalidate } = useThree()
+  const [subscribe, getKeys] = useKeyboardControls()
   const vec = new THREE.Vector3()
 
   useEffect(() => {
@@ -159,7 +159,12 @@ function SceneController({
       camera.position.set(center.x, 500, center.z)
     }
     controlsRef.current.update()
-  }, [center, is2D, camera])
+    invalidate()
+  }, [center, is2D, camera, invalidate])
+
+  useEffect(() => {
+    return subscribe(() => invalidate())
+  }, [invalidate, subscribe])
 
   useFrame(() => {
     if (!controlsRef.current) return
@@ -182,14 +187,15 @@ function SceneController({
     if (keys.right) vec.add(right)
     if (keys.left) vec.sub(right)
 
+    let hasMoved = false
+
     if (vec.lengthSq() > 0) {
       vec.normalize().multiplyScalar(moveSpeed)
       controlsRef.current.target.add(vec)
-      if (!is2D) camera.position.add(vec)
-      else {
-        camera.position.x += vec.x
-        camera.position.z += vec.z
-      }
+
+      camera.position.add(vec)
+
+      hasMoved = true
     }
 
     if (!is2D) {
@@ -198,13 +204,20 @@ function SceneController({
         offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed)
         camera.position.copy(controlsRef.current.target).add(offset)
         camera.lookAt(controlsRef.current.target)
+        hasMoved = true
       }
       if (keys.rotateRight) {
         const offset = camera.position.clone().sub(controlsRef.current.target)
         offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed)
         camera.position.copy(controlsRef.current.target).add(offset)
         camera.lookAt(controlsRef.current.target)
+        hasMoved = true
       }
+    }
+
+    if (hasMoved) {
+      controlsRef.current.update()
+      invalidate()
     }
   })
 
@@ -544,6 +557,7 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
 
         <KeyboardControls map={keyMap}>
           <Canvas
+            frameloop="demand"
             shadows
             dpr={[1, 1.5]}
             gl={{ antialias: true, logarithmicDepthBuffer: true }}
