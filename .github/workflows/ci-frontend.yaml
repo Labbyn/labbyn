@@ -5,5 +5,7 @@ jobs:
     test-frontend:
         runs-on: ubuntu-latest
         steps:
-            - name: Test Frontend
-              run: echo "Test Placeholder"
+            - name: Checkout code
+              uses: actions/checkout@v5
+            - name: Build application
+              run: docker compose up frontend -d
