@@ -1,6 +1,6 @@
 import type { ApiInventoryItem } from './inventory.types'
 
-export type ApiInventoryResponse = ApiInventoryItem[];
+export type ApiInventoryResponse = Array<ApiInventoryItem>
 
 export function fetchInventoryData(apiData: ApiInventoryResponse) {
   return apiData.map((row) => ({
@@ -14,5 +14,5 @@ export function fetchInventoryData(apiData: ApiInventoryResponse) {
     rentalId: row.rental_id,
     id: row.id,
     versionId: row.version_id,
-    }));
+  }))
 }

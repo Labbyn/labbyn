@@ -2,19 +2,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import { ArrowUpDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
-import { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
 
 export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
-type InventoryItem = ReturnType<typeof fetchInventoryData>[]
+type InventoryItem = Array<ReturnType<typeof fetchInventoryData>>
 const fetchMachines = async (): Promise<Array<InventoryItem>> => {
   // Symulacja opóźnienia sieciowego (500ms)
   await new Promise((resolve) => setTimeout(resolve, 500))
@@ -37,9 +37,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
       )
     },
     cell: ({ row }) => (
-      <div className="flex flex-col">
-        {row.getValue('id') || '-'}
-      </div>
+      <div className="flex flex-col">{row.getValue('id') || '-'}</div>
     ),
   },
   {
@@ -98,7 +96,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
     header: 'Localization ID',
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
-        <span className="font-medium">{row.getValue('localizationId') || '-'} </span>
+        <span className="font-medium">
+          {row.getValue('localizationId') || '-'}{' '}
+        </span>
       </div>
     ),
   },
@@ -120,7 +120,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
       </div>
     ),
   },
-    {
+  {
     accessorKey: 'rentalStatus',
     header: 'Rental Status',
     cell: ({ row }) => (
@@ -129,7 +129,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
       </div>
     ),
   },
-    {
+  {
     accessorKey: 'rentalId',
     header: 'Rental ID',
     cell: ({ row }) => (
@@ -138,7 +138,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
       </div>
     ),
   },
-    {
+  {
     accessorKey: 'versionId',
     header: 'Version ID',
     cell: ({ row }) => (

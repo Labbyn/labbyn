@@ -6,12 +6,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { Link } from '@tanstack/react-router'
+import { Button } from './button'
 import type {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table'
-import { Link } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from './button'
 
 interface DataTableProps<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>
@@ -71,7 +71,9 @@ export function DataTable<TData extends { id: string }, TValue>({
           }
           className="w-full"
         />
-        <Button><Link to="/add_items">Add items</Link></Button>
+        <Button>
+          <Link to="/add_items">Add items</Link>
+        </Button>
       </div>
 
       <div className="relative flex-1 rounded-md border overflow-hidden">
