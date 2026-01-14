@@ -6,8 +6,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { Link } from '@tanstack/react-router'
-import { Button } from './button'
 import type {
   ColumnDef,
   ColumnFiltersState,
@@ -60,7 +58,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-row gap-2 flex-none">
+      <div className="flex flex-col gap-2 flex-none">
         {actionElement && <div className="w-full">{actionElement}</div>}
 
         <Input
@@ -71,9 +69,6 @@ export function DataTable<TData, TValue>({
           }
           className="w-full"
         />
-        <Button>
-          <Link to="/add_items">Add items</Link>
-        </Button>
       </div>
 
       <div className="relative flex-1 rounded-md border overflow-hidden">

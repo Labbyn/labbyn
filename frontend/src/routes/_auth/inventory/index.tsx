@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowUpDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -161,7 +161,15 @@ function RouteComponent() {
     <div className="h-screen w-full z-1 overflow-hidden">
       <ScrollArea className="h-full">
         <div className="p-6">
-          <DataTable columns={columns} data={inventory} />
+          <DataTable
+            columns={columns}
+            data={inventory}
+            actionElement={
+              <Button className="w-full">
+                <Link to="/add-items">Add items</Link>
+              </Button>
+            }
+          />
         </div>
       </ScrollArea>
     </div>
