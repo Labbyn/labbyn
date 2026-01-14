@@ -32,7 +32,7 @@ interface DataTableProps<TData, TValue> {
   actionElement?: React.ReactNode
 }
 
-export function DataTable<TData extends { id: string }, TValue>({
+export function DataTable<TData, TValue>({
   columns,
   data,
   onRowClick,
@@ -102,7 +102,9 @@ export function DataTable<TData extends { id: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={
-                    row.original.id === selectedId ? 'selected' : undefined
+                    String((row.original as any).id) === selectedId
+                      ? 'selected'
+                      : undefined
                   }
                   className="cursor-pointer"
                   // Handle click interaction

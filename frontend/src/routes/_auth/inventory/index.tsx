@@ -14,12 +14,12 @@ export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
-type InventoryItem = Array<ReturnType<typeof fetchInventoryData>>
-const fetchMachines = async (): Promise<Array<InventoryItem>> => {
-  // Symulacja opóźnienia sieciowego (500ms)
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return []
-}
+type InventoryItem = ReturnType<typeof fetchInventoryData>[number]
+// const fetchMachines = async (): Promise<Array<InventoryItem>> => {
+//  // Symulacja opóźnienia sieciowego (500ms)
+//  await new Promise((resolve) => setTimeout(resolve, 500))
+//  return []
+// }
 
 export const columns: Array<ColumnDef<InventoryItem>> = [
   {
@@ -105,11 +105,14 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   {
     accessorKey: 'machineId',
     header: 'Machine ID',
-    cell: ({ row }) => (
-      <div className="flex flex-col items-center justify-center text-center">
-        <span className="font-medium">{row.getValue('machineId') | null} </span>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const value = row.getValue('machineId')
+      return (
+        <div className="flex flex-col items-center justify-center text-center">
+          <span className="font-medium">{(value as number | null) ?? '-'}</span>
+        </div>
+      )
+    },
   },
   {
     accessorKey: 'categoryId',

@@ -10,3 +10,4 @@ export type ApiInventoryItem = {
   id: number
   version_id: number
 }
+export type ApiInventoryResponse = Array<ApiInventoryItem>
