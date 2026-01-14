@@ -56,7 +56,7 @@ const items = [
     icon: Cable,
   },
   {
-    title: 'Test',
+    title: 'History',
     url: '/history',
     icon: GitBranch,
   },
