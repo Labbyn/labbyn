@@ -19,6 +19,7 @@ import { Route as AuthImportExportRouteImport } from './routes/_auth/import-expo
 import { Route as AuthHistoryRouteImport } from './routes/_auth/history'
 import { Route as AuthDocsRouteImport } from './routes/_auth/docs'
 import { Route as AuthAdminRouteImport } from './routes/_auth/admin'
+import { Route as AuthAdd_itemsRouteImport } from './routes/_auth/add_items'
 import { Route as AuthUsersIndexRouteImport } from './routes/_auth/users/index'
 import { Route as AuthInventoryIndexRouteImport } from './routes/_auth/inventory/index'
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
@@ -74,6 +75,11 @@ const AuthAdminRoute = AuthAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAdd_itemsRoute = AuthAdd_itemsRouteImport.update({
+  id: '/add_items',
+  path: '/add_items',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthUsersIndexRoute = AuthUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
@@ -103,6 +109,7 @@ const AuthInventoryDeviceDeviceidRoute =
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
+  '/add_items': typeof AuthAdd_itemsRoute
   '/admin': typeof AuthAdminRoute
   '/docs': typeof AuthDocsRouteWithChildren
   '/history': typeof AuthHistoryRoute
@@ -119,6 +126,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/add_items': typeof AuthAdd_itemsRoute
   '/admin': typeof AuthAdminRoute
   '/history': typeof AuthHistoryRoute
   '/import-export': typeof AuthImportExportRoute
@@ -136,6 +144,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
+  '/_auth/add_items': typeof AuthAdd_itemsRoute
   '/_auth/admin': typeof AuthAdminRoute
   '/_auth/docs': typeof AuthDocsRouteWithChildren
   '/_auth/history': typeof AuthHistoryRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
+    | '/add_items'
     | '/admin'
     | '/docs'
     | '/history'
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/add_items'
     | '/admin'
     | '/history'
     | '/import-export'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_auth'
     | '/login'
+    | '/_auth/add_items'
     | '/_auth/admin'
     | '/_auth/docs'
     | '/_auth/history'
@@ -278,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/add_items': {
+      id: '/_auth/add_items'
+      path: '/add_items'
+      fullPath: '/add_items'
+      preLoaderRoute: typeof AuthAdd_itemsRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/users/': {
       id: '/_auth/users/'
       path: '/users'
@@ -331,6 +350,7 @@ const AuthDocsRouteWithChildren = AuthDocsRoute._addFileChildren(
 )
 
 interface AuthRouteChildren {
+  AuthAdd_itemsRoute: typeof AuthAdd_itemsRoute
   AuthAdminRoute: typeof AuthAdminRoute
   AuthDocsRoute: typeof AuthDocsRouteWithChildren
   AuthHistoryRoute: typeof AuthHistoryRoute
@@ -345,6 +365,7 @@ interface AuthRouteChildren {
 }
 
 const AuthRouteChildren: AuthRouteChildren = {
+  AuthAdd_itemsRoute: AuthAdd_itemsRoute,
   AuthAdminRoute: AuthAdminRoute,
   AuthDocsRoute: AuthDocsRouteWithChildren,
   AuthHistoryRoute: AuthHistoryRoute,

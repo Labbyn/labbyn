@@ -6,22 +6,42 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { machines } from '@/lib/mock-data'
 import { PageIsLoading } from '@/components/page-is-loading'
+import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
+import { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
 
 export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
-export type Machine = (typeof machines)[0]
-
-const fetchMachines = async (): Promise<Array<Machine>> => {
+type InventoryItem = ReturnType<typeof fetchInventoryData>[]
+const fetchMachines = async (): Promise<Array<InventoryItem>> => {
   // Symulacja opóźnienia sieciowego (500ms)
   await new Promise((resolve) => setTimeout(resolve, 500))
-  return machines
+  return []
 }
 
-export const columns: Array<ColumnDef<Machine>> = [
+export const columns: Array<ColumnDef<InventoryItem>> = [
+  {
+    accessorKey: 'id',
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="link"
+          className="has-[>svg]:px-0"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+        >
+          ID
+          <ArrowUpDown className="ml-1 h-3 w-3" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => (
+      <div className="flex flex-col">
+        {row.getValue('id') || '-'}
+      </div>
+    ),
+  },
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -31,7 +51,7 @@ export const columns: Array<ColumnDef<Machine>> = [
           className="has-[>svg]:px-0"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Name / Serial
+          Name
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       )
@@ -39,14 +59,11 @@ export const columns: Array<ColumnDef<Machine>> = [
     cell: ({ row }) => (
       <div className="flex flex-col">
         <span className="font-medium">{row.getValue('name')}</span>
-        <span className="text-xs text-muted-foreground">
-          {row.original.serialNumber}
-        </span>
       </div>
     ),
   },
   {
-    accessorKey: 'labName',
+    accessorKey: 'quantity',
     header: ({ column }) => {
       return (
         <Button
@@ -54,85 +71,86 @@ export const columns: Array<ColumnDef<Machine>> = [
           className="has-[>svg]:px-0"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
-          Lab & Team
+          Quantity
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       )
     },
     cell: ({ row }) => (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 items-center justify-center text-center">
         <Badge variant="outline" className="w-fit">
-          {row.getValue('labName')}
+          {row.getValue('quantity')}
         </Badge>
-        <span className="text-xs text-muted-foreground">
-          {row.original.teamName}
-        </span>
       </div>
     ),
   },
   {
-    accessorKey: 'macAddress',
-    header: 'Network Info',
+    accessorKey: 'teamId',
+    header: 'Team ID',
     cell: ({ row }) => (
-      <div className="flex flex-col font-mono text-xs">
-        <span>{row.getValue('macAddress')}</span>
-        <span className="text-muted-foreground">
-          Port: {row.original.pduPort}
-        </span>
+      <div className="flex flex-col items-center justify-center text-center">
+        <span className="font-medium">{row.getValue('teamId') || '-'} </span>
       </div>
     ),
   },
   {
-    accessorKey: 'operatingSystem',
-    header: 'OS',
-  },
-  {
-    id: 'specs',
-    header: 'Hardware Specs',
+    id: 'localizationId',
+    header: 'Localization ID',
     cell: ({ row }) => (
-      <div className="text-sm">
-        <div className="font-medium">{row.original.cpu}</div>
-        <div className="text-xs text-muted-foreground">
-          {row.original.ram} | {row.original.disk}
-        </div>
+      <div className="flex flex-col items-center justify-center text-center">
+        <span className="font-medium">{row.getValue('localizationId') || '-'} </span>
       </div>
     ),
   },
   {
-    accessorKey: 'addedOn',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Date Added
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-      const date = new Date(row.getValue('addedOn'))
-      return <div className="font-medium">{date.toLocaleDateString()}</div>
-    },
+    accessorKey: 'machineId',
+    header: 'Machine ID',
+    cell: ({ row }) => (
+      <div className="flex flex-col items-center justify-center text-center">
+        <span className="font-medium">{row.getValue('machineId') | null} </span>
+      </div>
+    ),
   },
   {
-    accessorKey: 'notes',
-    header: 'Notes',
+    accessorKey: 'categoryId',
+    header: 'Category ID',
     cell: ({ row }) => (
-      <div className="max-w-50 truncate text-muted-foreground italic">
-        {row.getValue('notes') || '-'}
+      <div className="flex flex-col items-center justify-center text-center">
+        {row.getValue('categoryId') || '-'}
+      </div>
+    ),
+  },
+    {
+    accessorKey: 'rentalStatus',
+    header: 'Rental Status',
+    cell: ({ row }) => (
+      <div className="flex flex-col items-center justify-center text-center">
+        {row.getValue('rentalStatus') || '-'}
+      </div>
+    ),
+  },
+    {
+    accessorKey: 'rentalId',
+    header: 'Rental ID',
+    cell: ({ row }) => (
+      <div className="flex flex-col items-center justify-center text-center">
+        {row.getValue('rentalId') || '-'}
+      </div>
+    ),
+  },
+    {
+    accessorKey: 'versionId',
+    header: 'Version ID',
+    cell: ({ row }) => (
+      <div className="flex flex-col items-center justify-center text-center">
+        {row.getValue('versionId') || '-'}
       </div>
     ),
   },
 ]
 
 function RouteComponent() {
-  const { data: machines = [], isLoading } = useQuery({
-    queryKey: ['machines'],
-    queryFn: fetchMachines,
-  })
+  const { data: inventory = [], isLoading } = useQuery(inventoryQueryOptions)
 
   if (isLoading) return <PageIsLoading />
 
@@ -140,7 +158,7 @@ function RouteComponent() {
     <div className="h-screen w-full z-1 overflow-hidden">
       <ScrollArea className="h-full">
         <div className="p-6">
-          <DataTable columns={columns} data={machines} />
+          <DataTable columns={columns} data={inventory} />
         </div>
       </ScrollArea>
     </div>

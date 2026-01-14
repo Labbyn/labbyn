@@ -11,7 +11,7 @@ import type {
   ColumnFiltersState,
   SortingState,
 } from '@tanstack/react-table'
-
+import { Link } from '@tanstack/react-router'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Button } from './button'
 
 interface DataTableProps<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>
@@ -59,7 +60,7 @@ export function DataTable<TData extends { id: string }, TValue>({
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-col gap-2 flex-none">
+      <div className="flex flex-row gap-2 flex-none">
         {actionElement && <div className="w-full">{actionElement}</div>}
 
         <Input
@@ -70,6 +71,7 @@ export function DataTable<TData extends { id: string }, TValue>({
           }
           className="w-full"
         />
+        <Button><Link to="/add_items">Add items</Link></Button>
       </div>
 
       <div className="relative flex-1 rounded-md border overflow-hidden">
