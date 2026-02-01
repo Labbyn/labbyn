@@ -33,16 +33,26 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { AddPlatformDialog } from './platform-dialog'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from './ui/collapsible'
+import { Badge } from './ui/badge'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -84,10 +94,39 @@ const items = [
   },
 ]
 
+const adminPanelItems = [
+  {
+    title: 'Users',
+    url: '/admin-panel/users',
+    icon: Users,
+  },
+  {
+    title: 'Teams',
+    url: '/admin-panel/teams',
+    icon: CirclePile,
+  },
+  {
+    title: 'Machines',
+    url: '/admin-panel/machines',
+    icon: HardDrive,
+  },
+  {
+    title: 'Inventory',
+    url: '/admin-panel/inventory',
+    icon: Archive,
+  },
+  {
+    title: 'Logging',
+    url: '/admin-panel/logging',
+    icon: ScrollText,
+  },
+]
+
 const user = {
   name: 'Zbigniew Trąba',
   email: 'ekspert.od.kabelkow@labbyn.com',
   avatar: 'https://cdn.pfps.gg/pfps/66456-cool-cat.jpeg',
+  role: 'Admin',
 }
 
 function useTheme() {
@@ -172,7 +211,41 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* ADMIN PANELS SUBMENU */}
+        {user.role == 'Admin' && (
+          <Collapsible defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger>
+                  Admin panels
+                  <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <SidebarMenuSub>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    {adminPanelItems.map((item) => (
+                      <SidebarMenuSubItem key={item.title}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === item.url}
+                        >
+                          <Link to={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarMenuSub>
+            </SidebarGroup>
+          </Collapsible>
+        )}
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
