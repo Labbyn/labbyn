@@ -90,7 +90,7 @@ export function CommandMenu() {
             className="text-foreground dark:bg-card hover:bg-accent hover:border-primary relative h-8 w-full justify-start pl-3 font-normal shadow-none"
           >
             <Search />
-            <span>Search...</span>
+            <span>Search resources...</span>
           </Button>
         </SidebarMenuButton>
       </SidebarMenuItem>
