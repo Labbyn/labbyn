@@ -181,19 +181,54 @@ export function AppSidebar() {
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <CommandMenu />
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Quick actions</SidebarGroupLabel>
+          <SidebarGroupAction>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Settings />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-fit rounded-lg"
+                side={isMobile ? 'bottom' : 'right'}
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuLabel>Configure quick actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <DropdownMenuCheckboxItem checked>
+                    Add platform
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem>
+                    Add inventory item
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem>
+                    Add something
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarGroupAction>
+          <SidebarContent>
+            <SidebarMenuItem>
+              <AddPlatformDialog />
+            </SidebarMenuItem>
+          </SidebarContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <AddPlatformDialog />
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <CommandMenu />
-              </SidebarMenuItem>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
