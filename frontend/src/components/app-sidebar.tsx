@@ -282,10 +282,12 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu>
+        {/*
           <SidebarMenuItem>
             <SidebarTrigger />
           </SidebarMenuItem>
+        */}
+        <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
