@@ -1,17 +1,20 @@
 import {
-  Accessibility,
-  BookText,
-  Cable,
+  Archive,
+  Box,
+  ChevronDown,
   ChevronsUpDown,
+  CirclePile,
+  FileText,
   FolderInput,
-  GitBranch,
-  LayoutDashboard,
+  HardDrive,
+  History,
   LogOut,
   Moon,
+  PanelsTopLeft,
+  ScrollText,
   Server,
   Settings,
   Sun,
-  UserStar,
   Users,
 } from 'lucide-react'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -47,7 +50,7 @@ const items = [
   {
     title: 'Dashboard',
     url: '/user_dashboard',
-    icon: LayoutDashboard,
+    icon: PanelsTopLeft,
   },
   {
     title: 'Labs',
@@ -57,12 +60,12 @@ const items = [
   {
     title: 'Inventory',
     url: '/inventory',
-    icon: Cable,
+    icon: Archive,
   },
   {
     title: 'History',
     url: '/history',
-    icon: GitBranch,
+    icon: History,
   },
   {
     title: 'Users',
@@ -72,7 +75,7 @@ const items = [
   {
     title: 'Documentation',
     url: '/docs',
-    icon: BookText,
+    icon: FileText,
   },
   {
     title: 'Import & Export',
