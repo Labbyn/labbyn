@@ -137,10 +137,12 @@ export function AppSidebar() {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#">
-                <Accessibility className="size-5!" />
-                <span className="text-base font-semibold">Labbyn</span>
-              </a>
+              <Link to="/">
+                <Box color="var(--primary)" className="size-5!" />
+                <span className="font-['Ubuntu_Mono'] font-bold text-xl tracking-tight">
+                  labbyn
+                </span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
