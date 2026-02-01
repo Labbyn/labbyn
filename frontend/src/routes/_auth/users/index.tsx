@@ -1,12 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ArrowUpDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { users } from '@/lib/mock-data'
 import { PageIsLoading } from '@/components/page-is-loading'
+import { DataTableColumnHeader } from '@/components/data-table/column-header'
 
 export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
@@ -23,21 +22,14 @@ const fetchUsers = async (): Promise<Array<User>> => {
 export const columns: Array<ColumnDef<User>> = [
   {
     accessorKey: 'id',
-    header: 'ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Id" />
+    },
   },
   {
     accessorKey: 'name',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="Name" />
     },
     cell: ({ row }) => (
       <span>
@@ -48,31 +40,13 @@ export const columns: Array<ColumnDef<User>> = [
   {
     accessorKey: 'team',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Team Name
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="Team" />
     },
   },
   {
     accessorKey: 'role',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Role
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="Role" />
     },
   },
 ]

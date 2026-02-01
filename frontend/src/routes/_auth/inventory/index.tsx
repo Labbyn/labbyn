@@ -1,5 +1,4 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowUpDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
@@ -9,32 +8,19 @@ import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
+import { DataTableColumnHeader } from '@/components/data-table/column-header'
 
 export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
 type InventoryItem = ReturnType<typeof fetchInventoryData>[number]
-// const fetchMachines = async (): Promise<Array<InventoryItem>> => {
-//  // Symulacja opóźnienia sieciowego (500ms)
-//  await new Promise((resolve) => setTimeout(resolve, 500))
-//  return []
-// }
 
 export const columns: Array<ColumnDef<InventoryItem>> = [
   {
     accessorKey: 'id',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          ID
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="ID" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col">{row.getValue('id') || '-'}</div>
@@ -43,16 +29,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Name
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="Name" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col">
@@ -63,16 +40,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   {
     accessorKey: 'quantity',
     header: ({ column }) => {
-      return (
-        <Button
-          variant="link"
-          className="has-[>svg]:px-0"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Quantity
-          <ArrowUpDown className="ml-1 h-3 w-3" />
-        </Button>
-      )
+      return <DataTableColumnHeader column={column} title="Quantity" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col gap-1 items-center justify-center text-center">
@@ -84,7 +52,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'teamId',
-    header: 'Team ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Team ID" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         <span className="font-medium">{row.getValue('teamId') || '-'} </span>
@@ -92,8 +62,10 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
     ),
   },
   {
-    id: 'localizationId',
-    header: 'Localization ID',
+    accessorKey: 'localizationId',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Quantity" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         <span className="font-medium">
@@ -104,7 +76,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'machineId',
-    header: 'Machine ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Machine ID" />
+    },
     cell: ({ row }) => {
       const value = row.getValue('machineId')
       return (
@@ -116,7 +90,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'categoryId',
-    header: 'Category ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Category ID" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         {row.getValue('categoryId') || '-'}
@@ -125,7 +101,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'rentalStatus',
-    header: 'Rental Status',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Rental Status" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         {row.getValue('rentalStatus') || '-'}
@@ -134,7 +112,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'rentalId',
-    header: 'Rental ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Rental ID" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         {row.getValue('rentalId') || '-'}
@@ -143,7 +123,9 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
   },
   {
     accessorKey: 'versionId',
-    header: 'Version ID',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Version ID" />
+    },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         {row.getValue('versionId') || '-'}
@@ -165,7 +147,7 @@ function RouteComponent() {
             columns={columns}
             data={inventory}
             actionElement={
-              <Button className="w-full">
+              <Button>
                 <Link to="/add-items">Add items</Link>
               </Button>
             }
