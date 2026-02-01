@@ -19,8 +19,12 @@ import React from 'react'
 import { CommandMenu } from './command-menu'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
@@ -64,16 +68,6 @@ const items = [
     title: 'Users',
     url: '/users',
     icon: Users,
-  },
-  {
-    title: 'Settings',
-    url: '/settings',
-    icon: Settings,
-  },
-  {
-    title: 'Admin',
-    url: '/admin',
-    icon: UserStar,
   },
   {
     title: 'Documentation',
@@ -172,13 +166,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={toggleTheme} tooltip="Toggle Theme">
-                  {theme === 'dark' ? <Moon /> : <Sun />}
-                  <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -200,7 +187,9 @@ export function AppSidebar() {
                     <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate font-semibold">
+                      {user.name} {user.role == 'Admin' && <Badge variant={'secondary'}>Admin</Badge>}
+                    </span>
                     <span className="truncate text-xs">{user.email}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
@@ -213,9 +202,36 @@ export function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuItem>
-                  <LogOut className="mr-2 size-4" />
-                  Log out
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {user.name} {user.role == 'Admin' && <Badge variant="secondary">Admin</Badge>}
+                    </span>
+                    <span className="truncate text-xs">{user.email}</span>
+                  </div>
                 </DropdownMenuItem>
+
+                <Link to="/settings">
+                  <DropdownMenuItem>
+                    <Settings />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                </Link>
+
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === 'dark' ? <Moon /> : <Sun />}
+                  <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                </DropdownMenuItem>
+
+                <Link to="/login">
+                  <DropdownMenuItem>
+                    <LogOut />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </Link>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
