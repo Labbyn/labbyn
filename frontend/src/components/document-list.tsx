@@ -85,9 +85,9 @@ export function DocumentList({
       onRowClick={onSelectDocument}
       selectedId={selectedDoc?.id}
       actionElement={
-        <Button onClick={onCreateDocument} className="w-full">
+        <Button onClick={onCreateDocument} variant={'outline'}>
           <Plus className="mr-2 h-4 w-4" />
-          New Document
+          Create new document
         </Button>
       }
     />
