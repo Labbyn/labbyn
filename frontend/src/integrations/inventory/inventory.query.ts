@@ -8,9 +8,7 @@ export const inventoryQueryOptions = queryOptions({
   queryKey: ['inventory'],
   queryFn: async () => {
     const res = await fetch(INVENTORY_ENDPOINT)
-    if (!res.ok) {
-      throw new Error('Failed to fetch inventory')
-    }
+    if (!res.ok) throw new Error('Failed to fetch inventory')
 
     const data: ApiInventoryResponse = await res.json()
     return fetchInventoryData(data)
