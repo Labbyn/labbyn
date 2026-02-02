@@ -12,7 +12,7 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-
+from app.auth.dependencies import RequestContext
 router = APIRouter()
 
 
@@ -22,13 +22,18 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Inventory"],
 )
-def create_item(inventory_data: InventoryCreate, db: Session = Depends(get_db)):
+def create_item(inventory_data: InventoryCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Create and add new inventory to database
     :param inventory_data: Inventory data
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Inventory item
     """
+    data = inventory_data.model_dump()
+    if not ctx.is_admin:
+        data["team_id"] = ctx.team_id
+
     obj = Inventory(**inventory_data.model_dump())
     db.add(obj)
     db.commit()
@@ -39,29 +44,35 @@ def create_item(inventory_data: InventoryCreate, db: Session = Depends(get_db)):
 @router.get(
     "/db/inventory/", response_model=List[InventoryResponse], tags=["Inventory"]
 )
-def get_inventory(db: Session = Depends(get_db)):
+def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all inventory items
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: List of inventory items
     """
-    return db.query(Inventory).all()
+    query = db.query(Inventory)
+    query = ctx.team_filter(query, Inventory)
+    return query.all()
 
 
 @router.get(
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
 )
-def get_inventory_item(item_id: int, db: Session = Depends(get_db)):
+def get_inventory_item(item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch specific inventory item by ID
     :param item_id: Item ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Inventory item
     """
-    item = db.query(Inventory).filter(Inventory.id == item_id).first()
+    query = db.query(Inventory).filter(Inventory.id == item_id)
+    query = ctx.team_filter(query, Inventory)
+    item = query.first()
     if not item:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
         )
     return item
 
@@ -70,7 +81,7 @@ def get_inventory_item(item_id: int, db: Session = Depends(get_db)):
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
 )
 async def update_item(
-    item_id: int, item_data: InventoryUpdate, db: Session = Depends(get_db)
+    item_id: int, item_data: InventoryUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
     Update item in inventory
@@ -80,10 +91,12 @@ async def update_item(
     :return: Updated Inventory item
     """
     async with acquire_lock(f"inventory_lock:{item_id}"):
-        item = db.query(Inventory).filter(Inventory.id == item_id).first()
+        query = db.query(Inventory).filter(Inventory.id == item_id)
+        query = ctx.team_filter(query, Inventory)
+        item = query.first()
         if not item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
             )
         for k, v in item_data.model_dump(exclude_unset=True).items():
             setattr(item, k, v)
@@ -97,7 +110,7 @@ async def update_item(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Inventory"],
 )
-async def delete_item(item_id: int, db: Session = Depends(get_db)):
+async def delete_item(item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Delete item in inventory
     :param item_id: Item ID
@@ -105,10 +118,12 @@ async def delete_item(item_id: int, db: Session = Depends(get_db)):
     :return: None
     """
     async with acquire_lock(f"inventory_lock:{item_id}"):
-        item = db.query(Inventory).filter(Inventory.id == item_id).first()
+        query = db.query(Inventory).filter(Inventory.id == item_id)
+        query = ctx.team_filter(query, Inventory)
+        item = query.first()
         if not item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
             )
         db.delete(item)
         db.commit()
