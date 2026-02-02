@@ -96,7 +96,7 @@ class Rooms(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
     room_type = Column(String(100), nullable=True)
-
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
@@ -104,6 +104,7 @@ class Rooms(Base):
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
     inventory = relationship("Inventory", back_populates="room")
+    team = relationship("Teams", back_populates="rooms")
 
 
 class Machines(Base):
@@ -181,7 +182,8 @@ class Teams(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     machines = relationship("Machines", back_populates="team")
-
+    rooms = relationship("Rooms", back_populates="team")
+    inventory = relationship("Inventory", back_populates="team")
     users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
 
 
@@ -289,7 +291,7 @@ class Inventory(Base):
 
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
-
+    team = relationship("Teams", back_populates="inventory")
     current_rental = relationship("Rentals", foreign_keys=[rental_id])
 
     rental_history = relationship(
