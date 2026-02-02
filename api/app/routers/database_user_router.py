@@ -13,6 +13,7 @@ from app.utils.security import hash_password, generate_starting_password
 from app.db.schemas import UserRead
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from app.auth.dependencies import RequestContext
 
 router = APIRouter()
 
@@ -26,13 +27,16 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Users"],
 )
-async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
+async def create_user(user_data: UserCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Create and add new user to database
     :param user_data: User data
     :param db: Active database session
     :return: New user
     """
+
+    ctx.require_group_admin()
+
     if db.query(User).filter(User.login == user_data.login).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="Login already exists."
@@ -47,6 +51,16 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
     user_dict = user_data.model_dump(
         exclude={"password", "is_active", "is_superuser", "is_verified"}
     )
+
+    if not ctx.is_admin():
+        user_dict["team_id"] = ctx.team_id
+        requested_role = user_data.user_type
+        if requested_role == UserType.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to create admin user.",
+            )
+
     new_user = User(
         **user_dict,
         hashed_password=hashed_pw,
@@ -70,7 +84,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/db/users/", response_model=List[UserRead], tags=["Users"])
-def get_users(db: Session = Depends(get_db)):
+def get_users(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all users
     :param db: Active database session
@@ -80,7 +94,7 @@ def get_users(db: Session = Depends(get_db)):
 
 
 @router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
-def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
+def get_user_by_id(user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch specific user by ID
     :param user_id: User ID
@@ -97,7 +111,7 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
 @router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 async def update_user(
-    user_id: int, user_data: UserUpdate, db: Session = Depends(get_db)
+    user_id: int, user_data: UserUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
     Update user data
@@ -106,14 +120,28 @@ async def update_user(
     :param db: Active database session
     :return: Updated User
     """
+    ctx.require_group_admin()
     async with acquire_lock(f"user_lock:{user_id}"):
-        user = db.query(User).filter(User.id == user_id).first()
+        query = db.query(User).filter(User.id == user_id)
+        if not ctx.is_admin:
+            query = query.filter(User.team_id == ctx.team_id)
+        user = query.first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found or access denied"
             )
 
         data = user_data.model_dump(exclude_unset=True)
+
+        if not ctx.is_admin:
+            if "team_id" in data:
+                data["team_id"] = ctx.team_id
+            if "user_type" in data and data["user_type"] == UserType.ADMIN:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Insufficient permissions to assign admin role.",
+                )
+
         if "password" in data:
             new_plain_password = data.pop("password")
             data["hashed_password"] = hash_password(new_plain_password)
@@ -129,18 +157,26 @@ async def update_user(
 @router.delete(
     "/db/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
 )
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Delete user
     :param user_id: User ID
     :param db: Active database session
     :return: None
     """
+    ctx.require_group_admin()
     async with acquire_lock(f"user_lock:{user_id}"):
-        user = db.query(User).filter(User.id == user_id).first()
+        query = db.query(User).filter(User.id == user_id)
+        if not ctx.is_admin:
+            query = query.filter(User.team_id == ctx.team_id)
+        user = query.first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User not found or access denied"
+            )
+        if user.id == ctx.current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete own user account"
             )
         db.delete(user)
         db.commit()
