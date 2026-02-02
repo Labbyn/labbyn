@@ -12,6 +12,7 @@ from app.db.schemas import (
     RentalsResponse,
 )
 from app.utils.redis_service import acquire_lock
+from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -24,15 +25,18 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Rentals"],
 )
-async def create_rental(rent_data: RentalsCreate, db: Session = Depends(get_db)):
+async def create_rental(rent_data: RentalsCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Create new item rent
     :param rent_data: Rent data
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: New Rental object
     """
     async with acquire_lock(f"inventory_lock:{rent_data.item_id}"):
-        item = db.query(Inventory).filter(Inventory.id == rent_data.item_id).first()
+        query = db.query(Inventory).filter(Inventory.id == rent_data.item_id)
+        query = ctx.team_filter(query, Inventory)
+        item = query.first()
         if not item:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Item not found"
@@ -55,17 +59,20 @@ async def create_rental(rent_data: RentalsCreate, db: Session = Depends(get_db))
 
 
 @router.post("/db/rentals/{rental_id}/return", tags=["Rentals"])
-async def return_rental(rental_id: int, db: Session = Depends(get_db)):
+async def return_rental(rental_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     End item rental
     :param rental_id: Rental ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Success message
     """
-    rental = db.query(Rentals).filter(Rentals.id == rental_id).first()
+    query = db.query(Rentals).join(Inventory).filter(Rentals.id == rental_id)
+    query = ctx.team_filter(query, Inventory)
+    rental = query.first()
     if not rental:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found or access denied"
         )
 
     async with acquire_lock(f"inventory_lock:{rental.item_id}"):
@@ -79,27 +86,33 @@ async def return_rental(rental_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/db/rentals/", response_model=List[RentalsResponse], tags=["Rentals"])
-def get_rentals(db: Session = Depends(get_db)):
+def get_rentals(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Get all rentals
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: List of all rentals
     """
-    return db.query(Rentals).all()
+    query = db.query(Rentals).join(Inventory)
+    query = ctx.team_filter(query, Inventory)
+    return query.all()
 
 
 @router.get("/db/rentals/{rental_id}", response_model=RentalsResponse, tags=["Rentals"])
-def get_rental_by_id(rental_id: int, db: Session = Depends(get_db)):
+def get_rental_by_id(rental_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Get specific rental by ID
     :param rental_id: Rental ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Rental object
     """
-    rental = db.query(Rentals).filter(Rentals.id == rental_id).first()
+    query = db.query(Rentals).join(Inventory).filter(Rentals.id == rental_id)
+    query = ctx.team_filter(query, Inventory)
+    rental = query.first
     if not rental:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found or access denied"
         )
     return rental
 
@@ -107,17 +120,20 @@ def get_rental_by_id(rental_id: int, db: Session = Depends(get_db)):
 @router.delete(
     "/db/rentals/{rental_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rentals"]
 )
-async def delete_rental(rental_id: int, db: Session = Depends(get_db)):
+async def delete_rental(rental_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Delete rental history
     :param rental_id: Rental ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: None
     """
-    rental = db.query(Rentals).filter(Rentals.id == rental_id).first()
+    query = db.query(Rentals).join(Inventory).filter(Rentals.id == rental_id)
+    query = ctx.team_filter(query, Inventory)
+    rental = query.first()
     if not rental:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Rental not found or access denied"
         )
 
     async with acquire_lock(f"inventory_lock:{rental.item_id}"):
