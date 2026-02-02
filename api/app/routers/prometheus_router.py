@@ -6,16 +6,20 @@ import os
 from typing import Optional, List
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from pydantic import BaseModel
 from urllib.parse import unquote
+from app.database import get_db
+from ..db.models import Machines
 from ..utils.prometheus_service import (
     fetch_prometheus_metrics,
     DEFAULT_QUERIES,
     add_prometheus_target,
     TargetSaveError,
 )
+from app.auth.dependencies import RequestContext
 from ..utils.redis_service import get_cache, set_cache
+from sqlalchemy.orm import Session
 
 load_dotenv(".env/api.env")
 HOST_STATUS_INTERVAL = int(os.getenv("HOST_STATUS_INTERVAL"))
@@ -90,7 +94,7 @@ async def metrics_worker():
 
 @router.websocket("/ws/metrics")
 async def websocket_endpoint(
-    ws: WebSocket, instance: str = Query(None, description="Filter by instance")
+    ws: WebSocket, instance: str = Query(None, description="Filter by instance"), ctx: RequestContext = Depends()
 ):
     """
     WebSocket endpoint to push metrics data to front-end.
@@ -103,6 +107,10 @@ async def websocket_endpoint(
     manager.websocket = ws
     await ws.accept()
     try:
+        query = ctx.db.query(Machines.name)
+        query = ctx.team_filter(query, Machines)
+        allowed_hosts = {row[0] for row in query.all()}
+
         while True:
             status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
             metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
@@ -111,6 +119,12 @@ async def websocket_endpoint(
             metrics_parsed = json.loads(metrics_data) if metrics_data else {}
             if instance:
                 target = unquote(instance)
+                host_only = _extract_host_from_instance(target)
+                if not ctx.is_admin and host_only not in allowed_hosts:
+                    await ws.send_json({"error": "Access denied for the requested instance."})
+                    await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
+                    continue
+
                 statuses = status_parsed.get("status", [])
                 is_online = any(
                     s["instance"] == target and s["value"] == 1.0 for s in statuses
@@ -141,11 +155,20 @@ async def websocket_endpoint(
                     ],
                 }
             else:
-                payload = {
-                    "statuses": status_parsed.get("status", []),
-                    "metrics": metrics_parsed,
+                filtered_payload = {
+                    "statuses": [
+                        s for s in status_parsed.get("status", [])
+                        if ctx.is_admin or _extract_host_from_instance(s["instance"]) in allowed_hosts
+                    ],
+                    "metrics": {
+                        metric: [
+                            m for m in values
+                            if ctx.is_admin or _extract_host_from_instance(m["instance"]) in allowed_hosts
+                        ]
+                        for metric, values in metrics_parsed.items()
+                    }
                 }
-            await ws.send_json(payload)
+                await ws.send_json(filtered_payload)
             await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
 
     except WebSocketDisconnect:
@@ -167,7 +190,7 @@ async def get_prometheus_instances():
 
 
 @router.get("/prometheus/hosts")
-async def get_prometheus_hosts():
+async def get_prometheus_hosts(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
     :return: List of unique hostnames/IPs
