@@ -28,6 +28,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         config={{
           position: 'bottom-right',
           hideUntilHover: true,
+          openHotkey: [],
         }}
         plugins={[
           {
