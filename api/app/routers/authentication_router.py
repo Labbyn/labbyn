@@ -11,7 +11,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 current_user = fastapi_users.current_user(active=True)
 
 
-@router.post("/auth/setup-password")
+@router.post("/setup-password")
 async def setup_first_password(
     data: FirstChangePasswordRequest,
     user: User = Depends(current_user),
