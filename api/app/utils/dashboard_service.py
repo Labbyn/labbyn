@@ -1,17 +1,17 @@
 from sqlalchemy.orm import Session
 from app.db.models import Machines, Rooms, Inventory, Teams, User, History
+from app.auth.dependencies import RequestContext
 
 # TO DO: add proper tags and handling
-# pass only data accessable by user
 
 
-def build_dashboard(db: Session):
-    machines = db.query(Machines).all()
-    rooms = db.query(Rooms).all()
-    inventories = db.query(Inventory).all()
-    teams = db.query(Teams).all()
-    users = db.query(User).all()
-    histories = db.query(History).all()
+def build_dashboard(db: Session, ctx: RequestContext):
+    machines = ctx.team_filter(db.query(Machines), Machines).all()
+    rooms = ctx.team_filter(db.query(Rooms), Rooms).all()
+    inventories = ctx.team_filter(db.query(Inventory), Inventory).all()
+    teams = ctx.team_filter(db.query(Teams), Teams).all()
+    users = ctx.team_filter(db.query(User), User).all()
+    histories = ctx.team_filter(db.query(History), History).all()
 
     machine_items = [
         {
