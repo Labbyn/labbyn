@@ -67,7 +67,7 @@ def init_super_user(db: Session):
             is_active=True,
             is_superuser=True,
             is_verified=True,
-            force_password_change=True,
+            force_password_change=False, # For development purposes only
         )
         db.add(admin_user)
         db.commit()
