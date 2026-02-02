@@ -52,7 +52,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db), ctx:
         exclude={"password", "is_active", "is_superuser", "is_verified"}
     )
 
-    if not ctx.is_admin():
+    if not ctx.is_admin:
         user_dict["team_id"] = ctx.team_id
         requested_role = user_data.user_type
         if requested_role == UserType.ADMIN:
