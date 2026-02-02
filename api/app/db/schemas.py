@@ -704,3 +704,13 @@ class HistoryEnhancedResponse(HistoryResponse):
     user: Optional[UserShortResponse] = Field(
         None, description="User who performed the action"
     )
+
+# ==========================
+#       AUTH SCHEMAS
+# ==========================
+
+class FirstChangePasswordRequest(BaseModel):
+    """
+    Schema for the first-time password setup.
+    """
+    new_password: str = Field(..., min_length=6, max_length=255)
