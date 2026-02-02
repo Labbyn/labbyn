@@ -13,6 +13,12 @@ import type { ColumnMapping } from './column-mapper'
 import type { ParsedCSV } from '@/lib/csv-parser'
 import { parseCSV } from '@/lib/csv-parser'
 
+/**
+ * Configuration for CSV-to-Database mapping.
+ * Specifies table identifiers, display names, and field-level requirements.
+ * @todo Migrate to backend-driven schema discovery.
+ */
+
 const AVAILABLE_TABLES: Array<TableConfig> = [
   {
     id: 'history',
@@ -253,7 +259,6 @@ export default function ImportPage() {
   const handleSubmit = () => {
     const mappedData = buildMappedData()
 
-    // Validation logic remains the same
     const requiredFields =
       selectedTableConfig?.fields.filter((f) => f.required) || []
     const mappedFields = Object.values(mapping).filter((v) => v !== null)
@@ -269,7 +274,6 @@ export default function ImportPage() {
       return
     }
 
-    // Trigger the mutation
     importData({
       table: selectedTable!,
       data: mappedData,
