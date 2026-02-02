@@ -50,12 +50,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
         return user
 
-    async def on_after_login(self, user: User):
-        """Hook called after a user successfully logs in.
-        :param user: The user to login to.
-        """
-        print(f"User {user.email} logged in.")
-
 
 async def get_user_manager(user_db=Depends(get_user_db)):
     """Dependency generator that yields a UserManager instance.
