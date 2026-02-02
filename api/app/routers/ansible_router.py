@@ -6,7 +6,7 @@ gathering platform information and deploying Node Exporter.
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from enum import Enum
@@ -16,6 +16,7 @@ from app.db.models import Machines, Metadata, Rooms
 from app.utils.ansible_service import parse_platform_report, run_playbook_task
 
 from app.utils.redis_service import acquire_lock
+from app.auth.dependencies import RequestContext
 
 router = APIRouter()
 
@@ -59,6 +60,22 @@ PLAYBOOK_MAP = {
     AnsiblePlaybook.delete_ansible: f"{PLAYBOOK_DIR}/delete_ansible.yaml",
 }
 
+def verify_machine_ownership(machine_id: int, db: Session, ctx: RequestContext):
+    """Check if the machine belongs to the user's team.
+    :param machine_id: ID of the machine to verify
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Machine object if ownership is verified
+    """
+    query = db.query(Machines).filter(Machines.id == machine_id)
+    query = ctx.team_filter(query, Machines)
+    machine = query.first()
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found or access denied."
+        )
+    return machine
 
 @router.post("/ansible/create_user")
 async def create_ansible_user(request: HostRequest):
@@ -126,7 +143,7 @@ async def setup_agent(request: HostRequest):
 
 
 @router.post("/ansible/discovery")
-async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db)):
+async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Discovery:
     1. Scans provided hosts (IP/Hostname) using Ansible (playbook 'scan_platform').
@@ -148,7 +165,9 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
 
     results = []
 
-    default_room = db.query(Rooms).filter(Rooms.name == "virtual").first()
+    default_room = db.query(Rooms).filter(
+        Rooms.name == "virtual", Rooms.team_id == ctx.team_id
+    )
 
     if not default_room:
         default_room = Rooms(name="virtual", room_type="virtual")
@@ -211,6 +230,7 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
 
                 new_machine = Machines(
                     name=host,
+                    team_id=ctx.team_id,
                     metadata_id=new_meta.id,
                     localization_id=default_room.id,
                     os=specs["os"],
@@ -233,7 +253,7 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
 
 @router.post("/ansible/machine/{machine_id}/refresh")
 async def refresh_machine_hardware(
-    request: HostRequest, machine_id: int, db: Session = Depends(get_db)
+    request: HostRequest, machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
     Refreshes hardware data for a specific machine from the database.
@@ -243,13 +263,7 @@ async def refresh_machine_hardware(
     :param db: Active database session
     :return: Success message with updated specs or error details
     """
-    if not request.host:
-        raise HTTPException(status_code=400, detail="Host cannot be empty.")
-
-    machine = db.query(Machines).filter(Machines.id == machine_id).first()
-    if not machine:
-        raise HTTPException(status_code=404, detail="Machine not found")
-
+    machine = verify_machine_ownership(machine_id, db, ctx)
     host_address = machine.name
 
     await run_playbook_task(
@@ -303,7 +317,7 @@ async def refresh_machine_hardware(
 
 @router.post("/ansible/machine/{machine_id}/cleanup")
 async def cleanup_machine(
-    machine_id: int, request: HostRequest, db: Session = Depends(get_db)
+    machine_id: int, request: HostRequest, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
      Delete ansible agent and node exporter from the machine and update metadata accordingly.
@@ -312,13 +326,8 @@ async def cleanup_machine(
     :param db: Active database session
     """
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        machine = db.query(Machines).filter(Machines.id == machine_id).first()
-        if not machine:
-            raise HTTPException(
-                status_code=404, detail="Machine not found in Database."
-            )
-
-        host = request.host
+        machine = verify_machine_ownership(machine_id, db, ctx)
+        host = machine.name
 
         try:
             agent_result = await run_playbook_task(
@@ -351,7 +360,7 @@ async def cleanup_machine(
 
 @router.post("/ansible/machine/{machine_id}/remove_agent")
 async def remove_agent(
-    machine_id: int, request: HostRequest, db: Session = Depends(get_db)
+    machine_id: int, request: HostRequest, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
      Delete node exporter from the machine and update metadata accordingly.
@@ -360,14 +369,8 @@ async def remove_agent(
     :param db: Active database session
     """
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        machine = db.query(Machines).filter(Machines.id == machine_id).first()
-        if not machine:
-            raise HTTPException(
-                status_code=404, detail="Machine not found in Database."
-            )
-
-        host = request.host
-
+        machine = verify_machine_ownership(machine_id, db, ctx)
+        host = machine.name
         try:
             agent_result = await run_playbook_task(
                 PLAYBOOK_MAP[AnsiblePlaybook.delete_agent], host, request.extra_vars
