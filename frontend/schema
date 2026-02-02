@@ -1,0 +1,22 @@
+[
+  {
+    "name": "string",
+    "location": "string",
+    "racks": [
+      {
+        "id": "string",
+        "tags": [
+          "string"
+        ],
+        "machines": [
+          {
+            "device_id": "string",
+            "hostname": "string",
+            "ip_address": "string",
+            "mac_address": "string"
+          }
+        ]
+      }
+    ]
+  }
+]
