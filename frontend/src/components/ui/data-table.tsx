@@ -3,16 +3,30 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { CaptionsOff, RefreshCcwIcon, SearchIcon } from 'lucide-react'
+import { rankItem } from '@tanstack/match-sorter-utils'
+import { DataTableViewOptions } from '../data-table/view-options'
+import { DataTablePagination } from '../data-table/pagination'
+import { InputGroup, InputGroupAddon, InputGroupInput } from './input-group'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from './empty'
+import { Button } from './button'
 import type {
   ColumnDef,
   ColumnFiltersState,
+  FilterFn,
   SortingState,
 } from '@tanstack/react-table'
-
-import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -22,6 +36,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
+const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value)
+  addMeta({ itemRank })
+  return itemRank.passed
+}
 interface DataTableProps<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>
   data: Array<TData>
@@ -31,7 +50,7 @@ interface DataTableProps<TData, TValue> {
   actionElement?: React.ReactNode
 }
 
-export function DataTable<TData extends { id: string }, TValue>({
+export function DataTable<TData, TValue>({
   columns,
   data,
   onRowClick,
@@ -42,34 +61,44 @@ export function DataTable<TData extends { id: string }, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
+  const [globalFilter, setGlobalFilter] = React.useState<string>('')
 
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
       columnFilters,
+      globalFilter,
     },
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: fuzzyFilter,
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   })
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex flex-col gap-2 flex-none">
-        {actionElement && <div className="w-full">{actionElement}</div>}
+      {/* Data table header */}
+      <div className="flex gap-4">
+        <InputGroup>
+          <InputGroupInput
+            placeholder="Search..."
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+          />
+          <InputGroupAddon>
+            <SearchIcon />
+          </InputGroupAddon>
+        </InputGroup>
 
-        <Input
-          placeholder="Filter by name..."
-          value={table.getColumn('name')?.getFilterValue() as string}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
-          className="w-full"
-        />
+        <DataTableViewOptions table={table} />
+
+        {actionElement}
       </div>
 
       <div className="relative flex-1 rounded-md border overflow-hidden">
@@ -98,7 +127,9 @@ export function DataTable<TData extends { id: string }, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={
-                    row.original.id === selectedId ? 'selected' : undefined
+                    String(row.original.id) === selectedId
+                      ? 'selected'
+                      : undefined
                   }
                   className="cursor-pointer"
                   // Handle click interaction
@@ -120,13 +151,34 @@ export function DataTable<TData extends { id: string }, TValue>({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <Empty className="h-full">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <CaptionsOff />
+                      </EmptyMedia>
+                      <EmptyTitle>No data to display</EmptyTitle>
+                      <EmptyDescription className="max-w-xs text-pretty">
+                        There is not records for this data table. New records
+                        will appear here.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                    <EmptyContent>
+                      <Button
+                        variant="outline"
+                        onClick={() => window.location.reload()}
+                      >
+                        <RefreshCcwIcon className="mr-2 h-4 w-4" />
+                        Refresh
+                      </Button>
+                    </EmptyContent>
+                  </Empty>
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+      <DataTablePagination table={table} />
     </div>
   )
 }

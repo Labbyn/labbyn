@@ -121,7 +121,7 @@ function DocsLayout() {
     <>
       <div className="h-auto xl:h-screen w-full xl:overflow-hidden">
         <div className="grid grid-cols-1 xl:grid-cols-5 h-full">
-          <div className="xl:col-span-2 h-full xl:overflow-y-hidden border-r">
+          <div className="xl:col-span-2 h-full xl:overflow-y-hidden">
             <ScrollArea className="h-full" dir="rtl">
               <div className="p-4 pb-0 xl:p-6 xl:pb-6 xl:pr-3" dir="ltr">
                 <DocumentList

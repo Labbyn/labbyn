@@ -1,6 +1,7 @@
 import { Canvas, extend, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Billboard,
   ContactShadows,
   Environment,
   Grid,
@@ -9,32 +10,18 @@ import {
   OrthographicCamera,
   PerspectiveCamera,
   Stats,
+  Text,
   useKeyboardControls,
 } from '@react-three/drei'
 import { RoundedBoxGeometry } from 'three-stdlib'
-import {
-  Box as BoxIcon,
-  Cable,
-  CheckCircle2,
-  Cpu,
-  Layers,
-  Map as MapIcon,
-  MousePointer2,
-  RotateCcw,
-  Server,
-  Thermometer,
-  X,
-  Zap,
-} from 'lucide-react'
+import { Box as BoxIcon, Map as MapIcon } from 'lucide-react'
 import * as THREE from 'three'
 
+import { formatHex } from 'culori'
+import { RackInfoPanel } from './rack-info-panel'
+import { ControlsOverlay } from './controls-overlay'
 import type { Equipment, Wall } from '@/types/types'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Progress } from '@/components/ui/progress'
 
 extend({ RoundedBoxGeometry })
 
@@ -50,14 +37,13 @@ const RADIUS = 0.25
 
 function resolveColor(varName: string, fallback: string): string {
   if (typeof window === 'undefined') return fallback
-  const temp = document.createElement('div')
-  temp.style.color = `var(${varName})`
-  temp.style.display = 'none'
-  document.body.appendChild(temp)
-  const computed = getComputedStyle(temp).color
-  document.body.removeChild(temp)
-  if (!computed || computed === '' || computed.includes('var(')) return fallback
-  return computed
+  const style = getComputedStyle(document.documentElement)
+  const color = style.getPropertyValue(varName).trim()
+
+  if (!color) return fallback
+
+  const hex = formatHex(color)
+  return hex || fallback
 }
 
 let cachedTexture: THREE.CanvasTexture | null = null
@@ -155,8 +141,8 @@ function SceneController({
   center: THREE.Vector3
 }) {
   const controlsRef = useRef<any>(null)
-  const { camera } = useThree()
-  const [, getKeys] = useKeyboardControls()
+  const { camera, invalidate } = useThree()
+  const [subscribe, getKeys] = useKeyboardControls()
   const vec = new THREE.Vector3()
 
   useEffect(() => {
@@ -168,7 +154,12 @@ function SceneController({
       camera.position.set(center.x, 500, center.z)
     }
     controlsRef.current.update()
-  }, [center, is2D, camera])
+    invalidate()
+  }, [center, is2D, camera, invalidate])
+
+  useEffect(() => {
+    return subscribe(() => invalidate())
+  }, [invalidate, subscribe])
 
   useFrame(() => {
     if (!controlsRef.current) return
@@ -191,14 +182,15 @@ function SceneController({
     if (keys.right) vec.add(right)
     if (keys.left) vec.sub(right)
 
+    let hasMoved = false
+
     if (vec.lengthSq() > 0) {
       vec.normalize().multiplyScalar(moveSpeed)
       controlsRef.current.target.add(vec)
-      if (!is2D) camera.position.add(vec)
-      else {
-        camera.position.x += vec.x
-        camera.position.z += vec.z
-      }
+
+      camera.position.add(vec)
+
+      hasMoved = true
     }
 
     if (!is2D) {
@@ -207,13 +199,20 @@ function SceneController({
         offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotSpeed)
         camera.position.copy(controlsRef.current.target).add(offset)
         camera.lookAt(controlsRef.current.target)
+        hasMoved = true
       }
       if (keys.rotateRight) {
         const offset = camera.position.clone().sub(controlsRef.current.target)
         offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotSpeed)
         camera.position.copy(controlsRef.current.target).add(offset)
         camera.lookAt(controlsRef.current.target)
+        hasMoved = true
       }
+    }
+
+    if (hasMoved) {
+      controlsRef.current.update()
+      invalidate()
     }
   })
 
@@ -221,11 +220,14 @@ function SceneController({
     <MapControls
       ref={controlsRef}
       makeDefault
-      dampingFactor={0.2}
-      minDistance={20}
-      maxDistance={2000}
+      enableDamping={!is2D}
+      dampingFactor={0.05}
+      minDistance={75}
+      maxDistance={750}
       enableZoom={true}
       screenSpacePanning={is2D}
+      maxPolarAngle={Math.PI / 2 - 0.05}
+      minPolarAngle={0}
     />
   )
 }
@@ -303,6 +305,22 @@ function InstancedRacks({ data, onSelect, colors }: any) {
     faceMeshRef.current.instanceMatrix.needsUpdate = true
     if (faceMeshRef.current.instanceColor)
       faceMeshRef.current.instanceColor.needsUpdate = true
+
+    const box = new THREE.Box3()
+    const tempVec = new THREE.Vector3()
+
+    data.forEach((item: any) => {
+      tempVec.set(item.x / 10, RACK_H / 2, item.y / 10)
+      box.expandByPoint(tempVec)
+    })
+
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+    const radius = box.getBoundingSphere(new THREE.Sphere()).radius
+
+    const boundingSphere = new THREE.Sphere(center, radius)
+    bodyMeshRef.current.geometry.boundingSphere = boundingSphere
+    faceMeshRef.current.geometry.boundingSphere = boundingSphere
   }, [data, colors, dummy, color])
 
   return (
@@ -327,7 +345,6 @@ function InstancedRacks({ data, onSelect, colors }: any) {
       <instancedMesh
         ref={faceMeshRef}
         args={[undefined, undefined, data.length]}
-        raycast={() => null}
         renderOrder={1}
       >
         <planeGeometry args={[RACK_W - 1, RACK_H - 1]} />
@@ -339,6 +356,98 @@ function InstancedRacks({ data, onSelect, colors }: any) {
           emissiveIntensity={1}
         />
       </instancedMesh>
+    </group>
+  )
+}
+
+function RackLabels({ data, colors }: { data: Array<Equipment>; colors: any }) {
+  const polesMeshRef = useRef<THREE.InstancedMesh>(null)
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+
+  const boxWidth = 12
+  const boxHeight = 4
+  const boxRadius = 1
+  const riseHeight = 8
+
+  const outerGeom = useMemo(
+    () =>
+      new RoundedBoxGeometry(
+        boxWidth + 0.3,
+        boxHeight + 0.3,
+        0.05,
+        8,
+        boxRadius,
+      ),
+    [boxWidth, boxHeight, boxRadius],
+  )
+  const innerGeom = useMemo(
+    () => new RoundedBoxGeometry(boxWidth, boxHeight, 0.1, 8, boxRadius),
+    [boxWidth, boxHeight, boxRadius],
+  )
+
+  useEffect(() => {
+    if (!polesMeshRef.current) return
+
+    data.forEach((item, i) => {
+      const x = item.x / 10
+      const z = item.y / 10
+      const y = RACK_H + riseHeight / 2
+
+      dummy.position.set(x, y, z)
+      dummy.rotation.set(0, 0, 0)
+      dummy.scale.set(1, 1, 1)
+      dummy.updateMatrix()
+      polesMeshRef.current!.setMatrixAt(i, dummy.matrix)
+    })
+
+    polesMeshRef.current.instanceMatrix.needsUpdate = true
+  }, [data, riseHeight, dummy])
+
+  return (
+    <group>
+      {/* INSTANCED POLES */}
+      <instancedMesh
+        ref={polesMeshRef}
+        args={[undefined, undefined, data.length]}
+      >
+        <cylinderGeometry args={[0.1, 0.1, riseHeight, 8]} />
+        <meshStandardMaterial color={colors.primary} />
+      </instancedMesh>
+
+      {/* LABELS */}
+      {data.map((item) => (
+        <group key={item.id} position={[item.x / 10, RACK_H, item.y / 10]}>
+          <Billboard
+            position={[0, riseHeight, 0]}
+            follow={true}
+            lockX={false}
+            lockY={false}
+            lockZ={false}
+          >
+            {/* Border Background (Outer) */}
+            <mesh position={[0, 0, -0.02]} geometry={outerGeom}>
+              <meshStandardMaterial color={colors.primary} />
+            </mesh>
+
+            {/* Main Background (Inner) */}
+            <mesh geometry={innerGeom}>
+              <meshStandardMaterial color={colors.card} />
+            </mesh>
+
+            {/* Text */}
+            <Text
+              position={[0, 0, 0.06]}
+              fontSize={2}
+              fontWeight={800}
+              color={colors.text}
+              anchorX="center"
+              anchorY="middle"
+            >
+              {item.id}
+            </Text>
+          </Billboard>
+        </group>
+      ))}
     </group>
   )
 }
@@ -374,7 +483,7 @@ function WallInstances({
             </mesh>
             <mesh position={[0, 10.1, 0]} renderOrder={1}>
               <boxGeometry args={[len, 0.5, 1.2]} />
-              <meshStandardMaterial color="#888" />
+              <meshStandardMaterial color="#000" />
             </mesh>
           </group>
         )
@@ -443,14 +552,14 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
 
         <KeyboardControls map={keyMap}>
           <Canvas
+            frameloop="demand"
             shadows
             dpr={[1, 1.5]}
             gl={{ antialias: true, logarithmicDepthBuffer: true }}
           >
-            <Stats className="!absolute !bottom-0 !left-0 !top-auto !z-0 opacity-0 pointer-events-none" />
-            <color attach="background" args={[colors.background]} />
+            <Stats className="absolute! bottom-0! left-0! top-auto! z-0! opacity-0 pointer-events-none" />
 
-            <PerspectiveCamera makeDefault={!is2D} fov={50} />
+            <PerspectiveCamera makeDefault={!is2D} fov={45} />
             <OrthographicCamera
               makeDefault={is2D}
               zoom={5}
@@ -468,26 +577,18 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
             />
             <Environment preset="city" />
 
-            <mesh
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, -0.5, 0]}
-              receiveShadow
-              renderOrder={-2}
-            >
-              <planeGeometry args={[5000, 5000]} />
-              <meshStandardMaterial color="#666666" roughness={0.9} />
-            </mesh>
-
             <Grid
               position={[0, -0.02, 0]}
               args={[2000, 2000]}
               cellSize={10}
               sectionSize={100}
-              cellColor={colors.grid}
-              sectionColor={colors.grid}
+              cellColor={colors.primary}
+              sectionColor={colors.primary}
               fadeDistance={is2D ? 10000 : 800}
               infiniteGrid
               renderOrder={-1}
+              cellThickness={0.75}
+              sectionThickness={1.25}
             />
 
             <InstancedRacks
@@ -495,6 +596,8 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
               onSelect={setSelectedId}
               colors={colors}
             />
+
+            <RackLabels data={equipment} colors={colors} />
 
             <WallInstances walls={walls} color={colors.card} />
 
@@ -508,191 +611,25 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
 
             {!is2D && (
               <ContactShadows
-                opacity={0.5}
+                opacity={0.6}
                 scale={200}
-                blur={2}
-                far={20}
+                blur={2.5}
+                far={5}
+                resolution={512}
                 color="#000000"
               />
             )}
           </Canvas>
         </KeyboardControls>
 
-        <div className="absolute bottom-6 left-6 z-10 pointer-events-none select-none flex flex-col gap-2">
-          <div className="bg-card/95 shadow-lg border border-border text-card-foreground px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-2 w-fit">
-            <MousePointer2 className="w-3 h-3 text-primary" />
-            <span>Select</span>
-          </div>
-          <div className="bg-card/95 shadow-lg border border-border text-card-foreground px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-3 w-fit">
-            <div className="flex gap-1 text-foreground/80">
-              {['W', 'A', 'S', 'D'].map((k) => (
-                <span
-                  key={k}
-                  className="bg-muted px-1.5 py-0.5 rounded border border-border/50"
-                >
-                  {k}
-                </span>
-              ))}
-            </div>
-            <span>Move</span>
-          </div>
-          {!is2D && (
-            <div className="bg-card/95 shadow-lg border border-border text-card-foreground px-3 py-2 rounded-md text-xs font-semibold flex items-center gap-3 w-fit">
-              <RotateCcw className="w-3 h-3 text-primary" />
-              <div className="flex gap-1 text-foreground/80">
-                <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">
-                  Q
-                </span>
-                <span className="bg-muted px-1.5 py-0.5 rounded border border-border/50">
-                  E
-                </span>
-              </div>
-              <span>Rotate</span>
-            </div>
-          )}
-        </div>
+        <ControlsOverlay is2D={is2D} />
       </div>
 
       {selectedItem && (
-        <div className="absolute right-0 top-0 bottom-0 w-[320px] z-50 bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right-10 duration-200 h-full">
-          <div className="p-4 border-b border-border bg-muted/20 shrink-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="text-lg font-bold flex items-center gap-2 text-foreground">
-                  <Server className="w-5 h-5 text-primary" />
-                  {selectedItem.label}
-                </h2>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-[10px]">
-                    {selectedItem.type}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[10px]">
-                    #{selectedItem.id}
-                  </Badge>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setSelectedId(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <ScrollArea className="flex-1 w-full overflow-hidden">
-            <div className="p-4 space-y-6">
-              <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 p-3 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-                <div>
-                  <div className="text-sm font-semibold text-green-500">
-                    System Healthy
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    Uptime: 45d 12h
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="bg-background border-border">
-                  <CardContent className="p-3 flex flex-col items-center text-center">
-                    <Thermometer className="w-4 h-4 text-orange-500 mb-1" />
-                    <span className="text-xl font-bold">22°C</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      Intake
-                    </span>
-                  </CardContent>
-                </Card>
-                <Card className="bg-background border-border">
-                  <CardContent className="p-3 flex flex-col items-center text-center">
-                    <Zap className="w-4 h-4 text-yellow-500 mb-1" />
-                    <span className="text-xl font-bold">
-                      1.8<span className="text-xs">kW</span>
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                      Load
-                    </span>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Separator className="bg-border" />
-
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" /> Rack Elevation
-                  </h3>
-                  <span className="text-[10px] text-muted-foreground">42U</span>
-                </div>
-                <div className="border border-border rounded-md bg-background p-1 space-y-px font-mono text-xs">
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <div key={i} className="flex h-6 gap-2 items-center group">
-                      <div className="w-6 text-[9px] text-muted-foreground text-right opacity-50">
-                        {42 - i * 3}
-                      </div>
-                      <div
-                        className={`flex-1 h-full rounded-[2px] flex items-center px-2 transition-colors ${
-                          i === 2 || i === 8
-                            ? 'bg-muted/30'
-                            : 'bg-primary/10 border border-primary/20 hover:bg-primary/20 cursor-pointer'
-                        }`}
-                      >
-                        {!(i === 2 || i === 8) && (
-                          <>
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 shadow-[0_0_4px_rgba(34,197,94,0.6)]"></div>
-                            <span className="text-[9px] text-foreground/90 truncate font-medium">
-                              SRV-BLADE-{(i + 1).toString().padStart(2, '0')}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="bg-border" />
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xs font-semibold uppercase text-muted-foreground mb-2 flex items-center gap-2">
-                    <Cable className="w-3 h-3" /> Power Distribution
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs bg-muted/30 p-2 rounded">
-                      <span>PDU-A (L1)</span>
-                      <span className="font-mono">12.4A</span>
-                    </div>
-                    <div className="flex justify-between text-xs bg-muted/30 p-2 rounded">
-                      <span>PDU-B (L2)</span>
-                      <span className="font-mono">8.1A</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      <Cpu className="w-3 h-3" /> CPU Aggregated
-                    </span>
-                    <span className="font-mono">78%</span>
-                  </div>
-                  <Progress value={78} className="h-1.5" />
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-
-          <div className="p-4 border-t border-border bg-muted/10 shrink-0">
-            <Button className="w-full" size="sm">
-              Manage Device
-            </Button>
-          </div>
-        </div>
+        <RackInfoPanel
+          rack={selectedItem}
+          onClose={() => setSelectedId(null)}
+        />
       )}
     </div>
   )
