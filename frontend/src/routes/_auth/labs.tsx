@@ -13,26 +13,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { labs } from '@/lib/mock-data'
 import { PageIsLoading } from '@/components/page-is-loading'
+import { labsQueryOptions } from '@/integrations/labs/labs.query'
 
 export const Route = createFileRoute('/_auth/labs')({
   component: RouteComponent,
 })
 
-export type Lab = (typeof labs)[0]
-
-const fetchLabs = async (): Promise<Array<Lab>> => {
-  // Symulacja API
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return labs
-}
-
 function RouteComponent() {
-  const { data: labs = [], isLoading } = useQuery({
-    queryKey: ['labs'],
-    queryFn: fetchLabs,
-  })
+  const { data: labs = [], isLoading } = useQuery(labsQueryOptions)
 
   if (isLoading) return <PageIsLoading />
 
@@ -61,14 +50,15 @@ function RouteComponent() {
             <CardContent className="p-0">
               <div className="flex items-center gap-2 mb-3 pb-3 px-6">
                 <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                  Recently Visited Racks
+                  Rack list
                 </span>
                 <div className="h-px bg-border flex-1" />
               </div>
               <ScrollArea className="w-full">
                 <div className="flex w-max space-x-3 px-6 pb-4">
                   {lab.racks.map((rack) => (
-                    <Link to={'/'}>
+                    // placeholder for rack redirection
+                    <Link to="/">
                       <div className="group relative flex flex-col justify-between w-40 h-25 p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
@@ -81,7 +71,7 @@ function RouteComponent() {
                         </div>
                         <div className="flex justify-between items-center mt-auto pt-2">
                           <span className="text-[10px] text-muted-foreground">
-                            {rack.devices.length} Devices
+                            {rack.machines.length} Machines
                           </span>
                           <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
                         </div>
@@ -100,7 +90,7 @@ function RouteComponent() {
 
             <CardFooter>
               <Button asChild className="w-full">
-                <Link to="/">
+                <Link to={lab.location}>
                   <Map className="mr-2 h-4 w-4" />
                   View on Map
                   <ArrowRight className="ml-auto h-4 w-4" />
