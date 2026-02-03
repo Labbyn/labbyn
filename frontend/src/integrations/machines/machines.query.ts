@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchMachinesData, fetchMachineData } from './machines.adapter'
+import { fetchMachineData, fetchMachinesData } from './machines.adapter'
 import type { ApiMachineResponse } from './machines.adapter'
 import type { ApiMachineItem } from './machines.types'
 
@@ -16,13 +16,14 @@ export const machineQueryOptions = queryOptions({
   },
 })
 
-export const machineSpecQueryOptions = (machineId: string ) => queryOptions({
-  queryKey: ['machine', 'spec'],
-  queryFn: async () => {
-    const res = await fetch(`${MACHINES_ENDPOINT}/${machineId}`)
-    if (!res.ok) throw new Error('Failed to fetch machines')
+export const machineSpecQueryOptions = (machineId: string) =>
+  queryOptions({
+    queryKey: ['machine', 'spec'],
+    queryFn: async () => {
+      const res = await fetch(`${MACHINES_ENDPOINT}/${machineId}`)
+      if (!res.ok) throw new Error('Failed to fetch machines')
 
-    const data: ApiMachineItem = await res.json()
-    return fetchMachineData(data)
-  },
-})
+      const data: ApiMachineItem = await res.json()
+      return fetchMachineData(data)
+    },
+  })
