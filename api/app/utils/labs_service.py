@@ -32,7 +32,6 @@ def build_labs(db: Session):
                     "hostname": machine.name,
                     "ip_address": machine.ip_address,
                     "mac_address": machine.mac_address,
-
                 }
             )
         # Ensure that empty racks are also included
