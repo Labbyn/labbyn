@@ -19,6 +19,7 @@ pytestmark = [
     pytest.mark.database,
     pytest.mark.api,
     pytest.mark.asyncio,
+    pytest.mark.rbac
 ]
 
 
@@ -35,9 +36,17 @@ async def test_rental_race_condition():
     - Both get 201 (Double Booking - CRITICAL BUG)
     """
 
+
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
+
+        login_res = await ac.post("/auth/login/", data={"username": "Service", "password": "Service"})
+        service_token = login_res.json()["access_token"]
+        auth_headers = {"Authorization": f"Bearer {service_token}"}
+
+        team = await ac.post("/db/teams/", json={")name": unique_str("RaceTeam")})
+        team_id = team.json()["id"]
 
         cat = await ac.post("/db/categories/", json={"name": unique_str("RaceCat")})
         cat_id = cat.json()["id"]
@@ -55,7 +64,8 @@ async def test_rental_race_condition():
                 "login": unique_str("r1"),
                 "email": f"{unique_str('r1')}@labbyn.service",
                 "user_type": "user",
-            },
+                "team_id": team_id,
+            },headers=auth_headers
         )
         user1_id = u1.json()["id"]
 
@@ -67,9 +77,18 @@ async def test_rental_race_condition():
                 "login": unique_str("r2"),
                 "email": f"{unique_str('r2')}@labbyn.service",
                 "user_type": "user",
+                "team_id": team_id,
             },
+            headers=auth_headers
         )
         user2_id = u2.json()["id"]
+
+        auth1 = await ac.post("/auth/login/", data={"username": u1.json()["login"], "password": u1["generated_password"]})
+        token1 = auth1.json()["access_token"]
+        auth2 = await ac.post("/auth/login/", data={"username": u2.json()["login"], "password": u2["generated_password"]})
+        token2 = auth2.json()["access_token"]
+
+
 
         item = await ac.post(
             "/db/inventory/",
@@ -78,8 +97,9 @@ async def test_rental_race_condition():
                 "quantity": 1,
                 "category_id": cat_id,
                 "localization_id": room_id,
-                "team_id": None,
+                "team_id": team_id,
             },
+            headers=auth_headers
         )
         item_id = item.json()["id"]
 
@@ -98,8 +118,8 @@ async def test_rental_race_condition():
         }
 
         response1, response2 = await asyncio.gather(
-            ac.post("/db/rentals/", json=payload_user_1),
-            ac.post("/db/rentals/", json=payload_user_2),
+            ac.post("/db/rentals/", json=payload_user_1, headers={"Authorization": f"Bearer {token1}"}),
+            ac.post("/db/rentals/", json=payload_user_2, headers={"Authorization": f"Bearer {token2}"}),
         )
 
         status_codes = [response1.status_code, response2.status_code]
@@ -109,5 +129,5 @@ async def test_rental_race_condition():
             409 in status_codes
         ), "One rental should fail with Conflict (Double Booking prevented!)"
 
-        item_check = await ac.get(f"/db/inventory/{item_id}")
+        item_check = await ac.get(f"/db/inventory/{item_id}", headers=auth_headers)
         assert item_check.json()["rental_status"] is True
