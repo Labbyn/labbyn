@@ -377,7 +377,7 @@ class UserCreatedResponse(UserResponse):
     Schema for reading User data upon creation.
     INCLUDES the generated password.
     """
-
+    model_config = ConfigDict(from_attributes=True)
     generated_password: Optional[str] = Field(
         None, description="Generated password if one was created"
     )

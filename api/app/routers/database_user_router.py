@@ -74,8 +74,19 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db), ctx:
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        new_user.generated_password = raw_password
-        return new_user
+        response_dict = {
+            "id": new_user.id,
+            "login": new_user.login,
+            "email": new_user.email,
+            "name": new_user.name,
+            "surname": new_user.surname,
+            "user_type": new_user.user_type,
+            "team_id": new_user.team_id,
+            "version_id": new_user.version_id,
+            "generated_password": raw_password
+        }
+
+        return response_dict
     except Exception as e:
         db.rollback()
         raise HTTPException(

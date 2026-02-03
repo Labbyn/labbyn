@@ -7,6 +7,9 @@ current_active_user = fastapi_users.current_user(active=True)
 
 class RequestContext:
     def __init__(self, current_user: User = Depends(current_active_user)):
+        self._setup(current_user)
+
+    def _setup(self, current_user: User):
         self.current_user = current_user
         self.user_type = current_user.user_type
         self.team_id = current_user.team_id
@@ -14,6 +17,12 @@ class RequestContext:
         self.is_admin = self.user_type == UserType.ADMIN
         self.is_group_admin = self.user_type == UserType.GROUP_ADMIN
         self.is_user = self.user_type == UserType.USER
+
+    @classmethod
+    async def for_websocket(cls, user: User):
+        instance = cls.__new__(cls)
+        instance._setup(user)
+        return instance
 
     def team_filter(self, query: Query, model_class):
         if self.is_admin:

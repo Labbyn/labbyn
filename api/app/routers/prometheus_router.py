@@ -10,7 +10,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from pydantic import BaseModel
 from urllib.parse import unquote
 from app.database import get_db
+from starlette import status
+
+from ..auth.auth_config import auth_backend
 from ..db.models import Machines
+from app.auth.auth_config import auth_backend, fastapi_users, get_database_strategy
 from ..utils.prometheus_service import (
     fetch_prometheus_metrics,
     DEFAULT_QUERIES,
@@ -18,6 +22,7 @@ from ..utils.prometheus_service import (
     TargetSaveError,
 )
 from app.auth.dependencies import RequestContext
+from app.auth.manager import get_user_manager
 from ..utils.redis_service import get_cache, set_cache
 from sqlalchemy.orm import Session
 
@@ -94,7 +99,7 @@ async def metrics_worker():
 
 @router.websocket("/ws/metrics")
 async def websocket_endpoint(
-    ws: WebSocket, instance: str = Query(None, description="Filter by instance"), ctx: RequestContext = Depends()
+    ws: WebSocket, instance: str = Query(None, description="Filter by instance"), db: Session = Depends(get_db), user_manager=Depends(get_user_manager), strategy=Depends(get_database_strategy)
 ):
     """
     WebSocket endpoint to push metrics data to front-end.
@@ -106,11 +111,20 @@ async def websocket_endpoint(
     """
     manager.websocket = ws
     await ws.accept()
+
+    token = ws.query_params.get("token")
+    if not token:
+        await ws.send_json({"error": "Authentication token is required."})
+        await ws.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    user = await strategy.read_token(token, user_manager)
+
     try:
-        query = ctx.db.query(Machines.name)
+        ctx = await RequestContext.for_websocket(user)
+        query = db.query(Machines.name)
         query = ctx.team_filter(query, Machines)
         allowed_hosts = {row[0] for row in query.all()}
-
         while True:
             status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
             metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
@@ -154,6 +168,7 @@ async def websocket_endpoint(
                         if m["instance"] == target
                     ],
                 }
+                await ws.send_json(payload)
             else:
                 filtered_payload = {
                     "statuses": [

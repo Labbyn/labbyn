@@ -16,6 +16,7 @@ from app.db.models import Machines, Metadata, Rooms
 from app.utils.ansible_service import parse_platform_report, run_playbook_task
 
 from app.utils.redis_service import acquire_lock
+
 from app.auth.dependencies import RequestContext
 
 router = APIRouter()
@@ -167,10 +168,10 @@ async def discover_hosts(request: DiscoveryRequest, db: Session = Depends(get_db
 
     default_room = db.query(Rooms).filter(
         Rooms.name == "virtual", Rooms.team_id == ctx.team_id
-    )
+    ).first()
 
     if not default_room:
-        default_room = Rooms(name="virtual", room_type="virtual")
+        default_room = Rooms(name="virtual", room_type="virtual", team_id=ctx.team_id)
         db.add(default_room)
         db.commit()
         db.refresh(default_room)
