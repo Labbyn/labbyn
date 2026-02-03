@@ -14,10 +14,7 @@ import {
   useKeyboardControls,
 } from '@react-three/drei'
 import { RoundedBoxGeometry } from 'three-stdlib'
-import {
-  Box as BoxIcon,
-  Map as MapIcon,
-} from 'lucide-react'
+import { Box as BoxIcon, Map as MapIcon } from 'lucide-react'
 import * as THREE from 'three'
 
 import { formatHex } from 'culori'
@@ -25,7 +22,6 @@ import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
 import type { Equipment, Wall } from '@/types/types'
 import { Button } from '@/components/ui/button'
-
 
 extend({ RoundedBoxGeometry })
 

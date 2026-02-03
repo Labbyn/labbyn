@@ -677,6 +677,31 @@ class DashboardResponse(BaseModel):
 
 
 # ==========================
+#       LABS FRONTEND MODELS
+# ==========================
+
+
+class LabsItem(BaseModel):
+    device_id: str
+    hostname: Optional[str] = None
+    ip_address: Optional[str] = None
+    mac_address: Optional[str] = None
+
+
+class LabsSection(BaseModel):
+    id: str
+    tags: List[str]
+    machines: List[LabsItem]
+
+
+class LabsResponse(BaseModel):
+    id: int
+    name: str
+    location: str
+    racks: List[LabsSection]
+
+
+# ==========================
 #       EXTRA MODELS
 # ==========================
 

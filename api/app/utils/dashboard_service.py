@@ -1,3 +1,7 @@
+"""
+User dashboard items parser. Prepares json file with database data for user-dashboard page.
+"""
+
 from sqlalchemy.orm import Session
 from app.db.models import Machines, Rooms, Inventory, Teams, User, History
 from app.auth.dependencies import RequestContext

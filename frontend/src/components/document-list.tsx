@@ -1,5 +1,6 @@
-import { ArrowUpDown, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { DataTable } from './ui/data-table'
+import { DataTableColumnHeader } from './data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Document } from '@/types/types'
 
@@ -24,19 +25,10 @@ export function DocumentList({
     {
       accessorKey: 'name',
       header: ({ column }) => {
-        return (
-          <Button
-            variant="link"
-            className="has-[>svg]:px-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Name
-            <ArrowUpDown className="ml-1 h-3 w-3" />
-          </Button>
-        )
+        return <DataTableColumnHeader column={column} title="Title" />
       },
       cell: ({ row }) => (
-        <div className="font-medium truncate max-w-[150px]">
+        <div className="font-medium truncate max-w-37.5">
           {row.getValue('name')}
         </div>
       ),
@@ -44,19 +36,10 @@ export function DocumentList({
     {
       accessorKey: 'createdBy',
       header: ({ column }) => {
-        return (
-          <Button
-            variant="link"
-            className="has-[>svg]:px-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Author
-            <ArrowUpDown className="ml-1 h-3 w-3" />
-          </Button>
-        )
+        return <DataTableColumnHeader column={column} title="Author" />
       },
       cell: ({ row }) => (
-        <div className="text-muted-foreground truncate max-w-[100px]">
+        <div className="text-muted-foreground truncate max-w-25">
           {row.getValue('createdBy')}
         </div>
       ),
@@ -64,16 +47,7 @@ export function DocumentList({
     {
       accessorKey: 'updatedAt',
       header: ({ column }) => {
-        return (
-          <Button
-            variant="link"
-            className="has-[>svg]:px-0"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Updated
-            <ArrowUpDown className="ml-1 h-3 w-3" />
-          </Button>
-        )
+        return <DataTableColumnHeader column={column} title="Last Updated" />
       },
       cell: ({ row }) => {
         const date = new Date(row.getValue('updatedAt'))
@@ -111,9 +85,9 @@ export function DocumentList({
       onRowClick={onSelectDocument}
       selectedId={selectedDoc?.id}
       actionElement={
-        <Button onClick={onCreateDocument} className="w-full">
+        <Button onClick={onCreateDocument} variant={'outline'}>
           <Plus className="mr-2 h-4 w-4" />
-          New Document
+          Create new document
         </Button>
       }
     />

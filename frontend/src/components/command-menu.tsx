@@ -12,6 +12,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { SidebarMenuButton, SidebarMenuItem } from './ui/sidebar'
 import { Button } from './ui/button'
+import { Kbd, KbdGroup } from './ui/kbd'
 import type { Device } from '@/types/types'
 import {
   CommandDialog,
@@ -50,14 +51,15 @@ export function CommandMenu() {
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'j' && (e.metaKey || e.ctrlKey)) || e.key === '/') {
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
+        e.stopPropagation()
         setOpen((open) => !open)
       }
     }
 
-    document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
+    window.addEventListener('keydown', down)
+    return () => window.removeEventListener('keydown', down)
   }, [])
 
   const flattenedDevices = useMemo(() => {
@@ -90,7 +92,12 @@ export function CommandMenu() {
             className="text-foreground dark:bg-card hover:bg-accent hover:border-primary relative h-8 w-full justify-start pl-3 font-normal shadow-none"
           >
             <Search />
-            <span>Search...</span>
+            <span>Search resources...</span>
+            <KbdGroup>
+              <Kbd>Ctrl</Kbd>
+              <span>+</span>
+              <Kbd>K</Kbd>
+            </KbdGroup>
           </Button>
         </SidebarMenuButton>
       </SidebarMenuItem>

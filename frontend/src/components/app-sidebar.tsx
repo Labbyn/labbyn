@@ -1,17 +1,20 @@
 import {
-  Accessibility,
-  BookText,
-  Cable,
+  Archive,
+  Box,
+  ChevronDown,
   ChevronsUpDown,
+  CirclePile,
+  FileText,
   FolderInput,
-  GitBranch,
-  LayoutDashboard,
+  HardDrive,
+  History,
   LogOut,
   Moon,
+  PanelsTopLeft,
+  ScrollText,
   Server,
   Settings,
   Sun,
-  UserStar,
   Users,
 } from 'lucide-react'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -19,23 +22,37 @@ import React from 'react'
 import { CommandMenu } from './command-menu'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { AddPlatformDialog } from './platform-dialog'
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from './ui/collapsible'
+import { Badge } from './ui/badge'
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupAction,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
 
@@ -43,7 +60,7 @@ const items = [
   {
     title: 'Dashboard',
     url: '/user_dashboard',
-    icon: LayoutDashboard,
+    icon: PanelsTopLeft,
   },
   {
     title: 'Labs',
@@ -53,12 +70,12 @@ const items = [
   {
     title: 'Inventory',
     url: '/inventory',
-    icon: Cable,
+    icon: Archive,
   },
   {
     title: 'History',
     url: '/history',
-    icon: GitBranch,
+    icon: History,
   },
   {
     title: 'Users',
@@ -66,19 +83,9 @@ const items = [
     icon: Users,
   },
   {
-    title: 'Settings',
-    url: '/settings',
-    icon: Settings,
-  },
-  {
-    title: 'Admin',
-    url: '/admin',
-    icon: UserStar,
-  },
-  {
     title: 'Documentation',
     url: '/docs',
-    icon: BookText,
+    icon: FileText,
   },
   {
     title: 'Import & Export',
@@ -87,10 +94,39 @@ const items = [
   },
 ]
 
+const adminPanelItems = [
+  {
+    title: 'Users',
+    url: '/admin-panel/users',
+    icon: Users,
+  },
+  {
+    title: 'Teams',
+    url: '/admin-panel/teams',
+    icon: CirclePile,
+  },
+  {
+    title: 'Machines',
+    url: '/admin-panel/machines',
+    icon: HardDrive,
+  },
+  {
+    title: 'Inventory',
+    url: '/admin-panel/inventory',
+    icon: Archive,
+  },
+  {
+    title: 'Logging',
+    url: '/admin-panel/logging',
+    icon: ScrollText,
+  },
+]
+
 const user = {
   name: 'Zbigniew Trąba',
   email: 'ekspert.od.kabelkow@labbyn.com',
   avatar: 'https://cdn.pfps.gg/pfps/66456-cool-cat.jpeg',
+  role: 'Admin',
 }
 
 function useTheme() {
@@ -137,25 +173,62 @@ export function AppSidebar() {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="#">
-                <Accessibility className="size-5!" />
-                <span className="text-base font-semibold">Labbyn</span>
-              </a>
+              <Link to="/">
+                <Box color="var(--primary)" className="size-5!" />
+                <span className="font-['Ubuntu_Mono'] font-bold text-xl tracking-tight">
+                  labbyn
+                </span>
+              </Link>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <CommandMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Quick actions</SidebarGroupLabel>
+          <SidebarGroupAction>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Settings />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="w-fit rounded-lg"
+                side={isMobile ? 'bottom' : 'right'}
+                align="end"
+                sideOffset={4}
+              >
+                <DropdownMenuLabel>Configure quick actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuGroup>
+                  <DropdownMenuCheckboxItem checked>
+                    Add platform
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem>
+                    Add inventory item
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem>
+                    Add something
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarGroupAction>
+          <SidebarContent>
+            <SidebarMenuItem>
+              <AddPlatformDialog />
+            </SidebarMenuItem>
+          </SidebarContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <AddPlatformDialog />
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <CommandMenu />
-              </SidebarMenuItem>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
@@ -170,22 +243,51 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-
-              <SidebarMenuItem>
-                <SidebarMenuButton onClick={toggleTheme} tooltip="Toggle Theme">
-                  {theme === 'dark' ? <Moon /> : <Sun />}
-                  <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* ADMIN PANELS SUBMENU */}
+        {user.role == 'Admin' && (
+          <Collapsible defaultOpen className="group/collapsible">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <CollapsibleTrigger>
+                  Admin panels
+                  <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <SidebarMenuSub>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    {adminPanelItems.map((item) => (
+                      <SidebarMenuSubItem key={item.title}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={pathname === item.url}
+                        >
+                          <Link to={item.url}>
+                            <item.icon />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarMenuSub>
+            </SidebarGroup>
+          </Collapsible>
+        )}
       </SidebarContent>
+
       <SidebarFooter>
-        <SidebarMenu>
+        {/*
           <SidebarMenuItem>
             <SidebarTrigger />
           </SidebarMenuItem>
+        */}
+        <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -198,7 +300,12 @@ export function AppSidebar() {
                     <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{user.name}</span>
+                    <span className="truncate font-semibold">
+                      {user.name}{' '}
+                      {user.role == 'Admin' && (
+                        <Badge variant={'secondary'}>Admin</Badge>
+                      )}
+                    </span>
                     <span className="truncate text-xs">{user.email}</span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4" />
@@ -211,9 +318,39 @@ export function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuItem>
-                  <LogOut className="mr-2 size-4" />
-                  Log out
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-semibold">
+                      {user.name}{' '}
+                      {user.role == 'Admin' && (
+                        <Badge variant="secondary">Admin</Badge>
+                      )}
+                    </span>
+                    <span className="truncate text-xs">{user.email}</span>
+                  </div>
                 </DropdownMenuItem>
+
+                <Link to="/settings">
+                  <DropdownMenuItem>
+                    <Settings />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                </Link>
+
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === 'dark' ? <Moon /> : <Sun />}
+                  <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                </DropdownMenuItem>
+
+                <Link to="/login">
+                  <DropdownMenuItem>
+                    <LogOut />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </Link>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
