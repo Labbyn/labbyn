@@ -23,7 +23,11 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Machines"],
 )
-def create_machine(machine_data: MachinesCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def create_machine(
+    machine_data: MachinesCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create and add new machine to database
     :param machine_data: Machine data
@@ -33,7 +37,7 @@ def create_machine(machine_data: MachinesCreate, db: Session = Depends(get_db), 
     """
     data = machine_data.model_dump()
     if not ctx.is_admin:
-        data['team_id'] = ctx.team_id
+        data["team_id"] = ctx.team_id
     obj = Machines(**data)
     db.add(obj)
     db.commit()
@@ -57,7 +61,9 @@ def get_machines(db: Session = Depends(get_db), ctx: RequestContext = Depends())
 @router.get(
     "/db/machines/{machine_id}", response_model=MachinesResponse, tags=["Machines"]
 )
-def get_machine_by_id(machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_machine_by_id(
+    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific machine by ID
     :param machine_id: Machine ID
@@ -70,7 +76,8 @@ def get_machine_by_id(machine_id: int, db: Session = Depends(get_db), ctx: Reque
     machine = query.first()
     if not machine:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Machine not found or access denied"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found or access denied",
         )
     return machine
 
@@ -79,7 +86,10 @@ def get_machine_by_id(machine_id: int, db: Session = Depends(get_db), ctx: Reque
     "/db/machines/{machine_id}", response_model=MachinesResponse, tags=["Machines"]
 )
 async def update_machine(
-    machine_id: int, machine_data: MachinesUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    machine_id: int,
+    machine_data: MachinesUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update machine data
@@ -95,7 +105,8 @@ async def update_machine(
         machine = query.first()
         if not machine:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Machine not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Machine not found or access denied",
             )
         update_data = machine_data.model_dump(exclude_unset=True)
         if not ctx.is_admin and "team_id" in update_data:
@@ -114,7 +125,9 @@ async def update_machine(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Machines"],
 )
-async def delete_machine(machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def delete_machine(
+    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete Machine
     :param machine_id: Machine ID
@@ -128,7 +141,8 @@ async def delete_machine(machine_id: int, db: Session = Depends(get_db), ctx: Re
         machine = query.first()
         if not machine:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Machine not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Machine not found or access denied",
             )
         db.delete(machine)
         db.commit()

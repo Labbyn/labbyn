@@ -99,7 +99,11 @@ async def metrics_worker():
 
 @router.websocket("/ws/metrics")
 async def websocket_endpoint(
-    ws: WebSocket, instance: str = Query(None, description="Filter by instance"), db: Session = Depends(get_db), user_manager=Depends(get_user_manager), strategy=Depends(get_database_strategy)
+    ws: WebSocket,
+    instance: str = Query(None, description="Filter by instance"),
+    db: Session = Depends(get_db),
+    user_manager=Depends(get_user_manager),
+    strategy=Depends(get_database_strategy),
 ):
     """
     WebSocket endpoint to push metrics data to front-end.
@@ -135,7 +139,9 @@ async def websocket_endpoint(
                 target = unquote(instance)
                 host_only = _extract_host_from_instance(target)
                 if not ctx.is_admin and host_only not in allowed_hosts:
-                    await ws.send_json({"error": "Access denied for the requested instance."})
+                    await ws.send_json(
+                        {"error": "Access denied for the requested instance."}
+                    )
                     await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
                     continue
 
@@ -172,16 +178,21 @@ async def websocket_endpoint(
             else:
                 filtered_payload = {
                     "statuses": [
-                        s for s in status_parsed.get("status", [])
-                        if ctx.is_admin or _extract_host_from_instance(s["instance"]) in allowed_hosts
+                        s
+                        for s in status_parsed.get("status", [])
+                        if ctx.is_admin
+                        or _extract_host_from_instance(s["instance"]) in allowed_hosts
                     ],
                     "metrics": {
                         metric: [
-                            m for m in values
-                            if ctx.is_admin or _extract_host_from_instance(m["instance"]) in allowed_hosts
+                            m
+                            for m in values
+                            if ctx.is_admin
+                            or _extract_host_from_instance(m["instance"])
+                            in allowed_hosts
                         ]
                         for metric, values in metrics_parsed.items()
-                    }
+                    },
                 }
                 await ws.send_json(filtered_payload)
             await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
@@ -205,7 +216,9 @@ async def get_prometheus_instances():
 
 
 @router.get("/prometheus/hosts")
-async def get_prometheus_hosts(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_prometheus_hosts(
+    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
     :return: List of unique hostnames/IPs

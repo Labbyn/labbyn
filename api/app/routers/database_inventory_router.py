@@ -13,6 +13,7 @@ from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.auth.dependencies import RequestContext
+
 router = APIRouter()
 
 
@@ -22,7 +23,11 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Inventory"],
 )
-def create_item(inventory_data: InventoryCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def create_item(
+    inventory_data: InventoryCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create and add new inventory to database
     :param inventory_data: Inventory data
@@ -59,7 +64,9 @@ def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()
 @router.get(
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
 )
-def get_inventory_item(item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_inventory_item(
+    item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific inventory item by ID
     :param item_id: Item ID
@@ -72,7 +79,8 @@ def get_inventory_item(item_id: int, db: Session = Depends(get_db), ctx: Request
     item = query.first()
     if not item:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item not found or access denied",
         )
     return item
 
@@ -81,7 +89,10 @@ def get_inventory_item(item_id: int, db: Session = Depends(get_db), ctx: Request
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
 )
 async def update_item(
-    item_id: int, item_data: InventoryUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    item_id: int,
+    item_data: InventoryUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update item in inventory
@@ -96,7 +107,8 @@ async def update_item(
         item = query.first()
         if not item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Item not found or access denied",
             )
         for k, v in item_data.model_dump(exclude_unset=True).items():
             setattr(item, k, v)
@@ -110,7 +122,9 @@ async def update_item(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Inventory"],
 )
-async def delete_item(item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def delete_item(
+    item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete item in inventory
     :param item_id: Item ID
@@ -123,7 +137,8 @@ async def delete_item(item_id: int, db: Session = Depends(get_db), ctx: RequestC
         item = query.first()
         if not item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Item not found or access denied",
             )
         db.delete(item)
         db.commit()

@@ -30,6 +30,7 @@ _targets_lock = Lock()
 class TargetSaveError(Exception):
     """Custom exception for target saving errors."""
 
+
 async def _request(
     url: str, params: dict, retries: int = 3, backoff_factor: float = 0.5
 ):

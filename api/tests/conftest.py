@@ -25,14 +25,18 @@ def test_client():
     with TestClient(app) as client:
         yield client
 
+
 @pytest.fixture(scope="session")
 async def test_client_async():
     """
     Pytest fixture to create an AsyncClient for the FastAPI app.
     :return: AsyncClient instance
     """
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -43,6 +47,7 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.fixture(scope="module")
 def redis_client_mock():
@@ -114,16 +119,24 @@ async def service_header():
     Generate service authorization header for tests.
     :return: Authorization header with service token
     """
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        res = await ac.post("/auth/login", data={"username": "Service", "password": "Service"})
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        res = await ac.post(
+            "/auth/login", data={"username": "Service", "password": "Service"}
+        )
         token = res.json()["access_token"]
         return {"Authorization": f"Bearer {token}"}
 
+
 @pytest.fixture(scope="function")
 def service_header_sync(test_client):
-    res = test_client.post("/auth/login", data={"username": "Service", "password": "Service"})
+    res = test_client.post(
+        "/auth/login", data={"username": "Service", "password": "Service"}
+    )
     token = res.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
 
 @pytest.fixture(scope="function")
 async def alpha_admin_header(test_client_async, service_header):
@@ -132,21 +145,31 @@ async def alpha_admin_header(test_client_async, service_header):
     :return: Authorization header with alpha admin token
     """
     admin_login = f"alpha_{uuid.uuid4().hex[:4]}"
-    team_res = await test_client_async.post("/db/teams/",
-                                      json={"name": "Team Alpha", "team_admin_id": 1},
-                                      headers=service_header)
+    team_res = await test_client_async.post(
+        "/db/teams/",
+        json={"name": "Team Alpha", "team_admin_id": 1},
+        headers=service_header,
+    )
     team_id = team_res.json()["id"]
 
-    user_res = await test_client_async.post("/db/users/", json={
-        "login": admin_login, "email": "alpha@lab.pl",
-        "user_type": "group_admin", "team_id": team_id,
-        "name": "Adam", "surname": "Alpha"
-    }, headers=service_header)
+    user_res = await test_client_async.post(
+        "/db/users/",
+        json={
+            "login": admin_login,
+            "email": "alpha@lab.pl",
+            "user_type": "group_admin",
+            "team_id": team_id,
+            "name": "Adam",
+            "surname": "Alpha",
+        },
+        headers=service_header,
+    )
 
     user_data = user_res.json()
-    login_res = await test_client_async.post("/auth/login",
-                                       data={"username": admin_login,
-                                             "password": user_data["generated_password"]})
+    login_res = await test_client_async.post(
+        "/auth/login",
+        data={"username": admin_login, "password": user_data["generated_password"]},
+    )
 
     token = login_res.json()["access_token"]
     return {"Authorization": f"Bearer {token}", "team_id": team_id}

@@ -5,6 +5,7 @@ from app.db.models import User, UserType
 
 current_active_user = fastapi_users.current_user(active=True)
 
+
 class RequestContext:
     def __init__(self, current_user: User = Depends(current_active_user)):
         self._setup(current_user)
@@ -27,7 +28,7 @@ class RequestContext:
     def team_filter(self, query: Query, model_class):
         if self.is_admin:
             return query
-        if hasattr(model_class, 'team_id'):
+        if hasattr(model_class, "team_id"):
             return query.filter(model_class.team_id == self.team_id)
         if model_class == User:
             return query.filter(User.team_id == self.team_id)
@@ -38,18 +39,18 @@ class RequestContext:
         if not self.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin privileges required."
+                detail="Admin privileges required.",
             )
+
     def require_group_admin(self):
         if not (self.is_admin or self.is_group_admin):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Group admin privileges required."
+                detail="Group admin privileges required.",
             )
 
     def require_user(self):
         if not (self.is_admin or self.is_group_admin or self.is_user):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied."
+                status_code=status.HTTP_403_FORBIDDEN, detail="Access denied."
             )

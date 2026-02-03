@@ -377,6 +377,7 @@ class UserCreatedResponse(UserResponse):
     Schema for reading User data upon creation.
     INCLUDES the generated password.
     """
+
     model_config = ConfigDict(from_attributes=True)
     generated_password: Optional[str] = Field(
         None, description="Generated password if one was created"
@@ -730,12 +731,15 @@ class HistoryEnhancedResponse(HistoryResponse):
         None, description="User who performed the action"
     )
 
+
 # ==========================
 #       AUTH SCHEMAS
 # ==========================
+
 
 class FirstChangePasswordRequest(BaseModel):
     """
     Schema for the first-time password setup.
     """
+
     new_password: str = Field(..., min_length=6, max_length=255)

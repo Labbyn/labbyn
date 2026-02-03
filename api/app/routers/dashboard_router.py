@@ -5,6 +5,7 @@ from app.database import get_db
 from app.db.schemas import DashboardResponse
 from app.utils.dashboard_service import build_dashboard
 from app.auth.dependencies import RequestContext
+
 router = APIRouter()
 
 

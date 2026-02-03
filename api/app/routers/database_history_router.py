@@ -19,6 +19,7 @@ from app.db.models import (
 )
 from app.db.schemas import HistoryEnhancedResponse
 from app.auth.dependencies import RequestContext
+
 router = APIRouter()
 
 
@@ -134,7 +135,9 @@ def _rollback_update(model_class, log_entry: History, db: Session) -> str:
 @router.get(
     "/db/history/", response_model=List[HistoryEnhancedResponse], tags=["History"]
 )
-def get_history_logs(limit=200, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_history_logs(
+    limit=200, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Retrieve history logs with enhanced information.
     :param limit: Maximum number of logs to retrieve
@@ -143,7 +146,11 @@ def get_history_logs(limit=200, db: Session = Depends(get_db), ctx: RequestConte
     :return: History logs with enhanced details
     """
 
-    query = db.query(History).join(User, History.user_id == User.id).options(joinedload(History.user))
+    query = (
+        db.query(History)
+        .join(User, History.user_id == User.id)
+        .options(joinedload(History.user))
+    )
     query = ctx.team_filter(query, User)
     query = query.order_by(History.timestamp)
     logs = query.limit(limit).all()
@@ -182,7 +189,9 @@ def get_history_logs(limit=200, db: Session = Depends(get_db), ctx: RequestConte
     status_code=status.HTTP_200_OK,
     tags=["History"],
 )
-def rollback_history_entry(history_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def rollback_history_entry(
+    history_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Rollback a specific history entry by ID.
     :param history_id: History entry ID
@@ -191,7 +200,11 @@ def rollback_history_entry(history_id: int, db: Session = Depends(get_db), ctx: 
     """
 
     ctx.require_group_admin()
-    query = db.query(History).join(User, History.user_id == User.id).filter(History.id == history_id)
+    query = (
+        db.query(History)
+        .join(User, History.user_id == User.id)
+        .filter(History.id == history_id)
+    )
     query = ctx.team_filter(query, User)
 
     log_entry = query.first()

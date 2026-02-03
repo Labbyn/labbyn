@@ -24,7 +24,11 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Rooms"],
 )
-def create_room(room_data: RoomsCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def create_room(
+    room_data: RoomsCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create new room
     :param room_data: Room data
@@ -35,7 +39,6 @@ def create_room(room_data: RoomsCreate, db: Session = Depends(get_db), ctx: Requ
     data = room_data.model_dump()
     if not ctx.is_admin:
         data["team_id"] = ctx.team_id
-
 
     obj = Rooms(**room_data.model_dump())
     db.add(obj)
@@ -57,7 +60,9 @@ def get_rooms(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
 
 
 @router.get("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
-def get_room_by_id(room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_room_by_id(
+    room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific room by ID
     :param room_id: Room ID
@@ -76,7 +81,10 @@ def get_room_by_id(room_id: int, db: Session = Depends(get_db), ctx: RequestCont
 
 @router.put("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
 async def update_room(
-    room_id: int, room_data: RoomsUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    room_id: int,
+    room_data: RoomsUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update room
@@ -94,7 +102,8 @@ async def update_room(
         room = query.first()
         if not room:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Room not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Room not found or access denied",
             )
         data = room_data.model_dump(exlude_unset=True)
         if not ctx.is_admin and "team_id" in data:
@@ -109,7 +118,9 @@ async def update_room(
 @router.delete(
     "/db/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rooms"]
 )
-async def delete_room(room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def delete_room(
+    room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete Room
     :param room_id: Room ID
@@ -124,7 +135,8 @@ async def delete_room(room_id: int, db: Session = Depends(get_db), ctx: RequestC
         room = query.first()
         if not room:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Room not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Room not found or access denied",
             )
         db.delete(room)
         db.commit()

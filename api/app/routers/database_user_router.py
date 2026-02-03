@@ -27,7 +27,11 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Users"],
 )
-async def create_user(user_data: UserCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def create_user(
+    user_data: UserCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create and add new user to database
     :param user_data: User data
@@ -83,7 +87,7 @@ async def create_user(user_data: UserCreate, db: Session = Depends(get_db), ctx:
             "user_type": new_user.user_type,
             "team_id": new_user.team_id,
             "version_id": new_user.version_id,
-            "generated_password": raw_password
+            "generated_password": raw_password,
         }
 
         return response_dict
@@ -105,7 +109,9 @@ def get_users(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
 
 
 @router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
-def get_user_by_id(user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_user_by_id(
+    user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific user by ID
     :param user_id: User ID
@@ -122,7 +128,10 @@ def get_user_by_id(user_id: int, db: Session = Depends(get_db), ctx: RequestCont
 
 @router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
 async def update_user(
-    user_id: int, user_data: UserUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    user_id: int,
+    user_data: UserUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update user data
@@ -139,7 +148,8 @@ async def update_user(
         user = query.first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found or access denied",
             )
 
         data = user_data.model_dump(exclude_unset=True)
@@ -168,7 +178,9 @@ async def update_user(
 @router.delete(
     "/db/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
 )
-async def delete_user(user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def delete_user(
+    user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete user
     :param user_id: User ID
@@ -183,11 +195,13 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), ctx: RequestC
         user = query.first()
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="User not found or access denied"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found or access denied",
             )
         if user.id == ctx.current_user_id:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete own user account"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot delete own user account",
             )
         db.delete(user)
         db.commit()

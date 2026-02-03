@@ -24,7 +24,11 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Teams"],
 )
-def create_team(team_data: TeamsCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def create_team(
+    team_data: TeamsCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create new team
     :param team_data: Team data
@@ -50,7 +54,9 @@ def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
 
 
 @router.get("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])
-def get_team_by_id(team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+def get_team_by_id(
+    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific team by ID
     :param team_id: Team ID
@@ -67,7 +73,10 @@ def get_team_by_id(team_id: int, db: Session = Depends(get_db), ctx: RequestCont
 
 @router.put("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])
 async def update_team(
-    team_id: int, team_data: TeamsUpdate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    team_id: int,
+    team_data: TeamsUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update Team
@@ -101,7 +110,9 @@ async def update_team(
 @router.delete(
     "/db/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Teams"]
 )
-async def delete_team(team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def delete_team(
+    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete Team
     :param team_id: Team ID

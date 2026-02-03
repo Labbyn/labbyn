@@ -49,9 +49,7 @@ def create_category(
 @router.get(
     "/db/categories/", response_model=List[CategoriesResponse], tags=["Categories"]
 )
-def get_categories(
-    db: Session = Depends(get_db), ctx: RequestContext = Depends()
-):
+def get_categories(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all categories
     :param db: Active database session

@@ -8,7 +8,6 @@ from app.db.models import User, UserType
 pytestmark = [pytest.mark.smoke, pytest.mark.prometheus]
 
 
-
 def test_prometheus_instances_endpoint(test_client, service_header_sync):
     """Smoke test for /prometheus/instances endpoint."""
     response = test_client.get("/prometheus/instances", headers=service_header_sync)
@@ -31,6 +30,7 @@ async def test_prometheus_metrics_endpoint(test_client, service_header_sync):
     for key in ["status", "cpu_usage", "memory_usage", "disk_usage"]:
         assert key in data
 
+
 @pytest.mark.xfail
 async def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """
@@ -45,8 +45,11 @@ async def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
             assert key in message
             assert isinstance(message[key], (dict, list))
 
+
 def test_prometheus_target_endpoint_connection(test_client, service_header_sync):
     """Smoke test for /prometheus/target endpoint."""
     payload = {"instance": "dummy:9100", "labels": {"env": "ci-test"}}
-    response = test_client.post("/prometheus/target", json=payload, headers=service_header_sync)
+    response = test_client.post(
+        "/prometheus/target", json=payload, headers=service_header_sync
+    )
     assert response.status_code in (200, 400, 422)
