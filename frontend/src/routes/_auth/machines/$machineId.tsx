@@ -37,6 +37,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { TextField } from '@/components/text-filed'
+import { Separator } from '@/components/ui/separator'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
   component: MachineDetailsPage,
@@ -65,7 +66,7 @@ function MachineDetailsPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header*/}
-      <div className="flex items-center gap-4 border-b bg-background/95 px-6 py-4 backdrop-blur sticky top-0 z-10">
+      <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur sticky top-0 z-10">
         <Button
           onClick={() => router.history.back()}
           variant="ghost"
@@ -117,6 +118,7 @@ function MachineDetailsPage() {
           )}
         </div>
       </div>
+      <Separator/>
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
@@ -131,7 +133,8 @@ function MachineDetailsPage() {
                 Core network and hardware configurations
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-6 sm:grid-cols-2 border-t pt-6">
+            <Separator/>
+            <CardContent className="grid gap-6 sm:grid-cols-2">
               {[
                 { label: 'IP Address', name: 'ip_address', icon: Network },
                 {
@@ -184,8 +187,9 @@ function MachineDetailsPage() {
               </CardTitle>
               <CardDescription>Rack and environment placement</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4 border-t pt-6">
-              <div className="flex flex-col gap-2 border-b pb-3">
+            <Separator/>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Location ID
                 </span>
@@ -200,7 +204,8 @@ function MachineDetailsPage() {
                   <span className="font-medium">{machine.localization_id}</span>
                 )}
               </div>
-              <div className="flex flex-col gap-2 border-b pb-3">
+              <Separator/>
+              <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Rack / Layout ID
                 </span>
@@ -215,7 +220,8 @@ function MachineDetailsPage() {
                   <span className="font-medium">{machine.layout_id}</span>
                 )}
               </div>
-              <div className="flex flex-col gap-2 border-b pb-3">
+              <Separator/>
+              <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
                 </span>
@@ -275,7 +281,8 @@ function MachineDetailsPage() {
                   All remaining information about this machine
                 </CardDescription>
               </CardHeader>
-              <CardContent className="grid gap-6 sm:grid-cols-3 border-t pt-6">
+              <Separator/>
+              <CardContent className="grid gap-6 sm:grid-cols-3">
                 {[
                   { label: 'ID', name: 'id', icon: IdCard },
                   { label: 'PDU Port', name: 'pdu_port', icon: Cable },
@@ -338,14 +345,15 @@ function MachineDetailsPage() {
                 </CardTitle>
                 <CardDescription>Machine links</CardDescription>
               </CardHeader>
-              <CardContent className="border-t pt-6">
-                <div className="flex flex-col gap-2 border-b pb-3">
+              <Separator/>
+              <CardContent>
+                <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     Grafana link
                   </span>
                   <Link to="/">Placeholder</Link>
                 </div>
-                <div className="flex flex-col gap-2 border-b pb-3">
+                <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     Rack link
                   </span>
