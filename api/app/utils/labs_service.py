@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session, selectinload
 from app.db.models import Rooms, Machines
 from fastapi import HTTPException
 
+
 def build_labs(db: Session, lab_id: int = None):
-    query = (
-        db.query(Rooms)
-        .options(selectinload(Rooms.machines).selectinload(Machines.layout))
+    query = db.query(Rooms).options(
+        selectinload(Rooms.machines).selectinload(Machines.layout)
     )
     if lab_id:
         room = query.filter(Rooms.id == lab_id).first()

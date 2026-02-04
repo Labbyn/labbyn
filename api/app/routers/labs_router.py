@@ -21,6 +21,7 @@ router = APIRouter()
 def get_labs(db: Session = Depends(get_db)):
     return build_labs(db)
 
+
 @router.get("/labs/{lab_id}", response_model=LabsResponse, tags=["labs"])
 def get_lab_by_id(lab_id: int, db: Session = Depends(get_db)):
     """
