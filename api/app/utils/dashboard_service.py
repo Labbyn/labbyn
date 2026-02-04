@@ -35,7 +35,7 @@ def build_dashboard(db: Session):
         {
             "type": "Room",
             "id": room.name,
-            "location": f"/rooms/{room.id}",
+            "location": f"/labs/{room.id}",
             "tags": (
                 [f"Room type: {room.room_type}"] if room.room_type is not None else []
             ),
