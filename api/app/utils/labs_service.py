@@ -4,14 +4,20 @@ Lab items parser. Prepares json file with database data for lab page.
 
 from sqlalchemy.orm import Session, selectinload
 from app.db.models import Rooms, Machines
+from fastapi import HTTPException
 
 
-def build_labs(db: Session):
-    rooms = (
-        db.query(Rooms)
-        .options(selectinload(Rooms.machines).selectinload(Machines.layout))
-        .all()
+def build_labs(db: Session, lab_id: int = None):
+    query = db.query(Rooms).options(
+        selectinload(Rooms.machines).selectinload(Machines.layout)
     )
+    if lab_id:
+        room = query.filter(Rooms.id == lab_id).first()
+        if not room:
+            raise HTTPException(status_code=404, detail="Lab not found")
+        rooms = [room]
+    else:
+        rooms = query.all()
 
     room_items = []
     for room in rooms:
@@ -48,8 +54,8 @@ def build_labs(db: Session):
             {
                 "id": room.id,
                 "name": room.name,
-                "location": f"/rooms/{room.id}",
+                "location": f"/labs/{room.id}",
                 "racks": list(racks_map.values()),
             }
         )
-    return room_items
+    return room_items[0] if lab_id else room_items
