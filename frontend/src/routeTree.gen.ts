@@ -22,6 +22,7 @@ import { Route as AuthAddItemsRouteImport } from './routes/_auth/add-items'
 import { Route as AuthUsersIndexRouteImport } from './routes/_auth/users/index'
 import { Route as AuthInventoryIndexRouteImport } from './routes/_auth/inventory/index'
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
+import { Route as AuthUsersUserIdRouteImport } from './routes/_auth/users/$userId'
 import { Route as AuthMachinesMachineIdRouteImport } from './routes/_auth/machines/$machineId'
 import { Route as AuthDocsDocIdRouteImport } from './routes/_auth/docs/$docId'
 import { Route as AuthAdminPanelUsersRouteImport } from './routes/_auth/admin-panel/users'
@@ -95,6 +96,11 @@ const AuthDocsIndexRoute = AuthDocsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthDocsRoute,
 } as any)
+const AuthUsersUserIdRoute = AuthUsersUserIdRouteImport.update({
+  id: '/users/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMachinesMachineIdRoute = AuthMachinesMachineIdRouteImport.update({
   id: '/machines/$machineId',
   path: '/machines/$machineId',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/docs/$docId': typeof AuthDocsDocIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs/': typeof AuthDocsIndexRoute
   '/inventory/': typeof AuthInventoryIndexRoute
   '/users/': typeof AuthUsersIndexRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/docs/$docId': typeof AuthDocsDocIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs': typeof AuthDocsIndexRoute
   '/inventory': typeof AuthInventoryIndexRoute
   '/users': typeof AuthUsersIndexRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_auth/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/_auth/docs/$docId': typeof AuthDocsDocIdRoute
   '/_auth/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/_auth/users/$userId': typeof AuthUsersUserIdRoute
   '/_auth/docs/': typeof AuthDocsIndexRoute
   '/_auth/inventory/': typeof AuthInventoryIndexRoute
   '/_auth/users/': typeof AuthUsersIndexRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/admin-panel/users'
     | '/docs/$docId'
     | '/machines/$machineId'
+    | '/users/$userId'
     | '/docs/'
     | '/inventory/'
     | '/users/'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/admin-panel/users'
     | '/docs/$docId'
     | '/machines/$machineId'
+    | '/users/$userId'
     | '/docs'
     | '/inventory'
     | '/users'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/_auth/admin-panel/users'
     | '/_auth/docs/$docId'
     | '/_auth/machines/$machineId'
+    | '/_auth/users/$userId'
     | '/_auth/docs/'
     | '/_auth/inventory/'
     | '/_auth/users/'
@@ -371,6 +383,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDocsIndexRouteImport
       parentRoute: typeof AuthDocsRoute
     }
+    '/_auth/users/$userId': {
+      id: '/_auth/users/$userId'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof AuthUsersUserIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/machines/$machineId': {
       id: '/_auth/machines/$machineId'
       path: '/machines/$machineId'
@@ -459,6 +478,7 @@ interface AuthRouteChildren {
   AuthAdminPanelTeamsRoute: typeof AuthAdminPanelTeamsRoute
   AuthAdminPanelUsersRoute: typeof AuthAdminPanelUsersRoute
   AuthMachinesMachineIdRoute: typeof AuthMachinesMachineIdRoute
+  AuthUsersUserIdRoute: typeof AuthUsersUserIdRoute
   AuthInventoryIndexRoute: typeof AuthInventoryIndexRoute
   AuthUsersIndexRoute: typeof AuthUsersIndexRoute
   AuthInventoryDeviceDeviceidRoute: typeof AuthInventoryDeviceDeviceidRoute
@@ -479,6 +499,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAdminPanelTeamsRoute: AuthAdminPanelTeamsRoute,
   AuthAdminPanelUsersRoute: AuthAdminPanelUsersRoute,
   AuthMachinesMachineIdRoute: AuthMachinesMachineIdRoute,
+  AuthUsersUserIdRoute: AuthUsersUserIdRoute,
   AuthInventoryIndexRoute: AuthInventoryIndexRoute,
   AuthUsersIndexRoute: AuthUsersIndexRoute,
   AuthInventoryDeviceDeviceidRoute: AuthInventoryDeviceDeviceidRoute,
