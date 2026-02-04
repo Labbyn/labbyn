@@ -24,6 +24,7 @@ import { Route as AuthInventoryIndexRouteImport } from './routes/_auth/inventory
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
 import { Route as AuthUsersUserIdRouteImport } from './routes/_auth/users/$userId'
 import { Route as AuthMachinesMachineIdRouteImport } from './routes/_auth/machines/$machineId'
+import { Route as AuthInventoryInventoryIdRouteImport } from './routes/_auth/inventory/$inventoryId'
 import { Route as AuthDocsDocIdRouteImport } from './routes/_auth/docs/$docId'
 import { Route as AuthAdminPanelUsersRouteImport } from './routes/_auth/admin-panel/users'
 import { Route as AuthAdminPanelTeamsRouteImport } from './routes/_auth/admin-panel/teams'
@@ -106,6 +107,12 @@ const AuthMachinesMachineIdRoute = AuthMachinesMachineIdRouteImport.update({
   path: '/machines/$machineId',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthInventoryInventoryIdRoute =
+  AuthInventoryInventoryIdRouteImport.update({
+    id: '/inventory/$inventoryId',
+    path: '/inventory/$inventoryId',
+    getParentRoute: () => AuthRoute,
+  } as any)
 const AuthDocsDocIdRoute = AuthDocsDocIdRouteImport.update({
   id: '/$docId',
   path: '/$docId',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/docs/$docId': typeof AuthDocsDocIdRoute
+  '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs/': typeof AuthDocsIndexRoute
@@ -181,6 +189,7 @@ export interface FileRoutesByTo {
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/docs/$docId': typeof AuthDocsDocIdRoute
+  '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs': typeof AuthDocsIndexRoute
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/_auth/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/_auth/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/_auth/docs/$docId': typeof AuthDocsDocIdRoute
+  '/_auth/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/_auth/machines/$machineId': typeof AuthMachinesMachineIdRoute
   '/_auth/users/$userId': typeof AuthUsersUserIdRoute
   '/_auth/docs/': typeof AuthDocsIndexRoute
@@ -231,6 +241,7 @@ export interface FileRouteTypes {
     | '/admin-panel/teams'
     | '/admin-panel/users'
     | '/docs/$docId'
+    | '/inventory/$inventoryId'
     | '/machines/$machineId'
     | '/users/$userId'
     | '/docs/'
@@ -253,6 +264,7 @@ export interface FileRouteTypes {
     | '/admin-panel/teams'
     | '/admin-panel/users'
     | '/docs/$docId'
+    | '/inventory/$inventoryId'
     | '/machines/$machineId'
     | '/users/$userId'
     | '/docs'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/_auth/admin-panel/teams'
     | '/_auth/admin-panel/users'
     | '/_auth/docs/$docId'
+    | '/_auth/inventory/$inventoryId'
     | '/_auth/machines/$machineId'
     | '/_auth/users/$userId'
     | '/_auth/docs/'
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthMachinesMachineIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/inventory/$inventoryId': {
+      id: '/_auth/inventory/$inventoryId'
+      path: '/inventory/$inventoryId'
+      fullPath: '/inventory/$inventoryId'
+      preLoaderRoute: typeof AuthInventoryInventoryIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/docs/$docId': {
       id: '/_auth/docs/$docId'
       path: '/$docId'
@@ -477,6 +497,7 @@ interface AuthRouteChildren {
   AuthAdminPanelMachinesRoute: typeof AuthAdminPanelMachinesRoute
   AuthAdminPanelTeamsRoute: typeof AuthAdminPanelTeamsRoute
   AuthAdminPanelUsersRoute: typeof AuthAdminPanelUsersRoute
+  AuthInventoryInventoryIdRoute: typeof AuthInventoryInventoryIdRoute
   AuthMachinesMachineIdRoute: typeof AuthMachinesMachineIdRoute
   AuthUsersUserIdRoute: typeof AuthUsersUserIdRoute
   AuthInventoryIndexRoute: typeof AuthInventoryIndexRoute
@@ -498,6 +519,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthAdminPanelMachinesRoute: AuthAdminPanelMachinesRoute,
   AuthAdminPanelTeamsRoute: AuthAdminPanelTeamsRoute,
   AuthAdminPanelUsersRoute: AuthAdminPanelUsersRoute,
+  AuthInventoryInventoryIdRoute: AuthInventoryInventoryIdRoute,
   AuthMachinesMachineIdRoute: AuthMachinesMachineIdRoute,
   AuthUsersUserIdRoute: AuthUsersUserIdRoute,
   AuthInventoryIndexRoute: AuthInventoryIndexRoute,

@@ -136,6 +136,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
 
 function RouteComponent() {
   const { data: inventory = [], isLoading } = useQuery(inventoryQueryOptions)
+  const navigate = Route.useNavigate()
 
   if (isLoading) return <PageIsLoading />
 
@@ -146,6 +147,12 @@ function RouteComponent() {
           <DataTable
             columns={columns}
             data={inventory}
+            onRowClick={(row) => {
+              navigate({
+                to: '/inventory/$inventoryId',
+                params: { inventoryId: String(row.id) },
+              })
+            }}
             actionElement={
               <Button>
                 <Link to="/add-items">Add items</Link>

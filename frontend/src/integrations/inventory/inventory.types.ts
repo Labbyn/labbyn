@@ -2,7 +2,7 @@ export type ApiInventoryItem = {
   name: string
   quantity: number
   team_id: number | null
-  localization_id: number
+  localization_id: number | null
   machine_id: number | null
   category_id: number
   rental_status: boolean
