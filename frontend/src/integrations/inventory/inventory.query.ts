@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchInventoryData } from './inventory.adapter'
-import type { ApiInventoryResponse } from './inventory.types'
+import { fetchInventoryData, fetchInventoryItemData } from './inventory.adapter'
+import type { ApiInventoryItem, ApiInventoryResponse } from './inventory.types'
 
 const INVENTORY_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/inventory`
 
@@ -15,7 +15,6 @@ export const inventoryQueryOptions = queryOptions({
   },
 })
 
-
 export const inventoryItemQueryOptions = (inventoryId: string) =>
   queryOptions({
     queryKey: ['inventory', 'item'],
@@ -24,6 +23,6 @@ export const inventoryItemQueryOptions = (inventoryId: string) =>
       if (!res.ok) throw new Error('Failed to fetch inventory')
 
       const data: ApiInventoryItem = await res.json()
-      return fetchInventoryData(data)
+      return fetchInventoryItemData(data)
     },
   })

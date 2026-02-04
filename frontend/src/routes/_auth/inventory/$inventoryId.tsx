@@ -3,19 +3,18 @@ import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
+  BanknoteArrowUp,
   Book,
+  ChartColumnStacked,
+  Check,
+  ClipboardList,
+  Coins,
   Edit2,
   IdCard,
   MapPin,
-  MonitorCog,
   Save,
-  StickyNote,
-  X,
-  ClipboardList,
   WeightTilde,
-  ChartColumnStacked,
-  BanknoteArrowUp,
-  Coins
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,7 +26,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { TextField } from '@/components/text-filed'
 import { Separator } from '@/components/ui/separator'
 
 export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
@@ -37,7 +35,9 @@ export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
 function InventoryDetailsPage() {
   const router = useRouter()
   const { inventoryId } = Route.useParams()
-  const { data: inventory } = useSuspenseQuery(inventoryItemQueryOptions(inventoryId))
+  const { data: inventory } = useSuspenseQuery(
+    inventoryItemQueryOptions(inventoryId),
+  )
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...inventory })
@@ -109,7 +109,7 @@ function InventoryDetailsPage() {
           )}
         </div>
       </div>
-      <Separator/>
+      <Separator />
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
@@ -120,11 +120,9 @@ function InventoryDetailsPage() {
                 <ClipboardList className="h-5 w-5 text-muted-foreground" />
                 Item Information
               </CardTitle>
-              <CardDescription>
-                Item general information
-              </CardDescription>
+              <CardDescription>Item general information</CardDescription>
             </CardHeader>
-            <Separator/>
+            <Separator />
             <CardContent className="grid gap-6 sm:grid-cols-2">
               {[
                 { label: 'ID', name: 'id', icon: IdCard },
@@ -134,14 +132,17 @@ function InventoryDetailsPage() {
                   name: 'category_id',
                   icon: ChartColumnStacked,
                 },
-                { label: 'Is rented', name: 'rental_status', icon: BanknoteArrowUp },
+                {
+                  label: 'Is rented',
+                  name: 'rental_status',
+                  icon: BanknoteArrowUp,
+                },
                 { label: 'Rental ID', name: 'rental_id', icon: Coins },
                 { label: 'Version ID', name: 'version_id', icon: Save },
               ].map((field) => {
                 const rawValue = (inventory as any)[field.name]
-                const displayValue = typeof rawValue === 'boolean' 
-                  ? rawValue.toString() 
-                  : rawValue
+                const displayValue =
+                  typeof rawValue === 'boolean' ? rawValue.toString() : rawValue
                 return (
                   <div key={field.name} className="grid gap-2">
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -150,7 +151,7 @@ function InventoryDetailsPage() {
                     {isEditing ? (
                       <Input
                         name={field.name}
-                        value={(formData as any)[field.name]}
+                        value={String((formData as any)[field.name] ?? '')}
                         onChange={handleInputChange}
                         className="h-8"
                       />
@@ -172,7 +173,7 @@ function InventoryDetailsPage() {
               </CardTitle>
               <CardDescription>Item location and ownership</CardDescription>
             </CardHeader>
-            <Separator/>
+            <Separator />
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -181,15 +182,17 @@ function InventoryDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="localization_id"
-                    value={formData.localization_id ?? ""}
+                    value={formData.localization_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
                 ) : (
-                  <span className="font-medium">{inventory.localization_id}</span>
+                  <span className="font-medium">
+                    {inventory.localization_id}
+                  </span>
                 )}
               </div>
-              <Separator/>
+              <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Machine ID
@@ -197,7 +200,7 @@ function InventoryDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="machine_id"
-                    value={formData.machine_id ?? ""}
+                    value={formData.machine_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
@@ -205,7 +208,7 @@ function InventoryDetailsPage() {
                   <span className="font-medium">{inventory.machine_id}</span>
                 )}
               </div>
-              <Separator/>
+              <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
@@ -213,7 +216,7 @@ function InventoryDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="team_id"
-                    value={formData.team_id ?? ""}
+                    value={formData.team_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
@@ -234,7 +237,7 @@ function InventoryDetailsPage() {
                 </CardTitle>
                 <CardDescription>Machine links</CardDescription>
               </CardHeader>
-              <Separator/>
+              <Separator />
               <CardContent>
                 <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">

@@ -7,6 +7,6 @@ export function fetchInventoryData(apiData: ApiInventoryResponse) {
 }
 
 // fetch single item from inventory list
-export function fetchMachineData(apiData: ApiMachineItem) {
+export function fetchInventoryItemData(apiData: ApiInventoryItem) {
   return apiData
 }
