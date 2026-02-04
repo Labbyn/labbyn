@@ -132,6 +132,7 @@ const AuthInventoryDeviceDeviceidRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthIndexRoute
   '/login': typeof LoginRoute
   '/add-items': typeof AuthAddItemsRoute
   '/docs': typeof AuthDocsRouteWithChildren
@@ -140,7 +141,6 @@ export interface FileRoutesByFullPath {
   '/labs': typeof AuthLabsRoute
   '/settings': typeof AuthSettingsRoute
   '/user_dashboard': typeof AuthUser_dashboardRoute
-  '/': typeof AuthIndexRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
   '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
@@ -148,8 +148,8 @@ export interface FileRoutesByFullPath {
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/docs/$docId': typeof AuthDocsDocIdRoute
   '/docs/': typeof AuthDocsIndexRoute
-  '/inventory': typeof AuthInventoryIndexRoute
-  '/users': typeof AuthUsersIndexRoute
+  '/inventory/': typeof AuthInventoryIndexRoute
+  '/users/': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
 export interface FileRoutesByTo {
@@ -198,6 +198,7 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/login'
     | '/add-items'
     | '/docs'
@@ -206,7 +207,6 @@ export interface FileRouteTypes {
     | '/labs'
     | '/settings'
     | '/user_dashboard'
-    | '/'
     | '/admin-panel/inventory'
     | '/admin-panel/logging'
     | '/admin-panel/machines'
@@ -214,8 +214,8 @@ export interface FileRouteTypes {
     | '/admin-panel/users'
     | '/docs/$docId'
     | '/docs/'
-    | '/inventory'
-    | '/users'
+    | '/inventory/'
+    | '/users/'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -278,7 +278,7 @@ declare module '@tanstack/react-router' {
     '/_auth': {
       id: '/_auth'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -341,14 +341,14 @@ declare module '@tanstack/react-router' {
     '/_auth/users/': {
       id: '/_auth/users/'
       path: '/users'
-      fullPath: '/users'
+      fullPath: '/users/'
       preLoaderRoute: typeof AuthUsersIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/inventory/': {
       id: '/_auth/inventory/'
       path: '/inventory'
-      fullPath: '/inventory'
+      fullPath: '/inventory/'
       preLoaderRoute: typeof AuthInventoryIndexRouteImport
       parentRoute: typeof AuthRoute
     }
