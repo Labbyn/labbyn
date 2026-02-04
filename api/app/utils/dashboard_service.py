@@ -64,7 +64,7 @@ def build_dashboard(db: Session):
         {
             "type": "Team",
             "id": team.name,
-            "location": f"/team/{team.id}",
+            "location": f"/teams/{team.id}",
             "tags": [f"Team ID: {team.id}"] if team.id is not None else [],
         }
         for team in teams
@@ -74,7 +74,7 @@ def build_dashboard(db: Session):
         {
             "type": "User",
             "id": user.name,
-            "location": f"/user/{user.id}",
+            "location": f"/users/{user.id}",
             "tags": (
                 [f"Team ID: {user.team_id}", f"User type: {user.user_type}"]
                 if user.team_id is not None
