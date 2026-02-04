@@ -49,9 +49,8 @@ export const columns: Array<ColumnDef<RackItem>> = [
       <DataTableColumnHeader column={column} title="Tags" />
     ),
     cell: ({ row }) => {
-      const tags = row.getValue('tags')
-      if (!tags || !tags.length)
-        return <span className="text-muted-foreground">-</span>
+      const tags = row.getValue<Array<string>>('tags')
+      if (!tags.length) return <span className="text-muted-foreground">-</span>
 
       return (
         <div className="flex gap-1 flex-wrap">
