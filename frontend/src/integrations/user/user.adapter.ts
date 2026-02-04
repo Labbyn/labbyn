@@ -5,3 +5,7 @@ export type ApiUserResponse = Array<ApiUserItem>
 export function fetchUserData(apiData: ApiUserResponse) {
   return apiData
 }
+
+export function fetchSingleUserData(apiData: ApiUserItem) {
+  return apiData
+}

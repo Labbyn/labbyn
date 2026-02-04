@@ -1,25 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { ApiUserItem } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { users } from '@/lib/mock-data'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
+import { userQueryOptions } from '@/integrations/user/user.query'
 
 export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
 })
 
-export type User = (typeof users)[0]
-
-const fetchUsers = async (): Promise<Array<User>> => {
-  // Symulacja API
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return users
-}
-
-export const columns: Array<ColumnDef<User>> = [
+export const columns: Array<ColumnDef<ApiUserItem>> = [
   {
     accessorKey: 'id',
     header: ({ column }) => {
@@ -38,24 +31,22 @@ export const columns: Array<ColumnDef<User>> = [
     ),
   },
   {
-    accessorKey: 'team',
+    accessorKey: 'team_id',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Team" />
+      return <DataTableColumnHeader column={column} title="Team ID" />
     },
   },
   {
-    accessorKey: 'role',
+    accessorKey: 'user_type',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Role" />
+      return <DataTableColumnHeader column={column} title="User type" />
     },
   },
 ]
 
 function RouteComponent() {
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-  })
+  const { data: users = [], isLoading } = useQuery(userQueryOptions)
+  const navigate = Route.useNavigate()
 
   if (isLoading) return <PageIsLoading />
 
@@ -63,7 +54,16 @@ function RouteComponent() {
     <div className="h-screen w-full z-1 overflow-hidden">
       <ScrollArea className="h-full">
         <div className="p-6">
-          <DataTable columns={columns} data={users} />
+          <DataTable
+            columns={columns}
+            data={users}
+            onRowClick={(row) => {
+              navigate({
+                to: '/users/$userId',
+                params: { userId: String(row.id) },
+              })
+            }}
+          />
         </div>
       </ScrollArea>
     </div>
