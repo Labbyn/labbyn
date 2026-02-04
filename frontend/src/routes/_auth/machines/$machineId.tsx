@@ -36,7 +36,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { TextField } from '@/components/text-filed'
+import { TextField } from '@/components/text-field'
 import { Separator } from '@/components/ui/separator'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
