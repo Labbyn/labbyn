@@ -4,7 +4,7 @@ import type { ApiHistoryResponse } from './history.types'
 
 const HISTORY_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/history/`
 
-export const historyQueryOptions = (limit: number = 200) => 
+export const historyQueryOptions = (limit: number = 200) =>
   queryOptions({
     queryKey: ['history', limit],
     queryFn: async () => {
@@ -15,4 +15,3 @@ export const historyQueryOptions = (limit: number = 200) =>
       return fetchHistoryData(data)
     },
   })
-  

@@ -118,7 +118,7 @@ function MachineDetailsPage() {
           )}
         </div>
       </div>
-      <Separator/>
+      <Separator />
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
@@ -133,7 +133,7 @@ function MachineDetailsPage() {
                 Core network and hardware configurations
               </CardDescription>
             </CardHeader>
-            <Separator/>
+            <Separator />
             <CardContent className="grid gap-6 sm:grid-cols-2">
               {[
                 { label: 'IP Address', name: 'ip_address', icon: Network },
@@ -187,7 +187,7 @@ function MachineDetailsPage() {
               </CardTitle>
               <CardDescription>Rack and environment placement</CardDescription>
             </CardHeader>
-            <Separator/>
+            <Separator />
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -196,7 +196,7 @@ function MachineDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="localization_id"
-                    value={formData.localization_id ?? ""}
+                    value={formData.localization_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
@@ -204,7 +204,7 @@ function MachineDetailsPage() {
                   <span className="font-medium">{machine.localization_id}</span>
                 )}
               </div>
-              <Separator/>
+              <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Rack / Layout ID
@@ -212,7 +212,7 @@ function MachineDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="layout_id"
-                    value={formData.layout_id ?? ""}
+                    value={formData.layout_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
@@ -220,7 +220,7 @@ function MachineDetailsPage() {
                   <span className="font-medium">{machine.layout_id}</span>
                 )}
               </div>
-              <Separator/>
+              <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
@@ -228,7 +228,7 @@ function MachineDetailsPage() {
                 {isEditing ? (
                   <Input
                     name="team_id"
-                    value={formData.team_id ?? ""}
+                    value={formData.team_id ?? ''}
                     onChange={handleInputChange}
                     className="h-8"
                   />
@@ -253,7 +253,7 @@ function MachineDetailsPage() {
             <CardContent>
               {isEditing ? (
                 <TextField
-                  value={formData.note ?? ""}
+                  value={formData.note ?? ''}
                   onChange={handleInputChange}
                   maxChars={500}
                 />
@@ -281,7 +281,7 @@ function MachineDetailsPage() {
                   All remaining information about this machine
                 </CardDescription>
               </CardHeader>
-              <Separator/>
+              <Separator />
               <CardContent className="grid gap-6 sm:grid-cols-3">
                 {[
                   { label: 'ID', name: 'id', icon: IdCard },
@@ -345,7 +345,7 @@ function MachineDetailsPage() {
                 </CardTitle>
                 <CardDescription>Machine links</CardDescription>
               </CardHeader>
-              <Separator/>
+              <Separator />
               <CardContent>
                 <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">

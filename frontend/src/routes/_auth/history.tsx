@@ -1,9 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { MoreHorizontal, RotateCcw, Eye, History, } from 'lucide-react'
+import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
+import type { ApiHistoryItem } from '@/integrations/history/history.types'
+import type { ColumnDef } from '@tanstack/react-table'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -19,30 +21,41 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
 import { historyQueryOptions } from '@/integrations/history/history.query'
-import type { ApiHistoryItem } from '@/integrations/history/history.types'
-import type { ColumnDef } from '@tanstack/react-table'
 
 export const Route = createFileRoute('/_auth/history')({
   component: RouteComponent,
 })
 
 const actionMap = {
-  create: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200',
-  update: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200',
-  delete: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200',
-} as const;
+  create:
+    'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-200',
+  update:
+    'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 border-blue-200',
+  delete:
+    'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 border-red-200',
+} as const
 
-const ActionBadge = ({ action }: { action: keyof typeof actionMap | string }) => {
-  const className = actionMap[action as keyof typeof actionMap] || 'bg-gray-100 text-gray-700';
-  return <Badge variant="outline" className={className}>{action.toUpperCase()}</Badge>
+const ActionBadge = ({
+  action,
+}: {
+  action: keyof typeof actionMap | string
+}) => {
+  const className =
+    (actionMap[action as keyof typeof actionMap] as string | undefined) ||
+    'bg-gray-100 text-gray-700'
+  return (
+    <Badge variant="outline" className={className}>
+      {action.toUpperCase()}
+    </Badge>
+  )
 }
 
 function RouteComponent() {
@@ -50,12 +63,15 @@ function RouteComponent() {
   const { data: history = [], isLoading } = useQuery(historyQueryOptions())
   const [diffEntry, setDiffEntry] = useState<ApiHistoryItem | null>(null)
 
-  //@todo move mutation to integration and clean up
+  // @todo move mutation to integration and clean up
   const rollbackMutation = useMutation({
     mutationFn: async (id: number) => {
-      const res = await fetch(`http://${import.meta.env.VITE_API_URL}/db/history/${id}/rollback`, {
-        method: 'POST',
-      })
+      const res = await fetch(
+        `http://${import.meta.env.VITE_API_URL}/db/history/${id}/rollback`,
+        {
+          method: 'POST',
+        },
+      )
       if (!res.ok) throw new Error('Rollback failed')
       return res.json()
     },
@@ -66,11 +82,13 @@ function RouteComponent() {
     onError: (err: any) => toast.error(`Rollback Error: ${err.message}`),
   })
 
-  const columns: ColumnDef<ApiHistoryItem>[] =[
+  const columns: Array<ColumnDef<ApiHistoryItem>> = [
     {
       id: 'timeStamp',
       accessorFn: (row) => new Date(row.timestamp).toLocaleString(),
-      header: ({ column }: any) => <DataTableColumnHeader column={column} title="Timestamp" />,
+      header: ({ column }: any) => (
+        <DataTableColumnHeader column={column} title="Timestamp" />
+      ),
       cell: ({ getValue }: any) => (
         <span className="text-muted-foreground tabular-nums">
           {new Date(getValue()).toLocaleString()}
@@ -80,22 +98,32 @@ function RouteComponent() {
     {
       id: 'target',
       accessorFn: (row) => `${row.entity_name} ${row.entity_type}`,
-      header: ({ column }: any) => <DataTableColumnHeader column={column} title="Target" />,
+      header: ({ column }: any) => (
+        <DataTableColumnHeader column={column} title="Target" />
+      ),
       cell: ({ row }: any) => (
         <div className="flex flex-col">
-          <span className="font-semibold text-sm">{row.original.entity_name || row.original.entity_type}</span>
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">{row.original.entity_type}</span>
+          <span className="font-semibold text-sm">
+            {row.original.entity_name || row.original.entity_type}
+          </span>
+          <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            {row.original.entity_type}
+          </span>
         </div>
       ),
     },
     {
       accessorKey: 'action',
-      header: ({ column }: any) => <DataTableColumnHeader column={column} title="Action" />,
+      header: ({ column }: any) => (
+        <DataTableColumnHeader column={column} title="Action" />
+      ),
       cell: ({ getValue }: any) => <ActionBadge action={getValue()} />,
     },
     {
       accessorKey: 'user',
-      header: ({ column }: any) => <DataTableColumnHeader column={column} title="Author" />,
+      header: ({ column }: any) => (
+        <DataTableColumnHeader column={column} title="Author" />
+      ),
       accessorFn: (row: ApiHistoryItem) => row.user?.login ?? 'System',
     },
     {
@@ -105,7 +133,9 @@ function RouteComponent() {
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>Audit Options</DropdownMenuLabel>
@@ -135,7 +165,9 @@ function RouteComponent() {
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <History className="h-6 w-6 text-primary" /> Infrastructure Audit Logs
         </h1>
-        <p className="text-muted-foreground text-sm">Review and revert modifications across the platform.</p>
+        <p className="text-muted-foreground text-sm">
+          Review and revert modifications across the platform.
+        </p>
       </header>
 
       <DataTable columns={columns} data={history} />
@@ -144,20 +176,25 @@ function RouteComponent() {
       <Dialog open={!!diffEntry} onOpenChange={() => setDiffEntry(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Comparing changes for {diffEntry?.entity_name}</DialogTitle>
+            <DialogTitle>
+              Comparing changes for {diffEntry?.entity_name}
+            </DialogTitle>
             <DialogDescription>
-              Reviewing <span className="font-mono text-primary px-1 bg-primary/10 rounded">{diffEntry?.action}</span> 
+              Reviewing{' '}
+              <span className="font-mono text-primary px-1 bg-primary/10 rounded">
+                {diffEntry?.action}
+              </span>
               on {diffEntry?.entity_type} (ID: {diffEntry?.entity_id})
             </DialogDescription>
           </DialogHeader>
-          
 
           <div className="flex-1 overflow-y-auto min-h-0 my-4">
             <div className="grid grid-cols-2 gap-px bg-border border rounded-lg overflow-hidden">
               {/* Left Column: Previous State */}
               <div className="bg-background p-4 flex flex-col">
                 <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-0 bg-background pb-2">
-                  <div className="h-2 w-2 rounded-full bg-red-500" /> Previous State
+                  <div className="h-2 w-2 rounded-full bg-red-500" /> Previous
+                  State
                 </div>
                 <pre className="text-[11px] font-mono leading-relaxed text-red-600 dark:text-red-400 whitespace-pre-wrap break-all">
                   {JSON.stringify(diffEntry?.before_state, null, 2)}
@@ -167,7 +204,8 @@ function RouteComponent() {
               {/* Right Column: New State */}
               <div className="bg-background p-4 flex flex-col border-l">
                 <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground sticky top-0 bg-background pb-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500" /> New State
+                  <div className="h-2 w-2 rounded-full bg-green-500" /> New
+                  State
                 </div>
                 <pre className="text-[11px] font-mono leading-relaxed text-green-600 dark:text-green-400 whitespace-pre-wrap break-all">
                   {JSON.stringify(diffEntry?.after_state, null, 2)}
@@ -178,9 +216,11 @@ function RouteComponent() {
             {/* Meta Information Section */}
             {diffEntry?.extra_data && (
               <div className="mt-4 border rounded-lg p-4 bg-muted/30">
-                <h4 className="text-xs font-bold uppercase mb-2">Meta Information</h4>
+                <h4 className="text-xs font-bold uppercase mb-2">
+                  Meta Information
+                </h4>
                 <pre className="text-[11px] font-mono text-muted-foreground whitespace-pre-wrap">
-                  {JSON.stringify(diffEntry?.extra_data, null, 2)}
+                  {JSON.stringify(diffEntry.extra_data, null, 2)}
                 </pre>
               </div>
             )}
@@ -190,7 +230,7 @@ function RouteComponent() {
             <DialogClose asChild>
               <Button variant="outline">Close Audit</Button>
             </DialogClose>
-            <Button 
+            <Button
               variant="destructive"
               disabled={!diffEntry?.can_rollback || rollbackMutation.isPending}
               onClick={() => {
