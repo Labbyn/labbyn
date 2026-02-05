@@ -5,14 +5,8 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
+import type { AuthState } from './auth'
 import { Toaster } from '@/components/ui/sonner'
-
-interface AuthState {
-  isAuthenticated: boolean
-  user: { id: string; username: string; email: string } | null
-  login: (username: string, password: string) => Promise<void>
-  logout: () => void
-}
 
 interface MyRouterContext {
   queryClient: QueryClient

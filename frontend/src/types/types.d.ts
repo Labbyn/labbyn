@@ -8,11 +8,18 @@ export interface Document {
 }
 
 export type User = {
-  id: string
+  id: number
+  email: string
   name: string
   surname: string
-  team: string
-  role: string
+  login: string
+  user_type: string
+  force_password_change: boolean
+  is_active?: boolean
+  is_superuser?: boolean
+  is_verified?: boolean
+  team_id?: number | null
+  version_id?: number
 }
 
 export type Machine = {
