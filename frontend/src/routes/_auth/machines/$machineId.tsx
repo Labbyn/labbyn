@@ -11,11 +11,8 @@ import {
   Cctv,
   Check,
   Cpu,
-  DatabaseBackup,
   Edit2,
-  GitFork,
-  IdCard,
-  LayoutGrid,
+  FileText,
   Lock,
   LockOpen,
   MapPin,
@@ -193,48 +190,21 @@ function MachineDetailsPage() {
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Location ID
                 </span>
-                {isEditing ? (
-                  <Input
-                    name="localization_id"
-                    value={formData.localization_id ?? ''}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                ) : (
-                  <span className="font-medium">{machine.localization_id}</span>
-                )}
+                <span className="font-medium">{machine.localization_id}</span>
               </div>
               <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Rack / Layout ID
                 </span>
-                {isEditing ? (
-                  <Input
-                    name="layout_id"
-                    value={formData.layout_id ?? ''}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                ) : (
-                  <span className="font-medium">{machine.layout_id}</span>
-                )}
+                <span className="font-medium">{machine.layout_id}</span>
               </div>
               <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
                 </span>
-                {isEditing ? (
-                  <Input
-                    name="team_id"
-                    value={formData.team_id ?? ''}
-                    onChange={handleInputChange}
-                    className="h-8"
-                  />
-                ) : (
-                  <span className="font-medium">{machine.team_id}</span>
-                )}
+                <span className="font-medium">{machine.team_id}</span>
               </div>
             </CardContent>
           </Card>
@@ -284,15 +254,12 @@ function MachineDetailsPage() {
               <Separator />
               <CardContent className="grid gap-6 sm:grid-cols-3">
                 {[
-                  { label: 'ID', name: 'id', icon: IdCard },
                   { label: 'PDU Port', name: 'pdu_port', icon: Cable },
                   {
-                    label: 'Metadata ID',
-                    name: 'metadata_id',
-                    icon: DatabaseBackup,
+                    label: 'Serial Nubmer',
+                    name: 'serial_number',
+                    icon: FileText,
                   },
-                  { label: 'Layout ID', name: 'layout_id', icon: LayoutGrid },
-                  { label: 'Version ID', name: 'version_id', icon: GitFork },
                   { label: 'Added On', name: 'added_on', icon: AlarmClock },
                   { label: 'Monitoring', name: 'monitoring', icon: Cctv },
                   {
@@ -307,6 +274,11 @@ function MachineDetailsPage() {
                   },
                 ].map((field) => {
                   const isDateField = field.name === 'added_on'
+                  const isAgentField = [
+                    'monitoring',
+                    'ansible_access',
+                    'ansible_root_access',
+                  ].includes(field.name)
                   const rawValue = (machine as any)[field.name]
 
                   const displayValue =
@@ -320,7 +292,7 @@ function MachineDetailsPage() {
                       <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <field.icon className="h-5 w-5" /> {field.label}
                       </span>
-                      {isEditing ? (
+                      {isEditing && !isAgentField ? (
                         <Input
                           name={field.name}
                           value={(formData as any)[field.name]}
@@ -328,7 +300,13 @@ function MachineDetailsPage() {
                           className="h-8"
                         />
                       ) : (
-                        <span className="font-medium">{displayValue}</span>
+                        <span className="font-medium">
+                          {isAgentField
+                            ? rawValue
+                              ? 'Active'
+                              : 'Not Active'
+                            : displayValue}
+                        </span>
                       )}
                     </div>
                   )
