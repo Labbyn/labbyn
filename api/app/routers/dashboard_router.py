@@ -15,4 +15,4 @@ router = APIRouter()
     tags=["Dashboard"],
 )
 def get_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
-    return build_dashboard(db)
+    return build_dashboard(db, ctx)
