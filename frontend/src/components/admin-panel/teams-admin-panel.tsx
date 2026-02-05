@@ -16,17 +16,15 @@ import {
 } from '../ui/dropdown-menu'
 import { DataTableColumnHeader } from '../data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { fetchTeamData } from '@/integrations/teams/teams.adapter'
-import { teamQueryOptions } from '@/integrations/teams/teams.query'
-
-type TeamItem = ReturnType<typeof fetchTeamData>[number]
+import type { ApiTeamItem } from '@/integrations/teams/teams.types'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 
 const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
-export const columns: Array<ColumnDef<TeamItem>> = [
+export const columns: Array<ColumnDef<ApiTeamItem>> = [
   ...(
-    ['id', 'name', 'team_admin_id', 'version_id'] as Array<keyof TeamItem>
+    ['id', 'name', 'team_admin_id', 'version_id'] as Array<keyof ApiTeamItem>
   ).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
@@ -73,7 +71,7 @@ export const columns: Array<ColumnDef<TeamItem>> = [
 ]
 
 export default function TeamsAdminPanel() {
-  const { data: teams = [], isLoading } = useQuery(teamQueryOptions)
+  const { data: teams = [], isLoading } = useQuery(teamsQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const newTeamTemplate = {

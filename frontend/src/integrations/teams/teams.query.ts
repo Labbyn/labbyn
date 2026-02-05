@@ -1,16 +1,15 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchTeamData } from './teams.adapter'
 import type { ApiTeamResponse } from './teams.types'
+import api from '@/lib/api'
 
-const TEAM_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/teams/`
+const PATHS = {
+  BASE: '/db/teams',
+}
 
-export const teamQueryOptions = queryOptions({
-  queryKey: ['team'],
+export const teamsQueryOptions = queryOptions({
+  queryKey: ['teams'],
   queryFn: async () => {
-    const res = await fetch(TEAM_ENDPOINT)
-    if (!res.ok) throw new Error('Failed to fetch teams')
-
-    const data: ApiTeamResponse = await res.json()
-    return fetchTeamData(data)
+    const { data } = await api.get<ApiTeamResponse>(PATHS.BASE)
+    return data
   },
 })

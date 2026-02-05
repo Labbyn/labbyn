@@ -1,16 +1,15 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchUserData } from './user.adapter'
 import type { ApiUserResponse } from './user.types'
+import api from '@/lib/api'
 
-const USER_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/users/`
+const PATHS = {
+  BASE: '/db/users',
+}
 
-export const userQueryOptions = queryOptions({
-  queryKey: ['user'],
+export const usersQueryOptions = queryOptions({
+  queryKey: ['users'],
   queryFn: async () => {
-    const res = await fetch(USER_ENDPOINT)
-    if (!res.ok) throw new Error('Failed to fetch users')
-
-    const data: ApiUserResponse = await res.json()
-    return fetchUserData(data)
+    const { data } = await api.get<ApiUserResponse>(PATHS.BASE)
+    return data
   },
 })

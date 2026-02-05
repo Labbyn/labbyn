@@ -192,14 +192,14 @@ function RouteComponent() {
                       checked={enabled}
                       onCheckedChange={(checked) => {
                         navigate({
-                          search: (prev) => {
+                          search: (prev: { views: any }) => {
                             const currentViews = prev.views
                             return {
                               ...prev,
                               views: checked
                                 ? [...currentViews, section.name]
                                 : currentViews.filter(
-                                    (v) => v !== section.name,
+                                    (v: string) => v !== section.name,
                                   ),
                             }
                           },

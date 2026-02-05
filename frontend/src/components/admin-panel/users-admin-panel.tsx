@@ -18,7 +18,7 @@ import {
 import { DataTableColumnHeader } from '../data-table/column-header'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
-import { userQueryOptions } from '@/integrations/user/user.query'
+import { usersQueryOptions } from '@/integrations/user/user.query'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
 
@@ -123,7 +123,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
 ]
 
 export default function UserAdminPanel() {
-  const { data: users = [], isLoading } = useQuery(userQueryOptions)
+  const { data: users = [], isLoading } = useQuery(usersQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const newUserTemplate = {
