@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-COMPOSE_FILE="../docker-compose.yaml"
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+COMPOSE_FILE="$REPO_ROOT/docker-compose.yaml"
 COMPOSE_FILE_DEV=""
 
 SERVICE=""
@@ -12,7 +14,7 @@ shift
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dev)
-            COMPOSE_FILE_DEV="../docker-compose.dev.yaml"
+            COMPOSE_FILE_DEV="$REPO_ROOT/docker-compose.dev.yaml"
             echo "Running in development mode with $COMPOSE_FILE_DEV"
             shift
             ;;
@@ -40,7 +42,7 @@ deploy_app() {
         echo "Specific service deployed!"
         run_compose ps "$SERVICE"
     else
-        echo "Deploying Docker Compose app..."
+        echo "Deploying app..."
         run_compose up -d
         echo "App deployed!"
         run_compose ps
@@ -58,6 +60,18 @@ update_app() {
         run_compose up -d --build
         echo "App updated!"
         run_compose ps
+    fi
+}
+
+start_app() {
+    if [[ -n "$SERVICE" ]]; then
+        echo "Starting specific service: $SERVICE"
+        run_compose start "$SERVICE"
+        echo "Specific service started!"
+    else
+        echo "Starting app..."
+        run_compose start
+        echo "App started"
     fi
 }
 
@@ -87,6 +101,17 @@ delete_app() {
     echo "App deleted"
 }
 
+rebuild_app() {
+    echo "Deleting app..."
+    run_compose down -v --rmi all
+    echo "App deleted"
+    echo "==================="
+    echo "Deploying app..."
+        run_compose up -d
+        echo "App deployed!"
+        run_compose ps
+}
+
 case "$COMMAND" in
     deploy)
         deploy_app
@@ -94,14 +119,20 @@ case "$COMMAND" in
     update)
         update_app
         ;;
+    start)
+        start_app
+        ;;
     stop)
         stop_app
         ;;
     delete)
         delete_app
         ;;
+    rebuild)
+        rebuild_app
+        ;;
     *)
-        echo "Usage: $0 {deploy|update|stop|delete} [--dev] [service]"
+        echo "Usage: $0 {deploy|update|start|stop|delete|rebuild} [--dev] [service]"
         exit 1
         ;;
 esac
