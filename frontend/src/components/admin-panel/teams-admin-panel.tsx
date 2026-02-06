@@ -19,7 +19,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { fetchTeamData } from '@/integrations/teams/teams.adapter'
 import { teamQueryOptions } from '@/integrations/teams/teams.query'
 
-type TeamItem = ReturnType<typeof fetchTeamData>[number]
+type TeamItem = ReturnType<typeof fetchTeamData>
 
 const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
