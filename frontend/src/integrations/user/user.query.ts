@@ -1,27 +1,34 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiUserItem, ApiUserResponse } from './user.types'
+import type { UserRead } from './user.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/users',
-  SINGLE: (id: string) => `/db/users/${id}`,
+  BASE: '/db/users/',
+  ME: '/users/me',
+  SINGLE: (id: string | number) => `/db/users/${id}`,
 }
 
-// Fetch all users
-export const usersQueryOptions = queryOptions({
-  queryKey: ['users'],
+export const currentUserQueryOptions = queryOptions({
+  queryKey: ['users', 'me'],
   queryFn: async () => {
-    const { data } = await api.get<ApiUserResponse>(PATHS.BASE)
+    const { data } = await api.get<UserRead>(PATHS.ME)
     return data
   },
 })
 
-// Fetch single user by id
-export const singleUserQueryOptions = (userId: string) =>
+export const usersQueryOptions = queryOptions({
+  queryKey: ['users', 'list'],
+  queryFn: async () => {
+    const { data } = await api.get<Array<UserRead>>(PATHS.BASE)
+    return data
+  },
+})
+
+export const singleUserQueryOptions = (userId: string | number) =>
   queryOptions({
-    queryKey: ['users', userId],
+    queryKey: ['users', String(userId)],
     queryFn: async () => {
-      const { data } = await api.get<ApiUserItem>(PATHS.SINGLE(userId))
+      const { data } = await api.get<UserRead>(PATHS.SINGLE(userId))
       return data
     },
   })
