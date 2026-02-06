@@ -80,7 +80,7 @@ function HistoryDetailsPage() {
               ].map((field) => {
                 const rawValue = (history as any)[field.name]
                 const isDateField = field.name === 'timestamp'
-                const canRollback = field.name === "can_rollback"
+                const canRollback = field.name === 'can_rollback'
                 const displayValue =
                   isDateField && rawValue
                     ? new Date(rawValue).toLocaleString('en-CA', {
@@ -93,11 +93,9 @@ function HistoryDetailsPage() {
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                       <field.icon className="h-5 w-5" /> {field.label}
                     </span>
-                    <span className="font-medium">{canRollback
-                            ? rawValue
-                              ? 'Yes'
-                              : 'No'
-                            : displayValue}</span>
+                    <span className="font-medium">
+                      {canRollback ? (rawValue ? 'Yes' : 'No') : displayValue}
+                    </span>
                   </div>
                 )
               })}
@@ -117,7 +115,7 @@ function HistoryDetailsPage() {
             <CardContent className="pt-6">
               <div className="flex flex-col gap-2">
                 <pre className="text-sm font-mono leading-relaxed text-red-600 dark:text-red-400 whitespace-pre-wrap break-all">
-                      {JSON.stringify(history.before_state, null, 2)}
+                  {JSON.stringify(history.before_state, null, 2)}
                 </pre>
               </div>
             </CardContent>
