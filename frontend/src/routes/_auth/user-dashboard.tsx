@@ -53,7 +53,7 @@ const IconMap = {
   Inventory: Archive,
 }
 
-export const Route = createFileRoute('/_auth/user_dashboard')({
+export const Route = createFileRoute('/_auth/user-dashboard')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>): DashboardSearch => {
     if (Array.isArray(search.views)) {
