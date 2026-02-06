@@ -9,7 +9,7 @@ const PATHS = {
 
 // Fetch all labs
 export const labsQueryOptions = queryOptions({
-  queryKey: ['labs'],
+  queryKey: ['labs', 'list'],
   queryFn: async () => {
     const { data } = await api.get<ApiLabsResponse>(PATHS.BASE)
     return data

@@ -35,7 +35,7 @@ def build_dashboard(db: Session, ctx: RequestContext):
         {
             "type": "Room",
             "id": room.name,
-            "location": f"/rooms/{room.id}",
+            "location": f"/labs/{room.id}",
             "tags": (
                 [f"Room type: {room.room_type}"] if room.room_type is not None else []
             ),
@@ -64,7 +64,7 @@ def build_dashboard(db: Session, ctx: RequestContext):
         {
             "type": "Team",
             "id": team.name,
-            "location": f"/team/{team.id}",
+            "location": f"/teams/{team.id}",
             "tags": [f"Team ID: {team.id}"] if team.id is not None else [],
         }
         for team in teams
@@ -74,7 +74,7 @@ def build_dashboard(db: Session, ctx: RequestContext):
         {
             "type": "User",
             "id": user.name,
-            "location": f"/user/{user.id}",
+            "location": f"/users/{user.id}",
             "tags": (
                 [f"Team ID: {user.team_id}", f"User type: {user.user_type}"]
                 if user.team_id is not None

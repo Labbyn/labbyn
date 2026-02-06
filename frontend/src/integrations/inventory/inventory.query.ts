@@ -9,7 +9,7 @@ const PATHS = {
 
 // Fetch full inventory list
 export const inventoryQueryOptions = queryOptions({
-  queryKey: ['inventory'],
+  queryKey: ['inventory', 'list'],
   queryFn: async () => {
     const { data } = await api.get<ApiInventoryResponse>(PATHS.BASE)
     return data

@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { labsQueryOptions } from '@/integrations/labs/labs.query'
 
-export const Route = createFileRoute('/_auth/labs')({
+export const Route = createFileRoute('/_auth/labs/')({
   component: RouteComponent,
 })
 
