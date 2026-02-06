@@ -8,12 +8,12 @@ import {
   X,
   Zap,
 } from 'lucide-react'
-import { Button } from './ui/button'
-import { Card, CardContent } from './ui/card'
-import { Badge } from './ui/badge'
-import { ScrollArea } from './ui/scroll-area'
-import { Separator } from './ui/separator'
-import { Progress } from './ui/progress'
+import { Button } from '../ui/button'
+import { Card, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
+import { ScrollArea } from '../ui/scroll-area'
+import { Separator } from '../ui/separator'
+import { Progress } from '../ui/progress'
 import type { Equipment } from '@/types/types'
 
 interface RackInfoPanelProps {

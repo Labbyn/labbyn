@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
-import { Route as AuthIndexRouteImport } from './routes/_auth/index'
 import { Route as AuthUser_dashboardRouteImport } from './routes/_auth/user_dashboard'
 import { Route as AuthSettingsRouteImport } from './routes/_auth/settings'
 import { Route as AuthImportExportRouteImport } from './routes/_auth/import-export'
@@ -19,6 +18,7 @@ import { Route as AuthHistoryRouteImport } from './routes/_auth/history'
 import { Route as AuthDocsRouteImport } from './routes/_auth/docs'
 import { Route as AuthAddItemsRouteImport } from './routes/_auth/add-items'
 import { Route as AuthUsersIndexRouteImport } from './routes/_auth/users/index'
+import { Route as AuthMapIndexRouteImport } from './routes/_auth/map/index'
 import { Route as AuthLabsIndexRouteImport } from './routes/_auth/labs/index'
 import { Route as AuthInventoryIndexRouteImport } from './routes/_auth/inventory/index'
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
@@ -42,11 +42,6 @@ const LoginRoute = LoginRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthIndexRoute = AuthIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthRoute,
 } as any)
 const AuthUser_dashboardRoute = AuthUser_dashboardRouteImport.update({
   id: '/user_dashboard',
@@ -81,6 +76,11 @@ const AuthAddItemsRoute = AuthAddItemsRouteImport.update({
 const AuthUsersIndexRoute = AuthUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthMapIndexRoute = AuthMapIndexRouteImport.update({
+  id: '/map/',
+  path: '/map/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLabsIndexRoute = AuthLabsIndexRouteImport.update({
@@ -157,7 +157,7 @@ const AuthInventoryDeviceDeviceidRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthIndexRoute
+  '/': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/add-items': typeof AuthAddItemsRoute
   '/docs': typeof AuthDocsRouteWithChildren
@@ -178,17 +178,18 @@ export interface FileRoutesByFullPath {
   '/docs/': typeof AuthDocsIndexRoute
   '/inventory/': typeof AuthInventoryIndexRoute
   '/labs/': typeof AuthLabsIndexRoute
+  '/map/': typeof AuthMapIndexRoute
   '/users/': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
   '/add-items': typeof AuthAddItemsRoute
   '/history': typeof AuthHistoryRoute
   '/import-export': typeof AuthImportExportRoute
   '/settings': typeof AuthSettingsRoute
   '/user_dashboard': typeof AuthUser_dashboardRoute
-  '/': typeof AuthIndexRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
   '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
@@ -202,6 +203,7 @@ export interface FileRoutesByTo {
   '/docs': typeof AuthDocsIndexRoute
   '/inventory': typeof AuthInventoryIndexRoute
   '/labs': typeof AuthLabsIndexRoute
+  '/map': typeof AuthMapIndexRoute
   '/users': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -215,7 +217,6 @@ export interface FileRoutesById {
   '/_auth/import-export': typeof AuthImportExportRoute
   '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/user_dashboard': typeof AuthUser_dashboardRoute
-  '/_auth/': typeof AuthIndexRoute
   '/_auth/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
   '/_auth/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/_auth/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
@@ -229,6 +230,7 @@ export interface FileRoutesById {
   '/_auth/docs/': typeof AuthDocsIndexRoute
   '/_auth/inventory/': typeof AuthInventoryIndexRoute
   '/_auth/labs/': typeof AuthLabsIndexRoute
+  '/_auth/map/': typeof AuthMapIndexRoute
   '/_auth/users/': typeof AuthUsersIndexRoute
   '/_auth/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -256,17 +258,18 @@ export interface FileRouteTypes {
     | '/docs/'
     | '/inventory/'
     | '/labs/'
+    | '/map/'
     | '/users/'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/login'
     | '/add-items'
     | '/history'
     | '/import-export'
     | '/settings'
     | '/user_dashboard'
-    | '/'
     | '/admin-panel/inventory'
     | '/admin-panel/logging'
     | '/admin-panel/machines'
@@ -280,6 +283,7 @@ export interface FileRouteTypes {
     | '/docs'
     | '/inventory'
     | '/labs'
+    | '/map'
     | '/users'
     | '/inventory/device/$deviceid'
   id:
@@ -292,7 +296,6 @@ export interface FileRouteTypes {
     | '/_auth/import-export'
     | '/_auth/settings'
     | '/_auth/user_dashboard'
-    | '/_auth/'
     | '/_auth/admin-panel/inventory'
     | '/_auth/admin-panel/logging'
     | '/_auth/admin-panel/machines'
@@ -306,6 +309,7 @@ export interface FileRouteTypes {
     | '/_auth/docs/'
     | '/_auth/inventory/'
     | '/_auth/labs/'
+    | '/_auth/map/'
     | '/_auth/users/'
     | '/_auth/inventory/device/$deviceid'
   fileRoutesById: FileRoutesById
@@ -330,13 +334,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_auth/': {
-      id: '/_auth/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthIndexRouteImport
-      parentRoute: typeof AuthRoute
     }
     '/_auth/user_dashboard': {
       id: '/_auth/user_dashboard'
@@ -385,6 +382,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users/'
       preLoaderRoute: typeof AuthUsersIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/map/': {
+      id: '/_auth/map/'
+      path: '/map'
+      fullPath: '/map/'
+      preLoaderRoute: typeof AuthMapIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/labs/': {
@@ -509,7 +513,6 @@ interface AuthRouteChildren {
   AuthImportExportRoute: typeof AuthImportExportRoute
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthUser_dashboardRoute: typeof AuthUser_dashboardRoute
-  AuthIndexRoute: typeof AuthIndexRoute
   AuthAdminPanelInventoryRoute: typeof AuthAdminPanelInventoryRoute
   AuthAdminPanelLoggingRoute: typeof AuthAdminPanelLoggingRoute
   AuthAdminPanelMachinesRoute: typeof AuthAdminPanelMachinesRoute
@@ -521,6 +524,7 @@ interface AuthRouteChildren {
   AuthUsersUserIdRoute: typeof AuthUsersUserIdRoute
   AuthInventoryIndexRoute: typeof AuthInventoryIndexRoute
   AuthLabsIndexRoute: typeof AuthLabsIndexRoute
+  AuthMapIndexRoute: typeof AuthMapIndexRoute
   AuthUsersIndexRoute: typeof AuthUsersIndexRoute
   AuthInventoryDeviceDeviceidRoute: typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -532,7 +536,6 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthImportExportRoute: AuthImportExportRoute,
   AuthSettingsRoute: AuthSettingsRoute,
   AuthUser_dashboardRoute: AuthUser_dashboardRoute,
-  AuthIndexRoute: AuthIndexRoute,
   AuthAdminPanelInventoryRoute: AuthAdminPanelInventoryRoute,
   AuthAdminPanelLoggingRoute: AuthAdminPanelLoggingRoute,
   AuthAdminPanelMachinesRoute: AuthAdminPanelMachinesRoute,
@@ -544,6 +547,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthUsersUserIdRoute: AuthUsersUserIdRoute,
   AuthInventoryIndexRoute: AuthInventoryIndexRoute,
   AuthLabsIndexRoute: AuthLabsIndexRoute,
+  AuthMapIndexRoute: AuthMapIndexRoute,
   AuthUsersIndexRoute: AuthUsersIndexRoute,
   AuthInventoryDeviceDeviceidRoute: AuthInventoryDeviceDeviceidRoute,
 }
