@@ -1,4 +1,4 @@
-import type { ApiUserResponse } from './user.types'
+import type { ApiUserItem, ApiUserResponse } from './user.types'
 
 export function fetchUserData(apiData: ApiUserResponse) {
   return apiData
