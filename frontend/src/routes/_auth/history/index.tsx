@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/dialog'
 import { historyQueryOptions } from '@/integrations/history/history.query'
 
-export const Route = createFileRoute('/_auth/history')({
+export const Route = createFileRoute('/_auth/history/')({
   component: RouteComponent,
 })
 
