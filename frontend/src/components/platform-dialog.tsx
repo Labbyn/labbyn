@@ -28,6 +28,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { createPlatformMachine } from '@/integrations/add-platforms/add-platform.query'
 
 // --- Schemas ---
 
@@ -53,153 +54,6 @@ function zodValidate(schema: z.ZodType<any>) {
   }
 }
 
-// --- API Logic ---
-
-const API_URL = import.meta.env.VITE_API_URL || 'localhost:3000'
-
-const ENDPOINTS = {
-  addMachineToDB: `http://${API_URL}/db/machines`,
-  addMetadataToDB: `http://${API_URL}/db/metadata`,
-  scan: `http://${API_URL}/ansible/discovery`,
-  deploy: `http://${API_URL}/ansible/setup_agent`,
-  updatePrometheus: `http://${API_URL}/prometheus/target`,
-}
-
-async function authorizedFetch<T>(
-  url: string,
-  method: string,
-  body: unknown,
-): Promise<T> {
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `Request to ${url} failed`)
-  }
-
-  return res.json()
-}
-
-type PlatformFormValues = {
-  hostname: string
-  addToDb: boolean
-  scanPlatform: boolean
-  deployAgent: boolean
-  login?: string
-  password?: string
-  name?: string
-  ip?: string
-  mac?: string
-  location?: number
-  team?: number
-  pdu_port?: number
-  os?: string
-  sn?: string
-  note?: string
-  cpu?: string
-  ram?: string
-  disk?: string
-  layout?: number
-}
-
-async function handlePlatformSubmission(values: PlatformFormValues) {
-  const results = []
-
-  // 1. Add to Database
-  if (values.addToDb) {
-    const metadataPayload = {
-      agent_prometheus: false,
-      ansible_access: false,
-      ansible_root_access: false,
-    }
-
-    const metadataResponse = await authorizedFetch<{ id: number }>(
-      ENDPOINTS.addMetadataToDB,
-      'POST',
-      metadataPayload,
-    )
-    results.push(metadataResponse)
-
-    const machinePayload = {
-      name: values.name || values.hostname,
-      ip_address: values.ip || undefined,
-      mac_address: values.mac || undefined,
-      localization_id: values.location || 1,
-      pdu_port: values.pdu_port,
-      team_id: values.team,
-      os: values.os,
-      serial_number: values.sn,
-      note: values.note,
-      cpu: values.cpu,
-      ram: values.ram,
-      disk: values.disk,
-      layout_id: values.layout,
-      metadata_id: metadataResponse.id,
-    }
-
-    try {
-      results.push(
-        await authorizedFetch(ENDPOINTS.addMachineToDB, 'POST', machinePayload),
-      )
-    } catch (error) {
-      await authorizedFetch(
-        `${ENDPOINTS.addMetadataToDB}/${metadataResponse.id}`,
-        'DELETE',
-        {},
-      ).catch(console.error)
-      throw error
-    }
-  }
-
-  // 2. Deploy Agent
-  if (values.deployAgent) {
-    const deployPayload = {
-      host: values.hostname,
-      extra_vars: {
-        ansible_user: values.login,
-        ansible_password: values.password,
-        ansible_become_password: values.password,
-      },
-    }
-    const prometheusPayload = {
-      instance: `${values.hostname}:9100`,
-      labels: {
-        env: 'virtual',
-        host: values.hostname,
-        role: 'virtual',
-      },
-    }
-
-    results.push(await authorizedFetch(ENDPOINTS.deploy, 'POST', deployPayload))
-    results.push(
-      await authorizedFetch(
-        ENDPOINTS.updatePrometheus,
-        'POST',
-        prometheusPayload,
-      ),
-    )
-  }
-
-  // 3. Scan Platform
-  if (values.scanPlatform) {
-    const scanPayload = {
-      hosts: [values.hostname],
-      extra_vars: {
-        ansible_user: values.login,
-        ansible_password: values.password,
-        ansible_become_password: values.password,
-      },
-    }
-    results.push(await authorizedFetch(ENDPOINTS.scan, 'POST', scanPayload))
-  }
-
-  return results
-}
-
 // --- Component ---
 
 export function AddPlatformDialog() {
@@ -207,7 +61,7 @@ export function AddPlatformDialog() {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: handlePlatformSubmission,
+    mutationFn: createPlatformMachine,
     onSuccess: () => {
       toast.success('Platform added successfully', {
         description: 'All selected operations completed.',
