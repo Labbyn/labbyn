@@ -256,7 +256,7 @@ function MachineDetailsPage() {
                 {[
                   { label: 'PDU Port', name: 'pdu_port', icon: Cable },
                   {
-                    label: 'Serial Nubmer',
+                    label: 'Serial Number',
                     name: 'serial_number',
                     icon: FileText,
                   },
