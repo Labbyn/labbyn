@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import React from 'react'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { useAuth } from '@/routes/auth'
 import { LoginForm } from '@/components/login-form'
 
@@ -22,25 +23,23 @@ function RouteComponent() {
   const auth = useAuth()
   const router = useRouter()
   const navigate = Route.useNavigate()
-
   const search = Route.useSearch()
 
   const onFormSubmit = async (evt: React.FormEvent<HTMLFormElement>) => {
     evt.preventDefault()
     const data = new FormData(evt.currentTarget)
-    const fieldValue = data.get('username')
+    const username = data.get('username')?.toString()
+    const password = data.get('password')?.toString()
 
-    if (!fieldValue) return
+    if (!username || !password) return
 
     try {
-      const username = fieldValue.toString()
-
-      await auth.login(username)
+      await auth.login(username, password)
+      toast.success('Login successful')
       await router.invalidate()
-
-      await navigate({ to: search.redirect || fallback })
+      await navigate({ to: search.redirect || '/' })
     } catch (error) {
-      console.error('Error logging in: ', error)
+      toast.error('Login failed')
     }
   }
 

@@ -3,6 +3,7 @@
 import os
 import json
 import asyncio
+import time
 
 import ansible_runner
 from fastapi import HTTPException
@@ -23,7 +24,7 @@ def parse_platform_report(hostname: str) -> dict:
     if not os.path.exists(report_path):
         raise FileNotFoundError(f"Report not found for {hostname} at {report_path}")
 
-    asyncio.sleep(1)
+    time.sleep(1)
     try:
         with open(report_path, "r", encoding="utf-8") as f:
             data = json.load(f)

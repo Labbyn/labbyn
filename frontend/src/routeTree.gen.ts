@@ -177,7 +177,6 @@ export interface FileRoutesByFullPath {
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs/': typeof AuthDocsIndexRoute
   '/inventory/': typeof AuthInventoryIndexRoute
-  '/labs/': typeof AuthLabsIndexRoute
   '/users/': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -255,7 +254,6 @@ export interface FileRouteTypes {
     | '/users/$userId'
     | '/docs/'
     | '/inventory/'
-    | '/labs/'
     | '/users/'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo

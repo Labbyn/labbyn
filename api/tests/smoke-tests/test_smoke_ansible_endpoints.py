@@ -37,7 +37,9 @@ def helper_write_report(
 
 
 @pytest.mark.database
-def test_discovery_flow(test_client, db_session, mock_ansible_success):
+def test_discovery_flow(
+    test_client, db_session, service_header_sync, mock_ansible_success
+):
     """
     Verifies that the API creates machine records in the database based on mock reports
     and confirms their existence directly via DB session.
@@ -47,7 +49,9 @@ def test_discovery_flow(test_client, db_session, mock_ansible_success):
 
     payload = {"hosts": [test_ip], "extra_vars": {"ansible_user": "test"}}
 
-    response = test_client.post("/ansible/discovery", json=payload)
+    response = test_client.post(
+        "/ansible/discovery", json=payload, headers=service_header_sync
+    )
 
     assert response.status_code == 200
     assert "summary" in response.json()
@@ -61,7 +65,9 @@ def test_discovery_flow(test_client, db_session, mock_ansible_success):
 
 
 @pytest.mark.database
-def test_refresh_flow(test_client, db_session, mock_ansible_success):
+def test_refresh_flow(
+    test_client, db_session, service_header_sync, mock_ansible_success
+):
     """
     Tests the hardware refresh logic by:
     1. Running discovery to create a machine and its metadata automatically.
@@ -74,7 +80,9 @@ def test_refresh_flow(test_client, db_session, mock_ansible_success):
 
     helper_write_report(test_ip, os_name=original_os, cpu_name=cpu_name)
     discovery_payload = {"hosts": [test_ip], "extra_vars": {"ansible_user": "test"}}
-    test_client.post("/ansible/discovery", json=discovery_payload)
+    test_client.post(
+        "/ansible/discovery", json=discovery_payload, headers=service_header_sync
+    )
 
     machine = db_session.query(Machines).filter(Machines.name == test_ip).first()
     assert machine is not None
@@ -88,7 +96,9 @@ def test_refresh_flow(test_client, db_session, mock_ansible_success):
         "extra_vars": {"ansible_user": "test", "ansible_password": "v"},
     }
     response = test_client.post(
-        f"/ansible/machine/{machine_id}/refresh", json=refresh_payload
+        f"/ansible/machine/{machine_id}/refresh",
+        json=refresh_payload,
+        headers=service_header_sync,
     )
 
     assert response.status_code == 200

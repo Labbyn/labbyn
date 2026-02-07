@@ -35,6 +35,14 @@ export function LoginForm({ className, onSubmit, ...props }: LoginFormProps) {
                 type="text"
                 required
               />
+              <FieldLabel htmlFor="password-input">Password</FieldLabel>
+              <Input
+                id="password-input"
+                name="password"
+                placeholder="Enter your password"
+                type="password"
+                required
+              />
               <Field>
                 <Button type="submit">Login</Button>
               </Field>

@@ -1,3 +1,4 @@
+// src/components/app-sidebar.tsx
 import {
   Archive,
   Box,
@@ -17,7 +18,12 @@ import {
   Sun,
   Users,
 } from 'lucide-react'
-import { Link, useLocation } from '@tanstack/react-router'
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useRouter,
+} from '@tanstack/react-router'
 import React from 'react'
 import { CommandMenu } from './command-menu'
 import {
@@ -38,6 +44,7 @@ import {
   CollapsibleTrigger,
 } from './ui/collapsible'
 import { Badge } from './ui/badge'
+import { useAuth } from '@/routes/auth' //
 import {
   Sidebar,
   SidebarContent,
@@ -57,112 +64,70 @@ import {
 } from '@/components/ui/sidebar'
 
 const items = [
-  {
-    title: 'Dashboard',
-    url: '/user_dashboard',
-    icon: PanelsTopLeft,
-  },
-  {
-    title: 'Labs',
-    url: '/labs',
-    icon: Server,
-  },
-  {
-    title: 'Inventory',
-    url: '/inventory',
-    icon: Archive,
-  },
-  {
-    title: 'History',
-    url: '/history',
-    icon: History,
-  },
-  {
-    title: 'Users',
-    url: '/users',
-    icon: Users,
-  },
-  {
-    title: 'Documentation',
-    url: '/docs',
-    icon: FileText,
-  },
-  {
-    title: 'Import & Export',
-    url: '/import-export',
-    icon: FolderInput,
-  },
+  { title: 'Dashboard', url: '/user-dashboard', icon: PanelsTopLeft },
+  { title: 'Labs', url: '/labs', icon: Server },
+  { title: 'Inventory', url: '/inventory', icon: Archive },
+  { title: 'History', url: '/history', icon: History },
+  { title: 'Users', url: '/users', icon: Users },
+  { title: 'Documentation', url: '/docs', icon: FileText },
+  { title: 'Import & Export', url: '/import-export', icon: FolderInput },
 ]
 
 const adminPanelItems = [
-  {
-    title: 'Users',
-    url: '/admin-panel/users',
-    icon: Users,
-  },
-  {
-    title: 'Teams',
-    url: '/admin-panel/teams',
-    icon: CirclePile,
-  },
-  {
-    title: 'Machines',
-    url: '/admin-panel/machines',
-    icon: HardDrive,
-  },
-  {
-    title: 'Inventory',
-    url: '/admin-panel/inventory',
-    icon: Archive,
-  },
-  {
-    title: 'Logging',
-    url: '/admin-panel/logging',
-    icon: ScrollText,
-  },
+  { title: 'Users', url: '/admin-panel/users', icon: Users },
+  { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
+  { title: 'Machines', url: '/admin-panel/machines', icon: HardDrive },
+  { title: 'Inventory', url: '/admin-panel/inventory', icon: Archive },
+  { title: 'Logging', url: '/admin-panel/logging', icon: ScrollText },
 ]
-
-const user = {
-  name: 'Zbigniew Trąba',
-  email: 'ekspert.od.kabelkow@labbyn.com',
-  avatar: 'https://cdn.pfps.gg/pfps/66456-cool-cat.jpeg',
-  role: 'Admin',
-}
 
 function useTheme() {
   const [theme, setTheme] = React.useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('ui-theme') as 'light' | 'dark' | null
       if (stored) return stored
-
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches)
         return 'dark'
-      }
     }
     return 'light'
   })
 
   React.useEffect(() => {
     const root = window.document.documentElement
-
     root.classList.remove('light', 'dark')
     root.classList.add(theme)
-
     localStorage.setItem('ui-theme', theme)
   }, [theme])
 
-  const toggleTheme = () => {
+  const toggleTheme = () =>
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))
-  }
 
   return { theme, toggleTheme }
 }
+
 export function AppSidebar() {
-  const pathname = useLocation({
-    select: (location) => location.pathname,
-  })
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const navigate = useNavigate()
+  const pathname = useLocation({ select: (location) => location.pathname })
   const { theme, toggleTheme } = useTheme()
   const { isMobile } = useSidebar()
+
+  if (!user) return null
+
+  const handleLogout = async () => {
+    await logout()
+    router.invalidate()
+    navigate({ to: '/login' })
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -248,7 +213,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* ADMIN PANELS SUBMENU */}
-        {user.role == 'Admin' && (
+        {user.user_type === 'admin' && (
           <Collapsible defaultOpen className="group/collapsible">
             <SidebarGroup>
               <SidebarGroupLabel asChild>
@@ -282,11 +247,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        {/*
-          <SidebarMenuItem>
-            <SidebarTrigger />
-          </SidebarMenuItem>
-        */}
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -296,14 +256,16 @@ export function AppSidebar() {
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
+                    <AvatarImage src={(user as any).avatar} alt={user.name} />
+                    <AvatarFallback className="rounded-lg">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
                       {user.name}{' '}
-                      {user.role == 'Admin' && (
-                        <Badge variant={'secondary'}>Admin</Badge>
+                      {user.user_type === 'admin' && (
+                        <Badge variant="secondary">Admin</Badge>
                       )}
                     </span>
                     <span className="truncate text-xs">{user.email}</span>
@@ -319,19 +281,20 @@ export function AppSidebar() {
               >
                 <DropdownMenuItem>
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user.avatar} alt={user.name} />
-                    <AvatarFallback className="rounded-lg">ZT</AvatarFallback>
+                    <AvatarFallback className="rounded-lg">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
                       {user.name}{' '}
-                      {user.role == 'Admin' && (
-                        <Badge variant="secondary">Admin</Badge>
-                      )}
+                      {user.user_type === 'admin' && <Badge>Admin</Badge>}
                     </span>
                     <span className="truncate text-xs">{user.email}</span>
                   </div>
                 </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
 
                 <Link to="/settings">
                   <DropdownMenuItem>
@@ -345,12 +308,10 @@ export function AppSidebar() {
                   <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
                 </DropdownMenuItem>
 
-                <Link to="/login">
-                  <DropdownMenuItem>
-                    <LogOut />
-                    <span>Log out</span>
-                  </DropdownMenuItem>
-                </Link>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut />
+                  <span>Log out</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

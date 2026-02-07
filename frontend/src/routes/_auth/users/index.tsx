@@ -1,12 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiUserItem } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { PageIsLoading } from '@/components/page-is-loading'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { userQueryOptions } from '@/integrations/user/user.query'
+import { usersQueryOptions } from '@/integrations/user/user.query'
 
 export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
@@ -45,10 +44,8 @@ export const columns: Array<ColumnDef<ApiUserItem>> = [
 ]
 
 function RouteComponent() {
-  const { data: users = [], isLoading } = useQuery(userQueryOptions)
+  const { data: users } = useSuspenseQuery(usersQueryOptions)
   const navigate = Route.useNavigate()
-
-  if (isLoading) return <PageIsLoading />
 
   return (
     <div className="h-screen w-full z-1 overflow-hidden">

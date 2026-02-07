@@ -1,8 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-import { toast } from 'sonner'
 
 import type { ApiHistoryItem } from '@/integrations/history/history.types'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -29,8 +28,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { historyQueryOptions } from '@/integrations/history/history.query'
+import { useRollbackMutation } from '@/integrations/history/history.mutation'
 
 export const Route = createFileRoute('/_auth/history')({
+  loader: ({ context: { queryClient } }) =>
+    queryClient.ensureQueryData(historyQueryOptions()),
   component: RouteComponent,
 })
 
@@ -59,28 +61,10 @@ const ActionBadge = ({
 }
 
 function RouteComponent() {
-  const queryClient = useQueryClient()
   const { data: history = [], isLoading } = useQuery(historyQueryOptions())
   const [diffEntry, setDiffEntry] = useState<ApiHistoryItem | null>(null)
 
-  // @todo move mutation to integration and clean up
-  const rollbackMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await fetch(
-        `http://${import.meta.env.VITE_API_URL}/db/history/${id}/rollback`,
-        {
-          method: 'POST',
-        },
-      )
-      if (!res.ok) throw new Error('Rollback failed')
-      return res.json()
-    },
-    onSuccess: () => {
-      toast.success('System state rolled back successfully')
-      queryClient.invalidateQueries({ queryKey: ['history'] })
-    },
-    onError: (err: any) => toast.error(`Rollback Error: ${err.message}`),
-  })
+  const rollbackMutation = useRollbackMutation()
 
   const columns: Array<ColumnDef<ApiHistoryItem>> = [
     {
@@ -145,7 +129,7 @@ function RouteComponent() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={!entry.can_rollback || rollbackMutation.isPending}
-                onClick={() => rollbackMutation.mutate(entry.id)}
+                onClick={() => rollbackMutation.mutate(entry.id)} //
                 className="text-destructive focus:text-destructive"
               >
                 <RotateCcw className="mr-2 h-4 w-4" /> Rollback Change
@@ -234,8 +218,10 @@ function RouteComponent() {
               variant="destructive"
               disabled={!diffEntry?.can_rollback || rollbackMutation.isPending}
               onClick={() => {
-                rollbackMutation.mutate(diffEntry!.id)
-                setDiffEntry(null)
+                if (diffEntry) {
+                  rollbackMutation.mutate(diffEntry.id)
+                  setDiffEntry(null)
+                }
               }}
             >
               <RotateCcw className="mr-2 h-4 w-4" /> Rollback

@@ -5,6 +5,8 @@ import React, {
   useEffect,
   useState,
 } from 'react'
+import type { User } from '@/types/types'
+import api from '@/lib/api'
 import {
   Empty,
   EmptyDescription,
@@ -14,17 +16,11 @@ import {
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
 
-interface User {
-  id: string
-  username: string
-  email: string
-}
-
-interface AuthState {
+export interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  login: (username: string) => Promise<void>
-  logout: () => void
+  login: (username: string, password: string) => Promise<void>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -45,31 +41,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = useCallback(async (username: string) => {
-    // Simulate API call delay for testing
-    await new Promise((resolve) => setTimeout(resolve, 500))
+  const login = useCallback(async (username: string, password: string) => {
+    const params = new URLSearchParams()
+    params.append('grant_type', '')
+    params.append('username', username)
+    params.append('password', password)
+    params.append('scope', '')
+    params.append('client_id', '')
+    params.append('client_secret', '')
 
-    if (username === 'admin') {
-      const newUser = {
-        id: '1',
-        username: 'Zbigniew Trąba',
-        email: 'ekspert.od.kabelkow@labbyn.com',
-      }
-      setUser(newUser)
+    const loginRes = await api.post('/auth/login', params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    })
+
+    const { access_token } = loginRes.data
+    localStorage.setItem('access_token', access_token)
+
+    // 2. Fetch the user profile data using the received token
+    try {
+      const userRes = await api.get<User>('/users/me')
+      const userData = userRes.data
+
+      setUser(userData)
       setIsAuthenticated(true)
-
       localStorage.setItem('auth', 'true')
-      localStorage.setItem('user', JSON.stringify(newUser))
-    } else {
-      throw new Error('Invalid credentials')
+      localStorage.setItem('user', JSON.stringify(userData))
+    } catch (error) {
+      localStorage.removeItem('access_token')
+      throw error
     }
   }, [])
 
-  const logout = useCallback(() => {
-    setUser(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem('auth')
-    localStorage.removeItem('user')
+  const logout = useCallback(async () => {
+    try {
+      // Call the backend logout endpoint
+      await api.post('/auth/logout')
+    } catch (error) {
+      console.error('Failed to logout on backend:', error)
+    } finally {
+      // Always clear local state and storage regardless of API success
+      setUser(null)
+      setIsAuthenticated(false)
+      localStorage.removeItem('auth')
+      localStorage.removeItem('user')
+      localStorage.removeItem('access_token')
+    }
   }, [])
 
   if (isLoading) {

@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/card'
 import { TextField } from '@/components/text-field'
 import { Separator } from '@/components/ui/separator'
+import { useUpdateMachineMutation } from '@/integrations/machines/machines.mutation'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
   component: MachineDetailsPage,
@@ -44,6 +45,7 @@ function MachineDetailsPage() {
   const router = useRouter()
   const { machineId } = Route.useParams()
   const { data: machine } = useSuspenseQuery(machineSpecQueryOptions(machineId))
+  const updateMachine = useUpdateMachineMutation(machineId)
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...machine })
@@ -56,7 +58,9 @@ function MachineDetailsPage() {
   }
 
   const handleSave = () => {
-    console.log('Saving machine data:', formData)
+    updateMachine.mutate(formData, {
+      onSuccess: () => setIsEditing(false),
+    })
     setIsEditing(false)
   }
 

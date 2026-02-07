@@ -22,7 +22,7 @@ def test_get_prometheus_instances(test_client):
 
 
 @pytest.mark.unit
-def test_get_prometheus_hosts(test_client):
+def test_get_prometheus_hosts(test_client, service_header_sync):
     """Test fetching unique hosts from Prometheus instances."""
     with mock.patch(
         "app.routers.prometheus_router.fetch_prometheus_metrics"
@@ -33,7 +33,7 @@ def test_get_prometheus_hosts(test_client):
                 {"instance": "host2:9090"},
             ]
         }
-        response = test_client.get("/prometheus/hosts")
+        response = test_client.get("/prometheus/hosts", headers=service_header_sync)
         assert response.status_code == 200
         data = response.json()
         assert "hosts" in data

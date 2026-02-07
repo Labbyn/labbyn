@@ -1,17 +1,21 @@
-export type ApiLabsItem = {
+export interface LabsItem {
+  device_id: string
+  hostname: string | null
+  ip_address: string | null
+  mac_address: string | null
+}
+
+export interface LabsSection {
+  id: string
+  tags: Array<string>
+  machines: Array<LabsItem>
+}
+
+export interface ApiLabsItem {
   id: number
   name: string
   location: string
-  racks: Array<{
-    id: string
-    tags: Array<{}>
-    machines: Array<{
-      device_id: string
-      hostname: string
-      ip_address: string
-      mac_address: string
-    }>
-  }>
+  racks: Array<LabsSection>
 }
 
 export type ApiLabsResponse = Array<ApiLabsItem>

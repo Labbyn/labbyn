@@ -88,9 +88,9 @@ def receive_before_flush(
     :param instances: Optional argument
     :return: None
     """
-    objects_to_create = session.info.setdefault("objects_to_create_history", [])
-    user_id = session.info.get("user_id", None)
+    user_id = session.info.get("user_id")
 
+    objects_to_create = session.info.setdefault("objects_to_create_history", [])
     for obj in session.new:
         if isinstance(obj, History):
             continue
@@ -154,11 +154,11 @@ def receive_after_flush(session: Session, flush_context: UOWTransaction):
     :param flush_context: Unit of work transaction context
     :return: None
     """
+    user_id = session.info.get("user_id")
+
     objects = session.info.pop("objects_to_create_history", [])
     if not objects:
         return
-
-    user_id = session.info.get("user_id", None)
 
     for obj in objects:
         if obj.id is None:

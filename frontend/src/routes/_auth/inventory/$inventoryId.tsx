@@ -26,6 +26,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { useUpdateInventoryMutation } from '@/integrations/inventory/inventory.mutation'
 
 export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
   component: InventoryDetailsPage,
@@ -37,6 +38,7 @@ function InventoryDetailsPage() {
   const { data: inventory } = useSuspenseQuery(
     inventoryItemQueryOptions(inventoryId),
   )
+  const updateMutation = useUpdateInventoryMutation(inventoryId)
 
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...inventory })
@@ -53,8 +55,10 @@ function InventoryDetailsPage() {
   }
 
   const handleSave = () => {
-    console.log('Saving inventory data:', formData)
-    setIsEditing(false)
+    updateMutation.mutate(
+      { id: inventoryId, data: formData },
+      { onSuccess: () => setIsEditing(false) },
+    )
   }
 
   return (

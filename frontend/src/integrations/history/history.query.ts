@@ -1,17 +1,19 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchHistoryData } from './history.adapter'
 import type { ApiHistoryResponse } from './history.types'
+import api from '@/lib/api'
 
-const HISTORY_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/history/`
+const PATHS = {
+  BASE: '/db/history',
+}
 
+// Fetch history with limit
 export const historyQueryOptions = (limit: number = 200) =>
   queryOptions({
-    queryKey: ['history', limit],
+    queryKey: ['history', { limit }],
     queryFn: async () => {
-      const res = await fetch(`${HISTORY_ENDPOINT}?limit=${limit}`)
-      if (!res.ok) throw new Error('Failed to fetch history')
-
-      const data: ApiHistoryResponse = await res.json()
-      return fetchHistoryData(data)
+      const { data } = await api.get<ApiHistoryResponse>(PATHS.BASE, {
+        params: { limit },
+      })
+      return data
     },
   })
