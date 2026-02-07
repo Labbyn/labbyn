@@ -4,7 +4,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import desc
 
 from app.database import get_db
 from app.db.models import (
@@ -175,6 +174,7 @@ def get_history_logs(
                 "entity_id": log.entity_id,
                 "entity_name": readable_name,
                 "user": log.user,
+                "user_id": log.user_id,
                 "before_state": log.before_state,
                 "after_state": log.after_state,
                 "can_rollback": log.can_rollback,
