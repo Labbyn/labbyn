@@ -68,7 +68,9 @@ def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     tags=["Inventory"],
 )
 def bulk_create_items(
-    items_data: List[InventoryCreate], db: Session = Depends(get_db), ctx: RequestContext = Depends(),
+    items_data: List[InventoryCreate],
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Bulk import inventory items
@@ -95,6 +97,7 @@ def bulk_create_items(
         db.refresh(item)
 
     return new_items
+
 
 @router.get(
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
