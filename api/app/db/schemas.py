@@ -383,6 +383,28 @@ class UserCreatedResponse(UserResponse):
         None, description="Generated password if one was created"
     )
 
+class UserInfo(BaseModel):
+    """
+    Basic user information for display purposes
+    """
+    name: str
+    surname: str
+    email: str
+    team_name: Optional[str] = None
+
+class UserInfoExtended(UserInfo):
+    """
+    Extended user information for display purposes,
+    including login and user type
+    """
+    id: int
+    login: str
+    user_type: UserType
+    is_active: bool
+    is_verified: bool
+    force_password_change: bool
+
+
 
 # ==========================
 #      FASTAPI-USERS
