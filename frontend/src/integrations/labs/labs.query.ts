@@ -1,28 +1,27 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchLabData, fetchLabsData } from './labs.adapter'
 import type { ApiLabsItem, ApiLabsResponse } from './labs.types'
+import api from '@/lib/api'
 
-const LABS_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/labs`
+const PATHS = {
+  BASE: '/labs',
+  SINGLE: (id: string) => `/labs/${id}`,
+}
 
+// Fetch all labs
 export const labsQueryOptions = queryOptions({
   queryKey: ['labs', 'list'],
   queryFn: async () => {
-    const res = await fetch(LABS_ENDPOINT)
-    if (!res.ok) throw new Error('Failed to fetch labs')
-
-    const data: ApiLabsResponse = await res.json()
-    return fetchLabsData(data)
+    const { data } = await api.get<ApiLabsResponse>(PATHS.BASE)
+    return data
   },
 })
 
+// Fetch single lab by ID
 export const labQueryOptions = (labId: string) =>
   queryOptions({
-    queryKey: ['labs', 'single'],
+    queryKey: ['labs', labId],
     queryFn: async () => {
-      const res = await fetch(`${LABS_ENDPOINT}/${labId}`)
-      if (!res.ok) throw new Error('Failed to fetch labs')
-
-      const data: ApiLabsItem = await res.json()
-      return fetchLabData(data)
+      const { data } = await api.get<ApiLabsItem>(PATHS.SINGLE(labId))
+      return data
     },
   })

@@ -16,17 +16,19 @@ import {
 } from '../ui/dropdown-menu'
 import { DataTableColumnHeader } from '../data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { fetchTeamData } from '@/integrations/teams/teams.adapter'
-import { teamQueryOptions } from '@/integrations/teams/teams.query'
-
-type TeamItem = ReturnType<typeof fetchTeamData>[number]
+import type { ApiTeamItem } from '@/integrations/teams/teams.types'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import {
+  useCreateTeamMutation,
+  useDeleteTeamMutation,
+} from '@/integrations/teams/teams.mutation'
 
 const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
-export const columns: Array<ColumnDef<TeamItem>> = [
+export const columns: Array<ColumnDef<ApiTeamItem>> = [
   ...(
-    ['id', 'name', 'team_admin_id', 'version_id'] as Array<keyof TeamItem>
+    ['id', 'name', 'team_admin_id', 'version_id'] as Array<keyof ApiTeamItem>
   ).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
@@ -45,6 +47,7 @@ export const columns: Array<ColumnDef<TeamItem>> = [
     id: 'actions',
     cell: ({ row }) => {
       const team = row.original
+      const deleteTeam = useDeleteTeamMutation()
 
       return (
         <DropdownMenu>
@@ -58,11 +61,15 @@ export const columns: Array<ColumnDef<TeamItem>> = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
+            {/* @todo implement team editing dialog */}
             <DropdownMenuItem onClick={() => console.log('Edit team', team)}>
               Edit Team
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => deleteTeam.mutate(team.id)}
+            >
               Delete Team
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -73,18 +80,20 @@ export const columns: Array<ColumnDef<TeamItem>> = [
 ]
 
 export default function TeamsAdminPanel() {
-  const { data: teams = [], isLoading } = useQuery(teamQueryOptions)
+  const { data: teams = [], isLoading } = useQuery(teamsQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const createTeam = useCreateTeamMutation()
 
   const newTeamTemplate = {
     name: '',
-    version_id: '',
-    team_admin_id: '',
+    team_admin_id: 1,
   }
 
   const handleCreateTeam = (data: typeof newTeamTemplate) => {
-    console.log('Saving new team:', data)
-    setIsDialogOpen(false)
+    createTeam.mutate(data, {
+      onSuccess: () => setIsDialogOpen(false),
+    })
   }
 
   if (isLoading) return <PageIsLoading />

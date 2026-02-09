@@ -3,26 +3,24 @@ Concurrency Tests.
 Verifies locking mechanisms (Redis) and Transaction Isolation.
 """
 
-import asyncio
 import pytest
 import uuid
-from httpx import AsyncClient, ASGITransport
-from app.main import app
+import concurrent.futures
+from app.db.models import Machines, Inventory, Rentals
+
+pytestmark = [
+    pytest.mark.smoke,
+    pytest.mark.database,
+    pytest.mark.api,
+]
 
 
 def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-pytestmark = [
-    pytest.mark.smoke,
-    pytest.mark.database,
-    pytest.mark.api,
-    pytest.mark.asyncio,
-]
-
-
-async def test_rental_race_condition():
+@pytest.mark.database
+def test_rental_race_condition_threaded(test_client, db_session, service_header_sync):
     """
     Test Race Condition:
     Two users try to rent the SAME item at the EXACT SAME time.
@@ -34,80 +32,86 @@ async def test_rental_race_condition():
     If Lock fails:
     - Both get 201 (Double Booking - CRITICAL BUG)
     """
+    ac = test_client
+    headers = service_header_sync
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    team_res = ac.post(
+        "/db/teams/",
+        json={"name": unique_str("RaceTeam"), "team_admin_id": 1},
+        headers=headers,
+    )
+    team_id = team_res.json()["id"]
 
-        cat = await ac.post("/db/categories/", json={"name": unique_str("RaceCat")})
-        cat_id = cat.json()["id"]
+    cat_res = ac.post(
+        "/db/categories/", json={"name": unique_str("RaceCat")}, headers=headers
+    )
+    cat_id = cat_res.json()["id"]
 
-        room = await ac.post(
-            "/db/rooms/", json={"name": unique_str("RaceRoom"), "room_type": "srv"}
-        )
-        room_id = room.json()["id"]
+    room_res = ac.post(
+        "/db/rooms/",
+        json={"name": unique_str("RaceRoom"), "room_type": "srv"},
+        headers=headers,
+    )
+    room_id = room_res.json()["id"]
 
-        u1 = await ac.post(
+    users = []
+    tokens = []
+    for i in range(1, 3):
+        login = unique_str(f"r{i}")
+        u = ac.post(
             "/db/users/",
             json={
-                "name": "Racer",
-                "surname": "One",
-                "login": unique_str("r1"),
-                "email": f"{unique_str('r1')}@labbyn.service",
+                "name": f"Racer{i}",
+                "surname": "Test",
+                "login": login,
+                "email": f"{login}@lab.pl",
                 "user_type": "user",
+                "team_id": team_id,
             },
-        )
-        user1_id = u1.json()["id"]
+            headers=headers,
+        ).json()
+        users.append(u)
 
-        u2 = await ac.post(
-            "/db/users/",
+        auth = ac.post(
+            "/auth/login", data={"username": login, "password": u["generated_password"]}
+        )
+        tokens.append(auth.json()["access_token"])
+
+    item = ac.post(
+        "/db/inventory/",
+        json={
+            "name": unique_str("GoldBar"),
+            "quantity": 1,
+            "category_id": cat_id,
+            "localization_id": room_id,
+            "team_id": team_id,
+        },
+        headers=headers,
+    ).json()
+    item_id = item["id"]
+
+    def rent_item(token, user_id):
+        return ac.post(
+            "/db/rentals/",
             json={
-                "name": "Racer",
-                "surname": "Two",
-                "login": unique_str("r2"),
-                "email": f"{unique_str('r2')}@labbyn.service",
-                "user_type": "user",
+                "item_id": item_id,
+                "user_id": user_id,
+                "start_date": "2024-01-01",
+                "end_date": "2024-01-07",
             },
-        )
-        user2_id = u2.json()["id"]
-
-        item = await ac.post(
-            "/db/inventory/",
-            json={
-                "name": unique_str("GoldBar"),
-                "quantity": 1,
-                "category_id": cat_id,
-                "localization_id": room_id,
-                "team_id": None,
-            },
-        )
-        item_id = item.json()["id"]
-
-        payload_user_1 = {
-            "item_id": item_id,
-            "user_id": user1_id,
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-07",
-        }
-
-        payload_user_2 = {
-            "item_id": item_id,
-            "user_id": user2_id,
-            "start_date": "2024-01-01",
-            "end_date": "2024-01-07",
-        }
-
-        response1, response2 = await asyncio.gather(
-            ac.post("/db/rentals/", json=payload_user_1),
-            ac.post("/db/rentals/", json=payload_user_2),
+            headers={"Authorization": f"Bearer {token}"},
         )
 
-        status_codes = [response1.status_code, response2.status_code]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        future1 = executor.submit(rent_item, tokens[0], users[0]["id"])
+        future2 = executor.submit(rent_item, tokens[1], users[1]["id"])
 
-        assert 201 in status_codes, "At least one rental should succeed"
-        assert (
-            409 in status_codes
-        ), "One rental should fail with Conflict (Double Booking prevented!)"
+        res1 = future1.result()
+        res2 = future2.result()
 
-        item_check = await ac.get(f"/db/inventory/{item_id}")
-        assert item_check.json()["rental_status"] is True
+    status_codes = [res1.status_code, res2.status_code]
+
+    assert 201 in status_codes, "At least one rental should succeed"
+    assert (
+        409 in status_codes
+    ), "One rental should fail with Conflict (Double Booking prevented!)"

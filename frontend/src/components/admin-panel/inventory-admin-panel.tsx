@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Badge, MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { DataTable } from '../ui/data-table'
 import { PageIsLoading } from '../page-is-loading'
 import { Button } from '../ui/button'
@@ -12,10 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
+import { Badge } from '../ui/badge'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
 import { formatHeader } from '@/lib/utils'
 import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
+import { useDeleteInventoryMutation } from '@/integrations/inventory/inventory.mutation'
 
 type InventoryItem = ReturnType<typeof fetchInventoryData>[number]
 
@@ -65,6 +67,7 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
     id: 'actions',
     cell: ({ row }) => {
       const inventory = row.original
+      const deleteItem = useDeleteInventoryMutation()
 
       return (
         <DropdownMenu>
@@ -78,10 +81,18 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
 
+            {/* @todo add action for editing inventory items */}
             <DropdownMenuItem
               onClick={() => console.log('Edit item', inventory)}
             >
               Edit item
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => deleteItem.mutate(inventory.id)} //
+            >
+              Delete Item
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
