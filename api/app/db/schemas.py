@@ -404,8 +404,6 @@ class UserInfoExtended(UserInfo):
     is_verified: bool
     force_password_change: bool
 
-
-
 # ==========================
 #      FASTAPI-USERS
 # ==========================
