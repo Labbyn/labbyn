@@ -9,14 +9,43 @@ from app.db.schemas import (
     TeamsCreate,
     TeamsResponse,
     TeamsUpdate,
+    TeamDetailResponse
 )
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
+
+from app.db.models import UserType
 
 router = APIRouter()
 
+def format_team_output(team: Teams):
+    """
+    Format team output to include admin names and member details
+    :param team: Team object to format
+    :return: Formatted team dictionary with admin names and member details
+    """
+    team_admin = next((u for u in team.users if u.id == team.team_admin_id), None)
+
+    if team_admin:
+        admin_display = f"{team_admin.name} {team_admin.surname}"
+    else:
+        admin_display = "No admin assigned"
+
+    return {
+        "id": team.id,
+        "name": team.name,
+        "team_admin_name": admin_display,
+        "members": [
+            {
+                "id": u.id,
+                "full_name": f"{u.name} {u.surname}",
+                "email": u.email,
+                "user_link": f"/users/{u.id}"
+            } for u in team.users
+        ]
+    }
 
 @router.post(
     "/db/teams/",
@@ -51,6 +80,43 @@ def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :return: List of all teams
     """
     return db.query(Teams).all()
+
+
+@router.get("/db/teams/team_info", response_model=List[TeamDetailResponse], tags=["Teams"])
+def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+    """
+    Fetch detailed information about the current user's team, including admin names and member details.
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Detailed team information with admin names and member details
+    """
+    ctx.require_user()
+    teams = db.query(Teams).options(joinedload(Teams.users)).all()
+    return [format_team_output(t) for t in teams]
+
+
+@router.get("/db/teams/team_info/{team_id}", response_model=TeamDetailResponse, tags=["Teams"])
+def get_team_info_by_id(team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+    """
+    Fetch detailed information about a specific team by ID, including admin names and member details.
+    :param team_id: Team ID
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Detailed team information with admin names and member details
+    """
+    ctx.require_user()
+
+    team = (
+        db.query(Teams)
+        .filter(Teams.id == team_id)
+        .options(joinedload(Teams.users))
+        .first()
+    )
+
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    return format_team_output(team)
 
 
 @router.get("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])

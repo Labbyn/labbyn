@@ -304,6 +304,19 @@ class TeamsResponse(TeamsBase):
     version_id: int
     model_config = ConfigDict(from_attributes=True)
 
+class TeamMemberSchema(BaseModel):
+    id: int
+    full_name: str
+    email: str
+    user_link: str
+
+class TeamDetailResponse(BaseModel):
+    id: int
+    name: str
+    team_admin_name: str
+    members: List[TeamMemberSchema]
+
+    model_config = ConfigDict(from_attributes=True)
 
 # ==========================
 #          USER
