@@ -163,7 +163,11 @@ def get_user_extended_info(
     return [get_masked_user_model(u, ctx) for u in users]
 
 
-@router.get("/db/users/{user_id}", response_model=Union[UserInfoExtended, UserInfo], tags=["Users"])
+@router.get(
+    "/db/users/{user_id}",
+    response_model=Union[UserInfoExtended, UserInfo],
+    tags=["Users"],
+)
 def get_user_by_id(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -267,4 +271,3 @@ async def delete_user(
             )
         db.delete(user)
         db.commit()
-
