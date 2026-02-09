@@ -1,5 +1,8 @@
 """Router for User Database API CRUD."""
 
+import os
+import shutil
+import glob
 from typing import List, Union
 
 from app.database import get_db
@@ -17,12 +20,12 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
 from app.db.schemas import UserRead
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
 
 router = APIRouter()
-
+AVATAR_DIR = "/home/labbyn/avatars"
 
 def get_masked_user_model(u: User, ctx: RequestContext):
     """
@@ -271,3 +274,37 @@ async def delete_user(
             )
         db.delete(user)
         db.commit()
+
+
+@router.post("/db/users/avatar", tags=["Users"])
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends()
+):
+    ctx.require_user()
+    user = ctx.current_user
+
+    for old_file in glob.glob(os.path.join(AVATAR_DIR, f"avatar_user_{user.id}.*")):
+        try:
+            os.remove(old_file)
+        except:
+            pass
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".png", ".jpg", ".jpeg", ".gif"]:
+        raise HTTPException(status_code=400, detail="Unsupported file type. Allowed types: png, jpg, jpeg, gif.")
+
+    filename = f"avatar_user_{user.id}{ext}"
+    full_path = os.path.join(AVATAR_DIR, filename)
+
+    try:
+        with open(full_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Something went wrong! Try again!: {str(e)}")
+
+    user.avatar_path = f"/static/avatars/{filename}"
+    db.commit()
+
+    return {"info": "Succesfully updated!", "path": user.avatar_path}
