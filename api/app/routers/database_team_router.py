@@ -5,12 +5,7 @@ from app.database import get_db
 from app.db.models import (
     Teams,
 )
-from app.db.schemas import (
-    TeamsCreate,
-    TeamsResponse,
-    TeamsUpdate,
-    TeamDetailResponse
-)
+from app.db.schemas import TeamsCreate, TeamsResponse, TeamsUpdate, TeamDetailResponse
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -19,6 +14,7 @@ from app.auth.dependencies import RequestContext
 from app.db.models import UserType
 
 router = APIRouter()
+
 
 def format_team_output(team: Teams):
     """
@@ -42,10 +38,12 @@ def format_team_output(team: Teams):
                 "id": u.id,
                 "full_name": f"{u.name} {u.surname}",
                 "email": u.email,
-                "user_link": f"/users/{u.id}"
-            } for u in team.users
-        ]
+                "user_link": f"/users/{u.id}",
+            }
+            for u in team.users
+        ],
     }
+
 
 @router.post(
     "/db/teams/",
@@ -82,7 +80,9 @@ def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     return db.query(Teams).all()
 
 
-@router.get("/db/teams/team_info", response_model=List[TeamDetailResponse], tags=["Teams"])
+@router.get(
+    "/db/teams/team_info", response_model=List[TeamDetailResponse], tags=["Teams"]
+)
 def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch detailed information about the current user's team, including admin names and member details.
@@ -95,8 +95,12 @@ def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     return [format_team_output(t) for t in teams]
 
 
-@router.get("/db/teams/team_info/{team_id}", response_model=TeamDetailResponse, tags=["Teams"])
-def get_team_info_by_id(team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+@router.get(
+    "/db/teams/team_info/{team_id}", response_model=TeamDetailResponse, tags=["Teams"]
+)
+def get_team_info_by_id(
+    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch detailed information about a specific team by ID, including admin names and member details.
     :param team_id: Team ID
