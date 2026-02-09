@@ -67,7 +67,11 @@ app = FastAPI(lifespan=lifespan)
 # Mount static files for user avatars
 if not os.path.exists(database_user_router.AVATAR_DIR):
     os.makedirs(database_user_router.AVATAR_DIR, exist_ok=True)
-app.mount("/static/avatars", StaticFiles(directory=database_user_router.AVATAR_DIR), name="avatars")
+app.mount(
+    "/static/avatars",
+    StaticFiles(directory=database_user_router.AVATAR_DIR),
+    name="avatars",
+)
 
 # Configure CORS middleware temporaryly for local development
 origins = [

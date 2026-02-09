@@ -27,6 +27,7 @@ from app.auth.dependencies import RequestContext
 router = APIRouter()
 AVATAR_DIR = "/home/labbyn/avatars"
 
+
 def get_masked_user_model(u: User, ctx: RequestContext):
     """
     Return user data with fields masked based on requester's permissions.
@@ -280,7 +281,7 @@ async def delete_user(
 async def upload_user_avatar(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(),
 ):
     ctx.require_user()
     user = ctx.current_user
@@ -293,7 +294,10 @@ async def upload_user_avatar(
 
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in [".png", ".jpg", ".jpeg", ".gif"]:
-        raise HTTPException(status_code=400, detail="Unsupported file type. Allowed types: png, jpg, jpeg, gif.")
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Allowed types: png, jpg, jpeg, gif.",
+        )
 
     filename = f"avatar_user_{user.id}{ext}"
     full_path = os.path.join(AVATAR_DIR, filename)
@@ -302,7 +306,9 @@ async def upload_user_avatar(
         with open(full_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Something went wrong! Try again!: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Something went wrong! Try again!: {str(e)}"
+        )
 
     user.avatar_path = f"/static/avatars/{filename}"
     db.commit()
