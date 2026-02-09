@@ -61,6 +61,41 @@ def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     return query.all()
 
 
+@router.post(
+    "/db/inventory/bulk",
+    response_model=List[InventoryResponse],
+    status_code=status.HTTP_201_CREATED,
+    tags=["Inventory"],
+)
+def bulk_create_items(
+    items_data: List[InventoryCreate], db: Session = Depends(get_db), ctx: RequestContext = Depends(),
+):
+    """
+    Bulk import inventory items
+    :param items_data: List of inventory item data
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: None
+    """
+    ctx.require_group_admin()
+
+    new_items = []
+    for item_data in items_data:
+        data = item_data.model_dump()
+
+        if not ctx.is_admin:
+            data["team_id"] = ctx.team_id
+
+        new_items.append(Inventory(**data))
+
+    db.add_all(new_items)
+    db.commit()
+
+    for item in new_items:
+        db.refresh(item)
+
+    return new_items
+
 @router.get(
     "/db/inventory/{item_id}", response_model=InventoryResponse, tags=["Inventory"]
 )
