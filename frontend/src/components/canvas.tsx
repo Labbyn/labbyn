@@ -532,6 +532,9 @@ export function CanvasComponent3D({
   )
 
   const sceneCenter = useMemo(() => {
+    if (selectedItem) {
+      return new THREE.Vector3(selectedItem.x / 10, 0, selectedItem.y / 10)
+    }
     if (equipment.length === 0) return new THREE.Vector3(0, 0, 0)
     let minX = Infinity,
       maxX = -Infinity,

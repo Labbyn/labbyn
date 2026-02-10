@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import type {ReactNode} from 'react';
+import type { ReactNode } from 'react'
 import type { MapSearch } from '@/routes/_auth/map'
 
 interface MapLinkProps {
