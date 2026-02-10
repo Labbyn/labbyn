@@ -17,6 +17,7 @@ from app.auth.dependencies import RequestContext
 
 router = APIRouter()
 
+
 @router.post(
     "/db/users/",
     response_model=UserCreatedResponse,
