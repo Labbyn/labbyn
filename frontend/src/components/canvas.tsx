@@ -18,6 +18,7 @@ import { Box as BoxIcon, Map as MapIcon } from 'lucide-react'
 import * as THREE from 'three'
 
 import { formatHex } from 'culori'
+import { useNavigate } from '@tanstack/react-router'
 import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
 import type { Equipment, Wall } from '@/types/types'
@@ -28,6 +29,7 @@ extend({ RoundedBoxGeometry })
 interface Canvas3DProps {
   equipment: Array<Equipment>
   walls: Array<Wall>
+  initialSelectedId?: string
 }
 
 const RACK_W = 8
@@ -492,10 +494,37 @@ function WallInstances({
   )
 }
 
-export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+export function CanvasComponent3D({
+  equipment,
+  walls,
+  initialSelectedId,
+}: Canvas3DProps) {
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId || null,
+  )
   const [is2D, setIs2D] = useState(false)
   const colors = useThemeColors()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (initialSelectedId) {
+      setSelectedId(initialSelectedId)
+    }
+  }, [initialSelectedId])
+
+  const handleSelect = (id: string | null) => {
+    setSelectedId(id)
+
+    navigate({
+      to: '/map',
+      search: (prev: any) => ({
+        ...prev,
+        redirectId: id ?? undefined,
+        redirectType: 'rack',
+      }),
+      replace: true,
+    })
+  }
 
   const selectedItem = useMemo(
     () => equipment.find((e) => e.id === selectedId),
@@ -593,7 +622,7 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
 
             <InstancedRacks
               data={equipment}
-              onSelect={setSelectedId}
+              onSelect={handleSelect}
               colors={colors}
             />
 
@@ -626,10 +655,7 @@ export function CanvasComponent3D({ equipment, walls }: Canvas3DProps) {
       </div>
 
       {selectedItem && (
-        <RackInfoPanel
-          rack={selectedItem}
-          onClose={() => setSelectedId(null)}
-        />
+        <RackInfoPanel rack={selectedItem} onClose={() => handleSelect(null)} />
       )}
     </div>
   )

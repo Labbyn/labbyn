@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { ArrowRight, Map, Server, User } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -15,6 +15,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { labsQueryOptions } from '@/integrations/labs/labs.query'
+import { MapRedirectLink } from '@/components/map-redirect-link'
 
 export const Route = createFileRoute('/_auth/labs/')({
   component: RouteComponent,
@@ -57,8 +58,7 @@ function RouteComponent() {
               <ScrollArea className="w-full">
                 <div className="flex w-max space-x-3 px-6 pb-4">
                   {lab.racks.map((rack) => (
-                    // placeholder for rack redirection
-                    <Link to="/">
+                    <MapRedirectLink redirectId={rack.id} redirectType="rack">
                       <div className="group relative flex flex-col justify-between w-40 h-25 p-3 rounded-lg border bg-muted/30 hover:bg-primary/5 hover:border-primary/50 transition-all cursor-pointer">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-muted-foreground group-hover:text-primary transition-colors">
@@ -76,7 +76,7 @@ function RouteComponent() {
                           <ArrowRight className="h-3 w-3 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-primary" />
                         </div>
                       </div>
-                    </Link>
+                    </MapRedirectLink>
                   ))}
                   {lab.racks.length === 0 && (
                     <div className="flex items-center justify-center w-40 h-25 text-xs text-muted-foreground border border-dashed rounded-lg">
@@ -90,11 +90,11 @@ function RouteComponent() {
 
             <CardFooter>
               <Button asChild className="w-full">
-                <Link to={lab.location}>
+                <MapRedirectLink redirectId={lab.id} redirectType="lab">
                   <Map className="mr-2 h-4 w-4" />
-                  View on Map
+                  View lab on Map
                   <ArrowRight className="ml-auto h-4 w-4" />
-                </Link>
+                </MapRedirectLink>
               </Button>
             </CardFooter>
           </Card>
