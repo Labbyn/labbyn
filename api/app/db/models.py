@@ -347,3 +347,47 @@ class History(Base):
     extra_data = Column(JSONB)
 
     user = relationship("User", back_populates="history")
+
+class Tags(Base):
+    """
+    Tags model representing tags in the system.
+    """
+
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    color = Column(String(50), nullable=False)
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    documentation_associations = relationship("TagsDocumentationAssociation", back_populates="tags")
+class Documentation(Base):
+    """
+    Documentation model representing documentation in the system.
+    """
+
+    __tablename__ = "documentation"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(50), nullable=False, unique=True)
+    added_on = Column(DateTime, nullable=False, default=datetime.now)
+    modified_on = Column(DateTime, nullable=True)
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    tag_associations = relationship("TagsDocumentationAssociation", back_populates="documentation")
+    
+class TagsDocumentationAssociation(Base):
+    """
+    TagsDocumentationAssociation model representing association between documentation and tags.
+    """
+    __tablename__ = "tags_documentation"
+
+    documentation_id = Column(Integer, ForeignKey("documentation.id"), primary_key=True)
+    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
+
+    tags = relationship("Tags", back_populates="documentation_associations")
+    documentation = relationship("Documentation", back_populates="tag_associations")
