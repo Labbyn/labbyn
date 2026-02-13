@@ -362,7 +362,7 @@ class Tags(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    documentation_associations = relationship("TagsDocumentationAssociation", back_populates="tags")
+    documentation = relationship("Documentation", secondary="tags_documentation")
 class Documentation(Base):
     """
     Documentation model representing documentation in the system.
@@ -378,16 +378,14 @@ class Documentation(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    tag_associations = relationship("TagsDocumentationAssociation", back_populates="documentation")
+    tags = relationship("Tags", secondary="tags_documentation")
     
-class TagsDocumentationAssociation(Base):
+class TagsDocumentation(Base):
     """
-    TagsDocumentationAssociation model representing association between documentation and tags.
+    TagsDocumentation model representing association between documentation and tags.
     """
     __tablename__ = "tags_documentation"
 
-    documentation_id = Column(Integer, ForeignKey("documentation.id"), primary_key=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), primary_key=True)
-
-    tags = relationship("Tags", back_populates="documentation_associations")
-    documentation = relationship("Documentation", back_populates="tag_associations")
+    id = Column(Integer, primary_key=True)
+    documentation_id = Column(Integer, ForeignKey("documentation.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
