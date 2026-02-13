@@ -1,21 +1,66 @@
 """Router for User Database API CRUD."""
 
-from typing import List
+import os
+import shutil
+import glob
+from typing import List, Union
 
 from app.database import get_db
 from app.db.models import (
     User,
     UserType,
 )
-from app.db.schemas import UserCreate, UserUpdate, UserCreatedResponse
+from app.db.schemas import (
+    UserCreate,
+    UserUpdate,
+    UserCreatedResponse,
+    UserInfoExtended,
+    UserInfo,
+)
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
 from app.db.schemas import UserRead
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
 
 router = APIRouter()
+AVATAR_DIR = "/home/labbyn/avatars"
+
+
+def get_masked_user_model(u: User, ctx: RequestContext):
+    """
+    Return user data with fields masked based on requester's permissions.
+    Admins can see all fields, while regular users can only see limited info for users in their own team.
+    :param u: User object to mask
+    :param ctx: Request context containing user and team info
+    :return: UserInfo or UserInfoExtended schema instance with appropriate fields
+    """
+    is_own_team = ctx.team_id is not None and u.team_id == ctx.team_id
+    can_see_full_data = ctx.is_admin or is_own_team
+
+    user_data = {
+        "id": u.id,
+        "name": u.name,
+        "surname": u.surname,
+        "email": u.email,
+        "team_name": u.teams.name if u.teams else "No team assigned",
+        "user_type": u.user_type,
+    }
+
+    if can_see_full_data:
+        user_data.update(
+            {
+                "login": u.login,
+                "is_active": u.is_active,
+                "is_verified": u.is_verified,
+                "force_password_change": u.force_password_change,
+            }
+        )
+
+        return UserInfoExtended.model_validate(user_data)
+
+    return UserInfo.model_validate(user_data)
 
 
 @router.post(
@@ -99,17 +144,38 @@ async def create_user(
         ) from e
 
 
-@router.get("/db/users/", response_model=List[UserRead], tags=["Users"])
-def get_users(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+@router.get("/db/users/basic_info", response_model=List[UserInfo], tags=["Users"])
+def get_user_basic_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
-    Fetch all users
+    Fetch basic contact info of all users
     :param db: Active database session
-    :return: List of all users
+    :param ctx: Request context for user and team info
+    :return: List of user basic info
     """
-    return db.query(User).all()
+    users = db.query(User).options(joinedload(User.teams)).all()
+
+    return [get_masked_user_model(u, ctx) for u in users]
 
 
-@router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
+@router.get(
+    "/db/users/ext_info",
+    tags=["Users"],
+    response_model=List[Union[UserInfoExtended, UserInfo]],
+)
+def get_user_extended_info(
+    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
+    ctx.require_group_admin()
+    users = db.query(User).options(joinedload(User.teams)).all()
+
+    return [get_masked_user_model(u, ctx) for u in users]
+
+
+@router.get(
+    "/db/users/{user_id}",
+    response_model=Union[UserInfoExtended, UserInfo],
+    tags=["Users"],
+)
 def get_user_by_id(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -119,12 +185,19 @@ def get_user_by_id(
     :param db: Active database session
     :return: User object
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (
+        db.query(User)
+        .options(joinedload(User.teams))
+        .filter(User.id == user_id)
+        .first()
+    )
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    return user
+
+    return get_masked_user_model(user, ctx)
 
 
 @router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
@@ -206,3 +279,42 @@ async def delete_user(
             )
         db.delete(user)
         db.commit()
+
+
+@router.post("/db/users/avatar", tags=["Users"])
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
+    ctx.require_user()
+    user = ctx.current_user
+
+    for old_file in glob.glob(os.path.join(AVATAR_DIR, f"avatar_user_{user.id}.*")):
+        try:
+            os.remove(old_file)
+        except:
+            pass
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".png", ".jpg", ".jpeg", ".gif"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Allowed types: png, jpg, jpeg, gif.",
+        )
+
+    filename = f"avatar_user_{user.id}{ext}"
+    full_path = os.path.join(AVATAR_DIR, filename)
+
+    try:
+        with open(full_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Something went wrong! Try again!: {str(e)}"
+        )
+
+    user.avatar_path = f"/static/avatars/{filename}"
+    db.commit()
+
+    return {"info": "Succesfully updated!", "path": user.avatar_path}
