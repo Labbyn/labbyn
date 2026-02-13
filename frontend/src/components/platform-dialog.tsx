@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,6 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
-import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 
 // --- Schemas ---
 
@@ -54,7 +54,6 @@ function zodValidate(schema: z.ZodType<any>) {
     return undefined
   }
 }
-
 
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
