@@ -743,3 +743,61 @@ class FirstChangePasswordRequest(BaseModel):
     """
 
     new_password: str = Field(..., min_length=6, max_length=255)
+
+# ==========================
+#      TAGS SCHEMAS
+# ==========================
+
+class TagsBase(BaseModel):
+    name: str = Field(..., max_length=50, description="Unique name of the tag")
+    color: str = Field(..., max_length=50, description="Color hex or name")
+
+class TagsCreate(TagsBase):
+    """Used for creating a new tag in the system."""
+    pass
+
+class TagsUpdate(BaseModel):
+    """Used for updating tag metadata."""
+    name: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+
+class TagsResponse(TagsBase):
+    """Standard tag response."""
+    id: int
+    version_id: int
+    
+    model_config = ConfigDict(from_attributes=True)
+
+# ==========================
+#      DOCUMENTATION SCHEMAS
+# ==========================
+
+class DocumentationBase(BaseModel):
+    """
+    Base model containing all shared attributes from the DB.
+    """
+    title: str = Field(..., max_length=50, description="Unique title of the documentation")
+    added_on: datetime = Field(default_factory=datetime.now)
+    modified_on: Optional[datetime] = None
+
+class DocumentationCreate(DocumentationBase):
+    """
+    When creating documentation, you usually pass a list of tag IDs 
+    to link them in the association table.
+    """
+    tag_ids: Optional[List[int]] = Field(default=[], description="List of existing Tag IDs")
+
+class DocumentationUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=50)
+    modified_on: datetime = Field(default_factory=datetime.now)
+    tag_ids: Optional[List[int]] = None 
+
+class DocumentationResponse(DocumentationBase):
+    id: int
+    added_on: datetime
+    modified_on: Optional[datetime]
+    version_id: int
+    
+    tags: List[TagsResponse] = [] 
+
+    model_config = ConfigDict(from_attributes=True)
