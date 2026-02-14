@@ -362,7 +362,7 @@ class Tags(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    documentation = relationship("Documentation", secondary="tags_documentation")
+    documentation = relationship("Documentation", secondary="tags_documentation", back_populates="tags")
 class Documentation(Base):
     """
     Documentation model representing documentation in the system.
@@ -378,7 +378,7 @@ class Documentation(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    tags = relationship("Tags", secondary="tags_documentation")
+    tags = relationship("Tags", secondary="tags_documentation", back_populates="documentation")
     
 class TagsDocumentation(Base):
     """
