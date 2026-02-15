@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { useDocsContext } from '@/routes/_auth/docs/-context'
 
 interface DocumentEditorProps {
   document: Document
@@ -14,10 +15,10 @@ interface DocumentEditorProps {
 
 export function DocumentEditor({
   document,
-  onSave,
   onCancel,
   onDirtyChange,
 }: DocumentEditorProps) {
+  const { handleSave, isSaving } = useDocsContext()
   const [title, setTitle] = useState(document.title)
   const [content, setContent] = useState(document.content)
 
@@ -28,8 +29,8 @@ export function DocumentEditor({
     }
   }, [title, content, document, onDirtyChange])
 
-  const handleSave = () => {
-    onSave({
+  const onSaveClick = () => {
+    handleSave({
       ...document,
       title: title || 'Untitled',
       content,
@@ -59,9 +60,9 @@ export function DocumentEditor({
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button onClick={handleSave} variant="default">
-          Save Document
-        </Button>
+        <Button onClick={onSaveClick} variant="default" disabled={isSaving}>
+  {isSaving ? 'Saving...' : 'Save Document'}
+</Button>
         <Button onClick={onCancel} variant="outline">
           Cancel
         </Button>
