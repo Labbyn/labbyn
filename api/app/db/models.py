@@ -348,6 +348,7 @@ class History(Base):
 
     user = relationship("User", back_populates="history")
 
+
 class Tags(Base):
     """
     Tags model representing tags in the system.
@@ -362,7 +363,11 @@ class Tags(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    documentation = relationship("Documentation", secondary="tags_documentation", back_populates="tags")
+    documentation = relationship(
+        "Documentation", secondary="tags_documentation", back_populates="tags"
+    )
+
+
 class Documentation(Base):
     """
     Documentation model representing documentation in the system.
@@ -378,12 +383,16 @@ class Documentation(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    tags = relationship("Tags", secondary="tags_documentation", back_populates="documentation")
-    
+    tags = relationship(
+        "Tags", secondary="tags_documentation", back_populates="documentation"
+    )
+
+
 class TagsDocumentation(Base):
     """
     TagsDocumentation model representing association between documentation and tags.
     """
+
     __tablename__ = "tags_documentation"
 
     id = Column(Integer, primary_key=True)

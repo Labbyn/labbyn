@@ -20,6 +20,7 @@ from app.routers import (
     database_user_router,
     database_history_router,
     database_documentation_router,
+    database_tags_router,
     ansible_router,
     dashboard_router,
     authentication_router,
@@ -102,3 +103,4 @@ app.include_router(dashboard_router.router)
 app.include_router(authentication_router.router)
 app.include_router(labs_router.router)
 app.include_router(database_documentation_router.router)
+app.include_router(database_tags_router.router)
