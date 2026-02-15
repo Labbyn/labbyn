@@ -24,7 +24,7 @@ export function DocumentPreview({ document, onEdit }: DocumentPreviewProps) {
         <div className="flex items-start justify-between border-b pb-4 mb-0">
           <div className="space-y-2 flex-1">
             <h1 className="text-2xl font-bold text-foreground">
-              {document.name}
+              {document.title}
             </h1>
             <div className="flex gap-4 text-sm text-foreground/60">
               <span>Created by: {document.author}</span>

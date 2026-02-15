@@ -38,7 +38,7 @@ function DocsLayout() {
   const updateMutation = useUpdateDocumentMutation()
   const deleteMutation = useDeleteDocumentMutation()
 
-  const handleSave = (doc: Document) => saveMutation.mutate(doc)
+  const handleSave = (doc: Document) => updateMutation.mutate(doc)
   const handleDelete = (docId: string) => deleteMutation.mutate(docId)
 
   const handleCreate = () => {

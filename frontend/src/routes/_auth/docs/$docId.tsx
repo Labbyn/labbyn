@@ -97,7 +97,7 @@ const selectedDoc = useMemo(
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes in <strong>{selectedDoc.name}</strong>.
+              You have unsaved changes in <strong>{selectedDoc.title}</strong>.
               Are you sure you want to leave? Your changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -1,6 +1,6 @@
 export interface Document {
   id: string
-  name: string
+  title: string
   content: string
   createdBy: string
   createdAt: Date
