@@ -6,6 +6,8 @@ import type { Document } from '@/types/types'
 import { DocumentList } from '@/components/document-list'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
+import { documentationQueryOptions } from '@/integrations/documentation/documentation.query'
+import { useCreateDocumentMutation, useDeleteDocumentMutation, useUpdateDocumentMutation } from '@/integrations/documentation/documentation.mutations'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,24 +18,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { documents as mockDocuments } from '@/lib/mock-data'
+
 
 export const Route = createFileRoute('/_auth/docs')({
   component: DocsLayout,
 })
-
-const fetchDocuments = async (): Promise<Array<Document>> => {
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  const stored = localStorage.getItem('documents')
-  if (stored) {
-    return JSON.parse(stored).map((d: any) => ({
-      ...d,
-      createdAt: new Date(d.createdAt),
-      updatedAt: new Date(d.updatedAt),
-    }))
-  }
-  return mockDocuments
-}
 
 function DocsLayout() {
   const navigate = Route.useNavigate()
@@ -43,58 +32,11 @@ function DocsLayout() {
   const [showCreateAlert, setShowCreateAlert] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
 
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents'],
-    queryFn: fetchDocuments,
-  })
+  const { data: documents = [], isLoading } = useQuery(documentationQueryOptions)
 
-  const saveMutation = useMutation({
-    mutationFn: async (updatedDoc: Document) => {
-      const updated = documents.map((doc) =>
-        doc.id === updatedDoc.id
-          ? { ...updatedDoc, updatedAt: new Date() }
-          : doc,
-      )
-      localStorage.setItem('documents', JSON.stringify(updated))
-      return updated
-    },
-    onSuccess: (updatedDocs) => {
-      queryClient.setQueryData(['documents'], updatedDocs)
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: async (docId: string) => {
-      const filtered = documents.filter((doc) => doc.id !== docId)
-      localStorage.setItem('documents', JSON.stringify(filtered))
-      return filtered
-    },
-    onSuccess: (filteredDocs) => {
-      queryClient.setQueryData(['documents'], filteredDocs)
-      navigate({ to: '/docs' })
-    },
-  })
-
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const newId = Date.now().toString()
-      const newDoc: Document = {
-        id: newId,
-        name: 'New Document',
-        content: '',
-        createdBy: 'User',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-      const updated = [newDoc, ...documents]
-      localStorage.setItem('documents', JSON.stringify(updated))
-      return { updated, newId }
-    },
-    onSuccess: ({ updated, newId }) => {
-      queryClient.setQueryData(['documents'], updated)
-      navigate({ to: '/docs/$docId', params: { docId: newId } })
-    },
-  })
+  const createMutation = useCreateDocumentMutation()
+  const updateMutation = useUpdateDocumentMutation()
+  const deleteMutation = useDeleteDocumentMutation()
 
   const handleSave = (doc: Document) => saveMutation.mutate(doc)
   const handleDelete = (docId: string) => deleteMutation.mutate(docId)

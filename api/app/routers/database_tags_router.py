@@ -76,10 +76,7 @@ def get_tag_by_id(
     :param ctx: Request context for user and team info
     :return: Tag object
     """
-    query = (
-        db.query(Tags)
-        .filter(Tags.id == tag_id)
-    )
+    query = db.query(Tags).filter(Tags.id == tag_id)
     tag = query.first()
     if not tag:
         raise HTTPException(
@@ -108,10 +105,7 @@ async def update_tag(
     :return: Updated tag
     """
     async with acquire_lock(f"tag_lock:{tag_id}"):
-        query = (
-            db.query(Tags)
-            .filter(Tags.id == tag_id)
-        )
+        query = db.query(Tags).filter(Tags.id == tag_id)
         tag = query.first()
         if not tag:
             raise HTTPException(
@@ -143,10 +137,7 @@ async def delete_tag(
     :return: None
     """
     async with acquire_lock(f"tag_lock:{tag_id}"):
-        query = (
-            db.query(Tags)
-            .filter(Tags.id == tag_id)
-        )
+        query = db.query(Tags).filter(Tags.id == tag_id)
         tag = query.first()
         if not tag:
             raise HTTPException(

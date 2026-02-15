@@ -1,7 +1,6 @@
 import { createFileRoute, useBlocker } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
 import { useDocsContext } from './-context'
-import type { Document as AppDocument } from '@/types/types'
 import { DocumentEditor } from '@/components/document-editor'
 import { DocumentPreview } from '@/components/document-preview'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import type { ApiDocumentationItem } from '@/integrations/documentation/documentation.types'
 
 export const Route = createFileRoute('/_auth/docs/$docId')({
   component: DocDetailComponent,
@@ -31,10 +31,10 @@ function DocDetailComponent() {
     setIsDirty,
   } = useDocsContext()
 
-  const selectedDoc = useMemo(
-    () => documents.find((d: AppDocument) => d.id === docId),
-    [documents, docId],
-  )
+const selectedDoc = useMemo(
+  () => documents.find((d: ApiDocumentationItem) => Number(d.id) === Number(docId)),
+  [documents, docId],
+)
 
   useEffect(() => {
     setIsEditing(false)

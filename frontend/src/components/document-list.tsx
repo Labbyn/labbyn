@@ -23,34 +23,35 @@ export function DocumentList({
 }: DocumentListProps) {
   const columns: Array<ColumnDef<Document>> = [
     {
-      accessorKey: 'name',
+      accessorKey: 'title',
       header: ({ column }) => {
         return <DataTableColumnHeader column={column} title="Title" />
       },
       cell: ({ row }) => (
         <div className="font-medium truncate max-w-37.5">
-          {row.getValue('name')}
+          {row.getValue('title')}
         </div>
       ),
     },
     {
-      accessorKey: 'createdBy',
+      accessorKey: 'author',
       header: ({ column }) => {
         return <DataTableColumnHeader column={column} title="Author" />
       },
       cell: ({ row }) => (
         <div className="text-muted-foreground truncate max-w-25">
-          {row.getValue('createdBy')}
+          {row.getValue('author')}
         </div>
       ),
     },
     {
-      accessorKey: 'updatedAt',
+      accessorKey: 'modified_on',
       header: ({ column }) => {
         return <DataTableColumnHeader column={column} title="Last Updated" />
       },
       cell: ({ row }) => {
-        const date = new Date(row.getValue('updatedAt'))
+        const dateValue = row.original.modified_on || row.original.added_on
+        const date = new Date(dateValue)
         return (
           <div className="text-xs text-muted-foreground whitespace-nowrap">
             {date.toLocaleDateString()}

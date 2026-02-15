@@ -790,8 +790,10 @@ class DocumentationBase(BaseModel):
     title: str = Field(
         ..., max_length=50, description="Unique title of the documentation"
     )
+    author: str = Field(..., max_length=50, description="Author's username")
     added_on: datetime = Field(default_factory=datetime.now)
     modified_on: Optional[datetime] = None
+    content: str = Field(..., max_length=5000, description="Documentation content")
 
 
 class DocumentationCreate(DocumentationBase):

@@ -377,6 +377,8 @@ class Documentation(Base):
 
     id = Column(Integer, primary_key=True)
     title = Column(String(50), nullable=False, unique=True)
+    author = Column(String(50), nullable=False)
+    content = Column(String(5000), default="# Empty document")
     added_on = Column(DateTime, nullable=False, default=datetime.now)
     modified_on = Column(DateTime, nullable=True)
     version_id = Column(Integer, nullable=False, default=1)

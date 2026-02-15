@@ -27,8 +27,8 @@ export function DocumentPreview({ document, onEdit }: DocumentPreviewProps) {
               {document.name}
             </h1>
             <div className="flex gap-4 text-sm text-foreground/60">
-              <span>Created by: {document.createdBy}</span>
-              <span>Updated: {formatDate(document.updatedAt)}</span>
+              <span>Created by: {document.author}</span>
+              <span>Updated: {formatDate(document.modified_on || document.added_on)}</span>
             </div>
           </div>
           <Button onClick={onEdit} variant="outline" size="sm">
