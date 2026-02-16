@@ -68,7 +68,7 @@ def get_state_diff(
 
 
 @router.get("/sub/history", response_model=List[HistoryResponse], tags=["History"])
-def get_history_logs(
+def get_blackboxed_history_logs(
     limit=200, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     query = (
