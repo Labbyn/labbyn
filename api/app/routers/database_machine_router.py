@@ -151,7 +151,7 @@ async def delete_machine(
 @router.post(
     "/db/machines/{machine_id}/mount/{shelf_id}", status_code=status.HTTP_200_OK
 )
-def mount_machine(
+async def mount_machine(
     machine_id: int,
     shelf_id: int,
     db: Session = Depends(get_db),
@@ -166,37 +166,37 @@ def mount_machine(
     :return: Status message
     """
     ctx.require_user()
+    async with acquire_lock(f"machine_lock:{machine_id}"):
+        machine_query = db.query(Machines).filter(Machines.id == machine_id)
+        machine = ctx.team_filter(machine_query, Machines).first()
 
-    machine_query = db.query(Machines).filter(Machines.id == machine_id)
-    machine = ctx.team_filter(machine_query, Machines).first()
-
-    if not machine:
-        raise HTTPException(
-            status_code=404, detail="Machine not found or access denied"
-        )
-
-    shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
-
-    if not shelf:
-        raise HTTPException(status_code=404, detail="Target shelf not found")
-
-    if not ctx.is_admin:
-        rack = db.query(Rack).filter(Rack.id == shelf.rack_id).first()
-        if rack.team_id != ctx.team_id:
+        if not machine:
             raise HTTPException(
-                status_code=403,
-                detail="You don't have permission to use this rack/shelf",
+                status_code=404, detail="Machine not found or access denied"
             )
 
-    machine.shelf_id = shelf_id
+        shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
 
-    machine.localization_id = shelf.rack.room_id
+        if not shelf:
+            raise HTTPException(status_code=404, detail="Target shelf not found")
 
-    db.commit()
-    return {
-        "status": "success",
-        "message": f"Machine {machine.name} mounted on shelf {shelf.name} (Rack: {shelf.rack.name})",
-    }
+        if not ctx.is_admin:
+            rack = db.query(Rack).filter(Rack.id == shelf.rack_id).first()
+            if rack.team_id != ctx.team_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You don't have permission to use this rack/shelf",
+                )
+
+        machine.shelf_id = shelf_id
+
+        machine.localization_id = shelf.rack.room_id
+
+        db.commit()
+        return {
+            "status": "success",
+            "message": f"Machine {machine.name} mounted on shelf {shelf.name} (Rack: {shelf.rack.name})",
+        }
 
 
 @router.post("/db/machines/{machine_id}/unmount", status_code=status.HTTP_200_OK)

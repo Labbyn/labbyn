@@ -124,12 +124,12 @@ def update_shelf(
 
     db_shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
     if not db_shelf:
-        raise HTTPException(status_code=404, detail="Półka nie istnieje.")
+        raise HTTPException(status_code=404, detail="Shelf does not exist.")
 
     rack_query = db.query(Rack).filter(Rack.id == db_shelf.rack_id)
     if not ctx.team_filter(rack_query, Rack).first():
         raise HTTPException(
-            status_code=403, detail="Brak dostępu do zarządzania tą półką."
+            status_code=403, detail="You do not have permission to manage this shelf."
         )
 
     update_dict = shelf_data.model_dump(exclude_unset=True)
