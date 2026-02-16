@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { useDocsContext } from '@/routes/_auth/docs/-context'
 
 interface DocumentEditorProps {
   document: Document
@@ -14,24 +15,24 @@ interface DocumentEditorProps {
 
 export function DocumentEditor({
   document,
-  onSave,
   onCancel,
   onDirtyChange,
 }: DocumentEditorProps) {
-  const [name, setName] = useState(document.name)
+  const { handleSave, isSaving } = useDocsContext()
+  const [title, setTitle] = useState(document.title)
   const [content, setContent] = useState(document.content)
 
   useEffect(() => {
-    const isDirty = name !== document.name || content !== document.content
+    const isDirty = title !== document.title || content !== document.content
     if (onDirtyChange) {
       onDirtyChange(isDirty)
     }
-  }, [name, content, document, onDirtyChange])
+  }, [title, content, document, onDirtyChange])
 
-  const handleSave = () => {
-    onSave({
+  const onSaveClick = () => {
+    handleSave({
       ...document,
-      name: name || 'Untitled',
+      title: title || 'Untitled',
       content,
     })
   }
@@ -41,8 +42,8 @@ export function DocumentEditor({
       <div className="space-y-2">
         <label className="text-sm font-medium">Document Title</label>
         <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter document title"
           className="h-9"
         />
@@ -59,8 +60,8 @@ export function DocumentEditor({
       </div>
 
       <div className="flex gap-2 pt-4">
-        <Button onClick={handleSave} variant="default">
-          Save Document
+        <Button onClick={onSaveClick} variant="default" disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Save Document'}
         </Button>
         <Button onClick={onCancel} variant="outline">
           Cancel

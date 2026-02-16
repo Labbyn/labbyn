@@ -1,10 +1,11 @@
 export interface Document {
-  id: string
-  name: string
+  id: number
+  title: string
   content: string
-  createdBy: string
-  createdAt: Date
-  updatedAt: Date
+  author: string
+  added_on: string
+  modified_on: string | null
+  version_id: number
 }
 
 export type User = {

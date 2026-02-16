@@ -13,6 +13,8 @@ from app.routers import (
     database_category_router,
     database_inventory_router,
     database_layouts_router,
+    database_rack_router,
+    database_shelf_router,
     database_machine_router,
     database_metadata_router,
     database_rental_router,
@@ -20,14 +22,17 @@ from app.routers import (
     database_team_router,
     database_user_router,
     database_history_router,
+    database_documentation_router,
+    database_tags_router,
     ansible_router,
     dashboard_router,
     authentication_router,
     labs_router,
+    subpage_history_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
-from app.utils.database_service import init_super_user, init_virtual_lab
+from app.utils.database_service import init_super_user, init_virtual_lab, init_document
 
 # pylint: disable=unused-import
 import app.db.listeners
@@ -50,6 +55,7 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
     try:
         init_super_user(db)
         init_virtual_lab(db)
+        init_document(db)
     finally:
         db.close()
     status_task = asyncio.create_task(status_worker())
@@ -110,3 +116,8 @@ app.include_router(ansible_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(authentication_router.router)
 app.include_router(labs_router.router)
+app.include_router(database_documentation_router.router)
+app.include_router(database_tags_router.router)
+app.include_router(subpage_history_router.router)
+app.include_router(database_rack_router.router)
+app.include_router(database_shelf_router.router)

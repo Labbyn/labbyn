@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
@@ -30,7 +30,7 @@ import {
 import { historyQueryOptions } from '@/integrations/history/history.query'
 import { useRollbackMutation } from '@/integrations/history/history.mutation'
 
-export const Route = createFileRoute('/_auth/history')({
+export const Route = createFileRoute('/_auth/history/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(historyQueryOptions()),
   component: RouteComponent,
@@ -61,6 +61,7 @@ const ActionBadge = ({
 }
 
 function RouteComponent() {
+  const navigate = useNavigate()
   const { data: history = [], isLoading } = useQuery(historyQueryOptions())
   const [diffEntry, setDiffEntry] = useState<ApiHistoryItem | null>(null)
 
@@ -73,11 +74,13 @@ function RouteComponent() {
       header: ({ column }: any) => (
         <DataTableColumnHeader column={column} title="Timestamp" />
       ),
-      cell: ({ getValue }: any) => (
-        <span className="text-muted-foreground tabular-nums">
-          {new Date(getValue()).toLocaleString()}
-        </span>
-      ),
+      cell: ({ getValue }: any) => {
+        return (
+          <span className="text-muted-foreground tabular-nums">
+            {getValue()}
+          </span>
+        )
+      },
     },
     {
       id: 'target',
@@ -114,6 +117,7 @@ function RouteComponent() {
       id: 'actions',
       cell: ({ row }: any) => {
         const entry = row.original
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -154,7 +158,16 @@ function RouteComponent() {
         </p>
       </header>
 
-      <DataTable columns={columns} data={history} />
+      <DataTable
+        columns={columns}
+        data={history}
+        onRowClick={(row) => {
+          navigate({
+            to: '/history/$historyId',
+            params: { historyId: String(row.id) },
+          })
+        }}
+      />
 
       {/* Diff View Dialog */}
       <Dialog open={!!diffEntry} onOpenChange={() => setDiffEntry(null)}>
