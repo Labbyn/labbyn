@@ -3,7 +3,7 @@
 from typing import List
 
 from app.database import get_db
-from app.db.models import Machines, User, UserType
+from app.db.models import Machines, User, UserType, Rack, Shelf
 from app.db.schemas import (
     MachinesCreate,
     MachinesResponse,
@@ -146,6 +146,57 @@ async def delete_machine(
             )
         db.delete(machine)
         db.commit()
+
+
+@router.post(
+    "/db/machines/{machine_id}/mount/{shelf_id}", status_code=status.HTTP_200_OK
+)
+def mount_machine(
+    machine_id: int,
+    shelf_id: int,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
+    """
+    Mounts a machine onto a specific shelf
+    :param machine_id: ID of the machine to mount
+    :param shelf_id: ID of the target shelf
+    :param db: Active database session
+    :param ctx: Request context for authorization
+    :return: Status message
+    """
+    ctx.require_user()
+
+    machine_query = db.query(Machines).filter(Machines.id == machine_id)
+    machine = ctx.team_filter(machine_query, Machines).first()
+
+    if not machine:
+        raise HTTPException(
+            status_code=404, detail="Machine not found or access denied"
+        )
+
+    shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
+
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Target shelf not found")
+
+    if not ctx.is_admin:
+        rack = db.query(Rack).filter(Rack.id == shelf.rack_id).first()
+        if rack.team_id != ctx.team_id:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to use this rack/shelf",
+            )
+
+    machine.shelf_id = shelf_id
+
+    machine.localization_id = shelf.rack.room_id
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Machine {machine.name} mounted on shelf {shelf.name} (Rack: {shelf.rack.name})",
+    }
 
 
 @router.post("/db/machines/{machine_id}/unmount", status_code=status.HTTP_200_OK)
