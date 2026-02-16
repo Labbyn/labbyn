@@ -305,6 +305,63 @@ class TeamsResponse(TeamsBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TeamMemberSchema(BaseModel):
+    id: int
+    full_name: str
+    login: str
+    email: str
+    user_type: str
+    user_link: str
+
+
+class TeamDetailResponse(BaseModel):
+    id: int
+    name: str
+    team_admin_name: str
+    admin_details: Optional[Dict[str, str]] = None
+    members: List[TeamMemberSchema]
+    member_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TeamRackDetail(BaseModel):
+    name: str
+    team_name: str
+    map_link: str
+
+
+class TeamMachineDetail(BaseModel):
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    team_name: str
+    rack_name: str
+    shelf_order: int
+
+
+class TeamInventoryDetail(BaseModel):
+    name: str
+    quantity: int
+    team_name: str
+    room_name: str
+    machine_info: Optional[str]
+    category_name: str
+    rental_status: bool
+    rental_id: Optional[int]
+    location_link: str
+
+
+class TeamFullDetailResponse(BaseModel):
+    id: int
+    name: str
+    admin: Dict[str, str]
+    members: List[TeamMemberSchema]
+    racks: List[TeamRackDetail]
+    machines: List[TeamMachineDetail]
+    inventory: List[TeamInventoryDetail]
+
+
 # ==========================
 #          USER
 # ==========================
