@@ -465,7 +465,7 @@ class MachinesBase(BaseModel):
         None, max_length=100, description="Disk/Storage specification"
     )
     metadata_id: int = Field(..., description="ID of associated metadata record")
-    layout_id: Optional[int] = Field(
+    shelf_id: Optional[int] = Field(
         None, description="ID of layout coordinates if applicable"
     )
 

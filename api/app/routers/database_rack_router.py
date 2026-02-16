@@ -100,7 +100,7 @@ def get_rack_detail(
     return rack
 
 
-@router.post("/db/racks", response_model=RackResponse)
+@router.post("/db/racks", response_model=RackResponse, status_code=status.HTTP_201_CREATED)
 def create_rack(rack: RackCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Create a new rack with team and room validation
