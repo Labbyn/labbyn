@@ -1,8 +1,8 @@
-export type ApiDocumentationItem = {
+export type ApiTagsItem = {
   id: number
-  nane: string
+  name: string
   color: string
   version_id: number | null
 }
 
-export type AiDocumentationResponse = Array<ApiDocumentationItem>
+export type ApiTagsResponse = Array<ApiTagsItem>
