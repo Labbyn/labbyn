@@ -82,7 +82,7 @@ def test_validation_error_handler(test_client, service_header_sync):
 @pytest.mark.rbac
 def test_resource_chain_creation(test_client, service_header_sync):
     """
-    Tests dependencies: Room -> Metadata -> Team -> User -> Machine
+    Tests dependencies: Room -> Metadata -> Team -> Tag -> Rack -> Shelf -> Machine
     """
 
     ac = test_client
@@ -138,11 +138,36 @@ def test_resource_chain_creation(test_client, service_header_sync):
     new_admin_token = login_res.json()["access_token"]
     new_admin_header = {"Authorization": f"Bearer {new_admin_token}"}
 
+    tag_res = ac.post(
+        "/db/tags/", json={"name": unique_str("PROD"), "color": "red"}, headers=headers
+    )
+    tag_id = tag_res.json()["id"]
+
+    rack_payload = {
+        "name": unique_str("RACK-API"),
+        "room_id": room_id,
+        "team_id": team_id,
+        "tag_ids": [tag_id],
+    }
+
+    rack_res = ac.post("/db/racks", json=rack_payload, headers=new_admin_header)
+    assert rack_res.status_code == 201
+    rack_id = rack_res.json()["id"]
+
+    shelf_res = ac.post(
+        f"/db/shelf/{rack_id}",
+        json={"name": "Półka 1", "order": 1},
+        headers=new_admin_header,
+    )
+    assert shelf_res.status_code == 201
+    shelf_id = shelf_res.json()["id"]
+
     machine_payload = {
         "name": unique_str("srv-api"),
         "localization_id": room_id,
         "metadata_id": meta_id,
         "team_id": team_id,
+        "shelf_id": shelf_id,
         "os": "Debian",
         "cpu": "CPU",
         "ram": "4GB",

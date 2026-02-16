@@ -42,7 +42,7 @@ def test_database_is_reachable(db_session):
 def test_machine_full_lifecycle(db_session):
     """
     Create advanced model object (new Machine).
-    Check is Relations Machine -> Room, Machine -> Metadata, are correct.
+    Checks relations: Machine -> Room, Machine -> Metadata, Machine -> Shelf.
     Check is listener is registring operations properly
     """
 
@@ -67,6 +67,16 @@ def test_machine_full_lifecycle(db_session):
     )
     author_id = author.id
 
+    rack = models.Rack(
+        name=generate_unique_name("Rack"), room_id=room.id, layout_id=None
+    )
+    db_session.add(rack)
+    db_session.flush()
+
+    shelf = models.Shelf(name="Shelf-01", rack_id=rack.id, order=1)
+    db_session.add(shelf)
+    db_session.flush()
+
     machine_name = generate_unique_name("SmokeMachine")
     machine = service.create_machine(
         db_session,
@@ -74,6 +84,7 @@ def test_machine_full_lifecycle(db_session):
             name=machine_name,
             localization_id=room.id,
             metadata_id=meta.id,
+            shelf_id=shelf.id,
             cpu="Intel Xeon",
             ram="128GB",
         ),
@@ -83,6 +94,8 @@ def test_machine_full_lifecycle(db_session):
     assert machine.id is not None
 
     db_session.commit()
+
+    assert machine.shelf.name == "Shelf-01"
 
     history = (
         db_session.query(models.History)
