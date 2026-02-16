@@ -4,8 +4,17 @@ from typing import List
 from app.database import get_db
 from app.db.models import (
     Teams,
+    Inventory,
+    Rack,
+    Shelf,
 )
-from app.db.schemas import TeamsCreate, TeamsResponse, TeamsUpdate, TeamDetailResponse
+from app.db.schemas import (
+    TeamsCreate,
+    TeamsResponse,
+    TeamsUpdate,
+    TeamDetailResponse,
+    TeamFullDetailResponse,
+)
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
@@ -26,21 +35,92 @@ def format_team_output(team: Teams):
 
     if team_admin:
         admin_display = f"{team_admin.name} {team_admin.surname}"
+        admin_info = {
+            "first_name": team_admin.name,
+            "last_name": team_admin.surname,
+            "login": team_admin.login,
+            "email": team_admin.email,
+        }
     else:
         admin_display = "No admin assigned"
+        admin_info = None
 
     return {
         "id": team.id,
         "name": team.name,
         "team_admin_name": admin_display,
+        "admin_details": admin_info,
+        "member_count": len(team.users),
         "members": [
             {
                 "id": u.id,
                 "full_name": f"{u.name} {u.surname}",
+                "login": u.login,
+                "user_type": str(u.user_type),
                 "email": u.email,
                 "user_link": f"/users/{u.id}",
             }
             for u in team.users
+        ],
+    }
+
+
+def format_team_full_detail(team: Teams):
+    team_admin = next((u for u in team.users if u.id == team.team_admin_id), None)
+    admin_info = {
+        "full_name": f"{team_admin.name} {team_admin.surname}" if team_admin else "N/A",
+        "login": team_admin.login if team_admin else "N/A",
+        "email": team_admin.email if team_admin else "N/A",
+    }
+
+    sorted_machines = []
+    for rack in team.racks:
+        for shelf in sorted(rack.shelves, key=lambda s: s.order):
+            for machine in shelf.machines:
+                sorted_machines.append(
+                    {
+                        "name": machine.name,
+                        "ip_address": machine.ip_address,
+                        "mac_address": machine.mac_address,
+                        "team_name": team.name,
+                        "rack_name": rack.name,
+                        "shelf_order": shelf.order,
+                    }
+                )
+
+    return {
+        "id": team.id,
+        "name": team.name,
+        "admin": admin_info,
+        "members": [
+            {
+                "id": u.id,
+                "full_name": f"{u.name} {u.surname}",
+                "login": u.login,
+                "email": u.email,
+                "user_type": str(u.user_type),
+                "user_link": f"/users/{u.id}",
+            }
+            for u in team.users
+        ],
+        "racks": [
+            {"name": r.name, "team_name": team.name, "map_link": f"/map/{r.room_id}"}
+            for r in team.racks
+        ],
+        "machines": sorted_machines,
+        "inventory": [
+            {
+                "name": i.name,
+                "quantity": i.quantity,
+                "team_name": team.name,
+                "room_name": i.room.name if i.room else "Unknown",
+                "machine_info": i.machine.name if i.machine else "N/A",
+                "category_name": i.category.name if i.category else "General",
+                "rental_status": i.rental_status,
+                "rental_id": i.rental_id,
+                "location_link": f"/rooms/{i.localization_id}",
+            }
+            for i in team.inventory
         ],
     }
 
@@ -81,7 +161,7 @@ def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
 
 
 @router.get(
-    "/db/teams/team_info", response_model=List[TeamDetailResponse], tags=["Teams"]
+    "/db/teams/teams_info", response_model=List[TeamDetailResponse], tags=["Teams"]
 )
 def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
@@ -96,13 +176,15 @@ def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()
 
 
 @router.get(
-    "/db/teams/team_info/{team_id}", response_model=TeamDetailResponse, tags=["Teams"]
+    "/db/teams/team_info/{team_id}",
+    response_model=TeamFullDetailResponse,
+    tags=["Teams"],
 )
 def get_team_info_by_id(
     team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
-    Fetch detailed information about a specific team by ID, including admin names and member details.
+    Fetch detailed information about a specific team by ID, including user, machines, and inventory details.
     :param team_id: Team ID
     :param db: Active database session
     :param ctx: Request context for user and team info
@@ -113,14 +195,21 @@ def get_team_info_by_id(
     team = (
         db.query(Teams)
         .filter(Teams.id == team_id)
-        .options(joinedload(Teams.users))
+        .options(
+            joinedload(Teams.users),
+            joinedload(Teams.racks),
+            joinedload(Teams.inventory).joinedload(Inventory.room),
+            joinedload(Teams.inventory).joinedload(Inventory.category),
+            joinedload(Teams.inventory).joinedload(Inventory.machine),
+            joinedload(Teams.racks).joinedload(Rack.shelves).joinedload(Shelf.machines),
+        )
         .first()
     )
 
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
 
-    return format_team_output(team)
+    return format_team_full_detail(team)
 
 
 @router.get("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])
