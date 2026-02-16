@@ -19,6 +19,7 @@ from app.db.schemas import (
 
 router = APIRouter(tags=["racks"])
 
+
 @router.get("/db/racks", response_model=List[RackResponse])
 def get_racks(
     room_ids: Optional[List[int]] = Query(None),
@@ -100,8 +101,12 @@ def get_rack_detail(
     return rack
 
 
-@router.post("/db/racks", response_model=RackResponse, status_code=status.HTTP_201_CREATED)
-def create_rack(rack: RackCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+@router.post(
+    "/db/racks", response_model=RackResponse, status_code=status.HTTP_201_CREATED
+)
+def create_rack(
+    rack: RackCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Create a new rack with team and room validation
     :param rack: Rack creation data

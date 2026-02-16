@@ -511,6 +511,7 @@ class MachinesResponse(MachinesBase):
     version_id: int
     model_config = ConfigDict(from_attributes=True)
 
+
 class MachineInRackResponse(BaseModel):
     """
     Schema for reading Machine data within a Rack context.
@@ -524,6 +525,7 @@ class MachineInRackResponse(BaseModel):
     team_id: Optional[int]
     machine_url: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
+
 
 # ==========================
 #          RENTALS
@@ -839,6 +841,7 @@ class DocumentationResponse(DocumentationBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 # ==========================
 #      RACKS & SHELVES
 # ==========================
@@ -904,7 +907,10 @@ class RackBase(BaseModel):
 
 class RackCreate(RackBase):
     """Schema for creating a new Rack."""
-    tag_ids: Optional[List[int]] = Field(default=[], description="List of existing Tag IDs to associate with this rack")
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this rack"
+    )
 
 
 class RackUpdate(BaseModel):

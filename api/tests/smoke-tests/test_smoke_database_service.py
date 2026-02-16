@@ -68,9 +68,7 @@ def test_machine_full_lifecycle(db_session):
     author_id = author.id
 
     rack = models.Rack(
-        name=generate_unique_name("Rack"),
-        room_id=room.id,
-        layout_id=None
+        name=generate_unique_name("Rack"), room_id=room.id, layout_id=None
     )
     db_session.add(rack)
     db_session.flush()
@@ -86,7 +84,7 @@ def test_machine_full_lifecycle(db_session):
             name=machine_name,
             localization_id=room.id,
             metadata_id=meta.id,
-            shelf_id = shelf.id,
+            shelf_id=shelf.id,
             cpu="Intel Xeon",
             ram="128GB",
         ),

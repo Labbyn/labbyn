@@ -85,6 +85,7 @@ class Layouts(Base):
     layout = relationship("Layout", back_populates="rooms")
     room = relationship("Rooms", back_populates="layouts")
 
+
 class Rack(Base):
     """
     Rack model representing racks in the system.
@@ -105,9 +106,8 @@ class Rack(Base):
     room = relationship("Rooms", back_populates="racks")
     layout = relationship("Layout", back_populates="racks")
     shelves = relationship("Shelf", back_populates="rack", cascade="all, delete-orphan")
-    tags = relationship(
-        "Tags", secondary="tags_racks", back_populates="racks"
-    )
+    tags = relationship("Tags", secondary="tags_racks", back_populates="racks")
+
 
 class Shelf(Base):
     """
@@ -126,6 +126,7 @@ class Shelf(Base):
 
     rack = relationship("Rack", back_populates="shelves")
     machines = relationship("Machines", back_populates="shelf")
+
 
 class Rooms(Base):
     """
@@ -147,6 +148,7 @@ class Rooms(Base):
     inventory = relationship("Inventory", back_populates="room")
     team = relationship("Teams", back_populates="rooms")
     racks = relationship("Rack", back_populates="room")
+
 
 class Machines(Base):
     """
@@ -408,10 +410,7 @@ class Tags(Base):
         "Documentation", secondary="tags_documentation", back_populates="tags"
     )
 
-    racks = relationship(
-        "Rack", secondary="tags_racks", back_populates="tags"
-    )
-
+    racks = relationship("Rack", secondary="tags_racks", back_populates="tags")
 
 
 class Documentation(Base):
@@ -452,6 +451,7 @@ class TagsRacks(Base):
     """
     TagsRacks model representing association between racks and tags.
     """
+
     __tablename__ = "tags_racks"
 
     id = Column(Integer, primary_key=True)
