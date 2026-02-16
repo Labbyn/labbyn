@@ -101,19 +101,19 @@ async def get_machine_full_detail(
     """
 
     ctx.require_user()
+    query = db.query(Machines).filter(Machines.id == machine_id)
+
+    query = ctx.team_filter(query, Machines)
 
     machine = (
-        db.query(Machines)
-        .options(
+        query.options(
             joinedload(Machines.team),
             joinedload(Machines.room),
             joinedload(Machines.machine_metadata),
             joinedload(Machines.tags),
             joinedload(Machines.shelf).joinedload(Shelf.rack),
         )
-        .filter(Machines.id == machine_id)
-        .first()
-    )
+    ).first()
 
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
