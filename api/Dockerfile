@@ -9,7 +9,7 @@ FROM python:3.12-alpine AS production
 
 WORKDIR /code
 
-RUN apk add --no-cache postgresql17-client=17.7-r0 \
+RUN apk add --no-cache postgresql17-client=17.8-r0 \
     openssh-client=10.2_p1-r0
 
 RUN mkdir -p /root/.ssh && \

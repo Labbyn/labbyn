@@ -1,15 +1,16 @@
 import { createContext, useContext } from 'react'
-import type { Document } from '@/types/types'
+import type { ApiDocumentationItem } from '@/integrations/documentation/documentation.types'
 
 export interface DocsContextType {
-  documents: Array<Document>
-  handleSave: (doc: Document) => void
+  documents: Array<ApiDocumentationItem>
+  handleSave: (doc: ApiDocumentationItem) => void
   handleDelete: (id: string) => void
   isLoading: boolean
   isEditing: boolean
   setIsEditing: (value: boolean) => void
   isDirty: boolean
   setIsDirty: (value: boolean) => void
+  isSaving: boolean
 }
 
 const DocsContext = createContext<DocsContextType | null>(null)

@@ -1,7 +1,7 @@
 import { createFileRoute, useBlocker } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
 import { useDocsContext } from './-context'
-import type { Document as AppDocument } from '@/types/types'
+import type { ApiDocumentationItem } from '@/integrations/documentation/documentation.types'
 import { DocumentEditor } from '@/components/document-editor'
 import { DocumentPreview } from '@/components/document-preview'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -32,7 +32,10 @@ function DocDetailComponent() {
   } = useDocsContext()
 
   const selectedDoc = useMemo(
-    () => documents.find((d: AppDocument) => d.id === docId),
+    () =>
+      documents.find(
+        (d: ApiDocumentationItem) => Number(d.id) === Number(docId),
+      ),
     [documents, docId],
   )
 
@@ -97,7 +100,7 @@ function DocDetailComponent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes in <strong>{selectedDoc.name}</strong>.
+              You have unsaved changes in <strong>{selectedDoc.title}</strong>.
               Are you sure you want to leave? Your changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
