@@ -3,7 +3,7 @@ import type { UserRead } from './user.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/users/',
+  BASE: '/db/users/list_info',
   ME: '/users/me',
   SINGLE: (id: string | number) => `/db/users/${id}`,
 }
