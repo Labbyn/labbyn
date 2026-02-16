@@ -384,29 +384,41 @@ class UserCreatedResponse(UserResponse):
     )
 
 
-class UserInfo(BaseModel):
+class UserGroupInfo(BaseModel):
     """
-    Basic user information for display purposes
+    Model representing a simplified group/team information.
+    Used to provide group names in user-related responses.
     """
 
-    name: str
-    surname: str
-    email: str
-    team_name: Optional[str] = None
+    name: str = Field(..., description="Name of the team/group")
+
+
+class UserInfo(BaseModel):
+    """
+    Basic user information for display purposes.
+    Includes identity, role and assigned groups.
+    """
+
+    name: str = Field(..., description="User's first name")
+    surname: str = Field(..., description="User's last name")
+    login: str = Field(..., description="Unique login username")
+    user_type: UserType = Field(..., description="User's role and permissions level")
+    assigned_groups: List[UserGroupInfo] = Field(
+        default=[], description="List of groups the user belongs to"
+    )
 
 
 class UserInfoExtended(UserInfo):
     """
-    Extended user information for display purposes,
-    including login and user type
+    Extended user profile information for detailed views.
+    Includes avatar, contact details and group links.
     """
 
-    id: int
-    login: str
-    user_type: UserType
-    is_active: bool
-    is_verified: bool
-    force_password_change: bool
+    avatar_url: Optional[str] = None
+    email: EmailStr
+    group_links: List[str] = Field(
+        default=[], description="Links to the assigned groups details"
+    )
 
 
 # ==========================
