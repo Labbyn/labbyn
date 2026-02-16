@@ -228,6 +228,7 @@ class Teams(Base):
     rooms = relationship("Rooms", back_populates="team")
     inventory = relationship("Inventory", back_populates="team")
     users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
+    racks = relationship("Rack", back_populates="team")
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
