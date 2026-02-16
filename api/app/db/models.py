@@ -95,7 +95,7 @@ class Rack(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
     room_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
-    layout_id = Column(Integer, ForeignKey("layout.id"), nullable=False)
+    layout_id = Column(Integer, ForeignKey("layout.id"), nullable=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
 
     version_id = Column(Integer, nullable=False, default=1)
