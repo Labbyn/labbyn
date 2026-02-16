@@ -497,7 +497,7 @@ class MachinesUpdate(BaseModel):
     cpu: Optional[str] = Field(None, max_length=100)
     ram: Optional[str] = Field(None, max_length=100)
     disk: Optional[str] = Field(None, max_length=100)
-    layout_id: Optional[int] = None
+    shelf_id: Optional[int] = None
     metadata_id: Optional[int] = None
 
 

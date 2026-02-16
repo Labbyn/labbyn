@@ -136,7 +136,7 @@ async def delete_machine(
     :return: None
     """
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        query = db.Query(Machines).filter(Machines.id == machine_id)
+        query = db.query(Machines).filter(Machines.id == machine_id)
         query = ctx.team_filter(query, Machines)
         machine = query.first()
         if not machine:
