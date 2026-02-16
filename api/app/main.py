@@ -12,6 +12,8 @@ from app.routers import (
     database_category_router,
     database_inventory_router,
     database_layouts_router,
+    database_rack_router,
+    database_shelf_router,
     database_machine_router,
     database_metadata_router,
     database_rental_router,
@@ -107,3 +109,5 @@ app.include_router(labs_router.router)
 app.include_router(database_documentation_router.router)
 app.include_router(database_tags_router.router)
 app.include_router(subpage_history_router.router)
+app.include_router(database_rack_router.router)
+app.include_router(database_shelf_router.router)
