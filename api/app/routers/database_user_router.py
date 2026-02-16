@@ -162,13 +162,17 @@ def get_users_with_groups(
 
 
 @router.get(
-    "/db/users/detail_info/{user_id}", response_model=UserInfoExtended, tags=["Users"]
+    "/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"]
 )
 def get_user_detail_with_groups(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
     Fetch full user profile including avatar and group links (requires permissions).
+    :param user_id: User ID
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: User object with extended info
     """
     ctx.require_user()
     user = (
