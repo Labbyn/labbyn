@@ -15,9 +15,12 @@ export const useCreateDocumentMutation = () => {
 
   return useMutation({
     mutationFn: async () => {
+      const timestamp = new Date().toLocaleString()
+
       const { data } = await api.post<ApiDocumentationItem>(PATHS.BASE, {
-        name: 'New Document',
-        content: '',
+        title: `New Document ${timestamp}`,
+        author: 'anonymous admin',
+        content: '# New Document',
       })
       return data
     },
@@ -35,7 +38,11 @@ export const useUpdateDocumentMutation = () => {
 
   return useMutation({
     mutationFn: async (doc: ApiDocumentationItem) => {
-      const { data } = await api.put<ApiDocumentationItem>(PATHS.SINGLE(doc.id), doc)
+      const payload = {
+        title: doc.title,
+        content: doc.content
+      }
+      const { data } = await api.put<ApiDocumentationItem>(PATHS.SINGLE(doc.id), payload)
       return data
     },
     onSuccess: (data) => {

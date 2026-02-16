@@ -809,6 +809,7 @@ class DocumentationCreate(DocumentationBase):
 
 class DocumentationUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=50)
+    content: Optional[str] = Field(None, max_length=5000, description="Documentation content")
     modified_on: datetime = Field(default_factory=datetime.now)
     tag_ids: Optional[List[int]] = None
 

@@ -38,7 +38,15 @@ function DocsLayout() {
   const updateMutation = useUpdateDocumentMutation()
   const deleteMutation = useDeleteDocumentMutation()
 
-  const handleSave = (doc: Document) => updateMutation.mutate(doc)
+  const isSaving = updateMutation.isPending
+  const handleSave = (doc: Document) => {
+    updateMutation.mutate(doc, {
+          onSuccess: () => {
+            setIsEditing(false)
+            setIsDirty(false)
+          }
+  })
+  }
   const handleDelete = (docId: string) => deleteMutation.mutate(docId)
 
   const handleCreate = () => {
@@ -89,6 +97,7 @@ function DocsLayout() {
                 isLoading,
                 isDirty,
                 setIsDirty,
+                isSaving
               }}
             >
               <Outlet />

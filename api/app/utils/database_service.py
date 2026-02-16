@@ -17,6 +17,7 @@ from app.db import models
 
 # pylint: disable=unused-import
 import app.db.listeners
+import inspect
 
 
 # ==========================
@@ -97,10 +98,7 @@ def init_document(db: Session):
         models.Documentation.title == "labbyn"
     ).first()
     if not labbyn_docs:
-        labbyn_docs = models.Documentation(
-            title="labbyn",
-            author="anonymous admin",
-            content="""
+        content_raw="""
                 # Labbyn
 
                 Labbyn is an application for your datacenter, laboratory or homelab. You can monitor your infrastructure, set the location of each server or platform on an interactive dashboard, store information about your assets in an inventory and more. Everything runs on a modern GUI, is deployable on most Linux machines and is **OPEN SOURCE**.
@@ -149,7 +147,12 @@ def init_document(db: Session):
 
                 **PJATK 2025**:
                 s26990, s26985, s27081, s27549
-                """,
+                """
+
+        labbyn_docs = models.Documentation(
+            title="labbyn",
+            author="anonymous admin",
+            content=inspect.cleandoc(content_raw)
         )
         db.add(labbyn_docs)
         db.commit()
