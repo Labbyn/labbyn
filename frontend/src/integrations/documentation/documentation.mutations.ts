@@ -19,7 +19,6 @@ export const useCreateDocumentMutation = () => {
 
       const { data } = await api.post<ApiDocumentationItem>(PATHS.BASE, {
         title: `New Document ${timestamp}`,
-        author: 'anonymous admin',
         content: '# New Document',
       })
       return data

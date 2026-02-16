@@ -51,8 +51,11 @@ def create_documentation(
     :param ctx: Request context for user and team info
     :return: New document item
     """
+
+    current_author = ctx.current_user.login
     tag_ids = documentation_data.tag_ids or []
-    obj = Documentation(**documentation_data.model_dump(exclude={"tag_ids"}))
+    obj = Documentation(**documentation_data.model_dump(exclude={"tag_ids"}),
+            author=current_author)
     if tag_ids:
         obj.tags = db.query(Tags).filter(Tags.id.in_(tag_ids)).all()
     db.add(obj)
