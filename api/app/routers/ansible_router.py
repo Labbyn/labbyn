@@ -193,6 +193,9 @@ async def discover_hosts(
             if machine:
                 has_changes = False
 
+                if machine.ip_address != host:
+                    machine.ip_address = host
+                    has_changes = True
                 if machine.os != specs["os"]:
                     machine.os = specs["os"]
                     has_changes = True
@@ -247,7 +250,7 @@ async def discover_hosts(
                     ram=specs["ram"],
                     disk=specs["disk"],
                     mac_address=specs["mac_address"],
-                    ip_address=specs["ip_address"],
+                    ip_address=host,
                     added_on=datetime.now(),
                 )
                 db.add(new_machine)
