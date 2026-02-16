@@ -481,7 +481,7 @@ class MachinesBase(BaseModel):
         None, max_length=100, description="Disk/Storage specification"
     )
     metadata_id: int = Field(..., description="ID of associated metadata record")
-    layout_id: Optional[int] = Field(
+    shelf_id: Optional[int] = Field(
         None, description="ID of layout coordinates if applicable"
     )
 
@@ -513,7 +513,7 @@ class MachinesUpdate(BaseModel):
     cpu: Optional[str] = Field(None, max_length=100)
     ram: Optional[str] = Field(None, max_length=100)
     disk: Optional[str] = Field(None, max_length=100)
-    layout_id: Optional[int] = None
+    shelf_id: Optional[int] = None
     metadata_id: Optional[int] = None
 
 
@@ -525,6 +525,21 @@ class MachinesResponse(MachinesBase):
     id: int
     added_on: datetime
     version_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MachineInRackResponse(BaseModel):
+    """
+    Schema for reading Machine data within a Rack context.
+    Includes shelf information.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    team_id: Optional[int]
+    machine_url: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -673,7 +688,7 @@ class HistoryResponse(HistoryBase):
 
 
 # ==========================
-#       DASHBOARD MODELS
+#    DASHBOARD MODELS
 # ==========================
 
 
@@ -694,7 +709,7 @@ class DashboardResponse(BaseModel):
 
 
 # ==========================
-#       LABS FRONTEND MODELS
+#   LABS FRONTEND MODELS
 # ==========================
 
 
@@ -759,3 +774,186 @@ class FirstChangePasswordRequest(BaseModel):
     """
 
     new_password: str = Field(..., min_length=6, max_length=255)
+
+
+# ==========================
+#      TAGS SCHEMAS
+# ==========================
+
+
+class TagsBase(BaseModel):
+    name: str = Field(..., max_length=50, description="Unique name of the tag")
+    color: str = Field(..., max_length=50, description="Color hex or name")
+
+
+class TagsCreate(TagsBase):
+    """Used for creating a new tag in the system."""
+
+    pass
+
+
+class TagsUpdate(BaseModel):
+    """Used for updating tag metadata."""
+
+    name: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+
+
+class TagsResponse(TagsBase):
+    """Standard tag response."""
+
+    id: int
+    version_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#   DOCUMENTATION SCHEMAS
+# ==========================
+
+
+class DocumentationBase(BaseModel):
+    """
+    Base model containing all shared attributes from the DB.
+    """
+
+    title: str = Field(
+        ..., max_length=50, description="Unique title of the documentation"
+    )
+    added_on: datetime = Field(default_factory=datetime.now)
+    modified_on: Optional[datetime] = None
+    content: str = Field(..., max_length=5000, description="Documentation content")
+
+
+class DocumentationCreate(DocumentationBase):
+    """
+    When creating documentation, you usually pass a list of tag IDs
+    to link them in the association table.
+    """
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs"
+    )
+
+
+class DocumentationUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=50)
+    content: Optional[str] = Field(
+        None, max_length=5000, description="Documentation content"
+    )
+    modified_on: datetime = Field(default_factory=datetime.now)
+    tag_ids: Optional[List[int]] = None
+
+
+class DocumentationResponse(DocumentationBase):
+    id: int
+    author: str
+    added_on: datetime
+    modified_on: Optional[datetime]
+    version_id: int
+
+    tags: List[TagsResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#      RACKS & SHELVES
+# ==========================
+
+
+class ShelfBase(BaseModel):
+    """
+    Base model for Shelf containing shared attributes.
+    Represents a shelf within a rack, which can hold machines or inventory.
+    """
+
+    name: str = Field(..., max_length=100, description="Name of the shelf")
+    order: int = Field(..., description="Order of the shelf within the rack")
+
+
+class ShelfCreate(ShelfBase):
+    """Schema for creating a new Shelf."""
+
+    pass
+
+
+class ShelfUpdate(BaseModel):
+    """
+    Schema for updating an existing Shelf.
+    All fields are optional to allow partial updates.
+    """
+
+    name: Optional[str] = Field(None, max_length=100)
+    order: Optional[int] = None
+    rack_id: Optional[int] = None
+
+
+class ShelfResponse(BaseModel):
+    """
+    Schema for reading Shelf data (Response).
+    Includes the database ID.
+    """
+
+    id: int = Field(..., description="Unique identifier of the shelf")
+    name: Optional[str] = Field(None, max_length=100, description="Name of the shelf")
+    order: int = Field(None, description="Order of the shelf within the rack")
+    rack_id: int = Field(..., description="Unique identifier of the rack")
+    rack_name: Optional[str] = Field(None, description="Name of the rack")
+    machines: List[MachineInRackResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RackBase(BaseModel):
+    """
+    Base model for Rack containing shared attributes.
+    Represents a rack that can contain multiple shelves.
+    """
+
+    name: str = Field(..., max_length=100, description="Name of the rack")
+    room_id: int = Field(..., description="Location of the rack")
+    layout_id: Optional[int] = Field(
+        None, description="ID of the layout coordinates for this rack"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team that owns this rack (if applicable)"
+    )
+
+
+class RackCreate(RackBase):
+    """Schema for creating a new Rack."""
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this rack"
+    )
+
+
+class RackUpdate(BaseModel):
+    """
+    Schema for updating an existing Rack.
+    All fields are optional to allow partial updates.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="Name of the rack")
+    room_id: Optional[int] = Field(None, description="Location of the rack")
+    layout_id: Optional[int] = Field(
+        None, description="ID of the layout coordinates for this rack"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team that owns this rack (if applicable)"
+    )
+
+
+class RackResponse(RackBase):
+    """
+    Schema for reading Rack data (Response).
+    Includes the database ID and nested shelves.
+    """
+
+    id: int = Field(..., description="Unique identifier of the rack")
+    room_name: Optional[str]
+    team_name: Optional[str]
+    tags: List[TagsResponse] = []
+    shelves: List[ShelfResponse] = []
+    model_config = ConfigDict(from_attributes=True)
