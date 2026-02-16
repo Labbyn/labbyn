@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Eye, History, Info, MoreHorizontal, RotateCcw } from 'lucide-react'
+import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import type { ApiHistoryItem } from '@/integrations/history/history.types'
@@ -69,16 +69,15 @@ function RouteComponent() {
 
   const columns: Array<ColumnDef<ApiHistoryItem>> = [
     {
-      accessorKey: 'timestamp',
+      id: 'timeStamp',
+      accessorFn: (row) => new Date(row.timestamp).toLocaleString(),
       header: ({ column }: any) => (
         <DataTableColumnHeader column={column} title="Timestamp" />
       ),
       cell: ({ getValue }: any) => {
-        const rawValue = getValue()
-        const date = new Date(rawValue)
         return (
           <span className="text-muted-foreground tabular-nums">
-            {date.toLocaleString()}
+            {getValue()}
           </span>
         )
       },
@@ -131,11 +130,6 @@ function RouteComponent() {
               <DropdownMenuItem onClick={() => setDiffEntry(entry)}>
                 <Eye className="mr-2 h-4 w-4" /> Compare Changes
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => navigate({ to: `/history/${entry.id}` })}
-              >
-                <Info className="mr-2 h-4 w-4" /> Show details
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={!entry.can_rollback || rollbackMutation.isPending}
@@ -164,7 +158,16 @@ function RouteComponent() {
         </p>
       </header>
 
-      <DataTable columns={columns} data={history} />
+      <DataTable
+        columns={columns}
+        data={history}
+        onRowClick={(row) => {
+          navigate({
+            to: '/history/$historyId',
+            params: { historyId: String(row.id) },
+          })
+        }}
+      />
 
       {/* Diff View Dialog */}
       <Dialog open={!!diffEntry} onOpenChange={() => setDiffEntry(null)}>
