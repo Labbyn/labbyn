@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
-import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Eye, History, Info, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 
 import type { ApiHistoryItem } from '@/integrations/history/history.types'
@@ -30,7 +30,7 @@ import {
 import { historyQueryOptions } from '@/integrations/history/history.query'
 import { useRollbackMutation } from '@/integrations/history/history.mutation'
 
-export const Route = createFileRoute('/_auth/history')({
+export const Route = createFileRoute('/_auth/history/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(historyQueryOptions()),
   component: RouteComponent,
@@ -61,6 +61,7 @@ const ActionBadge = ({
 }
 
 function RouteComponent() {
+  const navigate = useNavigate()
   const { data: history = [], isLoading } = useQuery(historyQueryOptions())
   const [diffEntry, setDiffEntry] = useState<ApiHistoryItem | null>(null)
 
@@ -68,16 +69,19 @@ function RouteComponent() {
 
   const columns: Array<ColumnDef<ApiHistoryItem>> = [
     {
-      id: 'timeStamp',
-      accessorFn: (row) => new Date(row.timestamp).toLocaleString(),
+      accessorKey: 'timestamp',
       header: ({ column }: any) => (
         <DataTableColumnHeader column={column} title="Timestamp" />
       ),
-      cell: ({ getValue }: any) => (
-        <span className="text-muted-foreground tabular-nums">
-          {new Date(getValue()).toLocaleString()}
-        </span>
-      ),
+      cell: ({ getValue }: any) => {
+        const rawValue = getValue()
+        const date = new Date(rawValue)
+        return (
+          <span className="text-muted-foreground tabular-nums">
+            {date.toLocaleString()}
+          </span>
+        )
+      },
     },
     {
       id: 'target',
@@ -114,6 +118,7 @@ function RouteComponent() {
       id: 'actions',
       cell: ({ row }: any) => {
         const entry = row.original
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -125,6 +130,11 @@ function RouteComponent() {
               <DropdownMenuLabel>Audit Options</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => setDiffEntry(entry)}>
                 <Eye className="mr-2 h-4 w-4" /> Compare Changes
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate({ to: `/history/${entry.id}` })}
+              >
+                <Info className="mr-2 h-4 w-4" /> Show details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

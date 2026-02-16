@@ -2,26 +2,17 @@
 
 from typing import List, Dict, Any, Tuple
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.database import get_db
-from app.db.models import (
-    History,
-    User,
-    EntityType,
-    ActionType,
-    Machines,
-    Inventory,
-    Rooms,
-    Categories,
-)
+from app.db.models import History, User
 from app.db.schemas import HistoryResponse
 from app.auth.dependencies import RequestContext
+from app.routers.database_history_router import resolve_entity_name
 
 router = APIRouter()
 
-
+# Filtering out history fields
 INTERNAL_KEYS = {
     "id",
     "version_id",
@@ -33,6 +24,15 @@ INTERNAL_KEYS = {
     "is_superuser",
     "force_password_change",
     "timestamp",
+    "metadata_id",
+    "item_id",
+    "layout_id",
+    "localization_id",
+    "room_id",
+    "rental_id",
+    "category_id",
+    "machine_id",
+    "entity_id",
 }
 
 
@@ -67,45 +67,51 @@ def get_state_diff(
     return diff_before, diff_after
 
 
-def get_model_class(entity_type: EntityType):
-    """
-    Map EntityType to corresponding SQLAlchemy model class.
-    :param entity_type: EntityType enum value
-    :return: Corresponding SQLAlchemy model class or None
-    """
-    mapping = {
-        EntityType.MACHINES: Machines,
-        EntityType.INVENTORY: Inventory,
-        EntityType.ROOM: Rooms,
-        EntityType.USER: User,
-        EntityType.CATEGORIES: Categories,
-    }
-    return mapping.get(entity_type)
+@router.get("/sub/history", response_model=List[HistoryResponse], tags=["History"])
+def get_history_logs(
+    limit=200, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
+    query = (
+        db.query(History)
+        .join(User, History.user_id == User.id)
+        .options(joinedload(History.user))
+    )
+    query = ctx.team_filter(query, User)
+    query = query.order_by(History.timestamp.desc())
+    logs = query.limit(limit).all()
 
+    results = []
 
-def resolve_entity_name(log: History, db: Session):
-    """
-    Fetch the name of the entity based on its type and ID.
-    log: History log entry
-    db: Active database session
-    :return: Readable name of the entity
-    """
-    state = log.after_state or log.before_state
-    if state:
-        if "name" in state:
-            return state["name"]
-        if "login" in state:
-            return state["login"]
+    for log in logs:
+        clean_before, clean_after = get_state_diff(log.before_state, log.after_state)
 
-    model_class = get_model_class(log.entity_type)
-    if model_class:
-        entity = db.query(model_class).filter(model_class.id == log.entity_id).first()
-        if entity:
-            return getattr(
-                entity, "name", getattr(entity, "login", f"ID: {log.entity_id}")
-            )
+        readable_name = resolve_entity_name(log, db)
 
-    return f"{log.entity_type.value} (ID: {log.entity_id})"
+        results.append(
+            {
+                "id": log.id,
+                "timestamp": log.timestamp,
+                "action": (
+                    log.action.value
+                    if hasattr(log.action, "value")
+                    else str(log.action)
+                ),
+                "entity_type": (
+                    log.entity_type.value
+                    if hasattr(log.entity_type, "value")
+                    else str(log.entity_type)
+                ),
+                "entity_id": log.entity_id,
+                "entity_name": readable_name,
+                "user_id": log.user_id,
+                "user": log.user,
+                "before_state": clean_before if clean_before else None,
+                "after_state": clean_after if clean_after else None,
+                "can_rollback": log.can_rollback,
+            }
+        )
+
+    return results
 
 
 @router.get(
