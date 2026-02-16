@@ -5,9 +5,9 @@ import type { ApiUserInfo, ApiUserItem } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { usersQueryOptions } from '@/integrations/user/user.query'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 
-export const Route = createFileRoute('/_auth/users/')({
+export const Route = createFileRoute('/_auth/teams/')({
   component: RouteComponent,
 })
 
@@ -15,39 +15,28 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Name" />
+      return <DataTableColumnHeader column={column} title="Group name" />
     },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('name')} {row.original.surname}
-      </span>
-    ),
+    cell: ({ row }) => <span>{row.getValue('name')}</span>,
   },
   {
-    accessorKey: 'teams',
+    accessorKey: 'admin',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Teams" />
+      return <DataTableColumnHeader column={column} title="Administrator" />
     },
-    cell: ({ row }) => {
-      console.log(row.original)
-
-      return (
-        <span>
-          {row.getValue('teams')} {row.original.assigned_groups}
-        </span>
-      )
-    },
+    cell: ({ row }) => <span>{row.original.team_admin_name}</span>,
   },
   {
-    accessorKey: 'user_type',
+    accessorKey: 'memberCount',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="User type" />
+      return <DataTableColumnHeader column={column} title="Members" />
     },
+    cell: ({ row }) => <span>{row.original.member_count}</span>,
   },
 ]
 
 function RouteComponent() {
-  const { data: users } = useSuspenseQuery(usersQueryOptions)
+  const { data: users } = useSuspenseQuery(teamsQueryOptions)
   const navigate = Route.useNavigate()
 
   return (
@@ -59,8 +48,8 @@ function RouteComponent() {
             data={users}
             onRowClick={(row) => {
               navigate({
-                to: '/users/$userId',
-                params: { userId: String(row.id) },
+                to: '/teams/$teamId',
+                params: { teamId: String(row.id) },
               })
             }}
           />

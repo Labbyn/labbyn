@@ -328,6 +328,7 @@ class TeamDetailResponse(BaseModel):
 class TeamRackDetail(BaseModel):
     name: str
     team_name: str
+    tags: List[str]
     map_link: str
 
 
@@ -338,6 +339,7 @@ class TeamMachineDetail(BaseModel):
     team_name: str
     rack_name: str
     shelf_order: int
+    # TODO: add tags after CPU and Disk merge
 
 
 class TeamInventoryDetail(BaseModel):

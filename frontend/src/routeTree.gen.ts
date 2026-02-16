@@ -19,6 +19,7 @@ import { Route as AuthImportExportRouteImport } from './routes/_auth/import-expo
 import { Route as AuthDocsRouteImport } from './routes/_auth/docs'
 import { Route as AuthAddItemsRouteImport } from './routes/_auth/add-items'
 import { Route as AuthUsersIndexRouteImport } from './routes/_auth/users/index'
+import { Route as AuthTeamsIndexRouteImport } from './routes/_auth/teams/index'
 import { Route as AuthLabsIndexRouteImport } from './routes/_auth/labs/index'
 import { Route as AuthInventoryIndexRouteImport } from './routes/_auth/inventory/index'
 import { Route as AuthHistoryIndexRouteImport } from './routes/_auth/history/index'
@@ -84,6 +85,11 @@ const AuthAddItemsRoute = AuthAddItemsRouteImport.update({
 const AuthUsersIndexRoute = AuthUsersIndexRouteImport.update({
   id: '/users/',
   path: '/users/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthTeamsIndexRoute = AuthTeamsIndexRouteImport.update({
+  id: '/teams/',
+  path: '/teams/',
   getParentRoute: () => AuthRoute,
 } as any)
 const AuthLabsIndexRoute = AuthLabsIndexRouteImport.update({
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/history/': typeof AuthHistoryIndexRoute
   '/inventory/': typeof AuthInventoryIndexRoute
   '/labs/': typeof AuthLabsIndexRoute
+  '/teams/': typeof AuthTeamsIndexRoute
   '/users/': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/history': typeof AuthHistoryIndexRoute
   '/inventory': typeof AuthInventoryIndexRoute
   '/labs': typeof AuthLabsIndexRoute
+  '/teams': typeof AuthTeamsIndexRoute
   '/users': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/_auth/history/': typeof AuthHistoryIndexRoute
   '/_auth/inventory/': typeof AuthInventoryIndexRoute
   '/_auth/labs/': typeof AuthLabsIndexRoute
+  '/_auth/teams/': typeof AuthTeamsIndexRoute
   '/_auth/users/': typeof AuthUsersIndexRoute
   '/_auth/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/history/'
     | '/inventory/'
     | '/labs/'
+    | '/teams/'
     | '/users/'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/history'
     | '/inventory'
     | '/labs'
+    | '/teams'
     | '/users'
     | '/inventory/device/$deviceid'
   id:
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/_auth/history/'
     | '/_auth/inventory/'
     | '/_auth/labs/'
+    | '/_auth/teams/'
     | '/_auth/users/'
     | '/_auth/inventory/device/$deviceid'
   fileRoutesById: FileRoutesById
@@ -421,6 +433,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users/'
       preLoaderRoute: typeof AuthUsersIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/teams/': {
+      id: '/_auth/teams/'
+      path: '/teams'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof AuthTeamsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/labs/': {
@@ -581,6 +600,7 @@ interface AuthRouteChildren {
   AuthHistoryIndexRoute: typeof AuthHistoryIndexRoute
   AuthInventoryIndexRoute: typeof AuthInventoryIndexRoute
   AuthLabsIndexRoute: typeof AuthLabsIndexRoute
+  AuthTeamsIndexRoute: typeof AuthTeamsIndexRoute
   AuthUsersIndexRoute: typeof AuthUsersIndexRoute
   AuthInventoryDeviceDeviceidRoute: typeof AuthInventoryDeviceDeviceidRoute
 }
@@ -607,6 +627,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthHistoryIndexRoute: AuthHistoryIndexRoute,
   AuthInventoryIndexRoute: AuthInventoryIndexRoute,
   AuthLabsIndexRoute: AuthLabsIndexRoute,
+  AuthTeamsIndexRoute: AuthTeamsIndexRoute,
   AuthUsersIndexRoute: AuthUsersIndexRoute,
   AuthInventoryDeviceDeviceidRoute: AuthInventoryDeviceDeviceidRoute,
 }

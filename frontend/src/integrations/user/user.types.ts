@@ -1,4 +1,4 @@
-import type { ApiTeamItem } from "../teams/teams.types"
+import type { ApiTeamItem } from '../teams/teams.types'
 
 export type UserType = 'admin' | 'group_admin' | 'user'
 
@@ -38,7 +38,6 @@ export type UserUpdate = Partial<UserCreate>
 
 export type ApiUserItem = UserRead
 export type ApiUserResponse = Array<UserRead>
-
 
 export type ApiUserInfo = {
   name: string
