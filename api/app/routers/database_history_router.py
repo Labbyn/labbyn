@@ -183,7 +183,10 @@ def get_history_logs(
 
     return results
 
-@router.get("/db/history/{history_id}", response_model=HistoryEnhancedResponse, tags=["History"])
+
+@router.get(
+    "/db/history/{history_id}", response_model=HistoryEnhancedResponse, tags=["History"]
+)
 def get_history_by_id(history_id: int, db: Session = Depends(get_db)):
     """
     Fetch specific history by ID
@@ -197,6 +200,7 @@ def get_history_by_id(history_id: int, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND, detail="History not found"
         )
     return history
+
 
 @router.post(
     "/db/history/{history_id}/rollback",
