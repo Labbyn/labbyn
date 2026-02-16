@@ -61,8 +61,8 @@ export function DocumentEditor({
 
       <div className="flex gap-2 pt-4">
         <Button onClick={onSaveClick} variant="default" disabled={isSaving}>
-  {isSaving ? 'Saving...' : 'Save Document'}
-</Button>
+          {isSaving ? 'Saving...' : 'Save Document'}
+        </Button>
         <Button onClick={onCancel} variant="outline">
           Cancel
         </Button>

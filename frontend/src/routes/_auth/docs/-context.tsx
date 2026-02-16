@@ -1,5 +1,4 @@
 import { createContext, useContext } from 'react'
-import type { Document } from '@/types/types'
 import type { ApiDocumentationItem } from '@/integrations/documentation/documentation.types'
 
 export interface DocsContextType {

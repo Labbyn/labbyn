@@ -1,13 +1,17 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { DocsProvider } from './docs/-context'
 import type { Document } from '@/types/types'
 import { DocumentList } from '@/components/document-list'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { documentationQueryOptions } from '@/integrations/documentation/documentation.query'
-import { useCreateDocumentMutation, useDeleteDocumentMutation, useUpdateDocumentMutation } from '@/integrations/documentation/documentation.mutations'
+import {
+  useCreateDocumentMutation,
+  useDeleteDocumentMutation,
+  useUpdateDocumentMutation,
+} from '@/integrations/documentation/documentation.mutations'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +23,20 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-
 export const Route = createFileRoute('/_auth/docs')({
   component: DocsLayout,
 })
 
 function DocsLayout() {
   const navigate = Route.useNavigate()
-  const queryClient = useQueryClient()
 
   const [isEditing, setIsEditing] = useState(false)
   const [showCreateAlert, setShowCreateAlert] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
 
-  const { data: documents = [], isLoading } = useQuery(documentationQueryOptions)
+  const { data: documents = [], isLoading } = useQuery(
+    documentationQueryOptions,
+  )
 
   const createMutation = useCreateDocumentMutation()
   const updateMutation = useUpdateDocumentMutation()
@@ -41,11 +45,11 @@ function DocsLayout() {
   const isSaving = updateMutation.isPending
   const handleSave = (doc: Document) => {
     updateMutation.mutate(doc, {
-          onSuccess: () => {
-            setIsEditing(false)
-            setIsDirty(false)
-          }
-  })
+      onSuccess: () => {
+        setIsEditing(false)
+        setIsDirty(false)
+      },
+    })
   }
   const handleDelete = (docId: string) => deleteMutation.mutate(docId)
 
@@ -78,7 +82,10 @@ function DocsLayout() {
                   documents={documents}
                   selectedDoc={null}
                   onSelectDocument={(doc) =>
-                    navigate({ to: '/docs/$docId', params: { docId: doc.id } })
+                    navigate({
+                      to: '/docs/$docId',
+                      params: { docId: String(doc.id) },
+                    })
                   }
                   onCreateDocument={handleCreate}
                   onDeleteDocument={handleDelete}
@@ -97,7 +104,7 @@ function DocsLayout() {
                 isLoading,
                 isDirty,
                 setIsDirty,
-                isSaving
+                isSaving,
               }}
             >
               <Outlet />

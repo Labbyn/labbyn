@@ -69,7 +69,7 @@ export function DocumentList({
             className="h-6 w-6 text-muted-foreground hover:text-destructive"
             onClick={(e) => {
               e.stopPropagation()
-              onDeleteDocument(row.original.id)
+              onDeleteDocument(String(row.original.id))
             }}
           >
             <Trash2 className="h-3 w-3" />
@@ -84,7 +84,7 @@ export function DocumentList({
       data={documents}
       columns={columns}
       onRowClick={onSelectDocument}
-      selectedId={selectedDoc?.id}
+      selectedId={selectedDoc?.id.toString()}
       actionElement={
         <Button onClick={onCreateDocument} variant={'outline'}>
           <Plus className="mr-2 h-4 w-4" />

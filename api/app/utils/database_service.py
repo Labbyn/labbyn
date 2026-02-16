@@ -94,11 +94,13 @@ def init_document(db: Session):
     :param db: The current database session.
     """
 
-    labbyn_docs = db.query(models.Documentation).filter(
-        models.Documentation.title == "labbyn"
-    ).first()
+    labbyn_docs = (
+        db.query(models.Documentation)
+        .filter(models.Documentation.title == "labbyn")
+        .first()
+    )
     if not labbyn_docs:
-        content_raw="""
+        content_raw = """
                 # Labbyn
 
                 Labbyn is an application for your datacenter, laboratory or homelab. You can monitor your infrastructure, set the location of each server or platform on an interactive dashboard, store information about your assets in an inventory and more. Everything runs on a modern GUI, is deployable on most Linux machines and is **OPEN SOURCE**.
@@ -152,11 +154,12 @@ def init_document(db: Session):
         labbyn_docs = models.Documentation(
             title="labbyn",
             author="anonymous admin",
-            content=inspect.cleandoc(content_raw)
+            content=inspect.cleandoc(content_raw),
         )
         db.add(labbyn_docs)
         db.commit()
         db.refresh(labbyn_docs)
+
 
 # ==========================
 #  GENERIC TABLES OPERATIONS

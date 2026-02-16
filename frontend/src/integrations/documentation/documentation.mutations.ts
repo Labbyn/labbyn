@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import type { ApiDocumentationItem } from './documentation.types'
 import api from '@/lib/api'
-import type { Document } from '@/types/types'
 
 const PATHS = {
   BASE: '/db/documentation',
@@ -26,7 +26,7 @@ export const useCreateDocumentMutation = () => {
     onSuccess: (newDoc) => {
       toast.success('Document created')
       queryClient.invalidateQueries({ queryKey: ['documentation'] })
-      navigate({ to: '/docs/$docId', params: { docId: newDoc.id } })
+      navigate({ to: '/docs/$docId', params: { docId: String(newDoc.id) } })
     },
     onError: () => toast.error('Failed to create document'),
   })
@@ -39,15 +39,20 @@ export const useUpdateDocumentMutation = () => {
     mutationFn: async (doc: ApiDocumentationItem) => {
       const payload = {
         title: doc.title,
-        content: doc.content
+        content: doc.content,
       }
-      const { data } = await api.put<ApiDocumentationItem>(PATHS.SINGLE(doc.id), payload)
+      const { data } = await api.put<ApiDocumentationItem>(
+        PATHS.SINGLE(doc.id),
+        payload,
+      )
       return data
     },
     onSuccess: (data) => {
       toast.success('Document saved')
       queryClient.invalidateQueries({ queryKey: ['documentation'] })
-      queryClient.invalidateQueries({ queryKey: ['documentation', String(data.id)] })
+      queryClient.invalidateQueries({
+        queryKey: ['documentation', String(data.id)],
+      })
     },
     onError: () => toast.error('Failed to save changes'),
   })

@@ -54,8 +54,9 @@ def create_documentation(
 
     current_author = ctx.current_user.login
     tag_ids = documentation_data.tag_ids or []
-    obj = Documentation(**documentation_data.model_dump(exclude={"tag_ids"}),
-            author=current_author)
+    obj = Documentation(
+        **documentation_data.model_dump(exclude={"tag_ids"}), author=current_author
+    )
     if tag_ids:
         obj.tags = db.query(Tags).filter(Tags.id.in_(tag_ids)).all()
     db.add(obj)
