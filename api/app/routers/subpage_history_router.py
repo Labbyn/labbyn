@@ -75,7 +75,7 @@ def get_blackboxed_history_logs(
     Retrieve "blackboxed" history list.
     :param db: Active database session
     :param ctx: Request context for user and team info
-    :return: Blackboxed history item
+    :return: Blackboxed history list
     """
     query = (
         db.query(History)
