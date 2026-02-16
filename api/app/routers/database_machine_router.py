@@ -146,3 +146,33 @@ async def delete_machine(
             )
         db.delete(machine)
         db.commit()
+
+
+@router.post("/db/machines/{machine_id}/unmount", status_code=status.HTTP_200_OK)
+def unmount_machine(
+        machine_id: int,
+        db: Session = Depends(get_db),
+        ctx: RequestContext = Depends()
+):
+    """
+    Removes a machine from its current shelf (sets shelf_id to NULL)
+    :param machine_id: ID of the machine to unmount
+    :param db: Active database session
+    :param ctx: Request context for team-based access control
+    :return: Status message
+    """
+    ctx.require_user()
+
+    query = db.query(Machines).filter(Machines.id == machine_id)
+    machine = ctx.team_filter(query, Machines).first()
+
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Machine not found or access denied"
+        )
+
+    machine.shelf_id = None
+
+    db.commit()
+    return {"status": "success", "message": f"Machine {machine.name} has been unmounted."}
