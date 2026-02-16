@@ -187,7 +187,9 @@ def get_history_logs(
 @router.get(
     "/db/history/{history_id}", response_model=HistoryEnhancedResponse, tags=["History"]
 )
-def get_history_by_id(history_id: int, db: Session = Depends(get_db)):
+def get_history_by_id(
+    history_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific history by ID
     :param history_id: History ID

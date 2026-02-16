@@ -71,6 +71,12 @@ def get_state_diff(
 def get_blackboxed_history_logs(
     limit=200, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
+    """
+    Retrieve "blackboxed" history list.
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Blackboxed history item
+    """
     query = (
         db.query(History)
         .join(User, History.user_id == User.id)
@@ -137,7 +143,6 @@ def get_blackboxed_history_item(
     query = ctx.team_filter(query, User)
     query = query.order_by(History.timestamp)
     log_entry = query.first()
-    results = []
 
     if not log_entry:
         raise HTTPException(
