@@ -161,9 +161,7 @@ def get_users_with_groups(
     return [get_masked_user_model(u, ctx, detailed=False) for u in users]
 
 
-@router.get(
-    "/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"]
-)
+@router.get("/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"])
 def get_user_detail_with_groups(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
