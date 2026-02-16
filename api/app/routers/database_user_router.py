@@ -28,36 +28,38 @@ router = APIRouter()
 AVATAR_DIR = "/home/labbyn/avatars"
 
 
-def get_masked_user_model(u: User, ctx: RequestContext):
+def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
     """
     Return user data with fields masked based on requester's permissions.
-    Admins can see all fields, while regular users can only see limited info for users in their own team.
-    :param u: User object to mask
-    :param ctx: Request context containing user and team info
-    :return: UserInfo or UserInfoExtended schema instance with appropriate fields
+    Admins can see full data, regular users see limited info.
+    :param u: User object
+    :param ctx: Request context for user and team info
+    :param detailed: Whether to include detailed fields (email, avatar, group links)
+    :return: UserInfo or UserInfoExtended model instance
     """
     is_own_team = ctx.team_id is not None and u.team_id == ctx.team_id
     can_see_full_data = ctx.is_admin or is_own_team
+
+    assigned_groups = [{"name": u.teams.name}] if u.teams else []
+    group_links = [f"/db/teams/{u.team_id}"] if u.teams else []
 
     user_data = {
         "id": u.id,
         "name": u.name,
         "surname": u.surname,
-        "email": u.email,
-        "team_name": u.teams.name if u.teams else "No team assigned",
+        "login": u.login,
         "user_type": u.user_type,
+        "assigned_groups": assigned_groups,
     }
 
-    if can_see_full_data:
+    if detailed and can_see_full_data:
         user_data.update(
             {
-                "login": u.login,
-                "is_active": u.is_active,
-                "is_verified": u.is_verified,
-                "force_password_change": u.force_password_change,
+                "email": u.email,
+                "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
+                "group_links": group_links,
             }
         )
-
         return UserInfoExtended.model_validate(user_data)
 
     return UserInfo.model_validate(user_data)
@@ -144,47 +146,31 @@ async def create_user(
         ) from e
 
 
-@router.get("/db/users/basic_info", response_model=List[UserInfo], tags=["Users"])
-def get_user_basic_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
-    """
-    Fetch basic contact info of all users
-    :param db: Active database session
-    :param ctx: Request context for user and team info
-    :return: List of user basic info
-    """
-    users = db.query(User).options(joinedload(User.teams)).all()
-
-    return [get_masked_user_model(u, ctx) for u in users]
-
-
-@router.get(
-    "/db/users/ext_info",
-    tags=["Users"],
-    response_model=List[Union[UserInfoExtended, UserInfo]],
-)
-def get_user_extended_info(
+@router.get("/db/users/list_info", response_model=List[UserInfo], tags=["Users"])
+def get_users_with_groups(
     db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
-    ctx.require_group_admin()
+    """
+    Fetch all users with their assigned groups (masked based on permissions).
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: User object
+    """
+    ctx.require_user()
     users = db.query(User).options(joinedload(User.teams)).all()
-
-    return [get_masked_user_model(u, ctx) for u in users]
+    return [get_masked_user_model(u, ctx, detailed=False) for u in users]
 
 
 @router.get(
-    "/db/users/{user_id}",
-    response_model=Union[UserInfoExtended, UserInfo],
-    tags=["Users"],
+    "/db/users/detail_info/{user_id}", response_model=UserInfoExtended, tags=["Users"]
 )
-def get_user_by_id(
+def get_user_detail_with_groups(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
-    Fetch specific user by ID
-    :param user_id: User ID
-    :param db: Active database session
-    :return: User object
+    Fetch full user profile including avatar and group links (requires permissions).
     """
+    ctx.require_user()
     user = (
         db.query(User)
         .options(joinedload(User.teams))
@@ -193,11 +179,15 @@ def get_user_by_id(
     )
 
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_own_team = ctx.team_id is not None and user.team_id == ctx.team_id
+    if not (ctx.is_admin or is_own_team):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=403, detail="Insufficient permissions to view details"
         )
 
-    return get_masked_user_model(user, ctx)
+    return get_masked_user_model(user, ctx, detailed=True)
 
 
 @router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
