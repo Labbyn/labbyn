@@ -126,7 +126,7 @@ def format_team_full_detail(team: Teams):
                 "team_name": team.name,
                 "map_link": f"/map/{r.room_id}",
                 "tags": [tag.name for tag in r.tags],
-                "machines_count": sum(len(shelf.machines) for shelf in r.shelves)
+                "machines_count": sum(len(shelf.machines) for shelf in r.shelves),
             }
             for r in team.racks
         ],
