@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiUserItem } from '@/integrations/user/user.types'
+import type { ApiUserInfo } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -11,13 +11,7 @@ export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
 })
 
-export const columns: Array<ColumnDef<ApiUserItem>> = [
-  {
-    accessorKey: 'id',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Id" />
-    },
-  },
+export const columns: Array<ColumnDef<ApiUserInfo>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -30,9 +24,16 @@ export const columns: Array<ColumnDef<ApiUserItem>> = [
     ),
   },
   {
-    accessorKey: 'team_id',
+    accessorKey: 'teams',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Team ID" />
+      return <DataTableColumnHeader column={column} title="Teams" />
+    },
+    cell: ({ row }) => {
+      const groupNames = row.original.assigned_groups
+        .map((g) => g.name)
+        .join(', ')
+
+      return <span>{groupNames}</span>
     },
   },
   {

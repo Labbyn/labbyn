@@ -328,7 +328,9 @@ class TeamDetailResponse(BaseModel):
 class TeamRackDetail(BaseModel):
     name: str
     team_name: str
+    tags: List[str]
     map_link: str
+    machines_count: int
 
 
 class TeamMachineDetail(BaseModel):
@@ -338,6 +340,7 @@ class TeamMachineDetail(BaseModel):
     team_name: str
     rack_name: str
     shelf_order: int
+    # TODO: add tags after CPU and Disk merge
 
 
 class TeamInventoryDetail(BaseModel):
@@ -456,6 +459,7 @@ class UserInfo(BaseModel):
     Includes identity, role and assigned groups.
     """
 
+    id: int
     name: str = Field(..., description="User's first name")
     surname: str = Field(..., description="User's last name")
     login: str = Field(..., description="Unique login username")
