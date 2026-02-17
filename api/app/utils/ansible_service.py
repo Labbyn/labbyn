@@ -47,7 +47,7 @@ def parse_platform_report(hostname: str) -> dict:
             disk_list.append(
                 {
                     "name": d.get("mount", "Unknown"),
-                    "capacity": str(d.get("size_gb", "?")),
+                    "capacity": f'{d.get("size_gb", "?")} GB',
                 }
             )
 

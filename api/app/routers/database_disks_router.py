@@ -2,7 +2,7 @@
 
 from typing import List
 from app.database import get_db
-from app.db.models import Disks
+from app.db.models import Disks, Machines
 from app.db.schemas import (
     DiskCreate,
     DiskResponse,
@@ -31,10 +31,25 @@ def create_disk(
     Create new Disk
     :param disk_data: Disk data
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Disk object
     """
 
-    ctx.require_admin()
+    if not ctx.is_admin:
+        if not getattr(disk_data, "machine_id", None):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Non-admin users must attach disks to a specific machine.",
+            )
+
+    machine = db.query(Machines).filter(Machines.id == disk_data.machine_id)
+    machine = ctx.team_filter(machine, Machines).first()
+
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target machine not found or access denied.",
+        )
 
     obj = Disks(**disk_data.model_dump())
     db.add(obj)
@@ -43,7 +58,7 @@ def create_disk(
     return obj
 
 
-@router.get("/db/disks/", response_model=List[DiskResponse], tags=["Disks", "Machines"])
+@router.get("/db/disks/", response_model=List[DiskResponse], tags=["Disks"])
 def get_disks(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all Disks
@@ -51,12 +66,12 @@ def get_disks(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param ctx: Request context for user and team info
     :return: List of all Disks
     """
+    query = db.query(Disks).join(Machines)
+    query = ctx.team_filter(query, Machines)
     return db.query(Disks).all()
 
 
-@router.get(
-    "/db/disks/{disk_id}", response_model=DiskResponse, tags=["Disks", "Machines"]
-)
+@router.get("/db/disks/{disk_id}", response_model=DiskResponse, tags=["Disks"])
 def get_disk_by_id(
     disk_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -67,7 +82,11 @@ def get_disk_by_id(
     :param ctx: Request context for user and team info
     :return: Disk object
     """
-    disk = db.query(Disks).filter(Disks.id == disk_id).first()
+
+    query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
+    query = ctx.team_filter(query, Machines)
+    disk = query.first()
+
     if not disk:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Disk not found"
@@ -75,9 +94,7 @@ def get_disk_by_id(
     return disk
 
 
-@router.put(
-    "/db/disks/{disk_id}", response_model=DiskResponse, tags=["Disks", "Machines"]
-)
+@router.put("/db/disks/{disk_id}", response_model=DiskResponse, tags=["Disks"])
 async def update_disk(
     disk_id: int,
     disk_data: DiskUpdate,
@@ -93,10 +110,10 @@ async def update_disk(
     :return: Updated disk
     """
 
-    ctx.require_admin()
-
     async with acquire_lock(f"disk_lock:{disk_id}"):
-        disk = db.query(Disks).filter(Disks.id == disk_id).first()
+        query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
+        query = ctx.team_filter(query, Machines)
+        disk = query.first()
         if not disk:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Disk not found"
@@ -111,7 +128,7 @@ async def update_disk(
 @router.delete(
     "/db/disks/{disk_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Disks", "Machines"],
+    tags=["Disks"],
 )
 async def delete_disk(
     disk_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
@@ -124,10 +141,10 @@ async def delete_disk(
     :return: None
     """
 
-    ctx.require_admin()
-
     async with acquire_lock(f"disk_lock:{disk_id}"):
-        disk = db.query(Disks).filter(Disks.id == disk_id).first()
+        query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
+        query = ctx.team_filter(query, Machines)
+        disk = query.first()
         if not disk:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Disk not found"

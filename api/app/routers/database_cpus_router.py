@@ -2,7 +2,7 @@
 
 from typing import List
 from app.database import get_db
-from app.db.models import CPUs
+from app.db.models import CPUs, Machines
 from app.db.schemas import (
     CPUCreate,
     CPUResponse,
@@ -20,7 +20,7 @@ router = APIRouter()
     "/db/cpus/",
     response_model=CPUResponse,
     status_code=status.HTTP_201_CREATED,
-    tags=["Cpus", "Machines"],
+    tags=["Cpus"],
 )
 def create_cpu(
     cpu_data: CPUCreate,
@@ -31,10 +31,25 @@ def create_cpu(
     Create new CPU
     :param cpu_data: CPU data
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: CPU object
     """
 
-    ctx.require_admin()
+    if not ctx.is_admin:
+        if not getattr(cpu_data, "machine_id", None):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Non-admin users must attach CPUs to a specific machine.",
+            )
+
+    machine = db.query(Machines).filter(Machines.id == cpu_data.machine_id)
+    machine = ctx.team_filter(machine, Machines).first()
+
+    if not machine:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target machine not found or access denied.",
+        )
 
     obj = CPUs(**cpu_data.model_dump())
     db.add(obj)
@@ -43,7 +58,7 @@ def create_cpu(
     return obj
 
 
-@router.get("/db/cpus/", response_model=List[CPUResponse], tags=["Cpus", "Machines"])
+@router.get("/db/cpus/", response_model=List[CPUResponse], tags=["Cpus"])
 def get_cpus(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all CPUs
@@ -51,10 +66,13 @@ def get_cpus(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param ctx: Request context for user and team info
     :return: List of all CPUs
     """
+
+    query = db.query(CPUs).join(Machines)
+    query = ctx.team_filter(query, Machines)
     return db.query(CPUs).all()
 
 
-@router.get("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus", "Machines"])
+@router.get("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
 def get_cpu_by_id(
     cpu_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -65,7 +83,11 @@ def get_cpu_by_id(
     :param ctx: Request context for user and team info
     :return: CPU object
     """
-    cpu = db.query(CPUs).filter(CPUs.id == cpu_id).first()
+
+    query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+    query = ctx.team_filter(query, Machines)
+    cpu = query.first()
+
     if not cpu:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found"
@@ -73,7 +95,7 @@ def get_cpu_by_id(
     return cpu
 
 
-@router.put("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus", "Machines"])
+@router.put("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
 async def update_cpu(
     cpu_id: int,
     cpu_data: CPUUpdate,
@@ -92,7 +114,9 @@ async def update_cpu(
     ctx.require_admin()
 
     async with acquire_lock(f"cpu_lock:{cpu_id}"):
-        cpu = db.query(CPUs).filter(CPUs.id == cpu_id).first()
+        query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+        query = ctx.team_filter(query, Machines)
+        cpu = query.first()
         if not cpu:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found"
@@ -107,7 +131,7 @@ async def update_cpu(
 @router.delete(
     "/db/cpus/{cpu_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Cpus", "Machines"],
+    tags=["Cpus"],
 )
 async def delete_cpu(
     cpu_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
@@ -123,7 +147,10 @@ async def delete_cpu(
     ctx.require_admin()
 
     async with acquire_lock(f"CPU_lock:{cpu_id}"):
-        cpu = db.query(CPUs).filter(CPUs.id == cpu_id).first()
+        query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+        query = ctx.team_filter(query, Machines)
+        cpu = query.first()
+
         if not cpu:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found"
