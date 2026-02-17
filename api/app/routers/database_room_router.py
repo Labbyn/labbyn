@@ -2,9 +2,7 @@
 
 from typing import List
 from app.database import get_db
-from app.db.models import (
-    Rooms,
-)
+from app.db.models import Rooms, Tags
 from app.db.schemas import (
     RoomsCreate,
     RoomsResponse,
@@ -13,7 +11,7 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import RequestContext
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter()
 
@@ -36,11 +34,17 @@ def create_room(
     :return: Room object
     """
     ctx.require_group_admin()
-    data = room_data.model_dump()
+    tag_ids = room_data.tag_ids if hasattr(room_data, "tag_ids") else []
+    data = room_data.model_dump(exclude={"tag_ids"})
     if not ctx.is_admin:
         data["team_id"] = ctx.team_id
 
-    obj = Rooms(**room_data.model_dump())
+    obj = Rooms(**data)
+
+    if tag_ids:
+        tags = db.query(Tags).filter(Tags.id.in_(tag_ids)).all()
+        obj.tags = tags
+
     db.add(obj)
     db.commit()
     db.refresh(obj)
@@ -54,7 +58,7 @@ def get_rooms(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param db: Active database session
     :return: List of all rooms
     """
-    query = db.query(Rooms)
+    query = db.query(Rooms).options(joinedload(Rooms.tags))
     query = ctx.team_filter(query, Rooms)
     return query.all()
 
@@ -105,7 +109,12 @@ async def update_room(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Room not found or access denied",
             )
-        data = room_data.model_dump(exlude_unset=True)
+
+        if room_data.tag_ids is not None:
+            tags = db.query(Tags).filter(Tags.id.in_(room_data.tag_ids)).all()
+            room.tags = tags
+
+        data = room_data.model_dump(exlude_unset=True, exclude={"tag_ids"})
         if not ctx.is_admin and "team_id" in data:
             data["team_id"] = ctx.team_id
         for k, v in room_data.model_dump(exclude_unset=True).items():
