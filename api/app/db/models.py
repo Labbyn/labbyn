@@ -150,6 +150,35 @@ class Rooms(Base):
     racks = relationship("Rack", back_populates="room")
 
 
+class CPUs(Base):
+    """
+    CPUs model representing CPUs models attached to machine.
+    """
+
+    __tablename__ = "cpus"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="cpus")
+
+
+class Disks(Base):
+    """
+    Disks model representing disks attached to machine.
+    """
+
+    __tablename__ = "disks"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    capacity = Column(String(50), nullable=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="disks")
+
+
 class Machines(Base):
     """
     Machines model representing machines in the system.
@@ -168,12 +197,9 @@ class Machines(Base):
     serial_number = Column(String(50), nullable=True)
     note = Column(String(500), nullable=True)
     added_on = Column(DateTime, nullable=False, default=datetime.now)
-    cpu = Column(String(100), nullable=True)
     ram = Column(String(100), nullable=True)
-    disk = Column(String(100), nullable=True)
     metadata_id = Column(Integer, ForeignKey("metadata.id"), nullable=False)
     shelf_id = Column(Integer, ForeignKey("shelves.id"), nullable=True)
-
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
@@ -183,6 +209,10 @@ class Machines(Base):
     machine_metadata = relationship("Metadata", back_populates="machines")
     inventory = relationship("Inventory", back_populates="machine")
     shelf = relationship("Shelf", back_populates="machines")
+    cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
+    disks = relationship(
+        "Disks", back_populates="machine", cascade="all, delete-orphan"
+    )
 
 
 class Metadata(Base):

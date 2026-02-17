@@ -527,6 +527,84 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 # ==========================
+#          CPU & DISKS
+# ==========================
+
+
+class CPUBase(BaseModel):
+    """
+    Base model for CPUs.
+    """
+
+    name: str
+
+
+class CPUCreate(CPUBase):
+    """
+    Schema for creating CPUs.
+    """
+
+    machine_id: int
+
+
+class CPUUpdate(CPUBase):
+    """
+    Schema for updating CPUs.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="CPU naming")
+
+
+class CPUResponse(CPUBase):
+    """
+    Schema for reading cpus.
+    """
+
+    id: int
+    name: str
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DisksBase(BaseModel):
+    """
+    Base model for Disks.
+    """
+
+    name: str
+    capacity: Optional[str]
+
+
+class DiskCreate(DisksBase):
+    """
+    Schema for creating disks.
+    """
+
+    machine_id: int
+
+
+class DiskUpdate(DisksBase):
+    """
+    Schema for updating disks.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="Disk naming")
+    capacity: Optional[str] = Field(None, max_length=50, description="Disk capacity")
+
+
+class DiskResponse(DisksBase):
+    """
+    Schema for reading disks.
+    """
+
+    id: int
+    name: str
+    capacity: Optional[str]
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
 #          MACHINES
 # ==========================
 
@@ -553,10 +631,10 @@ class MachinesBase(BaseModel):
         None, max_length=50, description="Hardware serial number"
     )
     note: Optional[str] = Field(None, max_length=500, description="Optional notes")
-    cpu: Optional[str] = Field(None, max_length=100, description="CPU specification")
+    cpus: Optional[List[CPUBase]] = Field(default=[], description="CPU specification")
     ram: Optional[str] = Field(None, max_length=100, description="RAM specification")
-    disk: Optional[str] = Field(
-        None, max_length=100, description="Disk/Storage specification"
+    disks: Optional[List[DisksBase]] = Field(
+        default=[], description="Disk/Storage specification"
     )
     metadata_id: int = Field(..., description="ID of associated metadata record")
     shelf_id: Optional[int] = Field(
@@ -604,6 +682,8 @@ class MachinesResponse(MachinesBase):
     added_on: datetime
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+    cpus: List[CPUResponse]
+    disks: List[DiskResponse]
 
 
 class MachineInRackResponse(BaseModel):

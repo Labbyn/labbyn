@@ -29,6 +29,8 @@ from app.routers import (
     authentication_router,
     labs_router,
     subpage_history_router,
+    database_cpus_router,
+    database_disks_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
@@ -121,3 +123,5 @@ app.include_router(database_tags_router.router)
 app.include_router(subpage_history_router.router)
 app.include_router(database_rack_router.router)
 app.include_router(database_shelf_router.router)
+app.include_router(database_cpus_router.router)
+app.include_router(database_disks_router.router)
