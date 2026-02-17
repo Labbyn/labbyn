@@ -35,25 +35,51 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ac = test_client
     headers = service_header_sync
 
-    team_id = ac.post("/db/teams/", json={"name": unique_str("Race"), "team_admin_id": 1}, headers=headers).json()["id"]
-    cat_id = ac.post("/db/categories/", json={"name": unique_str("Cat")}, headers=headers).json()["id"]
-    room_id = ac.post("/db/rooms/", json={"name": unique_str("Room"), "room_type": "srv"}, headers=headers).json()["id"]
+    team_id = ac.post(
+        "/db/teams/",
+        json={"name": unique_str("Race"), "team_admin_id": 1},
+        headers=headers,
+    ).json()["id"]
+    cat_id = ac.post(
+        "/db/categories/", json={"name": unique_str("Cat")}, headers=headers
+    ).json()["id"]
+    room_id = ac.post(
+        "/db/rooms/",
+        json={"name": unique_str("Room"), "room_type": "srv"},
+        headers=headers,
+    ).json()["id"]
 
     tokens = []
     for i in range(2):
         login = unique_str(f"r{i}")
-        u = ac.post("/db/users/", json={
-            "name": f"Racer{i}", "surname": "Test", "login": login,
-            "email": f"{login}@lab.pl", "user_type": "user", "team_id": team_id
-        }, headers=headers).json()
-        token = ac.post("/auth/login", data={"username": login, "password": u["generated_password"]}).json()[
-            "access_token"]
+        u = ac.post(
+            "/db/users/",
+            json={
+                "name": f"Racer{i}",
+                "surname": "Test",
+                "login": login,
+                "email": f"{login}@lab.pl",
+                "user_type": "user",
+                "team_id": team_id,
+            },
+            headers=headers,
+        ).json()
+        token = ac.post(
+            "/auth/login", data={"username": login, "password": u["generated_password"]}
+        ).json()["access_token"]
         tokens.append(token)
 
-    item = ac.post("/db/inventory/", json={
-        "name": unique_str("Gold"), "quantity": 1, "category_id": cat_id,
-        "localization_id": room_id, "team_id": team_id,
-    }, headers=headers).json()
+    item = ac.post(
+        "/db/inventory/",
+        json={
+            "name": unique_str("Gold"),
+            "quantity": 1,
+            "category_id": cat_id,
+            "localization_id": room_id,
+            "team_id": team_id,
+        },
+        headers=headers,
+    ).json()
     item_id = item["id"]
 
     def rent_item(token):
