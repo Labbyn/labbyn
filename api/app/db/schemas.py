@@ -634,7 +634,7 @@ class RentalsBase(BaseModel):
     item_id: int = Field(..., description="ID of the inventory item being rented")
     start_date: date = Field(..., description="Start date of the rental")
     end_date: date = Field(..., description="End date of the rental")
-    user_id: int = Field(..., description="ID of the user renting the item")
+    quantity: int = Field(..., ge=1, description="Number of items to rent")
 
 
 class RentalsCreate(RentalsBase):
@@ -660,6 +660,22 @@ class RentalsResponse(RentalsBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class RentalInfo(BaseModel):
+    id: int
+    borrower_name: str
+    borrower_team: str
+    quantity: int
+    end_date: date
+
+
+class RentalReturn(BaseModel):
+    quantity: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Quantity being returned; if not provided, assumes full return",
+    )
 
 
 # ==========================
@@ -714,6 +730,21 @@ class InventoryResponse(InventoryBase):
 
     id: int
     version_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InventoryDetailResponse(BaseModel):
+    id: int
+    name: str
+    total_quantity: int
+    in_stock_quantity: int
+    team_name: str
+    room_name: str
+    machine_info: Optional[str]
+    category_name: str
+    location_link: str
+    active_rentals: List[RentalInfo] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 
