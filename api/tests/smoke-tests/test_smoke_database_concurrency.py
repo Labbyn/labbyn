@@ -35,28 +35,22 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ac = test_client
     headers = service_header_sync
 
-    team_res = ac.post(
+    team_id = ac.post(
         "/db/teams/",
-        json={"name": unique_str("RaceTeam"), "team_admin_id": 1},
+        json={"name": unique_str("Race"), "team_admin_id": 1},
         headers=headers,
-    )
-    team_id = team_res.json()["id"]
-
-    cat_res = ac.post(
-        "/db/categories/", json={"name": unique_str("RaceCat")}, headers=headers
-    )
-    cat_id = cat_res.json()["id"]
-
-    room_res = ac.post(
+    ).json()["id"]
+    cat_id = ac.post(
+        "/db/categories/", json={"name": unique_str("Cat")}, headers=headers
+    ).json()["id"]
+    room_id = ac.post(
         "/db/rooms/",
-        json={"name": unique_str("RaceRoom"), "room_type": "srv"},
+        json={"name": unique_str("Room"), "room_type": "srv"},
         headers=headers,
-    )
-    room_id = room_res.json()["id"]
+    ).json()["id"]
 
-    users = []
     tokens = []
-    for i in range(1, 3):
+    for i in range(2):
         login = unique_str(f"r{i}")
         u = ac.post(
             "/db/users/",
@@ -70,17 +64,15 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
             },
             headers=headers,
         ).json()
-        users.append(u)
-
-        auth = ac.post(
+        token = ac.post(
             "/auth/login", data={"username": login, "password": u["generated_password"]}
-        )
-        tokens.append(auth.json()["access_token"])
+        ).json()["access_token"]
+        tokens.append(token)
 
     item = ac.post(
         "/db/inventory/",
         json={
-            "name": unique_str("GoldBar"),
+            "name": unique_str("Gold"),
             "quantity": 1,
             "category_id": cat_id,
             "localization_id": room_id,
@@ -90,12 +82,12 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ).json()
     item_id = item["id"]
 
-    def rent_item(token, user_id):
+    def rent_item(token):
         return ac.post(
             "/db/rentals/",
             json={
                 "item_id": item_id,
-                "user_id": user_id,
+                "quantity": 1,
                 "start_date": "2024-01-01",
                 "end_date": "2024-01-07",
             },
@@ -103,15 +95,14 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
         )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(rent_item, tokens[0], users[0]["id"])
-        future2 = executor.submit(rent_item, tokens[1], users[1]["id"])
+        futures = [executor.submit(rent_item, t) for t in tokens]
+        results = [f.result() for f in futures]
 
-        res1 = future1.result()
-        res2 = future2.result()
+    status_codes = [r.status_code for r in results]
 
-    status_codes = [res1.status_code, res2.status_code]
+    assert 201 in status_codes, "First rental should succeed!"
+    assert 409 in status_codes, "Second rental should fail with 409 Conflict!"
 
-    assert 201 in status_codes, "At least one rental should succeed"
-    assert (
-        409 in status_codes
-    ), "One rental should fail with Conflict (Double Booking prevented!)"
+    db_session.expire_all()
+    count = db_session.query(Rentals).filter(Rentals.item_id == item_id).count()
+    assert count == 1, f"Should exists only 1, got: {count} (DOUBLE BOOKING!)"
