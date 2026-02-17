@@ -46,9 +46,9 @@ export const handlePlatformSubmission = async (values: PlatformFormValues) => {
           os: values.os || null,
           serial_number: values.sn || null,
           note: values.note || null,
-          cpus: values.cpu ? [{ name: values.cpu }] : [],
+          cpus: values.cpu || [],
           ram: values.ram || null,
-          disks: values.disk ? [{ name: values.disk }] : [],
+          disks: values.disk || [],
           shelf_id: values.layout || null,
         },
       )

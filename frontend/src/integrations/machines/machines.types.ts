@@ -22,9 +22,9 @@ export interface MachinesResponse {
   os: string | null
   serial_number: string | null
   note: string | null
-  cpus: string | null
+  cpus: Array<CPUs>
   ram: string | null
-  disks: string | null
+  disks: Array<Disks>
   metadata_id: number
   shelf_id: number | null
   added_on: string // format: date-time
