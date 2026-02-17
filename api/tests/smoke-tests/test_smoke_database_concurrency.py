@@ -35,59 +35,25 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ac = test_client
     headers = service_header_sync
 
-    team_res = ac.post(
-        "/db/teams/",
-        json={"name": unique_str("RaceTeam"), "team_admin_id": 1},
-        headers=headers,
-    )
-    team_id = team_res.json()["id"]
+    team_id = ac.post("/db/teams/", json={"name": unique_str("Race"), "team_admin_id": 1}, headers=headers).json()["id"]
+    cat_id = ac.post("/db/categories/", json={"name": unique_str("Cat")}, headers=headers).json()["id"]
+    room_id = ac.post("/db/rooms/", json={"name": unique_str("Room"), "room_type": "srv"}, headers=headers).json()["id"]
 
-    cat_res = ac.post(
-        "/db/categories/", json={"name": unique_str("RaceCat")}, headers=headers
-    )
-    cat_id = cat_res.json()["id"]
-
-    room_res = ac.post(
-        "/db/rooms/",
-        json={"name": unique_str("RaceRoom"), "room_type": "srv"},
-        headers=headers,
-    )
-    room_id = room_res.json()["id"]
-
-    users = []
     tokens = []
-    for i in range(1, 3):
+    for i in range(2):
         login = unique_str(f"r{i}")
-        u = ac.post(
-            "/db/users/",
-            json={
-                "name": f"Racer{i}",
-                "surname": "Test",
-                "login": login,
-                "email": f"{login}@lab.pl",
-                "user_type": "user",
-                "team_id": team_id,
-            },
-            headers=headers,
-        ).json()
-        users.append(u)
+        u = ac.post("/db/users/", json={
+            "name": f"Racer{i}", "surname": "Test", "login": login,
+            "email": f"{login}@lab.pl", "user_type": "user", "team_id": team_id
+        }, headers=headers).json()
+        token = ac.post("/auth/login", data={"username": login, "password": u["generated_password"]}).json()[
+            "access_token"]
+        tokens.append(token)
 
-        auth = ac.post(
-            "/auth/login", data={"username": login, "password": u["generated_password"]}
-        )
-        tokens.append(auth.json()["access_token"])
-
-    item = ac.post(
-        "/db/inventory/",
-        json={
-            "name": unique_str("GoldBar"),
-            "quantity": 1,
-            "category_id": cat_id,
-            "localization_id": room_id,
-            "team_id": team_id,
-        },
-        headers=headers,
-    ).json()
+    item = ac.post("/db/inventory/", json={
+        "name": unique_str("Gold"), "quantity": 1, "category_id": cat_id,
+        "localization_id": room_id, "team_id": team_id,
+    }, headers=headers).json()
     item_id = item["id"]
 
     def rent_item(token):
@@ -103,15 +69,14 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
         )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(rent_item, tokens[0])
-        future2 = executor.submit(rent_item, tokens[1])
+        futures = [executor.submit(rent_item, t) for t in tokens]
+        results = [f.result() for f in futures]
 
-        res1 = future1.result()
-        res2 = future2.result()
+    status_codes = [r.status_code for r in results]
 
-    status_codes = [res1.status_code, res2.status_code]
+    assert 201 in status_codes, "First rental should succeed!"
+    assert 409 in status_codes, "Second rental should fail with 409 Conflict!"
 
-    assert 201 in status_codes, "At least one rental should succeed"
-    assert (
-        400 in status_codes
-    ), "One rental should fail with Conflict (Double Booking prevented!)"
+    db_session.expire_all()
+    count = db_session.query(Rentals).filter(Rentals.item_id == item_id).count()
+    assert count == 1, f"Should exists only 1, got: {count} (DOUBLE BOOKING!)"
