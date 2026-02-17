@@ -69,7 +69,7 @@ def get_cpus(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
 
     query = db.query(CPUs).join(Machines)
     query = ctx.team_filter(query, Machines)
-    return db.query(CPUs).all()
+    return query.all()
 
 
 @router.get("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])

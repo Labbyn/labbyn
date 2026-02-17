@@ -68,7 +68,7 @@ def get_disks(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     query = db.query(Disks).join(Machines)
     query = ctx.team_filter(query, Machines)
-    return db.query(Disks).all()
+    return query.all()
 
 
 @router.get("/db/disks/{disk_id}", response_model=DiskResponse, tags=["Disks"])
