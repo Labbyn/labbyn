@@ -53,8 +53,7 @@ function TeamsDetailsPage() {
         <DataTableColumnHeader column={column} title="Machines" />
       ),
       cell: ({ row }) => {
-        const machines = row.getValue('machines')
-        return <span>{machines?.length || 0}</span>
+        return <span>{row.original.machines_count}</span>
       },
     },
     {

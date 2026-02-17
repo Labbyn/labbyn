@@ -105,27 +105,11 @@ function InventoryDetailsPage() {
             <CardContent className="space-y-4">
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Is active
-                </span>
-                <span className="font-medium">
-                  {user.is_verified ? 'Active' : 'Not Active'}
-                </span>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Is verified
-                </span>
-                <span className="font-medium">
-                  {user.is_verified ? 'Verified' : 'Not Verified'}
-                </span>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
                 </span>
-                <span className="font-medium">{user.team_id}</span>
+                <span className="font-medium">
+                  {user.assigned_groups.map((group) => group.name).join(', ')}
+                </span>
               </div>
             </CardContent>
           </Card>

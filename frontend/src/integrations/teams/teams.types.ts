@@ -18,13 +18,28 @@ export type ApiTeamMemberInfo = {
   user_link: string
 }
 
+export type ApiTeamRackInfo = {
+  name: string
+  team_name: string
+  map_link: string
+  tags: Array<string>
+  machines_count: number
+}
+
 export type ApiTeamInfo = {
   id: number
   name: string
   team_admin_name: string
-  admin_details: Array<Any>
+  admin: {
+    full_name: string
+    login: string
+    email: string
+  }
   members: Array<ApiTeamMemberInfo>
   member_count: number
+  racks: Array<ApiTeamRackInfo>
+  machines: Array<any>
+  inventory: Array<any>
 }
 
 export type ApiTeamInfoResponse = Array<ApiTeamInfo>

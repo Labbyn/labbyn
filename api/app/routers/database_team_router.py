@@ -92,16 +92,18 @@ def format_team_full_detail(team: Teams):
                 )
 
     unplaced_machines = [m for m in team.machines if m.id not in placed_machine_ids]
-    
+
     for machine in unplaced_machines:
-        sorted_machines.append({
-            "name": machine.name,
-            "ip_address": machine.ip_address,
-            "mac_address": machine.mac_address,
-            "team_name": team.name,
-            "rack_name": "Unplaced",
-            "shelf_order": 0,
-        })
+        sorted_machines.append(
+            {
+                "name": machine.name,
+                "ip_address": machine.ip_address,
+                "mac_address": machine.mac_address,
+                "team_name": team.name,
+                "rack_name": "Unplaced",
+                "shelf_order": 0,
+            }
+        )
 
     return {
         "id": team.id,
@@ -119,7 +121,13 @@ def format_team_full_detail(team: Teams):
             for u in team.users
         ],
         "racks": [
-            {"name": r.name, "team_name": team.name, "map_link": f"/map/{r.room_id}", "tags": [tag.name for tag in r.tags]}
+            {
+                "name": r.name,
+                "team_name": team.name,
+                "map_link": f"/map/{r.room_id}",
+                "tags": [tag.name for tag in r.tags],
+                "machines_count": sum(len(shelf.machines) for shelf in r.shelves)
+            }
             for r in team.racks
         ],
         "machines": sorted_machines,

@@ -40,6 +40,7 @@ export type ApiUserItem = UserRead
 export type ApiUserResponse = Array<UserRead>
 
 export type ApiUserInfo = {
+  id: number
   name: string
   surname: string
   login: string

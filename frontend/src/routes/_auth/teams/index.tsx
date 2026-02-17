@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiUserInfo, ApiUserItem } from '@/integrations/user/user.types'
+import type { ApiTeamInfo } from '@/integrations/teams/teams.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_auth/teams/')({
   component: RouteComponent,
 })
 
-export const columns: Array<ColumnDef<ApiUserInfo>> = [
+export const columns: Array<ColumnDef<ApiTeamInfo>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -36,7 +36,7 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
 ]
 
 function RouteComponent() {
-  const { data: users } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const navigate = Route.useNavigate()
 
   return (
@@ -45,7 +45,7 @@ function RouteComponent() {
         <div className="p-6">
           <DataTable
             columns={columns}
-            data={users}
+            data={teams}
             onRowClick={(row) => {
               navigate({
                 to: '/teams/$teamId',

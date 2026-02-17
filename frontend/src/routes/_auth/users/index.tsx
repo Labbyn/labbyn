@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiUserInfo, ApiUserItem } from '@/integrations/user/user.types'
+import type { ApiUserInfo } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -29,13 +29,11 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
       return <DataTableColumnHeader column={column} title="Teams" />
     },
     cell: ({ row }) => {
-      console.log(row.original)
+      const groupNames = row.original.assigned_groups
+        .map((g) => g.name)
+        .join(', ')
 
-      return (
-        <span>
-          {row.getValue('teams')} {row.original.assigned_groups}
-        </span>
-      )
+      return <span>{groupNames}</span>
     },
   },
   {

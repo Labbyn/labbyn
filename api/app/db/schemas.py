@@ -330,6 +330,7 @@ class TeamRackDetail(BaseModel):
     team_name: str
     tags: List[str]
     map_link: str
+    machines_count: int
 
 
 class TeamMachineDetail(BaseModel):
@@ -457,7 +458,7 @@ class UserInfo(BaseModel):
     Basic user information for display purposes.
     Includes identity, role and assigned groups.
     """
-
+    id: int
     name: str = Field(..., description="User's first name")
     surname: str = Field(..., description="User's last name")
     login: str = Field(..., description="Unique login username")
