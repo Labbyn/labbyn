@@ -17,7 +17,7 @@ import {
 import { DataTableColumnHeader } from '../data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiTeamItem } from '@/integrations/teams/teams.types'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { adminTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import {
   useCreateTeamMutation,
   useDeleteTeamMutation,
@@ -80,7 +80,7 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
 ]
 
 export default function TeamsAdminPanel() {
-  const { data: teams = [], isLoading } = useQuery(teamsQueryOptions)
+  const { data: teams = [], isLoading } = useQuery(adminTeamsQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const createTeam = useCreateTeamMutation()

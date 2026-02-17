@@ -302,7 +302,7 @@ class Rentals(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-
+    quantity = Column(Integer, nullable=False, default=1)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)
