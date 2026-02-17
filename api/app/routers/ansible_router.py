@@ -254,7 +254,8 @@ async def discover_hosts(
                     added_on=datetime.now(),
                 )
                 db.add(new_machine)
-
+                db.flush()
+                
                 for cpu_data in specs.get("cpus", []):
                     db.add(CPUs(name=cpu_data["name"], machine_id=new_machine.id))
 
