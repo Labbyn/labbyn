@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from enum import Enum
 
 from app.database import get_db
-from app.db.models import Machines, Metadata, Rooms
+from app.db.models import Machines, Metadata, Rooms, Disks, CPUs
 from app.utils.ansible_service import parse_platform_report, run_playbook_task
 
 from app.utils.redis_service import acquire_lock
@@ -193,20 +193,25 @@ async def discover_hosts(
             if machine:
                 has_changes = False
 
-                if machine.os != specs["os"]:
-                    machine.os = specs["os"]
+                for field in ["os", "ram", "mac_address", "ip_address"]:
+                    if getattr(machine, field) != specs.get(field):
+                        setattr(machine, field, specs.get(field))
+                        has_changes = True
+
+                db.query(CPUs).filter(CPUs.machine_id == machine.id).delete()
+                for cpu_data in specs.get("cpus", []):
+                    db.add(CPUs(name=cpu_data["name"], machine_id=machine.id))
                     has_changes = True
-                if machine.cpu != specs["cpu"]:
-                    machine.cpu = specs["cpu"]
-                    has_changes = True
-                if machine.ram != specs["ram"]:
-                    machine.ram = specs["ram"]
-                    has_changes = True
-                if machine.disk != specs["disk"]:
-                    machine.disk = specs["disk"]
-                    has_changes = True
-                if machine.mac_address != specs["mac_address"]:
-                    machine.mac_address = specs["mac_address"]
+
+                db.query(Disks).filter(Disks.machine_id == machine.id).delete()
+                for disk_data in specs.get("disks", []):
+                    db.add(
+                        Disks(
+                            name=disk_data["name"],
+                            capacity=disk_data.get("capacity"),
+                            machine_id=machine.id,
+                        )
+                    )
                     has_changes = True
 
                 meta = (
@@ -243,14 +248,24 @@ async def discover_hosts(
                     metadata_id=new_meta.id,
                     localization_id=default_room.id,
                     os=specs["os"],
-                    cpu=specs["cpu"],
                     ram=specs["ram"],
-                    disk=specs["disk"],
                     mac_address=specs["mac_address"],
                     ip_address=specs["ip_address"],
                     added_on=datetime.now(),
                 )
                 db.add(new_machine)
+
+                for cpu_data in specs.get("cpus", []):
+                    db.add(CPUs(name=cpu_data["name"], machine_id=new_machine.id))
+
+                for disk_data in specs.get("disks", []):
+                    db.add(
+                        Disks(
+                            name=disk_data["name"],
+                            capacity=disk_data.get("capacity"),
+                            machine_id=new_machine.id,
+                        )
+                    )
                 results.append({"host": host, "status": "created"})
 
         except Exception as e:
