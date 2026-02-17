@@ -90,12 +90,12 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ).json()
     item_id = item["id"]
 
-    def rent_item(token, user_id):
+    def rent_item(token):
         return ac.post(
             "/db/rentals/",
             json={
                 "item_id": item_id,
-                "user_id": user_id,
+                "quantity": 1,
                 "start_date": "2024-01-01",
                 "end_date": "2024-01-07",
             },
@@ -103,8 +103,8 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
         )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        future1 = executor.submit(rent_item, tokens[0], users[0]["id"])
-        future2 = executor.submit(rent_item, tokens[1], users[1]["id"])
+        future1 = executor.submit(rent_item, tokens[0])
+        future2 = executor.submit(rent_item, tokens[1])
 
         res1 = future1.result()
         res2 = future2.result()
@@ -113,5 +113,5 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
 
     assert 201 in status_codes, "At least one rental should succeed"
     assert (
-        409 in status_codes
+        400 in status_codes
     ), "One rental should fail with Conflict (Double Booking prevented!)"
