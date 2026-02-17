@@ -168,7 +168,7 @@ def bulk_create_items(
     response_model=InventoryDetailResponse,
     tags=["Inventory"],
 )
-def get_inventory_item(
+def get_inventory_item_details(
     item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
