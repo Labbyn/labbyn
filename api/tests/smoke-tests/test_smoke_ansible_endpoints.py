@@ -61,7 +61,7 @@ def test_discovery_flow(
 
     assert machine is not None, f"Machine {test_ip} not found in DB after discovery."
     assert "Ubuntu" in machine.os
-    assert "Intel Test" in machine.cpus
+    assert "Intel Test" in machine.cpus[0].name
 
 
 @pytest.mark.database
