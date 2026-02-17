@@ -1,10 +1,10 @@
-export type CPUs = {
+export type CPU = {
   id: number
   name: string
   machine_id: number
 }
 
-export type Disks = {
+export type Disk = {
   id: number
   name: string
   capacity: string | null
@@ -22,9 +22,9 @@ export interface MachinesResponse {
   os: string | null
   serial_number: string | null
   note: string | null
-  cpus: Array<CPUs>
+  cpus: Array<CPU>
   ram: string | null
-  disks: Array<Disks>
+  disks: Array<Disk>
   metadata_id: number
   shelf_id: number | null
   added_on: string // format: date-time
@@ -56,9 +56,9 @@ export interface PlatformFormValues {
   os?: string
   sn?: string
   note?: string
-  cpu?: Array<CPUs>
+  cpu?: Array<CPU>
   ram?: string
-  disk?: Array<Disks>
+  disk?: Array<Disk>
   layout?: number
 }
 
@@ -72,9 +72,9 @@ export interface MachineUpdate {
   os?: string | null
   serial_number?: string | null
   note?: string | null
-  cpu?: Array<CPUs> | null
+  cpu?: Array<CPU> | null
   ram?: string | null
-  disk?: Array<Disks> | null
+  disk?: Array<Disk> | null
   layout_id?: number | null
   metadata_id?: number | null
 }

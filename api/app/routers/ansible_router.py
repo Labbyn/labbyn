@@ -255,7 +255,7 @@ async def discover_hosts(
                 )
                 db.add(new_machine)
                 db.flush()
-                
+
                 for cpu_data in specs.get("cpus", []):
                     db.add(CPUs(name=cpu_data["name"], machine_id=new_machine.id))
 
@@ -302,9 +302,7 @@ async def refresh_machine_hardware(
         specs = parse_platform_report(host_address)
         machine_fields = [
             "os",
-            "cpu",
             "ram",
-            "disk",
             "mac_address",
             "ip_address",
             "name",
@@ -316,6 +314,22 @@ async def refresh_machine_hardware(
             if getattr(machine, field) != new_value:
                 setattr(machine, field, new_value)
                 has_changes = True
+
+        db.query(CPUs).filter(CPUs.machine_id == machine.id).delete()
+        for cpu_data in specs.get("cpus", []):
+            db.add(CPUs(name=cpu_data["name"], machine_id=machine.id))
+            has_changes = True
+
+        db.query(Disks).filter(Disks.machine_id == machine.id).delete()
+        for disk_data in specs.get("disks", []):
+            db.add(
+                Disks(
+                    name=disk_data["name"],
+                    capacity=disk_data.get("capacity"),
+                    machine_id=machine.id,
+                )
+            )
+            has_changes = True
 
         meta = db.query(Metadata).filter(Metadata.id == machine.metadata_id).first()
         if meta:

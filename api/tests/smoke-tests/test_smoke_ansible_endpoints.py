@@ -61,7 +61,7 @@ def test_discovery_flow(
 
     assert machine is not None, f"Machine {test_ip} not found in DB after discovery."
     assert "Ubuntu" in machine.os
-    assert "Intel Test" in machine.cpu
+    assert "Intel Test" in machine.cpus
 
 
 @pytest.mark.database
@@ -107,7 +107,7 @@ def test_refresh_flow(
     db_session.expire_all()
     updated_machine = db_session.query(Machines).get(machine_id)
     assert updated_machine.os == original_os
-    assert updated_machine.cpu == f"{cpu_name} (4 cores)"
+    assert updated_machine.cpus[0].name == f"{cpu_name} (4 cores)"
 
 
 def test_create_user_simple(test_client, mock_ansible_success):
