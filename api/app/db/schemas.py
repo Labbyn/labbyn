@@ -218,7 +218,7 @@ class RoomDetailsResponse(BaseModel):
     id: int
     name: str
     tags: List[str]
-    location: Optional[str] = None
+    map_link: Optional[str] = None
     racks: List[LabRackSection]
 
     model_config = ConfigDict(from_attributes=True)

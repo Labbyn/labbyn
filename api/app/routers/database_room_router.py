@@ -2,11 +2,13 @@
 
 from typing import List
 from app.database import get_db
-from app.db.models import Rooms, Tags
+from app.db.models import Rooms, Tags, Rack, Shelf
 from app.db.schemas import (
     RoomsCreate,
     RoomsResponse,
     RoomsUpdate,
+    RoomDashboardResponse,
+    RoomDetailsResponse
 )
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -62,6 +64,84 @@ def get_rooms(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     query = ctx.team_filter(query, Rooms)
     return query.all()
 
+@router.get(
+    "/db/rooms/dashboard",
+    response_model=List[RoomDashboardResponse],
+    tags=["Rooms"]
+)
+def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+    """
+    Fetch all rooms with rack count and map link for dashboard
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Room object
+    """
+    query = db.query(Rooms).options(joinedload(Rooms.racks), joinedload(Rooms.layouts))
+    query = ctx.team_filter(query, Rooms)
+    rooms = query.all()
+
+    results = []
+    for r in rooms:
+        results.append({
+            "id": r.id,
+            "name": r.name,
+            "rack_count": len(r.racks),
+            "map_link": f"/map/room/{r.id}"
+        })
+    return results
+
+@router.get(
+    "/db/rooms/{room_id}/details",
+    response_model=RoomDetailsResponse,
+    tags=["Rooms"]
+)
+def get_room_details(room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+    """
+    Fetch specific room by ID with nested racks, shelves and machines for dashboard details
+    :param room_id: Room ID
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Room object
+    """
+    query = db.query(Rooms).options(
+        joinedload(Rooms.tags),
+        joinedload(Rooms.layouts),
+        joinedload(Rooms.racks).joinedload(Rack.tags),
+        joinedload(Rooms.racks).joinedload(Rack.shelves).joinedload(Shelf.machines)
+    ).filter(Rooms.id == room_id)
+
+    query = ctx.team_filter(query, Rooms)
+    room = query.first()
+
+    if not room:
+        raise HTTPException(status_code=404, detail="Lab not found")
+
+    racks_list = []
+    for rack in room.racks:
+        machines_in_rack = []
+        for shelf in rack.shelves:
+            for m in shelf.machines:
+                machines_in_rack.append({
+                    "device_id": str(m.id),
+                    "hostname": m.name,
+                    "ip_address": m.ip_address,
+                    "mac_address": m.mac_address
+                })
+
+        racks_list.append({
+            "id": rack.id,
+            "name": rack.name,
+            "tags": [t.name for t in rack.tags],
+            "machines": machines_in_rack
+        })
+
+    return {
+        "id": room.id,
+        "name": room.name,
+        "tags": [t.name for t in room.tags],
+        "map_link": f"/map/room/{room.id}",
+        "racks": racks_list
+    }
 
 @router.get("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
 def get_room_by_id(
@@ -71,6 +151,7 @@ def get_room_by_id(
     Fetch specific room by ID
     :param room_id: Room ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Room object
     """
     query = db.query(Rooms).filter(Rooms.id == room_id)
@@ -95,6 +176,7 @@ async def update_room(
     :param room_id: Room ID
     :param room_data: Room data schema
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Updated Room
     """
     ctx.require_group_admin()
@@ -134,6 +216,7 @@ async def delete_room(
     Delete Room
     :param room_id: Room ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: None
     """
     ctx.require_group_admin()
