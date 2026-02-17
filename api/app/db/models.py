@@ -440,6 +440,7 @@ class Documentation(Base):
         "Tags", secondary="tags_documentation", back_populates="documentation"
     )
 
+
 class TagsRooms(Base):
     """
     TagsRacks model representing association between rooms and tags.
