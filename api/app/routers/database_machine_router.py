@@ -4,7 +4,7 @@ import json
 from typing import List
 
 from app.database import get_db
-from app.db.models import Machines, User, UserType, Rack, Shelf
+from app.db.models import Machines, User, UserType, Rack, Shelf, CPUs, Disks
 from app.db.schemas import (
     MachinesCreate,
     MachinesResponse,
@@ -37,10 +37,14 @@ def create_machine(
     :param ctx: Request context for user and team info
     :return: Machine object
     """
-    data = machine_data.model_dump()
+    cpus = machine_data.cpus or []
+    disks = machine_data.disks or []
+    data = machine_data.model_dump(exclude={"cpus", "disks"})
     if not ctx.is_admin:
         data["team_id"] = ctx.team_id
     obj = Machines(**data)
+    obj.cpus = [CPUs(name=item.name) for item in cpus]
+    obj.disks = [Disks(name=item.name) for item in disks]
     db.add(obj)
     db.commit()
     db.refresh(obj)

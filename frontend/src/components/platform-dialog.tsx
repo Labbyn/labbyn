@@ -5,7 +5,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import type { PlatformFormValues } from '@/integrations/machines/machines.types'
+import type {
+  PlatformFormValues,
+} from '@/integrations/machines/machines.types'
 import {
   Dialog,
   DialogContent,
@@ -90,9 +92,9 @@ export function AddPlatformDialog() {
       os: '',
       sn: '',
       note: '',
-      cpu: '',
+      cpu: [],
       ram: '',
-      disk: '',
+      disk: [],
       layout: undefined,
     } as PlatformFormValues,
     onSubmit: async ({ value }) => {
@@ -469,9 +471,19 @@ export function AddPlatformDialog() {
                               <FieldLabel htmlFor={field.name}>CPU</FieldLabel>
                               <Input
                                 id={field.name}
-                                value={field.state.value || ''}
+                                value={
+                                  field.state.value
+                                    ?.map((c) => c.name)
+                                    .join(', ') || ''
+                                }
                                 onChange={(e) =>
-                                  field.handleChange(e.target.value)
+                                  field.handleChange([
+                                    {
+                                      name: e.target.value,
+                                      id: 0,
+                                      machine_id: 0,
+                                    },
+                                  ])
                                 }
                               />
                             </Field>
@@ -499,9 +511,20 @@ export function AddPlatformDialog() {
                               <FieldLabel htmlFor={field.name}>Disk</FieldLabel>
                               <Input
                                 id={field.name}
-                                value={field.state.value || ''}
+                                value={
+                                  field.state.value
+                                    ?.map((d) => d.name)
+                                    .join(', ') || ''
+                                }
                                 onChange={(e) =>
-                                  field.handleChange(e.target.value)
+                                  field.handleChange([
+                                    {
+                                      name: e.target.value,
+                                      capacity: '',
+                                      id: 0,
+                                      machine_id: 0,
+                                    },
+                                  ])
                                 }
                               />
                             </Field>

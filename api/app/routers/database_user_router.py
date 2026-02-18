@@ -1,21 +1,68 @@
 """Router for User Database API CRUD."""
 
-from typing import List
+import os
+import shutil
+import glob
+from typing import List, Union
 
 from app.database import get_db
 from app.db.models import (
     User,
     UserType,
 )
-from app.db.schemas import UserCreate, UserUpdate, UserCreatedResponse
+from app.db.schemas import (
+    UserCreate,
+    UserUpdate,
+    UserCreatedResponse,
+    UserInfoExtended,
+    UserInfo,
+)
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
 from app.db.schemas import UserRead
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
 
 router = APIRouter()
+AVATAR_DIR = "/home/labbyn/avatars"
+
+
+def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
+    """
+    Return user data with fields masked based on requester's permissions.
+    Admins can see full data, regular users see limited info.
+    :param u: User object
+    :param ctx: Request context for user and team info
+    :param detailed: Whether to include detailed fields (email, avatar, group links)
+    :return: UserInfo or UserInfoExtended model instance
+    """
+    is_own_team = ctx.team_id is not None and u.team_id == ctx.team_id
+    can_see_full_data = ctx.is_admin or is_own_team
+
+    assigned_groups = [{"name": u.teams.name}] if u.teams else []
+    group_links = [f"/db/teams/{u.team_id}"] if u.teams else []
+
+    user_data = {
+        "id": u.id,
+        "name": u.name,
+        "surname": u.surname,
+        "login": u.login,
+        "user_type": u.user_type,
+        "assigned_groups": assigned_groups,
+    }
+
+    if detailed and can_see_full_data:
+        user_data.update(
+            {
+                "email": u.email,
+                "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
+                "group_links": group_links,
+            }
+        )
+        return UserInfoExtended.model_validate(user_data)
+
+    return UserInfo.model_validate(user_data)
 
 
 @router.post(
@@ -99,32 +146,50 @@ async def create_user(
         ) from e
 
 
-@router.get("/db/users/", response_model=List[UserRead], tags=["Users"])
-def get_users(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+@router.get("/db/users/list_info", response_model=List[UserInfo], tags=["Users"])
+def get_users_with_groups(
+    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
-    Fetch all users
+    Fetch all users with their assigned groups (masked based on permissions).
     :param db: Active database session
-    :return: List of all users
+    :param ctx: Request context for user and team info
+    :return: User object
     """
-    return db.query(User).all()
+    ctx.require_user()
+    users = db.query(User).options(joinedload(User.teams)).all()
+    return [get_masked_user_model(u, ctx, detailed=False) for u in users]
 
 
-@router.get("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
-def get_user_by_id(
+@router.get("/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"])
+def get_user_detail_with_groups(
     user_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
-    Fetch specific user by ID
+    Fetch full user profile including avatar and group links (requires permissions).
     :param user_id: User ID
     :param db: Active database session
-    :return: User object
+    :param ctx: Request context for user and team info
+    :return: User object with extended info
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    ctx.require_user()
+    user = (
+        db.query(User)
+        .options(joinedload(User.teams))
+        .filter(User.id == user_id)
+        .first()
+    )
+
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    is_own_team = ctx.team_id is not None and user.team_id == ctx.team_id
+    if not (ctx.is_admin or is_own_team):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+            status_code=403, detail="Insufficient permissions to view details"
         )
-    return user
+
+    return get_masked_user_model(user, ctx, detailed=True)
 
 
 @router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
@@ -206,3 +271,42 @@ async def delete_user(
             )
         db.delete(user)
         db.commit()
+
+
+@router.post("/db/users/avatar", tags=["Users"])
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
+    ctx.require_user()
+    user = ctx.current_user
+
+    for old_file in glob.glob(os.path.join(AVATAR_DIR, f"avatar_user_{user.id}.*")):
+        try:
+            os.remove(old_file)
+        except:
+            pass
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in [".png", ".jpg", ".jpeg", ".gif"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file type. Allowed types: png, jpg, jpeg, gif.",
+        )
+
+    filename = f"avatar_user_{user.id}{ext}"
+    full_path = os.path.join(AVATAR_DIR, filename)
+
+    try:
+        with open(full_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Something went wrong! Try again!: {str(e)}"
+        )
+
+    user.avatar_path = f"/static/avatars/{filename}"
+    db.commit()
+
+    return {"info": "Succesfully updated!", "path": user.avatar_path}

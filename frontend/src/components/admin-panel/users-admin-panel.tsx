@@ -19,7 +19,7 @@ import { DataTableColumnHeader } from '../data-table/column-header'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { UserCreate } from '@/integrations/user/user.types'
-import { usersQueryOptions } from '@/integrations/user/user.query'
+import { adminUsersQueryOptions } from '@/integrations/user/user.query'
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
@@ -131,7 +131,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
 ]
 
 export default function UserAdminPanel() {
-  const { data: users = [], isLoading } = useQuery(usersQueryOptions)
+  const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const createUser = useCreateUserMutation()

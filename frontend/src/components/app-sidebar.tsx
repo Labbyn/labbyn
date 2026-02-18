@@ -16,6 +16,7 @@ import {
   Server,
   Settings,
   Sun,
+  User,
   Users,
 } from 'lucide-react'
 import {
@@ -68,13 +69,14 @@ const items = [
   { title: 'Labs', url: '/labs', icon: Server },
   { title: 'Inventory', url: '/inventory', icon: Archive },
   { title: 'History', url: '/history', icon: History },
-  { title: 'Users', url: '/users', icon: Users },
+  { title: 'Users', url: '/users', icon: User },
+  { title: 'Teams', url: '/teams', icon: Users },
   { title: 'Documentation', url: '/docs', icon: FileText },
   { title: 'Import & Export', url: '/import-export', icon: FolderInput },
 ]
 
 const adminPanelItems = [
-  { title: 'Users', url: '/admin-panel/users', icon: Users },
+  { title: 'Users', url: '/admin-panel/users', icon: User },
   { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
   { title: 'Machines', url: '/admin-panel/machines', icon: HardDrive },
   { title: 'Inventory', url: '/admin-panel/inventory', icon: Archive },

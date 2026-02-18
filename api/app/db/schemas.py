@@ -132,7 +132,7 @@ class LayoutResponse(LayoutBase):
 
 
 # ==========================
-#          ROOMS
+#       ROOMS(LABS)
 # ==========================
 
 
@@ -150,6 +150,10 @@ class RoomsBase(BaseModel):
 class RoomsCreate(RoomsBase):
     """Schema for creating a new Room."""
 
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this room"
+    )
+
 
 class RoomsUpdate(BaseModel):
     """
@@ -159,6 +163,7 @@ class RoomsUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=100)
     room_type: Optional[str] = Field(None, max_length=100)
+    tag_ids: Optional[List[int]] = Field(None)
 
 
 class RoomsResponse(RoomsBase):
@@ -168,6 +173,54 @@ class RoomsResponse(RoomsBase):
 
     id: int = Field(..., description="Unique identifier of the room")
     version_id: int
+    tags: List[TagsResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoomDashboardResponse(BaseModel):
+    """
+    Schema for displaying room information on the dashboard, including rack count and map link.
+    """
+
+    id: int
+    name: str
+    rack_count: int
+    map_link: Optional[str] = None
+
+
+class LabRackMachine(BaseModel):
+    """
+    Schema for displaying machine information within a rack section on the lab details view.
+    """
+
+    id: int
+    hostname: Optional[str]
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+
+
+class LabRackSection(BaseModel):
+    """
+    Schema for displaying rack information within a room on the lab details view, including its machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    machines: List[LabRackMachine]
+
+
+class RoomDetailsResponse(BaseModel):
+    """
+    Schema for displaying detailed room information on the lab details view, including its racks and machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    map_link: Optional[str] = None
+    racks: List[LabRackSection]
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -299,145 +352,6 @@ class MetadataResponse(MetadataBase):
 
 
 # ==========================
-#          MACHINES
-# ==========================
-
-
-class MachinesBase(BaseModel):
-    """
-    Base model for Machines.
-    """
-
-    name: str = Field(..., max_length=100, description="Unique machine name/hostname")
-    localization_id: int = Field(
-        ..., description="ID of the room where machine is located"
-    )
-    mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
-    ip_address: Optional[str] = Field(None, max_length=15, description="IP Address")
-    pdu_port: Optional[int] = Field(
-        None, description="Power Distribution Unit port number"
-    )
-    team_id: Optional[int] = Field(
-        None, description="ID of the team owning the machine"
-    )
-    os: Optional[str] = Field(None, max_length=30, description="Operating System")
-    serial_number: Optional[str] = Field(
-        None, max_length=50, description="Hardware serial number"
-    )
-    note: Optional[str] = Field(None, max_length=500, description="Optional notes")
-    cpu: Optional[str] = Field(None, max_length=100, description="CPU specification")
-    ram: Optional[str] = Field(None, max_length=100, description="RAM specification")
-    disk: Optional[str] = Field(
-        None, max_length=100, description="Disk/Storage specification"
-    )
-    metadata_id: int = Field(..., description="ID of associated metadata record")
-    shelf_id: Optional[int] = Field(
-        None, description="ID of layout coordinates if applicable"
-    )
-
-
-class MachinesCreate(MachinesBase):
-    """
-    Schema for creating a Machine.
-    """
-
-    added_on: datetime = Field(
-        default_factory=datetime.now,
-        description="Date when machine was added. Defaults to now.",
-    )
-
-
-class MachinesUpdate(BaseModel):
-    """
-    Schema for updating a Machine.
-    """
-
-    name: Optional[str] = Field(None, max_length=100)
-    localization_id: Optional[int] = None
-    mac_address: Optional[str] = Field(None, max_length=17)
-    pdu_port: Optional[int] = None
-    team_id: Optional[int] = None
-    os: Optional[str] = Field(None, max_length=30)
-    serial_number: Optional[str] = Field(None, max_length=50)
-    note: Optional[str] = Field(None, max_length=500)
-    cpu: Optional[str] = Field(None, max_length=100)
-    ram: Optional[str] = Field(None, max_length=100)
-    disk: Optional[str] = Field(None, max_length=100)
-    shelf_id: Optional[int] = None
-    metadata_id: Optional[int] = None
-
-
-class MachinesResponse(MachinesBase):
-    """
-    Schema for reading Machine data.
-    """
-
-    id: int
-    added_on: datetime
-    version_id: int
-    model_config = ConfigDict(from_attributes=True)
-
-
-class MachineInRackResponse(BaseModel):
-    """
-    Schema for reading Machine data within a Rack context.
-    Includes shelf information.
-    """
-
-    id: int
-    name: str
-    ip_address: Optional[str]
-    mac_address: Optional[str]
-    team_id: Optional[int]
-    machine_url: Optional[str] = None
-    model_config = ConfigDict(from_attributes=True)
-
-
-class MachineFullDetailResponse(BaseModel):
-    """
-    Complete machine detail schema combining database records
-    with live Prometheus metrics.
-    """
-
-    id: int
-    name: str
-    ip_address: Optional[str]
-    mac_address: Optional[str]
-    os: Optional[str]
-    cpu_info: Optional[str] = Field(None, alias="cpu")
-    ram_info: Optional[str] = Field(None, alias="ram")
-    disk_info: Optional[str] = Field(None, alias="disk")
-    serial_number: Optional[str]
-    note: Optional[str]
-    pdu_port: Optional[int]
-    added_on: datetime
-
-    team_name: str
-    rack_name: Optional[str]
-    room_name: str
-
-    last_update: Optional[date]
-    monitoring: bool
-    ansible_access: bool
-    ansible_root_access: Optional[bool]
-
-    tags: List[TagsBase]
-    network_status: str = "Unknown"
-    prometheus_live_stats: Dict[str, Any] = {
-        "cpu_usage": None,
-        "ram_usage": None,
-        "disks": [],
-    }
-
-    # TODO: nav links (grafana, map - not implemented)
-    grafana_link: str
-    rack_link: str
-    map_link: str
-
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-
-# ==========================
 #          TEAMS
 # ==========================
 
@@ -477,6 +391,10 @@ class TeamsResponse(TeamsBase):
 
 
 class TeamMemberSchema(BaseModel):
+    """
+    Schema for representing a team member in the context of team details.
+    """
+
     id: int
     full_name: str
     login: str
@@ -486,6 +404,10 @@ class TeamMemberSchema(BaseModel):
 
 
 class TeamDetailResponse(BaseModel):
+    """
+    Schema for reading detailed Team information, including members and admin details.
+    """
+
     id: int
     name: str
     team_admin_name: str
@@ -497,21 +419,36 @@ class TeamDetailResponse(BaseModel):
 
 
 class TeamRackDetail(BaseModel):
+    """
+    Schema for representing a rack in the context of team details.
+    """
+
     name: str
     team_name: str
+    tags: List[str]
     map_link: str
+    machines_count: int
 
 
 class TeamMachineDetail(BaseModel):
+    """
+    Schema for representing a machine in the context of team details, including its location and identifiers.
+    """
+
     name: str
     ip_address: Optional[str]
     mac_address: Optional[str]
     team_name: str
     rack_name: str
     shelf_order: int
+    # TODO: add tags after CPU and Disk merge
 
 
 class TeamInventoryDetail(BaseModel):
+    """
+    Schema for representing an inventory item in the context of team details, including its location and rental status.
+    """
+
     name: str
     quantity: int
     team_name: str
@@ -524,6 +461,10 @@ class TeamInventoryDetail(BaseModel):
 
 
 class TeamFullDetailResponse(BaseModel):
+    """
+    Schema for reading full Team details, including members, racks, machines and inventory items associated with the team.
+    """
+
     id: int
     name: str
     admin: Dict[str, str]
@@ -612,6 +553,44 @@ class UserCreatedResponse(UserResponse):
     )
 
 
+class UserGroupInfo(BaseModel):
+    """
+    Model representing a simplified group/team information.
+    Used to provide group names in user-related responses.
+    """
+
+    name: str = Field(..., description="Name of the team/group")
+
+
+class UserInfo(BaseModel):
+    """
+    Basic user information for display purposes.
+    Includes identity, role and assigned groups.
+    """
+
+    id: int
+    name: str = Field(..., description="User's first name")
+    surname: str = Field(..., description="User's last name")
+    login: str = Field(..., description="Unique login username")
+    user_type: UserType = Field(..., description="User's role and permissions level")
+    assigned_groups: List[UserGroupInfo] = Field(
+        default=[], description="List of groups the user belongs to"
+    )
+
+
+class UserInfoExtended(UserInfo):
+    """
+    Extended user profile information for detailed views.
+    Includes avatar, contact details and group links.
+    """
+
+    avatar_url: Optional[str] = None
+    email: EmailStr
+    group_links: List[str] = Field(
+        default=[], description="Links to the assigned groups details"
+    )
+
+
 # ==========================
 #      FASTAPI-USERS
 # ==========================
@@ -661,6 +640,223 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 # ==========================
+#          CPU & DISKS
+# ==========================
+
+
+class CPUBase(BaseModel):
+    """
+    Base model for CPUs.
+    """
+
+    name: str
+
+
+class CPUCreate(CPUBase):
+    """
+    Schema for creating CPUs.
+    """
+
+    machine_id: int
+
+
+class CPUUpdate(CPUBase):
+    """
+    Schema for updating CPUs.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="CPU naming")
+
+
+class CPUResponse(CPUBase):
+    """
+    Schema for reading cpus.
+    """
+
+    id: int
+    name: str
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DisksBase(BaseModel):
+    """
+    Base model for Disks.
+    """
+
+    name: str
+    capacity: Optional[str]
+
+
+class DiskCreate(DisksBase):
+    """
+    Schema for creating disks.
+    """
+
+    machine_id: int
+
+
+class DiskUpdate(DisksBase):
+    """
+    Schema for updating disks.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="Disk naming")
+    capacity: Optional[str] = Field(None, max_length=50, description="Disk capacity")
+
+
+class DiskResponse(DisksBase):
+    """
+    Schema for reading disks.
+    """
+
+    id: int
+    name: str
+    capacity: Optional[str]
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#          MACHINES
+# ==========================
+
+
+class MachinesBase(BaseModel):
+    """
+    Base model for Machines.
+    """
+
+    name: str = Field(..., max_length=100, description="Unique machine name/hostname")
+    localization_id: int = Field(
+        ..., description="ID of the room where machine is located"
+    )
+    mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
+    ip_address: Optional[str] = Field(None, max_length=15, description="IP Address")
+    pdu_port: Optional[int] = Field(
+        None, description="Power Distribution Unit port number"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team owning the machine"
+    )
+    os: Optional[str] = Field(None, max_length=30, description="Operating System")
+    serial_number: Optional[str] = Field(
+        None, max_length=50, description="Hardware serial number"
+    )
+    note: Optional[str] = Field(None, max_length=500, description="Optional notes")
+    cpus: Optional[List[CPUBase]] = Field(default=[], description="CPU specification")
+    ram: Optional[str] = Field(None, max_length=100, description="RAM specification")
+    disks: Optional[List[DisksBase]] = Field(
+        default=[], description="Disk/Storage specification"
+    )
+    metadata_id: int = Field(..., description="ID of associated metadata record")
+    shelf_id: Optional[int] = Field(
+        None, description="ID of layout coordinates if applicable"
+    )
+
+
+class MachinesCreate(MachinesBase):
+    """
+    Schema for creating a Machine.
+    """
+
+    added_on: datetime = Field(
+        default_factory=datetime.now,
+        description="Date when machine was added. Defaults to now.",
+    )
+
+
+class MachinesUpdate(BaseModel):
+    """
+    Schema for updating a Machine.
+    """
+
+    name: Optional[str] = Field(None, max_length=100)
+    localization_id: Optional[int] = None
+    mac_address: Optional[str] = Field(None, max_length=17)
+    pdu_port: Optional[int] = None
+    team_id: Optional[int] = None
+    os: Optional[str] = Field(None, max_length=30)
+    serial_number: Optional[str] = Field(None, max_length=50)
+    note: Optional[str] = Field(None, max_length=500)
+    cpu: Optional[str] = Field(None, max_length=100)
+    ram: Optional[str] = Field(None, max_length=100)
+    disk: Optional[str] = Field(None, max_length=100)
+    shelf_id: Optional[int] = None
+    metadata_id: Optional[int] = None
+
+
+class MachinesResponse(MachinesBase):
+    """
+    Schema for reading Machine data.
+    """
+
+    id: int
+    added_on: datetime
+    version_id: int
+    model_config = ConfigDict(from_attributes=True)
+    cpus: List[CPUResponse]
+    disks: List[DiskResponse]
+
+
+class MachineInRackResponse(BaseModel):
+    """
+    Schema for reading Machine data within a Rack context.
+    Includes shelf information.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    team_id: Optional[int]
+    machine_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class MachineFullDetailResponse(BaseModel):
+    """
+    Complete machine detail schema combining database records
+    with live Prometheus metrics.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    os: Optional[str]
+    cpu_info: Optional[str] = Field(None, alias="cpu")
+    ram_info: Optional[str] = Field(None, alias="ram")
+    disk_info: Optional[str] = Field(None, alias="disk")
+    serial_number: Optional[str]
+    note: Optional[str]
+    pdu_port: Optional[int]
+    added_on: datetime
+
+    team_name: str
+    rack_name: Optional[str]
+    room_name: str
+
+    last_update: Optional[date]
+    monitoring: bool
+    ansible_access: bool
+    ansible_root_access: Optional[bool]
+
+    tags: List[TagsBase]
+    network_status: str = "Unknown"
+    prometheus_live_stats: Dict[str, Any] = {
+        "cpu_usage": None,
+        "ram_usage": None,
+        "disks": [],
+    }
+
+    # TODO: nav links (grafana, map - not implemented)
+    grafana_link: str
+    rack_link: str
+    map_link: str
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+# ==========================
 #          RENTALS
 # ==========================
 
@@ -673,7 +869,7 @@ class RentalsBase(BaseModel):
     item_id: int = Field(..., description="ID of the inventory item being rented")
     start_date: date = Field(..., description="Start date of the rental")
     end_date: date = Field(..., description="End date of the rental")
-    user_id: int = Field(..., description="ID of the user renting the item")
+    quantity: int = Field(..., ge=1, description="Number of items to rent")
 
 
 class RentalsCreate(RentalsBase):
@@ -699,6 +895,22 @@ class RentalsResponse(RentalsBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class RentalInfo(BaseModel):
+    id: int
+    borrower_name: str
+    borrower_team: str
+    quantity: int
+    end_date: date
+
+
+class RentalReturn(BaseModel):
+    quantity: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Quantity being returned; if not provided, assumes full return",
+    )
 
 
 # ==========================
@@ -753,6 +965,21 @@ class InventoryResponse(InventoryBase):
 
     id: int
     version_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class InventoryDetailResponse(BaseModel):
+    id: int
+    name: str
+    total_quantity: int
+    in_stock_quantity: int
+    team_name: str
+    room_name: str
+    machine_info: Optional[str]
+    category_name: str
+    location_link: str
+    active_rentals: List[RentalInfo] = []
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -823,31 +1050,6 @@ class DashboardSection(BaseModel):
 
 class DashboardResponse(BaseModel):
     sections: List[DashboardSection]
-
-
-# ==========================
-#   LABS FRONTEND MODELS
-# ==========================
-
-
-class LabsItem(BaseModel):
-    device_id: str
-    hostname: Optional[str] = None
-    ip_address: Optional[str] = None
-    mac_address: Optional[str] = None
-
-
-class LabsSection(BaseModel):
-    id: str
-    tags: List[str]
-    machines: List[LabsItem]
-
-
-class LabsResponse(BaseModel):
-    id: int
-    name: str
-    location: str
-    racks: List[LabsSection]
 
 
 # ==========================

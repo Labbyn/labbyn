@@ -1,17 +1,19 @@
 """Router for Inventory Database API CRUD."""
 
+from datetime import datetime
 from typing import List
 
 from app.database import get_db
-from app.db.models import Inventory
+from app.db.models import Inventory, Rentals, User
 from app.db.schemas import (
     InventoryCreate,
     InventoryResponse,
     InventoryUpdate,
+    InventoryDetailResponse,
 )
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
 
 router = APIRouter()
@@ -61,6 +63,68 @@ def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     return query.all()
 
 
+@router.get(
+    "/db/inventory/details",
+    response_model=List[InventoryDetailResponse],
+    tags=["Inventory"],
+)
+def get_inventory_details(
+    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
+    """
+    Fetch all inventory items with detailed information from related tables (team, room, machine, category).
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: List of inventory items
+    """
+    query = db.query(Inventory).options(
+        joinedload(Inventory.team),
+        joinedload(Inventory.room),
+        joinedload(Inventory.machine),
+        joinedload(Inventory.category),
+        joinedload(Inventory.rental_history)
+        .joinedload(Rentals.user)
+        .joinedload(User.teams),
+    )
+
+    query = ctx.team_filter(query, Inventory)
+    items = query.all()
+    today = datetime.now().date()
+
+    results = []
+    for item in items:
+        active_rentals_list = [
+            {
+                "id": r.id,
+                "borrower_name": f"{r.user.name} {r.user.surname}",
+                "borrower_team": r.user.teams.name if r.user.teams else "N/A",
+                "quantity": r.quantity,
+                "end_date": r.end_date,
+            }
+            for r in item.rental_history
+            if r.end_date >= today
+        ]
+
+        total_rented = sum(r["quantity"] for r in active_rentals_list)
+
+        results.append(
+            {
+                "id": item.id,
+                "name": item.name,
+                "total_quantity": item.quantity,
+                "in_stock_quantity": item.quantity - total_rented,
+                "team_name": item.team.name if item.team else "N/A",
+                "room_name": item.room.name if item.room else "N/A",
+                "machine_info": item.machine.name if item.machine else "None",
+                "category_name": item.category.name if item.category else "N/A",
+                "location_link": f"room/{item.localization_id}",
+                "active_rentals": active_rentals_list,
+            }
+        )
+
+    return results
+
+
 @router.post(
     "/db/inventory/bulk",
     response_model=List[InventoryResponse],
@@ -97,6 +161,70 @@ def bulk_create_items(
         db.refresh(item)
 
     return new_items
+
+
+@router.get(
+    "/db/inventory/details/{item_id}",
+    response_model=InventoryDetailResponse,
+    tags=["Inventory"],
+)
+def get_inventory_item_details(
+    item_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
+    """
+    Fetch all specific item with detailed information from related tables (team, room, machine, category).
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: List of inventory items
+    """
+    query = (
+        db.query(Inventory)
+        .filter(Inventory.id == item_id)
+        .options(
+            joinedload(Inventory.team),
+            joinedload(Inventory.room),
+            joinedload(Inventory.machine),
+            joinedload(Inventory.category),
+            joinedload(Inventory.rental_history)
+            .joinedload(Rentals.user)
+            .joinedload(User.teams),
+        )
+    )
+
+    query = ctx.team_filter(query, Inventory)
+    item = query.first()
+
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found or access denied")
+
+    today = datetime.now().date()
+
+    active_rentals_list = [
+        {
+            "id": r.id,
+            "borrower_name": f"{r.user.name} {r.user.surname}",
+            "borrower_team": r.user.teams.name if r.user.teams else "N/A",
+            "quantity": r.quantity,
+            "end_date": r.end_date,
+        }
+        for r in item.rental_history
+        if r.end_date >= today
+    ]
+
+    total_rented = sum(r["quantity"] for r in active_rentals_list)
+
+    return {
+        "id": item.id,
+        "name": item.name,
+        "total_quantity": item.quantity,
+        "in_stock_quantity": item.quantity - total_rented,
+        "team_name": item.team.name if item.team else "N/A",
+        "room_name": item.room.name if item.room else "N/A",
+        "machine_info": item.machine.name if item.machine else "None",
+        "category_name": item.category.name if item.category else "N/A",
+        "location_link": f"room/{item.localization_id}",
+        "active_rentals": active_rentals_list,
+    }
 
 
 @router.get(

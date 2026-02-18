@@ -148,6 +148,36 @@ class Rooms(Base):
     inventory = relationship("Inventory", back_populates="room")
     team = relationship("Teams", back_populates="rooms")
     racks = relationship("Rack", back_populates="room")
+    tags = relationship("Tags", secondary="tags_rooms", back_populates="rooms")
+
+
+class CPUs(Base):
+    """
+    CPUs model representing CPUs models attached to machine.
+    """
+
+    __tablename__ = "cpus"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="cpus")
+
+
+class Disks(Base):
+    """
+    Disks model representing disks attached to machine.
+    """
+
+    __tablename__ = "disks"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    capacity = Column(String(50), nullable=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="disks")
 
 
 class Machines(Base):
@@ -168,12 +198,9 @@ class Machines(Base):
     serial_number = Column(String(50), nullable=True)
     note = Column(String(500), nullable=True)
     added_on = Column(DateTime, nullable=False, default=datetime.now)
-    cpu = Column(String(100), nullable=True)
     ram = Column(String(100), nullable=True)
-    disk = Column(String(100), nullable=True)
     metadata_id = Column(Integer, ForeignKey("metadata.id"), nullable=False)
     shelf_id = Column(Integer, ForeignKey("shelves.id"), nullable=True)
-
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
@@ -184,6 +211,10 @@ class Machines(Base):
     inventory = relationship("Inventory", back_populates="machine")
     shelf = relationship("Shelf", back_populates="machines")
     tags = relationship("Tags", secondary="tags_machines", back_populates="machines")
+    cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
+    disks = relationship(
+        "Disks", back_populates="machine", cascade="all, delete-orphan"
+    )
 
 
 class Metadata(Base):
@@ -249,6 +280,9 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     )
     login = Column(String(30), nullable=False, unique=True)
     email = Column(String(100), unique=True, index=True, nullable=False)
+    avatar_path = Column(
+        String(255), nullable=True, default="/static/avatars/default.png"
+    )  # dummy path
     hashed_password = Column(String(255), nullable=False)
 
     # FastAPI Users fields
@@ -299,7 +333,7 @@ class Rentals(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-
+    quantity = Column(Integer, nullable=False, default=1)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)
@@ -413,6 +447,7 @@ class Tags(Base):
     )
 
     racks = relationship("Rack", secondary="tags_racks", back_populates="tags")
+    rooms = relationship("Rooms", secondary="tags_rooms", back_populates="tags")
     machines = relationship(
         "Machines", secondary="tags_machines", back_populates="tags"
     )
@@ -438,6 +473,18 @@ class Documentation(Base):
     tags = relationship(
         "Tags", secondary="tags_documentation", back_populates="documentation"
     )
+
+
+class TagsRooms(Base):
+    """
+    TagsRacks model representing association between rooms and tags.
+    """
+
+    __tablename__ = "tags_rooms"
+
+    id = Column(Integer, primary_key=True)
+    room_id = Column(Integer, ForeignKey("rooms.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
 
 
 class TagsDocumentation(Base):

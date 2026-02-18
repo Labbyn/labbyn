@@ -1,12 +1,13 @@
 """Main application entry point for the FastAPI server."""
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 import fastapi_users
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.staticfiles import StaticFiles
 from app.routers import (
     prometheus_router,
     database_category_router,
@@ -26,8 +27,9 @@ from app.routers import (
     ansible_router,
     dashboard_router,
     authentication_router,
-    labs_router,
     subpage_history_router,
+    database_cpus_router,
+    database_disks_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
@@ -69,6 +71,15 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
 
 app = FastAPI(lifespan=lifespan)
 
+# Mount static files for user avatars
+if not os.path.exists(database_user_router.AVATAR_DIR):
+    os.makedirs(database_user_router.AVATAR_DIR, exist_ok=True)
+app.mount(
+    "/static/avatars",
+    StaticFiles(directory=database_user_router.AVATAR_DIR),
+    name="avatars",
+)
+
 # Configure CORS middleware temporaryly for local development
 origins = [
     "http://localhost:3000",
@@ -105,9 +116,10 @@ app.include_router(database_history_router.router)
 app.include_router(ansible_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(authentication_router.router)
-app.include_router(labs_router.router)
 app.include_router(database_documentation_router.router)
 app.include_router(database_tags_router.router)
 app.include_router(subpage_history_router.router)
 app.include_router(database_rack_router.router)
 app.include_router(database_shelf_router.router)
+app.include_router(database_cpus_router.router)
+app.include_router(database_disks_router.router)
