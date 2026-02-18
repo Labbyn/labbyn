@@ -193,7 +193,7 @@ class LabRackMachine(BaseModel):
     Schema for displaying machine information within a rack section on the lab details view.
     """
 
-    device_id: str
+    id: int
     hostname: Optional[str]
     ip_address: Optional[str]
     mac_address: Optional[str]

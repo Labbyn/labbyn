@@ -129,7 +129,7 @@ def get_room_details(
             for m in shelf.machines:
                 machines_in_rack.append(
                     {
-                        "device_id": str(m.id),
+                        "id": str(m.id),
                         "hostname": m.name,
                         "ip_address": m.ip_address,
                         "mac_address": m.mac_address,
