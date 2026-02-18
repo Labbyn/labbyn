@@ -60,6 +60,38 @@ class VersionedBase(BaseModel):
 
 
 # ==========================
+#      TAGS SCHEMAS
+# ==========================
+
+
+class TagsBase(BaseModel):
+    name: str = Field(..., max_length=50, description="Unique name of the tag")
+    color: str = Field(..., max_length=50, description="Color hex or name")
+
+
+class TagsCreate(TagsBase):
+    """Used for creating a new tag in the system."""
+
+    pass
+
+
+class TagsUpdate(BaseModel):
+    """Used for updating tag metadata."""
+
+    name: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+
+
+class TagsResponse(TagsBase):
+    """Standard tag response."""
+
+    id: int
+    version_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
 #          LAYOUT
 # ==========================
 
@@ -100,7 +132,7 @@ class LayoutResponse(LayoutBase):
 
 
 # ==========================
-#          ROOMS
+#       ROOMS(LABS)
 # ==========================
 
 
@@ -118,6 +150,10 @@ class RoomsBase(BaseModel):
 class RoomsCreate(RoomsBase):
     """Schema for creating a new Room."""
 
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this room"
+    )
+
 
 class RoomsUpdate(BaseModel):
     """
@@ -127,6 +163,7 @@ class RoomsUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=100)
     room_type: Optional[str] = Field(None, max_length=100)
+    tag_ids: Optional[List[int]] = Field(None)
 
 
 class RoomsResponse(RoomsBase):
@@ -136,6 +173,54 @@ class RoomsResponse(RoomsBase):
 
     id: int = Field(..., description="Unique identifier of the room")
     version_id: int
+    tags: List[TagsResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoomDashboardResponse(BaseModel):
+    """
+    Schema for displaying room information on the dashboard, including rack count and map link.
+    """
+
+    id: int
+    name: str
+    rack_count: int
+    map_link: Optional[str] = None
+
+
+class LabRackMachine(BaseModel):
+    """
+    Schema for displaying machine information within a rack section on the lab details view.
+    """
+
+    id: int
+    hostname: Optional[str]
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+
+
+class LabRackSection(BaseModel):
+    """
+    Schema for displaying rack information within a room on the lab details view, including its machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    machines: List[LabRackMachine]
+
+
+class RoomDetailsResponse(BaseModel):
+    """
+    Schema for displaying detailed room information on the lab details view, including its racks and machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    map_link: Optional[str] = None
+    racks: List[LabRackSection]
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -306,6 +391,10 @@ class TeamsResponse(TeamsBase):
 
 
 class TeamMemberSchema(BaseModel):
+    """
+    Schema for representing a team member in the context of team details.
+    """
+
     id: int
     full_name: str
     login: str
@@ -315,6 +404,10 @@ class TeamMemberSchema(BaseModel):
 
 
 class TeamDetailResponse(BaseModel):
+    """
+    Schema for reading detailed Team information, including members and admin details.
+    """
+
     id: int
     name: str
     team_admin_name: str
@@ -326,6 +419,10 @@ class TeamDetailResponse(BaseModel):
 
 
 class TeamRackDetail(BaseModel):
+    """
+    Schema for representing a rack in the context of team details.
+    """
+
     name: str
     team_name: str
     tags: List[str]
@@ -334,6 +431,10 @@ class TeamRackDetail(BaseModel):
 
 
 class TeamMachineDetail(BaseModel):
+    """
+    Schema for representing a machine in the context of team details, including its location and identifiers.
+    """
+
     name: str
     ip_address: Optional[str]
     mac_address: Optional[str]
@@ -344,6 +445,10 @@ class TeamMachineDetail(BaseModel):
 
 
 class TeamInventoryDetail(BaseModel):
+    """
+    Schema for representing an inventory item in the context of team details, including its location and rental status.
+    """
+
     name: str
     quantity: int
     team_name: str
@@ -356,6 +461,10 @@ class TeamInventoryDetail(BaseModel):
 
 
 class TeamFullDetailResponse(BaseModel):
+    """
+    Schema for reading full Team details, including members, racks, machines and inventory items associated with the team.
+    """
+
     id: int
     name: str
     admin: Dict[str, str]
@@ -902,31 +1011,6 @@ class DashboardResponse(BaseModel):
 
 
 # ==========================
-#   LABS FRONTEND MODELS
-# ==========================
-
-
-class LabsItem(BaseModel):
-    device_id: str
-    hostname: Optional[str] = None
-    ip_address: Optional[str] = None
-    mac_address: Optional[str] = None
-
-
-class LabsSection(BaseModel):
-    id: str
-    tags: List[str]
-    machines: List[LabsItem]
-
-
-class LabsResponse(BaseModel):
-    id: int
-    name: str
-    location: str
-    racks: List[LabsSection]
-
-
-# ==========================
 #       EXTRA MODELS
 # ==========================
 
@@ -967,38 +1051,6 @@ class FirstChangePasswordRequest(BaseModel):
     """
 
     new_password: str = Field(..., min_length=6, max_length=255)
-
-
-# ==========================
-#      TAGS SCHEMAS
-# ==========================
-
-
-class TagsBase(BaseModel):
-    name: str = Field(..., max_length=50, description="Unique name of the tag")
-    color: str = Field(..., max_length=50, description="Color hex or name")
-
-
-class TagsCreate(TagsBase):
-    """Used for creating a new tag in the system."""
-
-    pass
-
-
-class TagsUpdate(BaseModel):
-    """Used for updating tag metadata."""
-
-    name: Optional[str] = Field(None, max_length=50)
-    color: Optional[str] = Field(None, max_length=50)
-
-
-class TagsResponse(TagsBase):
-    """Standard tag response."""
-
-    id: int
-    version_id: int
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 # ==========================

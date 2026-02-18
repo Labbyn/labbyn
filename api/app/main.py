@@ -27,7 +27,6 @@ from app.routers import (
     ansible_router,
     dashboard_router,
     authentication_router,
-    labs_router,
     subpage_history_router,
     database_cpus_router,
     database_disks_router,
@@ -117,7 +116,6 @@ app.include_router(database_history_router.router)
 app.include_router(ansible_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(authentication_router.router)
-app.include_router(labs_router.router)
 app.include_router(database_documentation_router.router)
 app.include_router(database_tags_router.router)
 app.include_router(subpage_history_router.router)

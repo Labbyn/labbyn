@@ -148,6 +148,7 @@ class Rooms(Base):
     inventory = relationship("Inventory", back_populates="room")
     team = relationship("Teams", back_populates="rooms")
     racks = relationship("Rack", back_populates="room")
+    tags = relationship("Tags", secondary="tags_rooms", back_populates="rooms")
 
 
 class CPUs(Base):
@@ -445,6 +446,7 @@ class Tags(Base):
     )
 
     racks = relationship("Rack", secondary="tags_racks", back_populates="tags")
+    rooms = relationship("Rooms", secondary="tags_rooms", back_populates="tags")
 
 
 class Documentation(Base):
@@ -467,6 +469,18 @@ class Documentation(Base):
     tags = relationship(
         "Tags", secondary="tags_documentation", back_populates="documentation"
     )
+
+
+class TagsRooms(Base):
+    """
+    TagsRacks model representing association between rooms and tags.
+    """
+
+    __tablename__ = "tags_rooms"
+
+    id = Column(Integer, primary_key=True)
+    room_id = Column(Integer, ForeignKey("rooms.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
 
 
 class TagsDocumentation(Base):

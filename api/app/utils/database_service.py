@@ -443,7 +443,15 @@ def create_room(db: Session, room: schemas.RoomsCreate):
     :param room: Pydantic schema containing room data.
     :return: The newly created room instance.
     """
-    db_obj = models.Rooms(**room.model_dump())
+    data = room.model_dump()
+    tag_ids = data.pop("tag_ids", [])
+
+    db_obj = models.Rooms(**data)
+
+    if tag_ids:
+        tags = db.query(models.Tags).filter(models.Tags.id.in_(tag_ids)).all()
+        db_obj.tags = tags
+
     db.add(db_obj)
     handle_commit(db)
     db.refresh(db_obj)
@@ -463,7 +471,15 @@ def update_room(db: Session, room_id: int, room_update: schemas.RoomsUpdate):
     if not db_obj:
         return None
 
-    for key, value in room_update.model_dump(exclude_unset=True).items():
+    update_data = room_update.model_dump(exclude_unset=True)
+
+    if "tag_ids" in update_data:
+        tag_ids = update_data.pop("tag_ids")
+        if tag_ids is not None:
+            tags = db.query(models.Tags).filter(models.Tags.id.in_(tag_ids)).all()
+            db_obj.tags = tags
+
+    for key, value in update_data.items():
         setattr(db_obj, key, value)
 
     handle_commit(db)
