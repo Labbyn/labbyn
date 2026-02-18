@@ -73,6 +73,7 @@ async def _format_metrics_to_readable(item: dict):
     formatted_item = {
         "instance": metric.get("instance"),
         "job": metric.get("job"),
+        "mountpoint": metric.get("mountpoint"),
         "value": float(value[1]) if len(value) > 1 else None,
         "timestamp": float(value[0]) if len(value) > 0 else None,
     }

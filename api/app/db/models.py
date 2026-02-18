@@ -210,6 +210,7 @@ class Machines(Base):
     machine_metadata = relationship("Metadata", back_populates="machines")
     inventory = relationship("Inventory", back_populates="machine")
     shelf = relationship("Shelf", back_populates="machines")
+    tags = relationship("Tags", secondary="tags_machines", back_populates="machines")
     cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
     disks = relationship(
         "Disks", back_populates="machine", cascade="all, delete-orphan"
@@ -447,6 +448,9 @@ class Tags(Base):
 
     racks = relationship("Rack", secondary="tags_racks", back_populates="tags")
     rooms = relationship("Rooms", secondary="tags_rooms", back_populates="tags")
+    machines = relationship(
+        "Machines", secondary="tags_machines", back_populates="tags"
+    )
 
 
 class Documentation(Base):
@@ -504,4 +508,11 @@ class TagsRacks(Base):
 
     id = Column(Integer, primary_key=True)
     rack_id = Column(Integer, ForeignKey("racks.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class TagsMachines(Base):
+    __tablename__ = "tags_machines"
+    id = Column(Integer, primary_key=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"))
     tag_id = Column(Integer, ForeignKey("tags.id"))

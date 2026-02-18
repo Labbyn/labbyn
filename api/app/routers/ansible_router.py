@@ -193,6 +193,10 @@ async def discover_hosts(
             if machine:
                 has_changes = False
 
+                if machine.ip_address != host:
+                    machine.ip_address = host
+                    has_changes = True
+
                 for field in ["os", "ram", "mac_address", "ip_address"]:
                     if getattr(machine, field) != specs.get(field):
                         setattr(machine, field, specs.get(field))
@@ -250,7 +254,7 @@ async def discover_hosts(
                     os=specs["os"],
                     ram=specs["ram"],
                     mac_address=specs["mac_address"],
-                    ip_address=specs["ip_address"],
+                    ip_address=host,
                     added_on=datetime.now(),
                 )
                 db.add(new_machine)

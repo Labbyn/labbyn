@@ -814,6 +814,50 @@ class MachineInRackResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MachineFullDetailResponse(BaseModel):
+    """
+    Complete machine detail schema combining database records
+    with live Prometheus metrics.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    os: Optional[str]
+    cpus: List[CPUResponse] = []
+    ram_info: Optional[str] = Field(None, alias="ram")
+    disks: List[DiskResponse] = []
+    serial_number: Optional[str]
+    note: Optional[str]
+    pdu_port: Optional[int]
+    added_on: datetime
+
+    team_name: str
+    rack_name: Optional[str]
+    room_name: str
+
+    last_update: Optional[date]
+    monitoring: bool
+    ansible_access: bool
+    ansible_root_access: Optional[bool]
+
+    tags: List[TagsResponse]
+    network_status: str = "Unknown"
+    prometheus_live_stats: Dict[str, Any] = {
+        "cpu_usage": None,
+        "ram_usage": None,
+        "disks": [],
+    }
+
+    # TODO: nav links (grafana, map - not implemented)
+    grafana_link: str
+    rack_link: str
+    map_link: str
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+
 # ==========================
 #          RENTALS
 # ==========================

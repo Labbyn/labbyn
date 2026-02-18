@@ -29,6 +29,7 @@
         name: node_exporter
         state: started
         enabled: yes
+        daemon_reload: yes
 
   handlers:
     - name: Reload systemd 
