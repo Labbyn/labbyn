@@ -5,22 +5,49 @@ from sqlalchemy.orm import joinedload, Session
 from typing import List, Optional
 
 from app.database import get_db
-from app.db.models import Rack, Shelf, Machines, User, UserType, Rooms, Tags
+from app.db.models import Rack, Shelf, Rooms, Tags, Teams
 from app.auth.dependencies import RequestContext
 from app.db.schemas import (
     RackCreate,
     RackUpdate,
     RackResponse,
-    ShelfCreate,
-    ShelfUpdate,
-    ShelfResponse,
-    MachineInRackResponse,
+    RackWithOrderedMachinesResponse,
 )
 
-router = APIRouter(tags=["racks"])
+router = APIRouter(tags=["Racks"])
 
 
-@router.get("/db/racks", response_model=List[RackResponse])
+def format_rack_output(rack: Rack):
+    """
+    Format rack output to display machine list ordered
+
+    :param rack: Rack object
+    :return: Formatted rack dict
+    """
+
+    sorted_shelves = sorted(rack.shelves, key=lambda s: s.order or 0)
+    ordered_machines = []
+
+    for shelf in sorted_shelves:
+        ordered_machines.append(shelf.machines)
+
+    team_name = rack.team.name if rack.team else "N/A"
+    rack_link = f"/racks/{rack.id}"
+
+    return {
+        "id": rack.id,
+        "name": rack.name,
+        "team_id": rack.team_id,
+        "layout_id": rack.layout_id,
+        "team_name": team_name,
+        "room_id": rack.room_id,
+        "tags": rack.tags or [],
+        "machines": ordered_machines,
+        "link": rack_link,
+    }
+
+
+@router.get("/db/racks", response_model=List[RackResponse], tags=["Racks"])
 def get_racks(
     room_ids: Optional[List[int]] = Query(None),
     team_ids: Optional[List[int]] = Query(None),
@@ -53,7 +80,7 @@ def get_racks(
     return racks
 
 
-@router.get("/db/racks-list")
+@router.get("/db/racks-list", tags=["Racks"])
 def get_racks_list(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Returns a simple list of rack names and IDs for dropdowns
@@ -67,7 +94,7 @@ def get_racks_list(db: Session = Depends(get_db), ctx: RequestContext = Depends(
     return [{"id": r.id, "name": r.name} for r in racks]
 
 
-@router.get("/db/racks/{rack_id}", response_model=RackResponse)
+@router.get("/db/racks/{rack_id}", response_model=RackResponse, tags=["Racks"])
 def get_rack_detail(
     rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -102,7 +129,10 @@ def get_rack_detail(
 
 
 @router.post(
-    "/db/racks", response_model=RackResponse, status_code=status.HTTP_201_CREATED
+    "/db/racks",
+    response_model=RackResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["Racks"],
 )
 def create_rack(
     rack: RackCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
@@ -152,7 +182,7 @@ def create_rack(
     return db_rack
 
 
-@router.patch("/db/racks/{rack_id}", response_model=RackResponse)
+@router.patch("/db/racks/{rack_id}", response_model=RackResponse, tags=["Racks"])
 def update_rack(
     rack_id: int,
     rack_data: RackUpdate,
@@ -218,7 +248,9 @@ def update_rack(
     return db_rack
 
 
-@router.delete("/db/racks/{rack_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/db/racks/{rack_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Racks"]
+)
 def delete_rack(
     rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
@@ -243,3 +275,33 @@ def delete_rack(
     db.delete(db_rack)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/db/racks/rack_info/{rack_id}",
+    response_model=RackWithOrderedMachinesResponse,
+    tags=["Racks"],
+)
+def get_rack_info_by_id(
+    rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
+    """
+    Fetch detailed information about a specific rack by ID including ordered machine list
+    :param rack_id: Rack ID
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Rack object
+    """
+    rack = (
+        db.query(Rack)
+        .filter(Rack.id == rack_id)
+        .options(
+            joinedload(Rack.team), joinedload(Rack.shelves).joinedload(Shelf.machines)
+        )
+        .first()
+    )
+
+    if not rack:
+        raise HTTPException(status_code=404, detail="Rack not found")
+
+    return format_rack_output(rack)
