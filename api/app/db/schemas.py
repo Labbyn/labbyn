@@ -1202,3 +1202,11 @@ class RackResponse(RackBase):
     tags: List[TagsResponse] = []
     shelves: List[ShelfResponse] = []
     model_config = ConfigDict(from_attributes=True)
+
+
+class RackWithOrderedMachinesResponse(RackBase):
+    id: int = Field(..., description="Unique identifier of the rack")
+    team_name: Optional[str]
+    tags: List[TagsResponse] = []
+    machines: List[List[MachineInRackResponse]] = [[]]
+    link: str
