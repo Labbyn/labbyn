@@ -813,6 +813,7 @@ class MachineInRackResponse(BaseModel):
     machine_url: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
+
 class MachineFullDetailResponse(BaseModel):
     """
     Complete machine detail schema combining database records
@@ -824,9 +825,9 @@ class MachineFullDetailResponse(BaseModel):
     ip_address: Optional[str]
     mac_address: Optional[str]
     os: Optional[str]
-    cpu_info: Optional[str] = Field(None, alias="cpu")
+    cpus: List[CPUResponse] = []
     ram_info: Optional[str] = Field(None, alias="ram")
-    disk_info: Optional[str] = Field(None, alias="disk")
+    disks: List[DiskResponse] = []
     serial_number: Optional[str]
     note: Optional[str]
     pdu_port: Optional[int]
@@ -841,7 +842,7 @@ class MachineFullDetailResponse(BaseModel):
     ansible_access: bool
     ansible_root_access: Optional[bool]
 
-    tags: List[TagsBase]
+    tags: List[TagsResponse]
     network_status: str = "Unknown"
     prometheus_live_stats: Dict[str, Any] = {
         "cpu_usage": None,
@@ -855,6 +856,7 @@ class MachineFullDetailResponse(BaseModel):
     map_link: str
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
 
 # ==========================
 #          RENTALS

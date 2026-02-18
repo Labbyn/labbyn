@@ -115,6 +115,8 @@ async def get_machine_full_detail(
             joinedload(Machines.room),
             joinedload(Machines.machine_metadata),
             joinedload(Machines.tags),
+            joinedload(Machines.cpus),
+            joinedload(Machines.disks),
             joinedload(Machines.shelf).joinedload(Shelf.rack),
         )
     ).first()
@@ -178,9 +180,9 @@ async def get_machine_full_detail(
         "ip_address": machine.ip_address,
         "mac_address": machine.mac_address,
         "os": machine.os,
-        "cpu": machine.cpu,
+        "cpus": machine.cpus,
         "ram": machine.ram,
-        "disk": machine.disk,
+        "disks": machine.disks,
         "serial_number": machine.serial_number,
         "note": machine.note,
         "pdu_port": machine.pdu_port,
