@@ -199,13 +199,6 @@ function MachineDetailsPage() {
               <Separator />
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Rack / Layout ID
-                </span>
-                <span className="font-medium">{machine.layout_id}</span>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                   Team ID
                 </span>
                 <span className="font-medium">{machine.team_id}</span>

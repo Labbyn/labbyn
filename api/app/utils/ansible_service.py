@@ -31,11 +31,12 @@ def parse_platform_report(hostname: str) -> dict:
         root_key = list(data.keys())[0]
         info = data[root_key]
 
+        # TODO: for now ansible provides only one CPU in json - maybe we need to change discovery command or test it with platform with 2 CPUs, for now i leave it hardcoded
         cpu_info = info.get("cpu", {})
         cpu_str = (
-            f"{cpu_info.get('name', 'Unknown')} "
-            f"({cpu_info.get('cores', '?')} cores)"
+            f"{cpu_info.get('name', 'Unknown')} ({cpu_info.get('cores', '?')} cores)"
         )
+        cpu_list = [{"name": cpu_str}]
 
         ram_info = info.get("ram_memory", {})
         ram_str = f"{ram_info.get('real_gb', '?')} GB"
@@ -43,10 +44,12 @@ def parse_platform_report(hostname: str) -> dict:
         drives = info.get("drives", [])
         disk_list = []
         for d in drives:
-            size_gb = d.get("size_gb", "?")
-            mount = d.get("mount", "?")
-            disk_list.append(f"{mount} ({size_gb}GB)")
-        disk_str = ", ".join(disk_list) if disk_list else "Unknown"
+            disk_list.append(
+                {
+                    "name": d.get("mount", "Unknown"),
+                    "capacity": f'{d.get("size_gb", "?")} GB',
+                }
+            )
 
         dist = info.get("distribution", {})
         os_str = f"{dist.get('name', 'Linux')} {dist.get('version', '')}"
@@ -61,9 +64,9 @@ def parse_platform_report(hostname: str) -> dict:
         return {
             "name": root_key,
             "os": os_str,
-            "cpu": cpu_str,
+            "cpus": cpu_list,
             "ram": ram_str,
-            "disk": disk_str,
+            "disks": disk_list,
             "mac_address": mac_address,
             "ip_address": ip_address,
             "agent_prometheus": has_node_exporter,
