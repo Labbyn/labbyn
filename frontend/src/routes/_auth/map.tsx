@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
-import { CanvasComponent3D } from '../../components/canvas'
+import { CanvasComponent3D } from '../../components/map/canvas'
 import type { Equipment, Wall } from '@/types/types'
 import { generateDefaultLabLoadout } from '@/lib/sample-lab-gen'
 
