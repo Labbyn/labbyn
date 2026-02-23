@@ -81,48 +81,53 @@ def verify_machine_ownership(machine_id: int, db: Session, ctx: RequestContext):
 
 
 @router.post("/ansible/create_user")
-async def create_ansible_user(request: HostRequest):
+async def create_ansible_user(request: HostRequest, ctx: RequestContext = Depends()):
     """
     Create Ansible user on a host.
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
     )
 
 
 @router.post("/ansible/scan_platform")
-async def scan_platform(request: HostRequest):
+async def scan_platform(request: HostRequest, ctx: RequestContext = Depends()):
     """
     Gather information about platform.
     :param reqest: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars
     )
 
 
 @router.post("/ansible/deploy_agent")
-async def deploy_agent(request: HostRequest):
+async def deploy_agent(request: HostRequest, ctx: RequestContext = Depends()):
     """
     Deploy Node Exporter on a host.
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
     )
 
 
 @router.post("/ansible/setup_agent")
-async def setup_agent(request: HostRequest):
+async def setup_agent(request: HostRequest, ctx: RequestContext = Depends()):
     """
     Workflow endpoint: first create Ansible user (if needed), then deploy Node Exporter.
     :param request: HostRequest containing the host IP or hostname
     :return: Combined results of both steps
     """
+    ctx.require_user()
+
     try:
         user_result = await run_playbook_task(
             PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
@@ -163,6 +168,8 @@ async def discover_hosts(
     :param db: Active database session
     :return: Summary of created/updated hosts
     """
+    ctx.require_user()
+
     if not request.hosts:
         raise HTTPException(status_code=400, detail="Host list cannot be empty.")
 

@@ -171,6 +171,7 @@ def get_rentals(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param ctx: Request context for user and team info
     :return: List of all rentals
     """
+    ctx.require_user()
     query = db.query(Rentals).join(Inventory, Rentals.item_id == Inventory.id)
     query = ctx.team_filter(query, Inventory)
     return query.all()
@@ -187,6 +188,7 @@ def get_rental_by_id(
     :param ctx: Request context for user and team info
     :return: Rental object
     """
+    ctx.require_user()
     query = (
         db.query(Rentals)
         .join(Inventory, Rentals.item_id == Inventory.id)
@@ -215,6 +217,7 @@ async def delete_rental(
     :param ctx: Request context for user and team info
     :return: None
     """
+    ctx.require_user()
     query = (
         db.query(Rentals)
         .join(Inventory, Rentals.item_id == Inventory.id)

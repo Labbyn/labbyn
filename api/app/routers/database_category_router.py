@@ -56,6 +56,7 @@ def get_categories(db: Session = Depends(get_db), ctx: RequestContext = Depends(
     :param ctx: Request context for user and team info
     :return: List of all categories
     """
+    ctx.require_user()
     return db.query(Categories).all()
 
 
@@ -72,6 +73,7 @@ def get_category_by_id(
     :param ctx: Request context for user and team info
     :return: Category object
     """
+    ctx.require_user()
     cat = db.query(Categories).filter(Categories.id == cat_id).first()
     if not cat:
         raise HTTPException(

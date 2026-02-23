@@ -37,6 +37,7 @@ def create_machine(
     :param ctx: Request context for user and team info
     :return: Machine object
     """
+    ctx.require_user()
     cpus = machine_data.cpus or []
     disks = machine_data.disks or []
     data = machine_data.model_dump(exclude={"cpus", "disks"})
@@ -59,6 +60,7 @@ def get_machines(db: Session = Depends(get_db), ctx: RequestContext = Depends())
     :param ctx: Request context for user and team info
     :return: List of machines
     """
+    ctx.require_user()
     query = db.query(Machines)
     query = ctx.team_filter(query, Machines)
     return query.all()
@@ -77,6 +79,7 @@ def get_machine_by_id(
     :param ctx: Request context for user and team info
     :return: Machine object
     """
+    ctx.require_user()
     query = db.query(Machines).filter(Machines.id == machine_id)
     query = ctx.team_filter(query, Machines)
     machine = query.first()
@@ -222,6 +225,7 @@ async def update_machine(
     :param ctx: Request context for user and team info
     :return: Updated Machine
     """
+    ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
         query = db.query(Machines).filter(Machines.id == machine_id).first()
         query = ctx.team_filter(query, Machines)
@@ -258,6 +262,7 @@ async def delete_machine(
     :param ctx: Request context for user and team info
     :return: None
     """
+    ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
         query = db.query(Machines).filter(Machines.id == machine_id)
         query = ctx.team_filter(query, Machines)

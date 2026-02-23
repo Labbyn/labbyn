@@ -110,12 +110,14 @@ def test_refresh_flow(
     assert updated_machine.cpus[0].name == f"{cpu_name} (4 cores)"
 
 
-def test_create_user_simple(test_client, mock_ansible_success):
+def test_create_user_simple(test_client, mock_ansible_success, service_header_sync):
     """Tests the basic execution of the user creation endpoint."""
     payload = {
         "host": "1.1.1.1",
         "extra_vars": {"ansible_user": "v", "ansible_password": "v"},
     }
-    response = test_client.post("/ansible/create_user", json=payload)
+    response = test_client.post(
+        "/ansible/create_user", json=payload, headers=service_header_sync
+    )
     assert response.status_code == 200
     assert response.json()["status"] == "successful"

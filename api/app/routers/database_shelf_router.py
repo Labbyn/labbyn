@@ -27,7 +27,7 @@ def get_shelves_by_rack(
     :param ctx: Request context for user and team info
     :return: List of shelves belonging to the rack
     """
-
+    ctx.require_user()
     rack = db.query(Rack).filter(Rack.id == rack_id).first()
     if not rack:
         raise HTTPException(status_code=404, detail="Rack does not exist.")
@@ -51,7 +51,7 @@ def get_single_shelf(
     :param ctx: Request context for user and team info
     :return: Detailed shelf object
     """
-
+    ctx.require_user()
     shelf = (
         db.query(Shelf)
         .options(joinedload(Shelf.machines))

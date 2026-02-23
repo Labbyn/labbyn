@@ -10,6 +10,7 @@ from app.auth.dependencies import RequestContext
 
 
 def build_dashboard(db: Session, ctx: RequestContext):
+    ctx.require_user()
     machines = ctx.team_filter(db.query(Machines), Machines).all()
     rooms = ctx.team_filter(db.query(Rooms), Rooms).all()
     inventories = ctx.team_filter(db.query(Inventory), Inventory).all()

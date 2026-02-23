@@ -66,6 +66,7 @@ def get_disks(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param ctx: Request context for user and team info
     :return: List of all Disks
     """
+    ctx.require_user()
     query = db.query(Disks).join(Machines)
     query = ctx.team_filter(query, Machines)
     return query.all()
@@ -82,7 +83,7 @@ def get_disk_by_id(
     :param ctx: Request context for user and team info
     :return: Disk object
     """
-
+    ctx.require_user()
     query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
     query = ctx.team_filter(query, Machines)
     disk = query.first()
@@ -109,7 +110,7 @@ async def update_disk(
     :param ctx: Request context for user and team info
     :return: Updated disk
     """
-
+    ctx.require_user()
     async with acquire_lock(f"disk_lock:{disk_id}"):
         query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
         query = ctx.team_filter(query, Machines)
@@ -140,7 +141,7 @@ async def delete_disk(
     :param ctx: Request context for user and team info
     :return: None
     """
-
+    ctx.require_user()
     async with acquire_lock(f"disk_lock:{disk_id}"):
         query = db.query(Disks).join(Machines).filter(Disks.id == disk_id)
         query = ctx.team_filter(query, Machines)

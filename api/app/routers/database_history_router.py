@@ -144,7 +144,7 @@ def get_history_logs(
     :param ctx: Request context for user and team info
     :return: History logs with enhanced details
     """
-
+    ctx.require_user()
     query = (
         db.query(History)
         .join(User, History.user_id == User.id)
@@ -196,6 +196,7 @@ def get_history_by_id(
     :param db: Active database session
     :return: History object
     """
+    ctx.require_user()
     history = db.query(History).filter(History.id == history_id).first()
     if not history:
         raise HTTPException(

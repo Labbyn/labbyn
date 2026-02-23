@@ -77,6 +77,7 @@ def get_blackboxed_history_logs(
     :param ctx: Request context for user and team info
     :return: Blackboxed history list
     """
+    ctx.require_user()
     query = (
         db.query(History)
         .join(User, History.user_id == User.id)
@@ -133,7 +134,7 @@ def get_blackboxed_history_item(
     :param ctx: Request context for user and team info
     :return: Blackboxed history item
     """
-
+    ctx.require_user()
     query = (
         db.query(History)
         .join(User, History.user_id == User.id)

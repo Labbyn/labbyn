@@ -58,6 +58,7 @@ def get_inventory(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     :param ctx: Request context for user and team info
     :return: List of inventory items
     """
+    ctx.require_user()
     query = db.query(Inventory)
     query = ctx.team_filter(query, Inventory)
     return query.all()
@@ -77,6 +78,7 @@ def get_inventory_details(
     :param ctx: Request context for user and team info
     :return: List of inventory items
     """
+    ctx.require_user()
     query = db.query(Inventory).options(
         joinedload(Inventory.team),
         joinedload(Inventory.room),
@@ -177,6 +179,7 @@ def get_inventory_item_details(
     :param ctx: Request context for user and team info
     :return: List of inventory items
     """
+    ctx.require_user()
     query = (
         db.query(Inventory)
         .filter(Inventory.id == item_id)
@@ -240,6 +243,7 @@ def get_inventory_item(
     :param ctx: Request context for user and team info
     :return: Inventory item
     """
+    ctx.require_user()
     query = db.query(Inventory).filter(Inventory.id == item_id)
     query = ctx.team_filter(query, Inventory)
     item = query.first()
@@ -267,6 +271,7 @@ async def update_item(
     :param db: Active database session
     :return: Updated Inventory item
     """
+    ctx.require_user()
     async with acquire_lock(f"inventory_lock:{item_id}"):
         query = db.query(Inventory).filter(Inventory.id == item_id)
         query = ctx.team_filter(query, Inventory)
@@ -297,6 +302,7 @@ async def delete_item(
     :param db: Active database session
     :return: None
     """
+    ctx.require_user()
     async with acquire_lock(f"inventory_lock:{item_id}"):
         query = db.query(Inventory).filter(Inventory.id == item_id)
         query = ctx.team_filter(query, Inventory)
