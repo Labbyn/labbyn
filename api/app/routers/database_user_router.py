@@ -6,16 +6,14 @@ import glob
 from typing import List, Union
 
 from app.database import get_db
-from app.db.models import (
-    User,
-    UserType,
-)
+from app.db.models import User, UserType, UsersTeams
 from app.db.schemas import (
     UserCreate,
     UserUpdate,
     UserCreatedResponse,
     UserInfoExtended,
     UserInfo,
+    UserTeamRoleUpdate
 )
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
@@ -23,6 +21,7 @@ from app.db.schemas import UserRead
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
+
 
 router = APIRouter()
 AVATAR_DIR = "/home/labbyn/avatars"
@@ -37,11 +36,18 @@ def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
     :param detailed: Whether to include detailed fields (email, avatar, group links)
     :return: UserInfo or UserInfoExtended model instance
     """
-    is_own_team = ctx.team_id is not None and u.team_id == ctx.team_id
-    can_see_full_data = ctx.is_admin or is_own_team
+    user_team_ids = {m.team_id for m in u.teams}
+    is_in_common_team = any(tid in ctx.team_ids for tid in user_team_ids)
+    can_see_full_data = ctx.is_admin or is_in_common_team
 
-    assigned_groups = [{"name": u.teams.name}] if u.teams else []
-    group_links = [f"/db/teams/{u.team_id}"] if u.teams else []
+    memberships = [
+        {
+            "team_id": m.team_id,
+            "team_name": m.team.name if m.team else None,
+            "is_group_admin": m.is_group_admin,
+        }
+        for m in u.teams
+    ]
 
     user_data = {
         "id": u.id,
@@ -49,7 +55,7 @@ def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
         "surname": u.surname,
         "login": u.login,
         "user_type": u.user_type,
-        "assigned_groups": assigned_groups,
+        "membership": memberships,
     }
 
     if detailed and can_see_full_data:
@@ -57,7 +63,7 @@ def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
             {
                 "email": u.email,
                 "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
-                "group_links": group_links,
+                "group_links": [f"/teams/{tid}" for tid in user_team_ids]
             }
         )
         return UserInfoExtended.model_validate(user_data)
@@ -85,65 +91,54 @@ async def create_user(
 
     ctx.require_group_admin()
 
-    if db.query(User).filter(User.login == user_data.login).first():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Login already exists."
-        )
-    if db.query(User).filter(User.email == user_data.email).first():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already exists."
-        )
+    if (
+        db.query(User)
+        .filter((User.login == user_data.login) | (User.email == user_data.email))
+        .first()
+    ):
+        raise HTTPException(409, detail="User already exists.")
 
-    if user_data.password:
-        raw_password = user_data.password
-    else:
-        raw_password = generate_starting_password()
+    if not ctx.is_admin and user_data.user_type == UserType.ADMIN:
+        raise HTTPException(403, detail="Only admins can create other admin users.")
 
-    hashed_pw = hash_password(raw_password)
-    user_dict = user_data.model_dump(
-        exclude={"password", "is_active", "is_superuser", "is_verified"}
+    raw_password = user_data.password or generate_starting_password()
+    user_fields = user_data.model_dump(
+        exclude={"password", "team_ids", "is_active", "is_superuser", "is_verified"}
     )
 
-    if not ctx.is_admin:
-        user_dict["team_id"] = ctx.team_id
-        requested_role = user_data.user_type
-        if requested_role == UserType.ADMIN:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions to create admin user.",
-            )
-
     new_user = User(
-        **user_dict,
-        hashed_password=hashed_pw,
+        **user_fields,
+        hashed_password=hash_password(raw_password),
         force_password_change=True,
         is_active=True,
-        is_verified=False,
         is_superuser=(user_data.user_type == UserType.ADMIN),
     )
 
     try:
         db.add(new_user)
+        db.flush()
+        target_teams = (
+            user_data.team_ids if (ctx.is_admin or not ctx.team_id) else [ctx.team_id]
+        )
+
+        for t_id in target_teams:
+            db.add(
+                UsersTeams(
+                    user_id=new_user.id,
+                    team_id=t_id,
+                    is_group_admin=(user_data.user_type == UserType.GROUP_ADMIN),
+                )
+            )
+
         db.commit()
         db.refresh(new_user)
-        response_dict = {
-            "id": new_user.id,
-            "login": new_user.login,
-            "email": new_user.email,
-            "name": new_user.name,
-            "surname": new_user.surname,
-            "user_type": new_user.user_type,
-            "team_id": new_user.team_id,
-            "version_id": new_user.version_id,
-            "generated_password": raw_password,
-        }
 
-        return response_dict
+        res = get_masked_user_model(new_user, ctx, detailed=True)
+        return {**res.model_dump(), "generated_password": raw_password, "version_id": new_user.version_id}
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from e
+        raise HTTPException(500, detail=f"User creation error: {str(e)}")
 
 
 @router.get("/db/users/list_info", response_model=List[UserInfo], tags=["Users"])
@@ -157,7 +152,9 @@ def get_users_with_groups(
     :return: User object
     """
     ctx.require_user()
-    users = db.query(User).options(joinedload(User.teams)).all()
+    users = (
+        db.query(User).options(joinedload(User.teams).joinedload(UsersTeams.team)).all()
+    )
     return [get_masked_user_model(u, ctx, detailed=False) for u in users]
 
 
@@ -175,7 +172,7 @@ def get_user_detail_with_groups(
     ctx.require_user()
     user = (
         db.query(User)
-        .options(joinedload(User.teams))
+        .options(joinedload(User.teams).joinedload(UsersTeams.team))
         .filter(User.id == user_id)
         .first()
     )
@@ -183,7 +180,9 @@ def get_user_detail_with_groups(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    is_own_team = ctx.team_id is not None and user.team_id == ctx.team_id
+    user_team_ids = {m.team_id for m in user.teams}
+
+    is_own_team = ctx.team_ids in user_team_ids if ctx.team_ids else False
     if not (ctx.is_admin or is_own_team):
         raise HTTPException(
             status_code=403, detail="Insufficient permissions to view details"
@@ -192,7 +191,7 @@ def get_user_detail_with_groups(
     return get_masked_user_model(user, ctx, detailed=True)
 
 
-@router.put("/db/users/{user_id}", response_model=UserRead, tags=["Users"])
+@router.patch("/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"])
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
@@ -208,38 +207,55 @@ async def update_user(
     """
     ctx.require_group_admin()
     async with acquire_lock(f"user_lock:{user_id}"):
-        query = db.query(User).filter(User.id == user_id)
-        if not ctx.is_admin:
-            query = query.filter(User.team_id == ctx.team_id)
-        user = query.first()
+        user = (
+            db.query(User)
+            .options(joinedload(User.teams))
+            .filter(User.id == user_id)
+            .first()
+        )
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found or access denied",
-            )
+            raise HTTPException(404, detail="User not found")
+
+        user_team_ids = {m.team_id for m in user.teams}
+        if not ctx.is_admin and ctx.team_id not in user_team_ids:
+            raise HTTPException(403, detail="Access denied to user from another team")
 
         data = user_data.model_dump(exclude_unset=True)
 
         if not ctx.is_admin:
-            if "team_id" in data:
-                data["team_id"] = ctx.team_id
             if "user_type" in data and data["user_type"] == UserType.ADMIN:
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Insufficient permissions to assign admin role.",
+                    403, detail="Insufficient permissions to assign ADMIN role"
                 )
+            if "team_ids" in data:
+                data.pop("team_ids")
 
         if "password" in data:
-            new_plain_password = data.pop("password")
-            data["hashed_password"] = hash_password(new_plain_password)
+            user.hashed_password = hash_password(data.pop("password"))
+
+        if "team_ids" in data and ctx.is_admin:
+            new_teams = data.pop("team_ids")
+            db.query(UsersTeams).filter(UsersTeams.user_id == user.id).delete()
+            for t_id in new_teams:
+                db.add(UsersTeams(user_id=user.id, team_id=t_id))
 
         for k, v in data.items():
-            setattr(user, k, v)
+            if hasattr(user, k):
+                setattr(user, k, v)
+        try:
+            db.commit()
+            db.refresh(user)
+            user = (
+                db.query(User)
+                .options(joinedload(User.teams).joinedload(UsersTeams.team))
+                .filter(User.id == user.id)
+                .first()
+            )
 
-        db.commit()
-        db.refresh(user)
-        return user
-
+            return get_masked_user_model(user, ctx, detailed=True)
+        except Exception as e:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"User update error: {str(e)}")
 
 @router.delete(
     "/db/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
@@ -255,20 +271,22 @@ async def delete_user(
     """
     ctx.require_group_admin()
     async with acquire_lock(f"user_lock:{user_id}"):
-        query = db.query(User).filter(User.id == user_id)
-        if not ctx.is_admin:
-            query = query.filter(User.team_id == ctx.team_id)
-        user = query.first()
+        user = (
+            db.query(User)
+            .options(joinedload(User.teams))
+            .filter(User.id == user_id)
+            .first()
+        )
         if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found or access denied",
-            )
+            raise HTTPException(404, detail="User not found")
+
+        user_team_ids = {m.team_id for m in user.teams}
+        if not ctx.is_admin and ctx.team_id not in user_team_ids:
+            raise HTTPException(403, detail="Cannot delete user from another team")
+
         if user.id == ctx.current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot delete own user account",
-            )
+            raise HTTPException(400, detail="Cannot delete own account")
+
         db.delete(user)
         db.commit()
 
@@ -310,3 +328,64 @@ async def upload_user_avatar(
     db.commit()
 
     return {"info": "Succesfully updated!", "path": user.avatar_path}
+
+
+@router.patch("/db/users/{user_id}/promote", tags=["Users"])
+async def update_user_team_role(
+        user_id: int,
+        role_data: UserTeamRoleUpdate,
+        db: Session = Depends(get_db),
+        ctx: RequestContext = Depends(),
+):
+    """
+    Update user's group admin role within a specific team
+    :param user_id: user ID
+    :param role_data: Schema containing team_id and is_group_admin flag
+    :param db: Database session
+    :param ctx: Context for permissions and user info
+    :return: None
+    """
+    if not ctx.is_admin:
+        requester_membership = (
+            db.query(UsersTeams)
+            .filter(
+                UsersTeams.user_id == ctx.current_user.id,
+                UsersTeams.team_id == role_data.team_id,
+                UsersTeams.is_group_admin == True
+            )
+            .first()
+        )
+
+        if not requester_membership:
+            raise HTTPException(
+                status_code=403,
+                detail="You can only change roles for users in teams where you are a group admin."
+            )
+
+    target_membership = (
+        db.query(UsersTeams)
+        .filter(
+            UsersTeams.user_id == user_id,
+            UsersTeams.team_id == role_data.team_id
+        )
+        .first()
+    )
+
+    if not target_membership:
+        raise HTTPException(
+            status_code=404,
+            detail="User does not belong to the specified team or user not found."
+        )
+
+    target_membership.is_group_admin = role_data.is_group_admin
+
+    try:
+        db.commit()
+        user = db.query(User).options(
+            joinedload(User.teams).joinedload(UsersTeams.team)
+        ).filter(User.id == user_id).first()
+
+        return get_masked_user_model(user, ctx, detailed=True)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error while promoting user: {str(e)}")
