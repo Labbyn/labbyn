@@ -117,9 +117,14 @@ async def create_user(
     try:
         db.add(new_user)
         db.flush()
-        target_teams = (
-            user_data.team_ids if (ctx.is_admin or not ctx.team_id) else [ctx.team_id]
-        )
+
+        if ctx.is_admin:
+            target_teams = user_data.team_ids or []
+        else:
+            target_teams = [t_id for t_id in user_data.team_ids if t_id in ctx.team_ids]
+
+            if not target_teams and ctx.team_ids:
+                target_teams = [ctx.team_ids[0]]
 
         for t_id in target_teams:
             db.add(
@@ -132,7 +137,7 @@ async def create_user(
 
         db.commit()
         db.refresh(new_user)
-
+        db.expire_all()
         res = get_masked_user_model(new_user, ctx, detailed=True)
         return {**res.model_dump(), "generated_password": raw_password, "version_id": new_user.version_id}
 

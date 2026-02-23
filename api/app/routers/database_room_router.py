@@ -39,10 +39,14 @@ def create_room(
     """
     ctx.require_group_admin()
     tag_ids = room_data.tag_ids if hasattr(room_data, "tag_ids") else []
-    data = room_data.model_dump(exclude={"tag_ids"})
-    data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
 
-    obj = Rooms(**data)
+    effective_team_id = resolve_target_team_id(ctx, getattr(room_data, "team_id", None))
+
+    obj = Rooms(
+        name=room_data.name,
+        room_type=room_data.room_type,
+        team_id=effective_team_id
+    )
 
     if tag_ids:
         tags = db.query(Tags).filter(Tags.id.in_(tag_ids)).all()

@@ -64,6 +64,8 @@ def get_racks(
     ctx.require_user()
     query = ctx.db.query(Rack)
 
+    query = ctx.team_filter(query, Rack)
+
     if room_ids:
         query = query.filter(Rack.room_id.in_(room_ids))
     if team_ids:

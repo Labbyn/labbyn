@@ -145,6 +145,7 @@ class RoomsBase(BaseModel):
     room_type: Optional[str] = Field(
         None, max_length=100, description="Type or classification of the room"
     )
+    team_id: Optional[int] = Field(None)
 
 
 class RoomsCreate(RoomsBase):

@@ -78,7 +78,7 @@ def test_validation_error_handler(test_client, service_header_sync):
 
 
 @pytest.mark.rbac
-def test_resource_chain_creation(test_client, service_header_sync):
+def test_resource_chain_creation(test_client, service_header_sync, db_session):
     """
     Tests dependencies: Room -> Metadata -> Team -> Tag -> Rack -> Shelf -> Machine
     """
@@ -126,6 +126,9 @@ def test_resource_chain_creation(test_client, service_header_sync):
     )
     assert user_res.status_code == 201
     user_data = user_res.json()
+
+    db_session.commit()
+    db_session.expire_all()
 
     login_res = ac.post(
         "/auth/login",

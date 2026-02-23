@@ -92,7 +92,7 @@ def create_shelf(
     :return: Created shelf object with rack context
     """
     ctx.require_user()
-    rack_query = db.query(Rack).filter(Rack.id == rack_id).first()
+    rack_query = db.query(Rack).filter(Rack.id == rack_id)
     rack = ctx.team_filter(rack_query, Rack).first()
     if not rack:
         raise HTTPException(
