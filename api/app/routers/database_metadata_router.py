@@ -34,6 +34,7 @@ def create_metadata(
     :param ctx: Request context for user and team info
     :return: Metadata object
     """
+    ctx.require_user()
     obj = Metadata(**meta_data.model_dump())
     db.add(obj)
     db.commit()
@@ -49,6 +50,7 @@ def get_all_metadata(db: Session = Depends(get_db), ctx: RequestContext = Depend
     :param ctx: Request context for user and team info
     :return: List of Metadata
     """
+    ctx.require_user()
     query = db.query(Machines)
     if not ctx.is_admin:
         query = query.join(Machines).filter(Machines.team_id == ctx.team_id)
@@ -68,6 +70,7 @@ def get_metadata(
     :param ctx: Request context for user and team info
     :return: Metadata object
     """
+    ctx.require_user()
     query = db.query(Metadata).filter(Metadata.id == meta_id)
     if not ctx.is_admin:
         query = query.join(Machines).filter(Machines.team_id == ctx.team_id)
@@ -97,6 +100,7 @@ async def update_metadata(
     :param ctx: Request context for user and team info
     :return: Updated Metadata
     """
+    ctx.require_user()
     async with acquire_lock(f"meta_lock:{meta_id}"):
         query = db.query(Metadata).filter(Metadata.id == meta_id)
         if not ctx.is_admin:
@@ -127,6 +131,7 @@ async def delete_metadata(
     :param ctx: Request context for user and team info
     :return: None
     """
+    ctx.require_user()
     async with acquire_lock(f"meta_lock:{meta_id}"):
         query = db.query(Metadata).filter(Metadata.id == meta_id)
         if not ctx.is_admin:

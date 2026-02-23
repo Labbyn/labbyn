@@ -29,6 +29,7 @@ def get_tags(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param ctx: Request context for user and team info
     :return: List of all tags
     """
+    ctx.require_user()
     query = db.query(Tags).all()
     return query
 
@@ -51,6 +52,7 @@ def create_tag(
     :param ctx: Request context for user and team info
     :return: New tag item
     """
+    ctx.require_group_admin()
     obj = Tags(**tag_data.model_dump())
     db.add(obj)
     db.commit()
@@ -76,6 +78,7 @@ def get_tag_by_id(
     :param ctx: Request context for user and team info
     :return: Tag object
     """
+    ctx.require_user()
     query = db.query(Tags).filter(Tags.id == tag_id)
     tag = query.first()
     if not tag:
@@ -104,6 +107,7 @@ async def update_tag(
     :param ctx: Request context for user and team info
     :return: Updated tag
     """
+    ctx.require_group_admin()
     async with acquire_lock(f"tag_lock:{tag_id}"):
         query = db.query(Tags).filter(Tags.id == tag_id)
         tag = query.first()
@@ -136,6 +140,7 @@ async def delete_tag(
     :param ctx: Request context for user and team info
     :return: None
     """
+    ctx.require_group_admin()
     async with acquire_lock(f"tag_lock:{tag_id}"):
         query = db.query(Tags).filter(Tags.id == tag_id)
         tag = query.first()

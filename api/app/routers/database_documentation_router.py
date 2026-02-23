@@ -29,6 +29,7 @@ def get_documentation(db: Session = Depends(get_db), ctx: RequestContext = Depen
     :param ctx: Request context for user and team info
     :return: List of all documents
     """
+    ctx.require_user()
     query = db.query(Documentation).options(joinedload(Documentation.tags)).all()
     return query
 
@@ -51,7 +52,7 @@ def create_documentation(
     :param ctx: Request context for user and team info
     :return: New document item
     """
-
+    ctx.require_user()
     current_author = ctx.current_user.login
     tag_ids = documentation_data.tag_ids or []
     obj = Documentation(
@@ -83,6 +84,7 @@ def get_documentation_by_id(
     :param ctx: Request context for user and team info
     :return: Document object
     """
+    ctx.require_user()
     query = (
         db.query(Documentation)
         .filter(Documentation.id == documentation_id)
@@ -115,6 +117,7 @@ async def update_documentation(
     :param ctx: Request context for user and team info
     :return: Updated Document
     """
+    ctx.require_user()
     async with acquire_lock(f"documentation_lock:{documentation_id}"):
         query = (
             db.query(Documentation)
@@ -151,6 +154,7 @@ async def delete_document(
     :param ctx: Request context for user and team info
     :return: None
     """
+    ctx.require_user()
     async with acquire_lock(f"documentation_lock:{documentation_id}"):
         query = (
             db.query(Documentation)

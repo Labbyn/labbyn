@@ -60,6 +60,7 @@ def get_rooms(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param db: Active database session
     :return: List of all rooms
     """
+    ctx.require_user()
     query = db.query(Rooms).options(joinedload(Rooms.tags))
     query = ctx.team_filter(query, Rooms)
     return query.all()
@@ -75,6 +76,7 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
     :param ctx: Request context for user and team info
     :return: Room object
     """
+    ctx.require_user()
     query = db.query(Rooms).options(joinedload(Rooms.racks), joinedload(Rooms.layouts))
     query = ctx.team_filter(query, Rooms)
     rooms = query.all()
@@ -105,6 +107,7 @@ def get_room_details(
     :param ctx: Request context for user and team info
     :return: Room object
     """
+    ctx.require_user()
     query = (
         db.query(Rooms)
         .options(
@@ -165,6 +168,7 @@ def get_room_by_id(
     :param ctx: Request context for user and team info
     :return: Room object
     """
+    ctx.require_user()
     query = db.query(Rooms).filter(Rooms.id == room_id)
     query = ctx.team_filter(query, Rooms)
     room = query.first()

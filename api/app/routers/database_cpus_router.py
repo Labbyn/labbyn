@@ -83,7 +83,7 @@ def get_cpu_by_id(
     :param ctx: Request context for user and team info
     :return: CPU object
     """
-
+    ctx.require_user()
     query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
     query = ctx.team_filter(query, Machines)
     cpu = query.first()

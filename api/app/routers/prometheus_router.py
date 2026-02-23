@@ -202,16 +202,25 @@ async def websocket_endpoint(
 
 
 @router.get("/prometheus/instances")
-async def get_prometheus_instances():
+async def get_prometheus_instances(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all unique host instances [HOST::PORT] from Prometheus.
     :return: List of unique hosts
     """
+    ctx.require_user()
     payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
+
+    query = db.query(Machines.name)
+    query = ctx.team_filter(query, Machines)
+    allowed_hosts = {row[0] for row in query.all()}
+
     all_instances = set()
     for item in payload.get("status", []):
         if "instance" in item:
-            all_instances.add(item["instance"])
+            instance = item["instance"]
+            host_only = _extract_host_from_instance(item["instance"])
+            if ctx.is_admin or host_only in allowed_hosts:
+             all_instances.add(instance)
     return {"instances": list(all_instances)}
 
 
@@ -223,12 +232,19 @@ async def get_prometheus_hosts(
     Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
     :return: List of unique hostnames/IPs
     """
+    ctx.require_user()
+
     payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
+    query = db.query(Machines.name)
+    query = ctx.team_filter(query, Machines)
+    allowed_hosts = {row[0] for row in query.all()}
+
     all_hosts = set()
     for item in payload.get("status", []):
         if "instance" in item:
             host = _extract_host_from_instance(item["instance"])
-            all_hosts.add(host)
+            if ctx.is_admin or host in allowed_hosts:
+                all_hosts.add(host)
     return {"hosts": list(all_hosts)}
 
 
@@ -237,15 +253,23 @@ async def get_prometheus_all_metrics(
     instances: Optional[List[str]] = Query(
         None,
         description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
-    )
+    ), db: Session = Depends(get_db), ctx: RequestContext = Depends()
 ):
     """
     Fetch metrics for selected instances directly from Prometheus (bypasses cache).
     :param instances: List of instances as comma separated string
     :return: Metrics data for selected instances, or all if none specified
     """
+    ctx.require_user()
+
+    query = db.query(Machines.name)
+    query = ctx.team_filter(query, Machines)
+    allowed_hosts = {row[0] for row in query.all()}
+
     if not instances:
-        return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=None)
+        if ctx.is_admin:
+            return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=None)
+        return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=list(allowed_hosts))
 
     processed_instances = []
     for item in instances:
@@ -254,6 +278,15 @@ async def get_prometheus_all_metrics(
         else:
             processed_instances.append(unquote(item.strip()))
 
+    final_instances = []
+    for item in processed_instances:
+        host_only = _extract_host_from_instance(item)
+        if ctx.is_admin or host_only in allowed_hosts:
+            final_instances.append(item)
+
+    if not final_instances and not ctx.is_admin:
+        return{metric: [] for metric in DEFAULT_QUERIES.keys()}
+
     metrics_data = await fetch_prometheus_metrics(
         list(DEFAULT_QUERIES.keys()), hosts=processed_instances
     )
@@ -261,12 +294,13 @@ async def get_prometheus_all_metrics(
 
 
 @router.post("/prometheus/target")
-async def add_prometheus_new_target(target: PrometheusTarget):
+async def add_prometheus_new_target(target: PrometheusTarget, ctx: RequestContext = Depends()):
     """
     Add a new target to Prometheus targets file.
     :param target: PrometheusTarget object containing instance and labels
     :return: Success message
     """
+    ctx.require_user()
     try:
 
         if ":" not in target.instance or ":9090" in target.instance:

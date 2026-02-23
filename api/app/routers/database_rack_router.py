@@ -60,6 +60,7 @@ def get_racks(
     :param ctx: Request context for database and user info
     :return: List of racks with nested structures
     """
+    ctx.require_user()
     query = ctx.db.query(Rack)
 
     if room_ids:
@@ -88,6 +89,7 @@ def get_racks_list(db: Session = Depends(get_db), ctx: RequestContext = Depends(
     :param ctx: Request context
     :return: List of dictionaries with id and name
     """
+    ctx.require_user()
     query = db.query(Rack.id, Rack.name)
     racks = ctx.team_filter(query, Rack).all()
 
@@ -105,6 +107,7 @@ def get_rack_detail(
     :param ctx: Request context for user and team info
     :return: Detailed rack object
     """
+    ctx.require_user()
     query = db.query(Rack).filter(Rack.id == rack_id)
     rack = (
         ctx.team_filter(query, Rack)
@@ -292,6 +295,7 @@ def get_rack_info_by_id(
     :param ctx: Request context for user and team info
     :return: Rack object
     """
+    ctx.require_user()
     rack = (
         db.query(Rack)
         .filter(Rack.id == rack_id)

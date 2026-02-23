@@ -180,6 +180,7 @@ def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :param db: Active database session
     :return: List of all teams
     """
+    ctx.require_user()
     return db.query(Teams).all()
 
 
@@ -245,6 +246,7 @@ def get_team_by_id(
     :param db: Active database session
     :return: Team object
     """
+    ctx.require_user()
     team = db.query(Teams).filter(Teams.id == team_id).first()
     if not team:
         raise HTTPException(

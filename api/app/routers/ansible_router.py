@@ -81,36 +81,39 @@ def verify_machine_ownership(machine_id: int, db: Session, ctx: RequestContext):
 
 
 @router.post("/ansible/create_user")
-async def create_ansible_user(request: HostRequest):
+async def create_ansible_user(request: HostRequest, ctx: RequestContext):
     """
     Create Ansible user on a host.
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
     )
 
 
 @router.post("/ansible/scan_platform")
-async def scan_platform(request: HostRequest):
+async def scan_platform(request: HostRequest, ctx: RequestContext):
     """
     Gather information about platform.
     :param reqest: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.host, request.extra_vars
     )
 
 
 @router.post("/ansible/deploy_agent")
-async def deploy_agent(request: HostRequest):
+async def deploy_agent(request: HostRequest, ctx: RequestContext):
     """
     Deploy Node Exporter on a host.
     :param request: HostRequest containing the host IP or hostname
     :return: Success or error message
     """
+    ctx.require_user()
     return await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
     )
