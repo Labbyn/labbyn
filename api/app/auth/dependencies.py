@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from app.auth.auth_config import fastapi_users
 from sqlalchemy.orm import Query, Session
-from app.db.models import User, UserType
+from app.db.models import User, UserType, UsersTeams
 from app.database import get_db
 
 current_active_user = fastapi_users.current_user(active=True)
@@ -19,7 +19,12 @@ class RequestContext:
     def _setup(self, current_user: User):
         self.current_user = current_user
         self.user_type = current_user.user_type
-        self.team_id = current_user.team_id
+        self.team_ids = [
+            row[0]
+            for row in self.db.query(UsersTeams.team_id)
+            .filter(UsersTeams.user_id == current_user.id)
+            .all()
+        ]
 
         self.db.info["user_id"] = current_user.id
 
@@ -36,10 +41,12 @@ class RequestContext:
     def team_filter(self, query: Query, model_class):
         if self.is_admin:
             return query
+        if not self.team_ids:
+            return query.filter(False)
         if hasattr(model_class, "team_id"):
-            return query.filter(model_class.team_id == self.team_id)
+            return query.filter(model_class.team_id.in_(self.team_ids))
         if model_class == User:
-            return query.filter(User.team_id == self.team_id)
+            return query.join(User.teams).filter(UsersTeams.team_id.in_(self.team_ids))
 
         return query
 
