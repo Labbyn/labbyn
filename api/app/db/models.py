@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     func,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
@@ -136,12 +137,16 @@ class Rooms(Base):
     __tablename__ = "rooms"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     room_type = Column(String(100), nullable=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
+
+    __table_args__ = (
+        UniqueConstraint('name', 'team_id', name='_room_team_uc'),
+    )
 
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
@@ -188,7 +193,7 @@ class Machines(Base):
     __tablename__ = "machines"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     mac_address = Column(String(17), nullable=True)
     ip_address = Column(String(15), nullable=True)
@@ -204,6 +209,10 @@ class Machines(Base):
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
+
+    __table_args__ = (
+        UniqueConstraint('name', 'localization_id', name='_machine_room_uc'),
+    )
 
     room = relationship("Rooms", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
