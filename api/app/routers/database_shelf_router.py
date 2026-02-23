@@ -28,7 +28,9 @@ def get_shelves_by_rack(
     :return: List of shelves belonging to the rack
     """
     ctx.require_user()
-    rack = db.query(Rack).filter(Rack.id == rack_id).first()
+
+    rack_query = db.query(Rack).filter(Rack.id == rack_id).first()
+    rack = ctx.team_filter(rack_query, Rack).first()
     if not rack:
         raise HTTPException(status_code=404, detail="Rack does not exist.")
 
@@ -52,14 +54,20 @@ def get_single_shelf(
     :return: Detailed shelf object
     """
     ctx.require_user()
+
     shelf = (
         db.query(Shelf)
         .options(joinedload(Shelf.machines))
         .filter(Shelf.id == shelf_id)
         .first()
     )
+    rack_query = db.query(Rack).filter(Rack.id == shelf.rack_id)
+    if not ctx.team_filter(rack_query, Rack).first():
+        raise HTTPException(
+            status_code=403, detail="You do not have permission to view this shelf."
+        )
     if not shelf:
-        raise HTTPException(status_code=404, detail="Półka nie istnieje.")
+        raise HTTPException(status_code=404, detail="Shelf does not exist.")
 
     return shelf
 
@@ -84,16 +92,12 @@ def create_shelf(
     :return: Created shelf object with rack context
     """
     ctx.require_user()
-    rack = db.query(Rack).filter(Rack.id == rack_id).first()
+    rack_query = db.query(Rack).filter(Rack.id == rack_id).first()
+    rack = ctx.team_filter(rack_query, Rack).first()
     if not rack:
-        raise HTTPException(status_code=404, detail="Rack does not exist.")
-
-    if not ctx.is_admin:
-        if rack.team_id != ctx.team_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only create shelves in racks belonging to your team.",
-            )
+        raise HTTPException(
+            status_code=404, detail="Rack does not exist or access denied."
+        )
 
     db_shelf = Shelf(**shelf_data.model_dump(), rack_id=rack_id)
     db.add(db_shelf)
