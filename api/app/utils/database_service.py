@@ -411,12 +411,23 @@ def create_user(db: Session, user: schemas.UserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists."
         )
-    user_data = user.model_dump(exclude={"password"})
+    team_ids = getattr(user, "team_id", [])
+    if isinstance(team_ids, int):
+        team_ids = [team_ids]
+
+    user_data = user.model_dump(exclude={"password", "team_id", "team_ids"})
     hashed_pw = hash_password(user.password)
 
     db_obj = models.User(**user_data, hashed_password=hashed_pw)
-
     db.add(db_obj)
+    db.flush()
+
+    for t_id in team_ids:
+        team_exists = db.query(models.Teams).filter(models.Teams.id == t_id).first()
+        if team_exists:
+            link = models.UsersTeams(user_id=db_obj.id, team_id=t_id)
+            db.add(link)
+
     handle_commit(db)
     db.refresh(db_obj)
     return db_obj

@@ -46,10 +46,21 @@ def test_machine_full_lifecycle(db_session):
     Check is listener is registring operations properly
     """
 
+    test_team = models.Teams(name=generate_unique_name("TestTeam"))
+    db_session.add(test_team)
+    db_session.commit()
+    db_session.refresh(test_team)
+    team_ids = [test_team.id]
+
     room = service.create_room(
         db_session,
-        schemas.RoomsCreate(name=generate_unique_name("Room"), room_type="Server"),
+        schemas.RoomsCreate(
+            name=generate_unique_name("Room"),
+            room_type="Server",
+            team_id=test_team.id
+        ),
     )
+
     meta = service.create_metadata(
         db_session, schemas.MetadataCreate(agent_prometheus=True)
     )
@@ -63,12 +74,13 @@ def test_machine_full_lifecycle(db_session):
             password="SecretPassword123!",
             email=f"{generate_unique_name('user')}@labbyn.service",
             user_type="user",
+            team_id=team_ids
         ),
     )
     author_id = author.id
 
     rack = models.Rack(
-        name=generate_unique_name("Rack"), room_id=room.id, layout_id=None
+        name=generate_unique_name("Rack"), room_id=room.id, layout_id=None, team_id = test_team.id
     )
     db_session.add(rack)
     db_session.flush()
@@ -84,6 +96,7 @@ def test_machine_full_lifecycle(db_session):
             name=machine_name,
             localization_id=room.id,
             metadata_id=meta.id,
+            team_id = test_team.id,
             shelf_id=shelf.id,
             cpu="Intel Xeon",
             ram="128GB",

@@ -182,7 +182,7 @@ def get_user_detail_with_groups(
 
     user_team_ids = {m.team_id for m in user.teams}
 
-    is_own_team = ctx.team_ids in user_team_ids if ctx.team_ids else False
+    is_own_team = bool(set(ctx.team_ids) & user_team_ids) if ctx.team_ids else False
     if not (ctx.is_admin or is_own_team):
         raise HTTPException(
             status_code=403, detail="Insufficient permissions to view details"

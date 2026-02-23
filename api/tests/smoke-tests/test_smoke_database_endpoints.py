@@ -86,9 +86,18 @@ def test_resource_chain_creation(test_client, service_header_sync):
     ac = test_client
     headers = service_header_sync
 
+    team_res = ac.post(
+        "/db/teams/",
+        json={"name": unique_str("API_Team")},
+        headers=headers,
+    )
+    assert team_res.status_code == 201
+    team_id = team_res.json()["id"]
+
+
     room_res = ac.post(
         "/db/rooms/",
-        json={"name": unique_str("API_Room"), "room_type": "Server Room"},
+        json={"name": unique_str("API_Room"), "room_type": "Server Room", "team_id": team_id},
         headers=headers,
     )
     assert room_res.status_code == 201
@@ -111,24 +120,12 @@ def test_resource_chain_creation(test_client, service_header_sync):
             "login": user_login,
             "email": f"{user_login}@labbyn.service",
             "user_type": "group_admin",
-            "team_ids": [],
+            "team_ids": [team_id],
         },
         headers=headers,
     )
     assert user_res.status_code == 201
     user_data = user_res.json()
-
-    team_res = ac.post(
-        "/db/teams/",
-        json={"name": unique_str("API_Team")},
-        headers=headers,
-    )
-    assert team_res.status_code == 201
-    team_id = team_res.json()["id"]
-
-    ac.put(
-        f"/db/users/{user_data['id']}", json={"team_ids": [team_id]}, headers=headers
-    )
 
     login_res = ac.post(
         "/auth/login",

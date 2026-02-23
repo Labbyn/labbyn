@@ -33,6 +33,12 @@ def test_history_full_cycle_with_rollback(db_session):
     6. ROLLBACK CREATE -> Check if user doesn't exist
     """
 
+    test_team = models.Teams(name=unique_str("HistoryTeam"))
+    db_session.add(test_team)
+    db_session.commit()
+    db_session.refresh(test_team)
+    team_ids = [test_team.id]
+
     admin = service.create_user(
         db_session,
         schemas.UserCreate(
@@ -42,6 +48,7 @@ def test_history_full_cycle_with_rollback(db_session):
             email=f"{unique_str('admin')}@labbyn.service",
             password="adminpass",
             user_type=models.UserType.ADMIN,
+            team_id=team_ids
         ),
     )
     admin_id = admin.id
@@ -58,6 +65,7 @@ def test_history_full_cycle_with_rollback(db_session):
             password="password123",
             email=original_email,
             user_type=models.UserType.USER,
+            team_id=team_ids
         ),
     )
 
