@@ -14,6 +14,8 @@ from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import RequestContext
 from sqlalchemy.orm import Session, joinedload
+from app.utils.database_service import resolve_target_team_id
+
 
 router = APIRouter()
 
@@ -38,8 +40,7 @@ def create_room(
     ctx.require_group_admin()
     tag_ids = room_data.tag_ids if hasattr(room_data, "tag_ids") else []
     data = room_data.model_dump(exclude={"tag_ids"})
-    if not ctx.is_admin:
-        data["team_id"] = ctx.team_id
+    data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
 
     obj = Rooms(**data)
 
@@ -179,7 +180,7 @@ def get_room_by_id(
     return room
 
 
-@router.put("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
+@router.patch("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
 async def update_room(
     room_id: int,
     room_data: RoomsUpdate,
@@ -212,8 +213,15 @@ async def update_room(
             room.tags = tags
 
         data = room_data.model_dump(exlude_unset=True, exclude={"tag_ids"})
-        if not ctx.is_admin and "team_id" in data:
-            data["team_id"] = ctx.team_id
+        if "team_id" in data and not ctx.is_admin:
+            if data["team_id"] not in ctx.team_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot assign room to a team you don't belong to",
+                )
+        if room.data.tag_ids is not None:
+            tags = db.query(Tags).filter(Tags.id.in_(room_data.tag_ids)).all()
+            room.tags = tags
         for k, v in room_data.model_dump(exclude_unset=True).items():
             setattr(room, k, v)
         db.commit()
