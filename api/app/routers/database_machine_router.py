@@ -15,6 +15,7 @@ from app.utils.redis_service import acquire_lock, get_cache
 from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
+from app.utils.database_service import resolve_target_team_id
 
 router = APIRouter()
 
@@ -41,8 +42,7 @@ def create_machine(
     cpus = machine_data.cpus or []
     disks = machine_data.disks or []
     data = machine_data.model_dump(exclude={"cpus", "disks"})
-    if not ctx.is_admin:
-        data["team_id"] = ctx.team_id
+    data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
     obj = Machines(**data)
     obj.cpus = [CPUs(name=item.name) for item in cpus]
     obj.disks = [Disks(name=item.name) for item in disks]
@@ -208,7 +208,7 @@ async def get_machine_full_detail(
     }
 
 
-@router.put(
+@router.patch(
     "/db/machines/{machine_id}", response_model=MachinesResponse, tags=["Machines"]
 )
 async def update_machine(
@@ -236,9 +236,12 @@ async def update_machine(
                 detail="Machine not found or access denied",
             )
         update_data = machine_data.model_dump(exclude_unset=True)
-        if not ctx.is_admin and "team_id" in update_data:
-            update_data["team_id"] = ctx.team_id
-
+        if "team_id" in update_data and not ctx.is_admin:
+            if update_data["team_id"] not in ctx.team_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have permission to assign this machine to the specified team",
+                )
         for k, v in update_data.items():
             setattr(machine, k, v)
 
@@ -310,7 +313,7 @@ async def mount_machine(
 
         if not ctx.is_admin:
             rack = db.query(Rack).filter(Rack.id == shelf.rack_id).first()
-            if rack.team_id != ctx.team_id:
+            if rack.team_id not in ctx.team_ids:
                 raise HTTPException(
                     status_code=403,
                     detail="You don't have permission to use this rack/shelf",
