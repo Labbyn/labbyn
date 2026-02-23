@@ -246,20 +246,15 @@ class Teams(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    team_admin_id = Column(
-        Integer,
-        ForeignKey("user.id", use_alter=True, name="fk_team_admin_id"),
-        nullable=False,
-    )
 
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
 
+    users = relationship("UsersTeams", back_populates="team")
     machines = relationship("Machines", back_populates="team")
     rooms = relationship("Rooms", back_populates="team")
     inventory = relationship("Inventory", back_populates="team")
-    users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
     racks = relationship("Rack", back_populates="team")
 
 
@@ -273,11 +268,6 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     surname = Column(String(80), nullable=False)
-    team_id = Column(
-        Integer,
-        ForeignKey("teams.id", use_alter=True, name="fk_user_team_id"),
-        nullable=True,
-    )
     login = Column(String(30), nullable=False, unique=True)
     email = Column(String(100), unique=True, index=True, nullable=False)
     avatar_path = Column(
@@ -302,8 +292,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    teams = relationship("Teams", back_populates="users", foreign_keys="[User.team_id]")
-
+    teams = relationship("UsersTeams", back_populates="user")
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
@@ -512,7 +501,27 @@ class TagsRacks(Base):
 
 
 class TagsMachines(Base):
+    """
+    TagsMachines model representing association between machines and tags.
+    """
+
     __tablename__ = "tags_machines"
     id = Column(Integer, primary_key=True)
     machine_id = Column(Integer, ForeignKey("machines.id"))
     tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class UsersTeams(Base):
+    """
+    UsersTeams model representing association between users and teams for many-to-many relationship.
+    """
+
+    __tablename__ = "users_teams"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    team_id = Column(Integer, ForeignKey("teams.id"))
+
+    is_group_admin = Column(Boolean, default=False, nullable=False)
+
+    user = relationship("User", back_populates="teams")
+    team = relationship("Teams", back_populates="users")
