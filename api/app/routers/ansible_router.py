@@ -107,7 +107,7 @@ async def scan_platform(request: HostRequest, ctx: RequestContext = Depends()):
 
 
 @router.post("/ansible/deploy_agent")
-async def deploy_agent(request: HostRequest,  ctx: RequestContext = Depends()):
+async def deploy_agent(request: HostRequest, ctx: RequestContext = Depends()):
     """
     Deploy Node Exporter on a host.
     :param request: HostRequest containing the host IP or hostname

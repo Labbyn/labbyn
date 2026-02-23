@@ -202,7 +202,9 @@ async def websocket_endpoint(
 
 
 @router.get("/prometheus/instances")
-async def get_prometheus_instances(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_prometheus_instances(
+    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch all unique host instances [HOST::PORT] from Prometheus.
     :return: List of unique hosts
@@ -220,7 +222,7 @@ async def get_prometheus_instances(db: Session = Depends(get_db), ctx: RequestCo
             instance = item["instance"]
             host_only = _extract_host_from_instance(item["instance"])
             if ctx.is_admin or host_only in allowed_hosts:
-             all_instances.add(instance)
+                all_instances.add(instance)
     return {"instances": list(all_instances)}
 
 
@@ -253,7 +255,9 @@ async def get_prometheus_all_metrics(
     instances: Optional[List[str]] = Query(
         None,
         description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
-    ), db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    ),
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Fetch metrics for selected instances directly from Prometheus (bypasses cache).
@@ -268,8 +272,12 @@ async def get_prometheus_all_metrics(
 
     if not instances:
         if ctx.is_admin:
-            return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=None)
-        return await fetch_prometheus_metrics(list(DEFAULT_QUERIES.keys()), hosts=list(allowed_hosts))
+            return await fetch_prometheus_metrics(
+                list(DEFAULT_QUERIES.keys()), hosts=None
+            )
+        return await fetch_prometheus_metrics(
+            list(DEFAULT_QUERIES.keys()), hosts=list(allowed_hosts)
+        )
 
     processed_instances = []
     for item in instances:
@@ -285,7 +293,7 @@ async def get_prometheus_all_metrics(
             final_instances.append(item)
 
     if not final_instances and not ctx.is_admin:
-        return{metric: [] for metric in DEFAULT_QUERIES.keys()}
+        return {metric: [] for metric in DEFAULT_QUERIES.keys()}
 
     metrics_data = await fetch_prometheus_metrics(
         list(DEFAULT_QUERIES.keys()), hosts=processed_instances
@@ -294,7 +302,9 @@ async def get_prometheus_all_metrics(
 
 
 @router.post("/prometheus/target")
-async def add_prometheus_new_target(target: PrometheusTarget, ctx: RequestContext = Depends()):
+async def add_prometheus_new_target(
+    target: PrometheusTarget, ctx: RequestContext = Depends()
+):
     """
     Add a new target to Prometheus targets file.
     :param target: PrometheusTarget object containing instance and labels
