@@ -176,21 +176,20 @@ async def discover_hosts(
 
     target_team_id = request.target_team_id
 
-    if not ctx.is_admin:
-        if not target_team_id:
-            if len(ctx.team_ids) == 1:
-                target_team_id = ctx.team_ids[0]
-            else:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Target team ID must be specified for users belonging to multiple teams.",
-                )
+    if not target_team_id:
+        if len(ctx.team_ids) == 1:
+            target_team_id = ctx.team_ids[0]
         else:
-            if target_team_id not in ctx.team_ids:
-                raise HTTPException(
-                    status_code=403,
-                    detail="You do not have permission to assign machines to this team.",
-                )
+            raise HTTPException(
+                status_code=400,
+                detail="Target team ID must be specified for users belonging to multiple teams.",
+            )
+    else:
+        if not ctx.is_admin and target_team_id not in ctx.team_ids:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to assign machines to this team.",
+            )
 
     await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.hosts, request.extra_vars
