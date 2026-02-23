@@ -53,11 +53,28 @@ def handle_commit(db: Session):
         ) from exc
 
 
+def init_service_team(db: Session):
+    """
+    Initializes a default service team if none exists.
+    :param db: The current database session.
+    """
+    service_team = (
+        db.query(models.Teams).filter(models.Teams.name == "Service Team").first()
+    )
+    if not service_team:
+        service_team = models.Teams(name="Service Team")
+        db.add(service_team)
+        db.commit()
+        db.refresh(service_team)
+    return service_team
+
 def init_super_user(db: Session):
     """
     Initializes a super user if none exists.
     :param db: The current database session.
     """
+    service_team = init_service_team(db)
+
     super_user = db.query(models.User).filter(models.User.login == "Service").first()
     if not super_user:
         admin_user = models.User(
@@ -76,15 +93,39 @@ def init_super_user(db: Session):
         db.commit()
         db.refresh(admin_user)
 
+        super_user = admin_user
+        link = (
+            db.query(models.UsersTeams)
+            .filter_by(user_id=super_user.id, team_id=service_team.id)
+            .first()
+        )
+
+        if not link:
+            db.add(
+                models.UsersTeams(
+                    user_id=super_user.id, team_id=service_team.id, is_group_admin=True
+                )
+            )
+            db.commit()
+
 
 def init_virtual_lab(db: Session):
     """
     Initializes virtual lab if none exists.
     :param db: The current database session.
     """
-    virtual_lab = db.query(models.Rooms).filter(models.Rooms.name == "virtual").first()
+    service_team = init_service_team(db)
+
+    virtual_lab = (
+        db.query(models.Rooms)
+        .filter(models.Rooms.name == "virtual", models.Rooms.team_id == service_team.id)
+        .first()
+    )
+
     if not virtual_lab:
-        virtual_lab = models.Rooms(name="virtual", room_type="virtual")
+        virtual_lab = models.Rooms(
+            name="virtual", room_type="virtual", team_id=service_team.id
+        )
         db.add(virtual_lab)
         db.commit()
         db.refresh(virtual_lab)
