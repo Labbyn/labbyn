@@ -43,9 +43,7 @@ def create_room(
     effective_team_id = resolve_target_team_id(ctx, getattr(room_data, "team_id", None))
 
     obj = Rooms(
-        name=room_data.name,
-        room_type=room_data.room_type,
-        team_id=effective_team_id
+        name=room_data.name, room_type=room_data.room_type, team_id=effective_team_id
     )
 
     if tag_ids:

@@ -144,9 +144,7 @@ class Rooms(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    __table_args__ = (
-        UniqueConstraint('name', 'team_id', name='_room_team_uc'),
-    )
+    __table_args__ = (UniqueConstraint("name", "team_id", name="_room_team_uc"),)
 
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
@@ -211,7 +209,7 @@ class Machines(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     __table_args__ = (
-        UniqueConstraint('name', 'localization_id', name='_machine_room_uc'),
+        UniqueConstraint("name", "localization_id", name="_machine_room_uc"),
     )
 
     room = relationship("Rooms", back_populates="machines")

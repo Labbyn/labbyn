@@ -68,6 +68,7 @@ def init_service_team(db: Session):
         db.refresh(service_team)
     return service_team
 
+
 def init_super_user(db: Session):
     """
     Initializes a super user if none exists.

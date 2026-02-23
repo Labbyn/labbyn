@@ -48,7 +48,7 @@ def test_history_full_cycle_with_rollback(db_session):
             email=f"{unique_str('admin')}@labbyn.service",
             password="adminpass",
             user_type=models.UserType.ADMIN,
-            team_id=team_ids
+            team_id=team_ids,
         ),
     )
     admin_id = admin.id
@@ -65,7 +65,7 @@ def test_history_full_cycle_with_rollback(db_session):
             password="password123",
             email=original_email,
             user_type=models.UserType.USER,
-            team_id=team_ids
+            team_id=team_ids,
         ),
     )
 

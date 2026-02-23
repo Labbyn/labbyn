@@ -55,9 +55,7 @@ def test_machine_full_lifecycle(db_session):
     room = service.create_room(
         db_session,
         schemas.RoomsCreate(
-            name=generate_unique_name("Room"),
-            room_type="Server",
-            team_id=test_team.id
+            name=generate_unique_name("Room"), room_type="Server", team_id=test_team.id
         ),
     )
 
@@ -74,13 +72,16 @@ def test_machine_full_lifecycle(db_session):
             password="SecretPassword123!",
             email=f"{generate_unique_name('user')}@labbyn.service",
             user_type="user",
-            team_id=team_ids
+            team_id=team_ids,
         ),
     )
     author_id = author.id
 
     rack = models.Rack(
-        name=generate_unique_name("Rack"), room_id=room.id, layout_id=None, team_id = test_team.id
+        name=generate_unique_name("Rack"),
+        room_id=room.id,
+        layout_id=None,
+        team_id=test_team.id,
     )
     db_session.add(rack)
     db_session.flush()
@@ -96,7 +97,7 @@ def test_machine_full_lifecycle(db_session):
             name=machine_name,
             localization_id=room.id,
             metadata_id=meta.id,
-            team_id = test_team.id,
+            team_id=test_team.id,
             shelf_id=shelf.id,
             cpu="Intel Xeon",
             ram="128GB",

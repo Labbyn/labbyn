@@ -13,7 +13,7 @@ from app.db.schemas import (
     UserCreatedResponse,
     UserInfoExtended,
     UserInfo,
-    UserTeamRoleUpdate
+    UserTeamRoleUpdate,
 )
 from app.utils.redis_service import acquire_lock
 from app.utils.security import hash_password, generate_starting_password
@@ -63,7 +63,7 @@ def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
             {
                 "email": u.email,
                 "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
-                "group_links": [f"/teams/{tid}" for tid in user_team_ids]
+                "group_links": [f"/teams/{tid}" for tid in user_team_ids],
             }
         )
         return UserInfoExtended.model_validate(user_data)
@@ -139,7 +139,11 @@ async def create_user(
         db.refresh(new_user)
         db.expire_all()
         res = get_masked_user_model(new_user, ctx, detailed=True)
-        return {**res.model_dump(), "generated_password": raw_password, "version_id": new_user.version_id}
+        return {
+            **res.model_dump(),
+            "generated_password": raw_password,
+            "version_id": new_user.version_id,
+        }
 
     except Exception as e:
         db.rollback()
@@ -262,6 +266,7 @@ async def update_user(
             db.rollback()
             raise HTTPException(status_code=500, detail=f"User update error: {str(e)}")
 
+
 @router.delete(
     "/db/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
 )
@@ -337,10 +342,10 @@ async def upload_user_avatar(
 
 @router.patch("/db/users/{user_id}/promote", tags=["Users"])
 async def update_user_team_role(
-        user_id: int,
-        role_data: UserTeamRoleUpdate,
-        db: Session = Depends(get_db),
-        ctx: RequestContext = Depends(),
+    user_id: int,
+    role_data: UserTeamRoleUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update user's group admin role within a specific team
@@ -356,7 +361,7 @@ async def update_user_team_role(
             .filter(
                 UsersTeams.user_id == ctx.current_user.id,
                 UsersTeams.team_id == role_data.team_id,
-                UsersTeams.is_group_admin == True
+                UsersTeams.is_group_admin == True,
             )
             .first()
         )
@@ -364,33 +369,35 @@ async def update_user_team_role(
         if not requester_membership:
             raise HTTPException(
                 status_code=403,
-                detail="You can only change roles for users in teams where you are a group admin."
+                detail="You can only change roles for users in teams where you are a group admin.",
             )
 
     target_membership = (
         db.query(UsersTeams)
-        .filter(
-            UsersTeams.user_id == user_id,
-            UsersTeams.team_id == role_data.team_id
-        )
+        .filter(UsersTeams.user_id == user_id, UsersTeams.team_id == role_data.team_id)
         .first()
     )
 
     if not target_membership:
         raise HTTPException(
             status_code=404,
-            detail="User does not belong to the specified team or user not found."
+            detail="User does not belong to the specified team or user not found.",
         )
 
     target_membership.is_group_admin = role_data.is_group_admin
 
     try:
         db.commit()
-        user = db.query(User).options(
-            joinedload(User.teams).joinedload(UsersTeams.team)
-        ).filter(User.id == user_id).first()
+        user = (
+            db.query(User)
+            .options(joinedload(User.teams).joinedload(UsersTeams.team))
+            .filter(User.id == user_id)
+            .first()
+        )
 
         return get_masked_user_model(user, ctx, detailed=True)
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Error while promoting user: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error while promoting user: {str(e)}"
+        )

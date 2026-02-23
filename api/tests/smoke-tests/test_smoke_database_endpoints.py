@@ -94,10 +94,13 @@ def test_resource_chain_creation(test_client, service_header_sync, db_session):
     assert team_res.status_code == 201
     team_id = team_res.json()["id"]
 
-
     room_res = ac.post(
         "/db/rooms/",
-        json={"name": unique_str("API_Room"), "room_type": "Server Room", "team_id": team_id},
+        json={
+            "name": unique_str("API_Room"),
+            "room_type": "Server Room",
+            "team_id": team_id,
+        },
         headers=headers,
     )
     assert room_res.status_code == 201
