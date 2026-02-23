@@ -19,6 +19,8 @@ from app.db import models
 import app.db.listeners
 import inspect
 
+from app.auth.dependencies import RequestContext
+
 
 # ==========================
 #          UTILS
@@ -159,6 +161,31 @@ def init_document(db: Session):
         db.add(labbyn_docs)
         db.commit()
         db.refresh(labbyn_docs)
+
+
+def resolve_target_team_id(ctx: RequestContext, team_id: Optional[int] = None):
+    """
+    Resolve the target team ID based on the request context and optional team_id parameter.
+    :param ctx: User request context containing user and team information
+    :param team_id: Team ID provided in the request (optional)
+    :return: Target team ID to be used for filtering or assignment
+    """
+    if ctx.is_admin:
+        return team_id
+    if not ctx.team_ids:
+        raise HTTPException(status_code=400, detail="User does not belong to any team")
+    if team_id:
+        if team_id not in ctx.team_ids:
+            raise HTTPException(
+                status_code=403, detail="Access to specified team is denied"
+            )
+        return team_id
+    if len(ctx.team_ids) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Multiple teams found for user, team_id parameter is required",
+        )
+    return ctx.team_ids[0]
 
 
 # ==========================
