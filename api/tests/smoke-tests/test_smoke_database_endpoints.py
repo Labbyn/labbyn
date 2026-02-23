@@ -38,9 +38,7 @@ def test_create_user_flow(test_client, service_header_sync):
     headers = service_header_sync
 
     team_name = unique_str("TestTeam")
-    team_res = ac.post(
-        "/db/teams/", json={"name": team_name, "team_admin_id": 1}, headers=headers
-    )
+    team_res = ac.post("/db/teams/", json={"name": team_name}, headers=headers)
 
     assert team_res.status_code == 201
     team_id = team_res.json()["id"]
@@ -52,7 +50,7 @@ def test_create_user_flow(test_client, service_header_sync):
         "login": login,
         "email": f"{login}@labbyn.service",
         "user_type": "user",
-        "team_id": team_id,
+        "team_id": [team_id],
     }
 
     response = ac.post("/db/users/", json=payload, headers=headers)
@@ -113,20 +111,24 @@ def test_resource_chain_creation(test_client, service_header_sync):
             "login": user_login,
             "email": f"{user_login}@labbyn.service",
             "user_type": "group_admin",
+            "team_ids": [],
         },
         headers=headers,
     )
     assert user_res.status_code == 201
     user_data = user_res.json()
-    admin_id = user_data["id"]
 
     team_res = ac.post(
         "/db/teams/",
-        json={"name": unique_str("API_Team"), "team_admin_id": admin_id},
+        json={"name": unique_str("API_Team")},
         headers=headers,
     )
     assert team_res.status_code == 201
     team_id = team_res.json()["id"]
+
+    ac.put(
+        f"/db/users/{user_data['id']}", json={"team_ids": [team_id]}, headers=headers
+    )
 
     login_res = ac.post(
         "/auth/login",
