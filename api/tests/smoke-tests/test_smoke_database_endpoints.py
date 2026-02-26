@@ -38,9 +38,7 @@ def test_create_user_flow(test_client, service_header_sync):
     headers = service_header_sync
 
     team_name = unique_str("TestTeam")
-    team_res = ac.post(
-        "/db/teams/", json={"name": team_name, "team_admin_id": 1}, headers=headers
-    )
+    team_res = ac.post("/db/teams/", json={"name": team_name}, headers=headers)
 
     assert team_res.status_code == 201
     team_id = team_res.json()["id"]
@@ -52,7 +50,7 @@ def test_create_user_flow(test_client, service_header_sync):
         "login": login,
         "email": f"{login}@labbyn.service",
         "user_type": "user",
-        "team_id": team_id,
+        "team_id": [team_id],
     }
 
     response = ac.post("/db/users/", json=payload, headers=headers)
@@ -80,7 +78,7 @@ def test_validation_error_handler(test_client, service_header_sync):
 
 
 @pytest.mark.rbac
-def test_resource_chain_creation(test_client, service_header_sync):
+def test_resource_chain_creation(test_client, service_header_sync, db_session):
     """
     Tests dependencies: Room -> Metadata -> Team -> Tag -> Rack -> Shelf -> Machine
     """
@@ -88,9 +86,21 @@ def test_resource_chain_creation(test_client, service_header_sync):
     ac = test_client
     headers = service_header_sync
 
+    team_res = ac.post(
+        "/db/teams/",
+        json={"name": unique_str("API_Team")},
+        headers=headers,
+    )
+    assert team_res.status_code == 201
+    team_id = team_res.json()["id"]
+
     room_res = ac.post(
         "/db/rooms/",
-        json={"name": unique_str("API_Room"), "room_type": "Server Room"},
+        json={
+            "name": unique_str("API_Room"),
+            "room_type": "Server Room",
+            "team_id": team_id,
+        },
         headers=headers,
     )
     assert room_res.status_code == 201
@@ -113,20 +123,15 @@ def test_resource_chain_creation(test_client, service_header_sync):
             "login": user_login,
             "email": f"{user_login}@labbyn.service",
             "user_type": "group_admin",
+            "team_ids": [team_id],
         },
         headers=headers,
     )
     assert user_res.status_code == 201
     user_data = user_res.json()
-    admin_id = user_data["id"]
 
-    team_res = ac.post(
-        "/db/teams/",
-        json={"name": unique_str("API_Team"), "team_admin_id": admin_id},
-        headers=headers,
-    )
-    assert team_res.status_code == 201
-    team_id = team_res.json()["id"]
+    db_session.commit()
+    db_session.expire_all()
 
     login_res = ac.post(
         "/auth/login",

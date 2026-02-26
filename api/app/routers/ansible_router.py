@@ -50,6 +50,7 @@ class DiscoveryRequest(BaseModel):
     """List of hosts to scan (IP or Hostname)."""
 
     hosts: List[str]
+    target_team_id: Optional[int] = None
     extra_vars: Optional[dict] = {}
 
 
@@ -173,6 +174,23 @@ async def discover_hosts(
     if not request.hosts:
         raise HTTPException(status_code=400, detail="Host list cannot be empty.")
 
+    target_team_id = request.target_team_id
+
+    if not target_team_id:
+        if len(ctx.team_ids) == 1:
+            target_team_id = ctx.team_ids[0]
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Target team ID must be specified for users belonging to multiple teams.",
+            )
+    else:
+        if not ctx.is_admin and target_team_id not in ctx.team_ids:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to assign machines to this team.",
+            )
+
     await run_playbook_task(
         PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], request.hosts, request.extra_vars
     )
@@ -181,12 +199,14 @@ async def discover_hosts(
 
     default_room = (
         db.query(Rooms)
-        .filter(Rooms.name == "virtual", Rooms.team_id == ctx.team_id)
+        .filter(Rooms.name == "virtual", Rooms.team_id == target_team_id)
         .first()
     )
 
     if not default_room:
-        default_room = Rooms(name="virtual", room_type="virtual", team_id=ctx.team_id)
+        default_room = Rooms(
+            name="virtual", room_type="virtual", team_id=target_team_id
+        )
         db.add(default_room)
         db.commit()
         db.refresh(default_room)
@@ -195,7 +215,8 @@ async def discover_hosts(
         try:
             specs = parse_platform_report(host)
 
-            machine = db.query(Machines).filter(Machines.name == host).first()
+            machine = db.query(Machines).filter(Machines.name == host)
+            machine = ctx.team_filter(machine, Machines).first()
 
             if machine:
                 has_changes = False
@@ -255,7 +276,7 @@ async def discover_hosts(
 
                 new_machine = Machines(
                     name=host,
-                    team_id=ctx.team_id,
+                    team_id=target_team_id,
                     metadata_id=new_meta.id,
                     localization_id=default_room.id,
                     os=specs["os"],

@@ -19,6 +19,8 @@ from app.db import models
 import app.db.listeners
 import inspect
 
+from app.auth.dependencies import RequestContext
+
 
 # ==========================
 #          UTILS
@@ -51,11 +53,29 @@ def handle_commit(db: Session):
         ) from exc
 
 
+def init_service_team(db: Session):
+    """
+    Initializes a default service team if none exists.
+    :param db: The current database session.
+    """
+    service_team = (
+        db.query(models.Teams).filter(models.Teams.name == "Service Team").first()
+    )
+    if not service_team:
+        service_team = models.Teams(name="Service Team")
+        db.add(service_team)
+        db.commit()
+        db.refresh(service_team)
+    return service_team
+
+
 def init_super_user(db: Session):
     """
     Initializes a super user if none exists.
     :param db: The current database session.
     """
+    service_team = init_service_team(db)
+
     super_user = db.query(models.User).filter(models.User.login == "Service").first()
     if not super_user:
         admin_user = models.User(
@@ -74,15 +94,39 @@ def init_super_user(db: Session):
         db.commit()
         db.refresh(admin_user)
 
+        super_user = admin_user
+        link = (
+            db.query(models.UsersTeams)
+            .filter_by(user_id=super_user.id, team_id=service_team.id)
+            .first()
+        )
+
+        if not link:
+            db.add(
+                models.UsersTeams(
+                    user_id=super_user.id, team_id=service_team.id, is_group_admin=True
+                )
+            )
+            db.commit()
+
 
 def init_virtual_lab(db: Session):
     """
     Initializes virtual lab if none exists.
     :param db: The current database session.
     """
-    virtual_lab = db.query(models.Rooms).filter(models.Rooms.name == "virtual").first()
+    service_team = init_service_team(db)
+
+    virtual_lab = (
+        db.query(models.Rooms)
+        .filter(models.Rooms.name == "virtual", models.Rooms.team_id == service_team.id)
+        .first()
+    )
+
     if not virtual_lab:
-        virtual_lab = models.Rooms(name="virtual", room_type="virtual")
+        virtual_lab = models.Rooms(
+            name="virtual", room_type="virtual", team_id=service_team.id
+        )
         db.add(virtual_lab)
         db.commit()
         db.refresh(virtual_lab)
@@ -159,6 +203,31 @@ def init_document(db: Session):
         db.add(labbyn_docs)
         db.commit()
         db.refresh(labbyn_docs)
+
+
+def resolve_target_team_id(ctx: RequestContext, team_id: Optional[int] = None):
+    """
+    Resolve the target team ID based on the request context and optional team_id parameter.
+    :param ctx: User request context containing user and team information
+    :param team_id: Team ID provided in the request (optional)
+    :return: Target team ID to be used for filtering or assignment
+    """
+    if ctx.is_admin:
+        return team_id
+    if not ctx.team_ids:
+        raise HTTPException(status_code=400, detail="User does not belong to any team")
+    if team_id:
+        if team_id not in ctx.team_ids:
+            raise HTTPException(
+                status_code=403, detail="Access to specified team is denied"
+            )
+        return team_id
+    if len(ctx.team_ids) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Multiple teams found for user, team_id parameter is required",
+        )
+    return ctx.team_ids[0]
 
 
 # ==========================
@@ -343,12 +412,23 @@ def create_user(db: Session, user: schemas.UserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists."
         )
-    user_data = user.model_dump(exclude={"password"})
+    team_ids = getattr(user, "team_id", [])
+    if isinstance(team_ids, int):
+        team_ids = [team_ids]
+
+    user_data = user.model_dump(exclude={"password", "team_id", "team_ids"})
     hashed_pw = hash_password(user.password)
 
     db_obj = models.User(**user_data, hashed_password=hashed_pw)
-
     db.add(db_obj)
+    db.flush()
+
+    for t_id in team_ids:
+        team_exists = db.query(models.Teams).filter(models.Teams.id == t_id).first()
+        if team_exists:
+            link = models.UsersTeams(user_id=db_obj.id, team_id=t_id)
+            db.add(link)
+
     handle_commit(db)
     db.refresh(db_obj)
     return db_obj

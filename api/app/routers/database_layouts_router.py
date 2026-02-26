@@ -17,7 +17,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
-router = APIRouter()
+router = APIRouter(deprecated=True)
+
+"""
+WARNING: This router is DEPRECATED and pending refactor.
+DO NOT use these endpoints for new features, as the underlying data model will be changed.
+"""
 
 
 @router.post(

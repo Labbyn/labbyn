@@ -35,24 +35,27 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
     ac = test_client
     headers = service_header_sync
 
-    team_id = ac.post(
+    team_resp = ac.post(
         "/db/teams/",
-        json={"name": unique_str("Race"), "team_admin_id": 1},
+        json={"name": unique_str("Race")},
         headers=headers,
-    ).json()["id"]
+    )
+    team_id = team_resp.json()["id"]
+
     cat_id = ac.post(
         "/db/categories/", json={"name": unique_str("Cat")}, headers=headers
     ).json()["id"]
+
     room_id = ac.post(
         "/db/rooms/",
-        json={"name": unique_str("Room"), "room_type": "srv"},
+        json={"name": unique_str("Room"), "room_type": "srv", "team_id": team_id},
         headers=headers,
     ).json()["id"]
 
     tokens = []
     for i in range(2):
         login = unique_str(f"r{i}")
-        u = ac.post(
+        u_resp = ac.post(
             "/db/users/",
             json={
                 "name": f"Racer{i}",
@@ -60,10 +63,12 @@ def test_rental_race_condition_threaded(test_client, db_session, service_header_
                 "login": login,
                 "email": f"{login}@lab.pl",
                 "user_type": "user",
-                "team_id": team_id,
+                "team_ids": [team_id],
             },
             headers=headers,
-        ).json()
+        )
+        u = u_resp.json()
+
         token = ac.post(
             "/auth/login", data={"username": login, "password": u["generated_password"]}
         ).json()["access_token"]

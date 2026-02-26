@@ -145,6 +145,7 @@ class RoomsBase(BaseModel):
     room_type: Optional[str] = Field(
         None, max_length=100, description="Type or classification of the room"
     )
+    team_id: Optional[int] = Field(None)
 
 
 class RoomsCreate(RoomsBase):
@@ -362,9 +363,6 @@ class TeamsBase(BaseModel):
     """
 
     name: str = Field(..., max_length=100, description="Name of the team")
-    team_admin_id: int = Field(
-        ..., description="ID of the user who is the admin of this team"
-    )
 
 
 class TeamsCreate(TeamsBase):
@@ -377,7 +375,6 @@ class TeamsUpdate(BaseModel):
     """
 
     name: Optional[str] = None
-    team_admin_id: Optional[int] = None
 
 
 class TeamsResponse(TeamsBase):
@@ -400,6 +397,7 @@ class TeamMemberSchema(BaseModel):
     login: str
     email: str
     user_type: str
+    is_group_admin: bool = False
     user_link: str
 
 
@@ -410,9 +408,12 @@ class TeamDetailResponse(BaseModel):
 
     id: int
     name: str
-    team_admin_name: str
-    admin_details: Optional[Dict[str, str]] = None
-    members: List[TeamMemberSchema]
+    admins: List[TeamMemberSchema] = Field(
+        default=[], description="List of admins in the team"
+    )
+    members: List[TeamMemberSchema] = Field(
+        default=[], description="List of members in the team"
+    )
     member_count: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -467,8 +468,7 @@ class TeamFullDetailResponse(BaseModel):
 
     id: int
     name: str
-    admin: Dict[str, str]
-    members: List[TeamMemberSchema]
+    admins: List[Dict[str, str]] = Field(default=[], description="List of team admins")
     racks: List[TeamRackDetail]
     machines: List[TeamMachineDetail]
     inventory: List[TeamInventoryDetail]
@@ -477,6 +477,18 @@ class TeamFullDetailResponse(BaseModel):
 # ==========================
 #          USER
 # ==========================
+
+
+class UserTeamMemebership(BaseModel):
+    """
+    Schema representing a user's membership in a team, used for displaying team info in user details.
+    """
+
+    team_id: int
+    team_name: str
+    is_group_admin: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
@@ -492,9 +504,6 @@ class UserBase(BaseModel):
     user_type: UserTypeEnum = Field(
         ..., max_length=50, description="User's role in the system"
     )
-    team_id: Optional[int] = Field(
-        None, description="ID of the team the user belongs to"
-    )
 
 
 class UserCreate(UserBase):
@@ -509,6 +518,9 @@ class UserCreate(UserBase):
         max_length=255,
         description="Optional manual password; if not provided, a random one will be generated",
     )
+    team_ids: Optional[List[int]] = Field(
+        default=[], description="List of team IDs to assign the user to upon creation"
+    )
 
 
 class UserUpdate(BaseModel):
@@ -519,7 +531,6 @@ class UserUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50)
     surname: Optional[str] = Field(None, max_length=80)
-    team_id: Optional[int] = None
     email: Optional[EmailStr] = None
     login: Optional[str] = Field(None, max_length=30)
     password: Optional[str] = Field(
@@ -528,6 +539,7 @@ class UserUpdate(BaseModel):
         max_length=255,
         description="New password if change is requested",
     )
+    team_ids: Optional[List[int]] = None
 
 
 class UserResponse(UserBase):
@@ -538,6 +550,9 @@ class UserResponse(UserBase):
 
     id: int
     version_id: int
+    membership: List[UserTeamMemebership] = Field(
+        default=[], description="User's memberships"
+    )
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -573,8 +588,8 @@ class UserInfo(BaseModel):
     surname: str = Field(..., description="User's last name")
     login: str = Field(..., description="Unique login username")
     user_type: UserType = Field(..., description="User's role and permissions level")
-    assigned_groups: List[UserGroupInfo] = Field(
-        default=[], description="List of groups the user belongs to"
+    membership: List[UserTeamMemebership] = Field(
+        default=[], description="Detailed team memberships"
     )
 
 
@@ -591,6 +606,15 @@ class UserInfoExtended(UserInfo):
     )
 
 
+class UserTeamRoleUpdate(BaseModel):
+    """
+    Update schema for modifying a user's role within a specific team.
+    """
+
+    team_id: int
+    is_group_admin: bool
+
+
 # ==========================
 #      FASTAPI-USERS
 # ==========================
@@ -605,7 +629,7 @@ class UserRead(schemas.BaseUser[int]):
     name: str
     surname: str
     login: str
-    team_id: Optional[int]
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
     user_type: UserTypeEnum
     force_password_change: bool
     version_id: int
@@ -622,9 +646,9 @@ class UserCreate(schemas.BaseUserCreate):
     name: str = Field(..., max_length=50)
     surname: str = Field(..., max_length=80)
     login: str = Field(..., max_length=30)
-    team_id: Optional[int] = None
     user_type: UserTypeEnum = UserTypeEnum.USER
     password: Optional[str] = Field(None, min_length=6, max_length=255)
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
 
 
 class UserUpdate(schemas.BaseUserUpdate):
@@ -635,7 +659,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
     name: Optional[str] = None
     surname: Optional[str] = None
-    team_id: Optional[int] = None
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
     login: Optional[str] = None
 
 

@@ -13,6 +13,7 @@ from app.db.schemas import (
     RackResponse,
     RackWithOrderedMachinesResponse,
 )
+from app.utils.database_service import resolve_target_team_id
 
 router = APIRouter(tags=["Racks"])
 
@@ -62,6 +63,8 @@ def get_racks(
     """
     ctx.require_user()
     query = ctx.db.query(Rack)
+
+    query = ctx.team_filter(query, Rack)
 
     if room_ids:
         query = query.filter(Rack.room_id.in_(room_ids))
@@ -148,18 +151,14 @@ def create_rack(
     :return: Created rack object with names
     """
     ctx.require_user()
-
-    if ctx.is_admin and rack.team_id:
-        effective_team_id = rack.team_id
-    else:
-        effective_team_id = ctx.team_id
+    effective_team_id = resolve_target_team_id(ctx, rack.team_id)
 
     room = db.query(Rooms).filter(Rooms.id == rack.room_id).first()
 
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
 
-    if not ctx.is_admin and room.team_id != effective_team_id:
+    if not ctx.is_admin and room.team_id not in ctx.team_ids:
         raise HTTPException(
             status_code=403, detail="Cannot assign rack to a room owned by another team"
         )
@@ -220,7 +219,7 @@ def update_rack(
             db_rack.tags = new_tags
 
     if "team_id" in update_dict:
-        if not ctx.is_admin and update_dict["team_id"] != ctx.team_id:
+        if not ctx.is_admin and update_dict["team_id"] not in ctx.team_ids:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Cannot reassign rack to another team",
@@ -232,11 +231,10 @@ def update_rack(
         if not room:
             raise HTTPException(status_code=404, detail="New room not found")
 
-        target_team = update_dict.get("team_id", db_rack.team_id)
-        if not ctx.is_admin and room.team_id != target_team:
+        if not ctx.is_admin and room.team_id not in ctx.team_ids:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="New room is owned by another team",
+                detail="Room is owned by another team",
             )
 
     for key, value in update_dict.items():
