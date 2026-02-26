@@ -103,12 +103,11 @@ function RouteComponent() {
                 </CardTitle>
                 <CardDescription className="flex items-center gap-1.5 text-xs">
                   <User className="h-3 w-3" />
-                  Owner:{' '}
-                  <span className="font-medium text-foreground">User1</span>
+                  {data.name} items
                 </CardDescription>
               </div>
               <CardAction>
-                <Badge variant="outline">Custom</Badge>
+                <Badge variant="outline">Custom View</Badge>
               </CardAction>
             </CardHeader>
             <CardContent className="p-0">

@@ -185,6 +185,7 @@ class RoomDashboardResponse(BaseModel):
 
     id: int
     name: str
+    team_name: str
     rack_count: int
     map_link: Optional[str] = None
 

@@ -5,9 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
-import type {
-  PlatformFormValues,
-} from '@/integrations/machines/machines.types'
+import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
   DialogContent,

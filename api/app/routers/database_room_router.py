@@ -80,7 +80,7 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
     :return: Room object
     """
     ctx.require_user()
-    query = db.query(Rooms).options(joinedload(Rooms.racks), joinedload(Rooms.layouts))
+    query = db.query(Rooms).options(joinedload(Rooms.racks), joinedload(Rooms.layouts), joinedload(Rooms.team))
     query = ctx.team_filter(query, Rooms)
     rooms = query.all()
 
@@ -90,6 +90,7 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
             {
                 "id": r.id,
                 "name": r.name,
+                "team_name": r.team.name,
                 "rack_count": len(r.racks),
                 "map_link": f"/map/room/{r.id}",
             }

@@ -19,13 +19,13 @@ export const Route = createFileRoute('/_auth/labs/$labId')({
 
 export const columns: Array<ColumnDef<RackItem>> = [
   {
-    accessorKey: 'id',
+    accessorKey: 'name',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Rack ID" />
+      <DataTableColumnHeader column={column} title="Rack name" />
     ),
     cell: ({ row }) => (
       <div className="flex flex-col font-medium">
-        {row.getValue('id') || '-'}
+        {row.getValue('name') || '-'}
       </div>
     ),
   },
@@ -67,6 +67,7 @@ export const columns: Array<ColumnDef<RackItem>> = [
 
 function RouteComponent() {
   const router = useRouter()
+  const navigate = Route.useNavigate()
   const { labId } = Route.useParams()
   const { data: lab } = useSuspenseQuery(labQueryOptions(labId))
 
@@ -89,7 +90,12 @@ function RouteComponent() {
       <Separator />
       <ScrollArea className="h-full">
         <div className="p-6 flex flex-col gap-4">
-          <DataTable columns={columns} data={lab.racks} />
+          <DataTable columns={columns} data={lab.racks} onRowClick={(row) => {
+              navigate({
+                to: '/racks/$rackId',
+                params: { rackId: String(row.id) },
+              })
+            }} />
         </div>
       </ScrollArea>
     </div>

@@ -26,6 +26,7 @@ import { Route as AuthHistoryIndexRouteImport } from './routes/_auth/history/ind
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
 import { Route as AuthUsersUserIdRouteImport } from './routes/_auth/users/$userId'
 import { Route as AuthTeamsTeamIdRouteImport } from './routes/_auth/teams/$teamId'
+import { Route as AuthRacksRacksIdRouteImport } from './routes/_auth/racks/$racksId'
 import { Route as AuthMachinesMachineIdRouteImport } from './routes/_auth/machines/$machineId'
 import { Route as AuthLabsLabIdRouteImport } from './routes/_auth/labs/$labId'
 import { Route as AuthInventoryInventoryIdRouteImport } from './routes/_auth/inventory/$inventoryId'
@@ -122,6 +123,11 @@ const AuthTeamsTeamIdRoute = AuthTeamsTeamIdRouteImport.update({
   path: '/teams/$teamId',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthRacksRacksIdRoute = AuthRacksRacksIdRouteImport.update({
+  id: '/racks/$racksId',
+  path: '/racks/$racksId',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMachinesMachineIdRoute = AuthMachinesMachineIdRouteImport.update({
   id: '/machines/$machineId',
   path: '/machines/$machineId',
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/labs/$labId': typeof AuthLabsLabIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs/': typeof AuthDocsIndexRoute
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/labs/$labId': typeof AuthLabsLabIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs': typeof AuthDocsIndexRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/_auth/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/_auth/labs/$labId': typeof AuthLabsLabIdRoute
   '/_auth/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/_auth/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/_auth/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/_auth/users/$userId': typeof AuthUsersUserIdRoute
   '/_auth/docs/': typeof AuthDocsIndexRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/inventory/$inventoryId'
     | '/labs/$labId'
     | '/machines/$machineId'
+    | '/racks/$racksId'
     | '/teams/$teamId'
     | '/users/$userId'
     | '/docs/'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/inventory/$inventoryId'
     | '/labs/$labId'
     | '/machines/$machineId'
+    | '/racks/$racksId'
     | '/teams/$teamId'
     | '/users/$userId'
     | '/docs'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/_auth/inventory/$inventoryId'
     | '/_auth/labs/$labId'
     | '/_auth/machines/$machineId'
+    | '/_auth/racks/$racksId'
     | '/_auth/teams/$teamId'
     | '/_auth/users/$userId'
     | '/_auth/docs/'
@@ -484,6 +496,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthTeamsTeamIdRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/racks/$racksId': {
+      id: '/_auth/racks/$racksId'
+      path: '/racks/$racksId'
+      fullPath: '/racks/$racksId'
+      preLoaderRoute: typeof AuthRacksRacksIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/machines/$machineId': {
       id: '/_auth/machines/$machineId'
       path: '/machines/$machineId'
@@ -595,6 +614,7 @@ interface AuthRouteChildren {
   AuthInventoryInventoryIdRoute: typeof AuthInventoryInventoryIdRoute
   AuthLabsLabIdRoute: typeof AuthLabsLabIdRoute
   AuthMachinesMachineIdRoute: typeof AuthMachinesMachineIdRoute
+  AuthRacksRacksIdRoute: typeof AuthRacksRacksIdRoute
   AuthTeamsTeamIdRoute: typeof AuthTeamsTeamIdRoute
   AuthUsersUserIdRoute: typeof AuthUsersUserIdRoute
   AuthHistoryIndexRoute: typeof AuthHistoryIndexRoute
@@ -622,6 +642,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthInventoryInventoryIdRoute: AuthInventoryInventoryIdRoute,
   AuthLabsLabIdRoute: AuthLabsLabIdRoute,
   AuthMachinesMachineIdRoute: AuthMachinesMachineIdRoute,
+  AuthRacksRacksIdRoute: AuthRacksRacksIdRoute,
   AuthTeamsTeamIdRoute: AuthTeamsTeamIdRoute,
   AuthUsersUserIdRoute: AuthUsersUserIdRoute,
   AuthHistoryIndexRoute: AuthHistoryIndexRoute,
