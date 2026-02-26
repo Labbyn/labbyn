@@ -1,6 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, Box, Cpu, Server, Users } from 'lucide-react'
+import { ArrowLeft, Box, Cpu, Server, Users, Info } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -8,6 +8,17 @@ import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { Separator } from '@/components/ui/separator'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { useState } from 'react'
+import { Input } from '@/components/ui/input'
+import { TagList } from '@/components/tag-list'
+import { SubpageHeader } from '@/components/subpage-header'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -18,6 +29,22 @@ function RacksDetailsPage() {
   const router = useRouter()
   const { racksId } = Route.useParams()
   const { data: rack } = useSuspenseQuery(singleRackQueryOptions(racksId))
+  const [isEditing, setIsEditing] = useState(false)
+  const [formData, setFormData] = useState({ ...rack })
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSave = () => {
+  updateRack.mutate(formData, {
+    onSuccess: () => setIsEditing(false),
+  })
+  setIsEditing(false)
+  }
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For now based on requierments we don't need to specify shelf
@@ -45,29 +72,55 @@ function RacksDetailsPage() {
 
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
-      <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur z-10 shrink-0">
-        <Button
-          onClick={() => router.history.back()}
-          variant="ghost"
-          size="icon"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl font-bold tracking-tight">{rack.name}</h1>
-            <p className="text-muted-foreground text-sm">
-              Team administrator: 
-            </p>
-          </div>
-        </div>
-      </div>
-      <Separator />
+      <SubpageHeader subpageItem={rack} isEditing={isEditing} setIsEditing={setIsEditing} formData={formData} setFormData={setFormData} handleInputChange={handleInputChange} handleSave={handleSave}/>
       <ScrollArea className="h-full bg-slate-50/50 dark:bg-zinc-950/50">
         <div className="p-8 max-w-[1600px] mx-auto space-y-8">
-          {/* Main Content Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Machines Section - Full Width for large tables */}
+          {/* Rack Info Section */}
+          <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
+            <Card className="md:col-span-3">
+              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
+                <h2 className="font-semibold text-lg flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" /> Rack inforamtions
+                </h2>
+                </div>
+                
+            
+            <CardContent className="grid gap-6 sm:grid-cols-2">
+              {[
+                { label: 'Team', name: 'team_name', icon: Users },
+                { label: 'Tags', name: 'tags', icon: Box}
+              ].map((field) => {  
+                const fieldValue = rack[field.name]
+                return (                  
+                  <div key={field.name} className="grid gap-2">
+                    <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <field.icon className="h-5 w-5" /> {field.label}
+                      </span>
+                      {isEditing ? (
+                        field.name === 'tags' ? (
+              <span className="text-sm italic text-muted-foreground">Tag editing requires a custom selector</span>
+            ) : (
+                        <Input
+                          name={field.name}
+                          value={(formData as any)[field.name]}
+                          onChange={handleInputChange}
+                          className="h-8"
+                        />
+                      ) 
+                    ) : field.name === 'tags' ? (
+            <TagList tags={fieldValue} />
+          ) : 
+                     (
+                        <span className="font-medium">{fieldValue ? fieldValue.toString() : '—'}</span>
+                      )}
+                  </div>
+                )
+              })
+              }
+            </CardContent>
+            </Card>
+          </section>
+            {/* Machines Section */}
             <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
                 <h2 className="font-semibold text-lg flex items-center gap-2">
@@ -81,7 +134,6 @@ function RacksDetailsPage() {
                 <DataTable columns={columnsMachines} data={flatMachines} />
               </div>
             </section>
-          </div>
         </div>
       </ScrollArea>
     </div>

@@ -154,12 +154,11 @@ function TeamsDetailsPage() {
               </div>
               <div className="p-1">
                 {' '}
-                {/* Slight padding to prevent table borders overlapping card borders */}
                 <DataTable columns={columnsUsers} data={team.members} />
               </div>
             </section>
 
-            {/* Racks Section */}
+            {/* Racks */}
             <section className="bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
                 <h2 className="font-semibold text-lg flex items-center gap-2">
@@ -175,7 +174,7 @@ function TeamsDetailsPage() {
               </div>
             </section>
 
-            {/* Machines Section - Full Width for large tables */}
+            {/* Machines Section */}
             <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
                 <h2 className="font-semibold text-lg flex items-center gap-2">
@@ -190,7 +189,7 @@ function TeamsDetailsPage() {
               </div>
             </section>
 
-            {/* Inventory Section - Full Width */}
+            {/* Inventory Section */}
             <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
               <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
                 <h2 className="font-semibold text-lg flex items-center gap-2">
