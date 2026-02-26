@@ -53,7 +53,7 @@ const IconMap = {
   Inventory: Archive,
 }
 
-export const Route = createFileRoute('/_auth/user_dashboard')({
+export const Route = createFileRoute('/_auth/user-dashboard')({
   component: RouteComponent,
   validateSearch: (search: Record<string, unknown>): DashboardSearch => {
     if (Array.isArray(search.views)) {
@@ -192,14 +192,14 @@ function RouteComponent() {
                       checked={enabled}
                       onCheckedChange={(checked) => {
                         navigate({
-                          search: (prev) => {
+                          search: (prev: { views: any }) => {
                             const currentViews = prev.views
                             return {
                               ...prev,
                               views: checked
                                 ? [...currentViews, section.name]
                                 : currentViews.filter(
-                                    (v) => v !== section.name,
+                                    (v: string) => v !== section.name,
                                   ),
                             }
                           },

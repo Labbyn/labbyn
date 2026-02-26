@@ -4,6 +4,7 @@ from typing import List
 from app.database import get_db
 from app.db.models import (
     Categories,
+    User,
 )
 from app.db.schemas import (
     CategoriesCreate,
@@ -11,6 +12,7 @@ from app.db.schemas import (
     CategoriesUpdate,
 )
 from app.utils.redis_service import acquire_lock
+from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -23,13 +25,20 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Categories"],
 )
-def create_category(category_data: CategoriesCreate, db: Session = Depends(get_db)):
+def create_category(
+    category_data: CategoriesCreate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
+):
     """
     Create new category
     :param category_data: Category data
     :param db: Active database session
     :return: Category object
     """
+
+    ctx.require_admin()
+
     obj = Categories(**category_data.model_dump())
     db.add(obj)
     db.commit()
@@ -40,25 +49,31 @@ def create_category(category_data: CategoriesCreate, db: Session = Depends(get_d
 @router.get(
     "/db/categories/", response_model=List[CategoriesResponse], tags=["Categories"]
 )
-def get_categories(db: Session = Depends(get_db)):
+def get_categories(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     """
     Fetch all categories
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: List of all categories
     """
+    ctx.require_user()
     return db.query(Categories).all()
 
 
 @router.get(
     "/db/categories/{cat_id}", response_model=CategoriesResponse, tags=["Categories"]
 )
-def get_category_by_id(cat_id: int, db: Session = Depends(get_db)):
+def get_category_by_id(
+    cat_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Fetch specific category by ID
     :param cat_id: Category ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Category object
     """
+    ctx.require_user()
     cat = db.query(Categories).filter(Categories.id == cat_id).first()
     if not cat:
         raise HTTPException(
@@ -71,15 +86,22 @@ def get_category_by_id(cat_id: int, db: Session = Depends(get_db)):
     "/db/categories/{cat_id}", response_model=CategoriesResponse, tags=["Categories"]
 )
 async def update_category(
-    cat_id: int, cat_data: CategoriesUpdate, db: Session = Depends(get_db)
+    cat_id: int,
+    cat_data: CategoriesUpdate,
+    db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
 ):
     """
     Update Category
     :param cat_id: Category ID
     :param cat_data: Category data schema
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: Updated Category
     """
+
+    ctx.require_admin()
+
     async with acquire_lock(f"category_lock:{cat_id}"):
         cat = db.query(Categories).filter(Categories.id == cat_id).first()
         if not cat:
@@ -98,13 +120,19 @@ async def update_category(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["Categories"],
 )
-async def delete_category(cat_id: int, db: Session = Depends(get_db)):
+async def delete_category(
+    cat_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+):
     """
     Delete category
     :param cat_id: Category ID
     :param db: Active database session
+    :param ctx: Request context for user and team info
     :return: None
     """
+
+    ctx.require_admin()
+
     async with acquire_lock(f"category_lock:{cat_id}"):
         cat = db.query(Categories).filter(Categories.id == cat_id).first()
         if not cat:

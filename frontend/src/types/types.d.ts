@@ -1,18 +1,26 @@
 export interface Document {
-  id: string
-  name: string
+  id: number
+  title: string
   content: string
-  createdBy: string
-  createdAt: Date
-  updatedAt: Date
+  author: string
+  added_on: string
+  modified_on: string | null
+  version_id: number
 }
 
 export type User = {
-  id: string
+  id: number
+  email: string
   name: string
   surname: string
-  team: string
-  role: string
+  login: string
+  user_type: string
+  force_password_change: boolean
+  is_active?: boolean
+  is_superuser?: boolean
+  is_verified?: boolean
+  team_id?: number | null
+  version_id?: number
 }
 
 export type Machine = {

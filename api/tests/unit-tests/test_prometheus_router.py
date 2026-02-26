@@ -3,7 +3,7 @@ from unittest import mock
 
 
 @pytest.mark.unit
-def test_get_prometheus_instances(test_client):
+def test_get_prometheus_instances(test_client, service_header_sync):
     """Test fetching unique instances from Prometheus."""
     with mock.patch(
         "app.routers.prometheus_router.fetch_prometheus_metrics"
@@ -14,7 +14,7 @@ def test_get_prometheus_instances(test_client):
                 {"instance": "host2:9090"},
             ]
         }
-        response = test_client.get("/prometheus/instances")
+        response = test_client.get("/prometheus/instances", headers=service_header_sync)
         assert response.status_code == 200
         data = response.json()
         assert "instances" in data
@@ -22,7 +22,7 @@ def test_get_prometheus_instances(test_client):
 
 
 @pytest.mark.unit
-def test_get_prometheus_hosts(test_client):
+def test_get_prometheus_hosts(test_client, service_header_sync):
     """Test fetching unique hosts from Prometheus instances."""
     with mock.patch(
         "app.routers.prometheus_router.fetch_prometheus_metrics"
@@ -33,7 +33,7 @@ def test_get_prometheus_hosts(test_client):
                 {"instance": "host2:9090"},
             ]
         }
-        response = test_client.get("/prometheus/hosts")
+        response = test_client.get("/prometheus/hosts", headers=service_header_sync)
         assert response.status_code == 200
         data = response.json()
         assert "hosts" in data
@@ -41,7 +41,7 @@ def test_get_prometheus_hosts(test_client):
 
 
 @pytest.mark.unit
-def test_get_prometheus_metrics_all_instances(test_client):
+def test_get_prometheus_metrics_all_instances(test_client, service_header_sync):
     """Test fetching all Prometheus metrics without filtering by hosts."""
     with mock.patch(
         "app.routers.prometheus_router.fetch_prometheus_metrics"
@@ -52,7 +52,11 @@ def test_get_prometheus_metrics_all_instances(test_client):
                 {"instance": "host2:9090", "value": 0.0},
             ]
         }
-        response = test_client.get("/prometheus/metrics", params={"metrics": "status"})
+        response = test_client.get(
+            "/prometheus/metrics",
+            params={"metrics": "status"},
+            headers=service_header_sync,
+        )
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
@@ -60,7 +64,7 @@ def test_get_prometheus_metrics_all_instances(test_client):
 
 
 @pytest.mark.unit
-def test_get_prometheus_metrics_filtered_hosts(test_client):
+def test_get_prometheus_metrics_filtered_hosts(test_client, service_header_sync):
     """Test fetching Prometheus metrics filtered by hosts."""
     with mock.patch(
         "app.routers.prometheus_router.fetch_prometheus_metrics"
@@ -72,7 +76,9 @@ def test_get_prometheus_metrics_filtered_hosts(test_client):
             ]
         }
         response = test_client.get(
-            "/prometheus/metrics", params={"metrics": "status", "hosts": "host1"}
+            "/prometheus/metrics",
+            params={"metrics": "status", "hosts": "host1"},
+            headers=service_header_sync,
         )
         assert response.status_code == 200
         data = response.json()

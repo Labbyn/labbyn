@@ -15,7 +15,7 @@ import {
 import type { ColumnDef } from '@tanstack/react-table'
 import type { fetchMachinesData } from '@/integrations/machines/machines.adapter'
 import { formatHeader } from '@/lib/utils'
-import { machineQueryOptions } from '@/integrations/machines/machines.query'
+import { machinesQueryOptions } from '@/integrations/machines/machines.query'
 
 type MachineItem = ReturnType<typeof fetchMachinesData>[number]
 
@@ -96,7 +96,7 @@ export const columns: Array<ColumnDef<MachineItem>> = [
 ]
 
 export default function MachinesAdminPanel() {
-  const { data: machines = [], isLoading } = useQuery(machineQueryOptions)
+  const { data: machines = [], isLoading } = useQuery(machinesQueryOptions)
 
   if (isLoading) return <PageIsLoading />
 

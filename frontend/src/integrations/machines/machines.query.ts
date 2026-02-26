@@ -1,16 +1,27 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchMachinesData } from './machines.adapter'
-import type { ApiMachineResponse } from './machines.adapter'
+import type { ApiMachineItem, ApiMachineResponse } from './machines.types'
+import api from '@/lib/api'
 
-const MACHINES_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/machines`
+const PATHS = {
+  BASE: '/db/machines',
+  SINGLE: (id: string) => `/db/machines/${id}`,
+}
 
-export const machineQueryOptions = queryOptions({
-  queryKey: ['machine'],
+// Fetch all machines
+export const machinesQueryOptions = queryOptions({
+  queryKey: ['machines'],
   queryFn: async () => {
-    const res = await fetch(MACHINES_ENDPOINT)
-    if (!res.ok) throw new Error('Failed to fetch machines')
-
-    const data: ApiMachineResponse = await res.json()
-    return fetchMachinesData(data)
+    const { data } = await api.get<ApiMachineResponse>(PATHS.BASE)
+    return data
   },
 })
+
+// Fetch single machine by id
+export const machineSpecQueryOptions = (machineId: string) =>
+  queryOptions({
+    queryKey: ['machines', 'spec', machineId],
+    queryFn: async () => {
+      const { data } = await api.get<ApiMachineItem>(PATHS.SINGLE(machineId))
+      return data
+    },
+  })

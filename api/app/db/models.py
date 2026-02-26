@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     func,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
@@ -67,7 +68,7 @@ class Layout(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     rooms = relationship("Layouts", back_populates="layout")
-    machines = relationship("Machines", back_populates="layout")
+    racks = relationship("Rack", back_populates="layout")
 
 
 class Layouts(Base):
@@ -86,6 +87,48 @@ class Layouts(Base):
     room = relationship("Rooms", back_populates="layouts")
 
 
+class Rack(Base):
+    """
+    Rack model representing racks in the system.
+    """
+
+    __tablename__ = "racks"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    room_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
+    layout_id = Column(Integer, ForeignKey("layout.id"), nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+
+    version_id = Column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
+
+    team = relationship("Teams")
+    room = relationship("Rooms", back_populates="racks")
+    layout = relationship("Layout", back_populates="racks")
+    shelves = relationship("Shelf", back_populates="rack", cascade="all, delete-orphan")
+    tags = relationship("Tags", secondary="tags_racks", back_populates="racks")
+
+
+class Shelf(Base):
+    """
+    Shelf model representing shelves in the system.
+    """
+
+    __tablename__ = "shelves"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False, unique=True)
+    rack_id = Column(Integer, ForeignKey("racks.id"), nullable=False)
+    order = Column(Integer, nullable=False)
+
+    version_id = Column(Integer, nullable=False, default=1)
+    __mapper_args__ = {"version_id_col": version_id}
+
+    rack = relationship("Rack", back_populates="shelves")
+    machines = relationship("Machines", back_populates="shelf")
+
+
 class Rooms(Base):
     """
     Rooms model representing rooms in the system.
@@ -94,16 +137,50 @@ class Rooms(Base):
     __tablename__ = "rooms"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     room_type = Column(String(100), nullable=True)
-
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
 
+    __table_args__ = (UniqueConstraint("name", "team_id", name="_room_team_uc"),)
+
     layouts = relationship("Layouts", back_populates="room")
     machines = relationship("Machines", back_populates="room")
     inventory = relationship("Inventory", back_populates="room")
+    team = relationship("Teams", back_populates="rooms")
+    racks = relationship("Rack", back_populates="room")
+    tags = relationship("Tags", secondary="tags_rooms", back_populates="rooms")
+
+
+class CPUs(Base):
+    """
+    CPUs model representing CPUs models attached to machine.
+    """
+
+    __tablename__ = "cpus"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="cpus")
+
+
+class Disks(Base):
+    """
+    Disks model representing disks attached to machine.
+    """
+
+    __tablename__ = "disks"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    capacity = Column(String(50), nullable=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=False)
+
+    machine = relationship("Machines", back_populates="disks")
 
 
 class Machines(Base):
@@ -114,7 +191,7 @@ class Machines(Base):
     __tablename__ = "machines"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     mac_address = Column(String(17), nullable=True)
     ip_address = Column(String(15), nullable=True)
@@ -124,21 +201,27 @@ class Machines(Base):
     serial_number = Column(String(50), nullable=True)
     note = Column(String(500), nullable=True)
     added_on = Column(DateTime, nullable=False, default=datetime.now)
-    cpu = Column(String(100), nullable=True)
     ram = Column(String(100), nullable=True)
-    disk = Column(String(100), nullable=True)
     metadata_id = Column(Integer, ForeignKey("metadata.id"), nullable=False)
-    layout_id = Column(Integer, ForeignKey("layout.id"), nullable=True)
-
+    shelf_id = Column(Integer, ForeignKey("shelves.id"), nullable=True)
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
 
+    __table_args__ = (
+        UniqueConstraint("name", "localization_id", name="_machine_room_uc"),
+    )
+
     room = relationship("Rooms", back_populates="machines")
-    layout = relationship("Layout", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
     machine_metadata = relationship("Metadata", back_populates="machines")
     inventory = relationship("Inventory", back_populates="machine")
+    shelf = relationship("Shelf", back_populates="machines")
+    tags = relationship("Tags", secondary="tags_machines", back_populates="machines")
+    cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
+    disks = relationship(
+        "Disks", back_populates="machine", cascade="all, delete-orphan"
+    )
 
 
 class Metadata(Base):
@@ -170,19 +253,16 @@ class Teams(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    team_admin_id = Column(
-        Integer,
-        ForeignKey("user.id", use_alter=True, name="fk_team_admin_id"),
-        nullable=False,
-    )
 
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
 
+    users = relationship("UsersTeams", back_populates="team")
     machines = relationship("Machines", back_populates="team")
-
-    users = relationship("User", back_populates="teams", foreign_keys="[User.team_id]")
+    rooms = relationship("Rooms", back_populates="team")
+    inventory = relationship("Inventory", back_populates="team")
+    racks = relationship("Rack", back_populates="team")
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -195,13 +275,11 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     surname = Column(String(80), nullable=False)
-    team_id = Column(
-        Integer,
-        ForeignKey("teams.id", use_alter=True, name="fk_user_team_id"),
-        nullable=True,
-    )
     login = Column(String(30), nullable=False, unique=True)
     email = Column(String(100), unique=True, index=True, nullable=False)
+    avatar_path = Column(
+        String(255), nullable=True, default="/static/avatars/default.png"
+    )  # dummy path
     hashed_password = Column(String(255), nullable=False)
 
     # FastAPI Users fields
@@ -221,8 +299,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    teams = relationship("Teams", back_populates="users", foreign_keys="[User.team_id]")
-
+    teams = relationship("UsersTeams", back_populates="user")
     rentals = relationship("Rentals", back_populates="user")
     history = relationship("History", back_populates="user")
 
@@ -252,7 +329,7 @@ class Rentals(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-
+    quantity = Column(Integer, nullable=False, default=1)
     __table_args__ = {"schema": None}
 
     version_id = Column(Integer, nullable=False, default=1)
@@ -289,7 +366,7 @@ class Inventory(Base):
 
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")
-
+    team = relationship("Teams", back_populates="inventory")
     current_rental = relationship("Rentals", foreign_keys=[rental_id])
 
     rental_history = relationship(
@@ -345,3 +422,113 @@ class History(Base):
     extra_data = Column(JSONB)
 
     user = relationship("User", back_populates="history")
+
+
+class Tags(Base):
+    """
+    Tags model representing tags in the system.
+    """
+
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    color = Column(String(50), nullable=False)
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    documentation = relationship(
+        "Documentation", secondary="tags_documentation", back_populates="tags"
+    )
+
+    racks = relationship("Rack", secondary="tags_racks", back_populates="tags")
+    rooms = relationship("Rooms", secondary="tags_rooms", back_populates="tags")
+    machines = relationship(
+        "Machines", secondary="tags_machines", back_populates="tags"
+    )
+
+
+class Documentation(Base):
+    """
+    Documentation model representing documentation in the system.
+    """
+
+    __tablename__ = "documentation"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(50), nullable=False, unique=True)
+    author = Column(String(50), nullable=False)
+    content = Column(String(5000), default="# Empty document")
+    added_on = Column(DateTime, nullable=False, default=datetime.now)
+    modified_on = Column(DateTime, nullable=True)
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    tags = relationship(
+        "Tags", secondary="tags_documentation", back_populates="documentation"
+    )
+
+
+class TagsRooms(Base):
+    """
+    TagsRacks model representing association between rooms and tags.
+    """
+
+    __tablename__ = "tags_rooms"
+
+    id = Column(Integer, primary_key=True)
+    room_id = Column(Integer, ForeignKey("rooms.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class TagsDocumentation(Base):
+    """
+    TagsDocumentation model representing association between documentation and tags.
+    """
+
+    __tablename__ = "tags_documentation"
+
+    id = Column(Integer, primary_key=True)
+    documentation_id = Column(Integer, ForeignKey("documentation.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class TagsRacks(Base):
+    """
+    TagsRacks model representing association between racks and tags.
+    """
+
+    __tablename__ = "tags_racks"
+
+    id = Column(Integer, primary_key=True)
+    rack_id = Column(Integer, ForeignKey("racks.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class TagsMachines(Base):
+    """
+    TagsMachines model representing association between machines and tags.
+    """
+
+    __tablename__ = "tags_machines"
+    id = Column(Integer, primary_key=True)
+    machine_id = Column(Integer, ForeignKey("machines.id"))
+    tag_id = Column(Integer, ForeignKey("tags.id"))
+
+
+class UsersTeams(Base):
+    """
+    UsersTeams model representing association between users and teams for many-to-many relationship.
+    """
+
+    __tablename__ = "users_teams"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    team_id = Column(Integer, ForeignKey("teams.id"))
+
+    is_group_admin = Column(Boolean, default=False, nullable=False)
+
+    user = relationship("User", back_populates="teams")
+    team = relationship("Teams", back_populates="users")

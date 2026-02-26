@@ -17,6 +17,9 @@ from app.db import models
 
 # pylint: disable=unused-import
 import app.db.listeners
+import inspect
+
+from app.auth.dependencies import RequestContext
 
 
 # ==========================
@@ -50,11 +53,29 @@ def handle_commit(db: Session):
         ) from exc
 
 
+def init_service_team(db: Session):
+    """
+    Initializes a default service team if none exists.
+    :param db: The current database session.
+    """
+    service_team = (
+        db.query(models.Teams).filter(models.Teams.name == "Service Team").first()
+    )
+    if not service_team:
+        service_team = models.Teams(name="Service Team")
+        db.add(service_team)
+        db.commit()
+        db.refresh(service_team)
+    return service_team
+
+
 def init_super_user(db: Session):
     """
     Initializes a super user if none exists.
     :param db: The current database session.
     """
+    service_team = init_service_team(db)
+
     super_user = db.query(models.User).filter(models.User.login == "Service").first()
     if not super_user:
         admin_user = models.User(
@@ -67,11 +88,26 @@ def init_super_user(db: Session):
             is_active=True,
             is_superuser=True,
             is_verified=True,
-            force_password_change=True,
+            force_password_change=False,  # For development purposes only
         )
         db.add(admin_user)
         db.commit()
         db.refresh(admin_user)
+
+        super_user = admin_user
+        link = (
+            db.query(models.UsersTeams)
+            .filter_by(user_id=super_user.id, team_id=service_team.id)
+            .first()
+        )
+
+        if not link:
+            db.add(
+                models.UsersTeams(
+                    user_id=super_user.id, team_id=service_team.id, is_group_admin=True
+                )
+            )
+            db.commit()
 
 
 def init_virtual_lab(db: Session):
@@ -79,12 +115,119 @@ def init_virtual_lab(db: Session):
     Initializes virtual lab if none exists.
     :param db: The current database session.
     """
-    virtual_lab = db.query(models.Rooms).filter(models.Rooms.name == "virtual").first()
+    service_team = init_service_team(db)
+
+    virtual_lab = (
+        db.query(models.Rooms)
+        .filter(models.Rooms.name == "virtual", models.Rooms.team_id == service_team.id)
+        .first()
+    )
+
     if not virtual_lab:
-        virtual_lab = models.Rooms(name="virtual", room_type="virtual")
+        virtual_lab = models.Rooms(
+            name="virtual", room_type="virtual", team_id=service_team.id
+        )
         db.add(virtual_lab)
         db.commit()
         db.refresh(virtual_lab)
+
+
+def init_document(db: Session):
+    """
+    Initializes document that contains app documentation.
+    :param db: The current database session.
+    """
+
+    labbyn_docs = (
+        db.query(models.Documentation)
+        .filter(models.Documentation.title == "labbyn")
+        .first()
+    )
+    if not labbyn_docs:
+        content_raw = """
+                # Labbyn
+
+                Labbyn is an application for your datacenter, laboratory or homelab. You can monitor your infrastructure, set the location of each server or platform on an interactive dashboard, store information about your assets in an inventory and more. Everything runs on a modern GUI, is deployable on most Linux machines and is **OPEN SOURCE**.
+
+                ## Installation
+
+                To install you only need docker  and docker compose.
+                Example of Debian installation:
+                ```bash
+                apt update
+                apt upgrade
+                apt install docker.io docker-compose
+                apt install -y docker-compose-plugin
+                ```
+                ### Application script
+
+                Inside the `scripts` directory there is an `app.sh` script that can be used to manage your application.
+
+                #### Arguments:
+                - `deploy` - start/install app on your machine
+                - `update` - rebuild application if nesscesary
+                - `stop` - stop application container
+                - `delete` - delete application
+                - `--dev` - run application in development mode
+                > [!IMPORTANT]
+                > **If you use the `delete` argument entire application will be deleted including containers, images, volumes and networks**
+
+                ### Example:
+
+                Start/Install application
+
+                ```bash
+                ./app.sh deploy
+                ```
+
+                Stop application
+
+                ```bash
+                ./app.sh stop
+                ```
+
+                Start application in developement mode:
+                ```bash
+                ./app.sh deploy --dev
+                ```
+
+                **PJATK 2025**:
+                s26990, s26985, s27081, s27549
+                """
+
+        labbyn_docs = models.Documentation(
+            title="labbyn",
+            author="anonymous admin",
+            content=inspect.cleandoc(content_raw),
+        )
+        db.add(labbyn_docs)
+        db.commit()
+        db.refresh(labbyn_docs)
+
+
+def resolve_target_team_id(ctx: RequestContext, team_id: Optional[int] = None):
+    """
+    Resolve the target team ID based on the request context and optional team_id parameter.
+    :param ctx: User request context containing user and team information
+    :param team_id: Team ID provided in the request (optional)
+    :return: Target team ID to be used for filtering or assignment
+    """
+    if ctx.is_admin:
+        return team_id
+    if not ctx.team_ids:
+        raise HTTPException(status_code=400, detail="User does not belong to any team")
+    if team_id:
+        if team_id not in ctx.team_ids:
+            raise HTTPException(
+                status_code=403, detail="Access to specified team is denied"
+            )
+        return team_id
+    if len(ctx.team_ids) > 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Multiple teams found for user, team_id parameter is required",
+        )
+    return ctx.team_ids[0]
 
 
 # ==========================
@@ -269,12 +412,23 @@ def create_user(db: Session, user: schemas.UserCreate):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Login already exists."
         )
-    user_data = user.model_dump(exclude={"password"})
+    team_ids = getattr(user, "team_id", [])
+    if isinstance(team_ids, int):
+        team_ids = [team_ids]
+
+    user_data = user.model_dump(exclude={"password", "team_id", "team_ids"})
     hashed_pw = hash_password(user.password)
 
     db_obj = models.User(**user_data, hashed_password=hashed_pw)
-
     db.add(db_obj)
+    db.flush()
+
+    for t_id in team_ids:
+        team_exists = db.query(models.Teams).filter(models.Teams.id == t_id).first()
+        if team_exists:
+            link = models.UsersTeams(user_id=db_obj.id, team_id=t_id)
+            db.add(link)
+
     handle_commit(db)
     db.refresh(db_obj)
     return db_obj
@@ -369,7 +523,15 @@ def create_room(db: Session, room: schemas.RoomsCreate):
     :param room: Pydantic schema containing room data.
     :return: The newly created room instance.
     """
-    db_obj = models.Rooms(**room.model_dump())
+    data = room.model_dump()
+    tag_ids = data.pop("tag_ids", [])
+
+    db_obj = models.Rooms(**data)
+
+    if tag_ids:
+        tags = db.query(models.Tags).filter(models.Tags.id.in_(tag_ids)).all()
+        db_obj.tags = tags
+
     db.add(db_obj)
     handle_commit(db)
     db.refresh(db_obj)
@@ -389,7 +551,15 @@ def update_room(db: Session, room_id: int, room_update: schemas.RoomsUpdate):
     if not db_obj:
         return None
 
-    for key, value in room_update.model_dump(exclude_unset=True).items():
+    update_data = room_update.model_dump(exclude_unset=True)
+
+    if "tag_ids" in update_data:
+        tag_ids = update_data.pop("tag_ids")
+        if tag_ids is not None:
+            tags = db.query(models.Tags).filter(models.Tags.id.in_(tag_ids)).all()
+            db_obj.tags = tags
+
+    for key, value in update_data.items():
         setattr(db_obj, key, value)
 
     handle_commit(db)

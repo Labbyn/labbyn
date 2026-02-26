@@ -1,7 +1,20 @@
-export type ApiMachineItem = {
+export type CPU = {
   id: number
   name: string
-  localization_id: number | null
+  machine_id: number
+}
+
+export type Disk = {
+  id: number
+  name: string
+  capacity: string | null
+  machine_id: number
+}
+
+export interface MachinesResponse {
+  id: number
+  name: string
+  localization_id: number
   mac_address: string | null
   ip_address: string | null
   pdu_port: number | null
@@ -9,12 +22,62 @@ export type ApiMachineItem = {
   os: string | null
   serial_number: string | null
   note: string | null
-  added_on: string | null
-  cpu: string | null
+  cpus: Array<CPU>
   ram: string | null
-  disk: string | null
+  disks: Array<Disk>
   metadata_id: number
-  layout_id: number | null
-  version_id: number | null
+  shelf_id: number | null
+  added_on: string // format: date-time
+  version_id: number
 }
-export type ApiMachineResponse = Array<ApiMachineItem>
+
+export interface MetadataResponse {
+  id: number
+  last_update: string | null
+  agent_prometheus: boolean
+  ansible_access: boolean
+  ansible_root_access: boolean
+  version_id: number
+}
+
+export interface PlatformFormValues {
+  hostname: string
+  addToDb: boolean
+  scanPlatform: boolean
+  deployAgent: boolean
+  login?: string
+  password?: string
+  name?: string
+  ip?: string
+  mac?: string
+  location?: number
+  team?: number
+  pdu_port?: number
+  os?: string
+  sn?: string
+  note?: string
+  cpu?: Array<CPU>
+  ram?: string
+  disk?: Array<Disk>
+  layout?: number
+}
+
+export interface MachineUpdate {
+  name?: string | null
+  localization_id?: number | null
+  mac_address?: string | null
+  ip_address?: string | null
+  pdu_port?: number | null
+  team_id?: number | null
+  os?: string | null
+  serial_number?: string | null
+  note?: string | null
+  cpu?: Array<CPU> | null
+  ram?: string | null
+  disk?: Array<Disk> | null
+  layout_id?: number | null
+  metadata_id?: number | null
+}
+
+export type ApiMachineItem = MachinesResponse
+export type ApiMachineResponse = Array<MachinesResponse>

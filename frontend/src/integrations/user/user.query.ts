@@ -1,16 +1,42 @@
 import { queryOptions } from '@tanstack/react-query'
-import { fetchUserData } from './user.adapter'
-import type { ApiUserResponse } from './user.types'
+import type { ApiUserInfo, UserRead } from './user.types'
+import api from '@/lib/api'
 
-const USER_ENDPOINT = `http://${import.meta.env.VITE_API_URL}/db/users/`
+const PATHS = {
+  BASE: '/db/users/list_info',
+  ME: '/users/me',
+  SINGLE: (id: string | number) => `/db/users/${id}`,
+}
 
-export const userQueryOptions = queryOptions({
-  queryKey: ['user'],
+export const currentUserQueryOptions = queryOptions({
+  queryKey: ['users', 'me'],
   queryFn: async () => {
-    const res = await fetch(USER_ENDPOINT)
-    if (!res.ok) throw new Error('Failed to fetch users')
-
-    const data: ApiUserResponse = await res.json()
-    return fetchUserData(data)
+    const { data } = await api.get<UserRead>(PATHS.ME)
+    return data
   },
 })
+
+export const adminUsersQueryOptions = queryOptions({
+  queryKey: ['users', 'list', 'admin'],
+  queryFn: async () => {
+    const { data } = await api.get<Array<UserRead>>(PATHS.BASE)
+    return data
+  },
+})
+
+export const usersQueryOptions = queryOptions({
+  queryKey: ['users', 'list'],
+  queryFn: async () => {
+    const { data } = await api.get<Array<ApiUserInfo>>(PATHS.BASE)
+    return data
+  },
+})
+
+export const singleUserQueryOptions = (userId: string | number) =>
+  queryOptions({
+    queryKey: ['users', String(userId)],
+    queryFn: async () => {
+      const { data } = await api.get<ApiUserInfo>(PATHS.SINGLE(userId))
+      return data
+    },
+  })

@@ -1,17 +1,20 @@
 """Main application entry point for the FastAPI server."""
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 import fastapi_users
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from fastapi.staticfiles import StaticFiles
 from app.routers import (
     prometheus_router,
     database_category_router,
     database_inventory_router,
     database_layouts_router,
+    database_rack_router,
+    database_shelf_router,
     database_machine_router,
     database_metadata_router,
     database_rental_router,
@@ -19,13 +22,18 @@ from app.routers import (
     database_team_router,
     database_user_router,
     database_history_router,
+    database_documentation_router,
+    database_tags_router,
     ansible_router,
     dashboard_router,
-    labs_router,
+    authentication_router,
+    subpage_history_router,
+    database_cpus_router,
+    database_disks_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
 from app.database import SessionLocal
-from app.utils.database_service import init_super_user, init_virtual_lab
+from app.utils.database_service import init_super_user, init_virtual_lab, init_document
 
 # pylint: disable=unused-import
 import app.db.listeners
@@ -48,6 +56,7 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
     try:
         init_super_user(db)
         init_virtual_lab(db)
+        init_document(db)
     finally:
         db.close()
     status_task = asyncio.create_task(status_worker())
@@ -61,6 +70,15 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Mount static files for user avatars
+if not os.path.exists(database_user_router.AVATAR_DIR):
+    os.makedirs(database_user_router.AVATAR_DIR, exist_ok=True)
+app.mount(
+    "/static/avatars",
+    StaticFiles(directory=database_user_router.AVATAR_DIR),
+    name="avatars",
+)
 
 # Configure CORS middleware temporaryly for local development
 origins = [
@@ -97,4 +115,11 @@ app.include_router(database_user_router.router)
 app.include_router(database_history_router.router)
 app.include_router(ansible_router.router)
 app.include_router(dashboard_router.router)
-app.include_router(labs_router.router)
+app.include_router(authentication_router.router)
+app.include_router(database_documentation_router.router)
+app.include_router(database_tags_router.router)
+app.include_router(subpage_history_router.router)
+app.include_router(database_rack_router.router)
+app.include_router(database_shelf_router.router)
+app.include_router(database_cpus_router.router)
+app.include_router(database_disks_router.router)

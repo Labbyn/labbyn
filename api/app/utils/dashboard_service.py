@@ -4,18 +4,19 @@ User dashboard items parser. Prepares json file with database data for user-dash
 
 from sqlalchemy.orm import Session
 from app.db.models import Machines, Rooms, Inventory, Teams, User, History
+from app.auth.dependencies import RequestContext
 
 # TO DO: add proper tags and handling
-# pass only data accessable by user
 
 
-def build_dashboard(db: Session):
-    machines = db.query(Machines).all()
-    rooms = db.query(Rooms).all()
-    inventories = db.query(Inventory).all()
-    teams = db.query(Teams).all()
-    users = db.query(User).all()
-    histories = db.query(History).all()
+def build_dashboard(db: Session, ctx: RequestContext):
+    ctx.require_user()
+    machines = ctx.team_filter(db.query(Machines), Machines).all()
+    rooms = ctx.team_filter(db.query(Rooms), Rooms).all()
+    inventories = ctx.team_filter(db.query(Inventory), Inventory).all()
+    teams = ctx.team_filter(db.query(Teams), Teams).all()
+    users = ctx.team_filter(db.query(User), User).all()
+    histories = ctx.team_filter(db.query(History), History).all()
 
     machine_items = [
         {
@@ -35,7 +36,7 @@ def build_dashboard(db: Session):
         {
             "type": "Room",
             "id": room.name,
-            "location": f"/rooms/{room.id}",
+            "location": f"/labs/{room.id}",
             "tags": (
                 [f"Room type: {room.room_type}"] if room.room_type is not None else []
             ),
@@ -64,7 +65,7 @@ def build_dashboard(db: Session):
         {
             "type": "Team",
             "id": team.name,
-            "location": f"/team/{team.id}",
+            "location": f"/teams/{team.id}",
             "tags": [f"Team ID: {team.id}"] if team.id is not None else [],
         }
         for team in teams
@@ -74,7 +75,7 @@ def build_dashboard(db: Session):
         {
             "type": "User",
             "id": user.name,
-            "location": f"/user/{user.id}",
+            "location": f"/users/{user.id}",
             "tags": (
                 [f"Team ID: {user.team_id}", f"User type: {user.user_type}"]
                 if user.team_id is not None

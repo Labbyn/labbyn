@@ -1,31 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { ApiUserInfo } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { users } from '@/lib/mock-data'
-import { PageIsLoading } from '@/components/page-is-loading'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
+import { usersQueryOptions } from '@/integrations/user/user.query'
 
 export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
 })
 
-export type User = (typeof users)[0]
-
-const fetchUsers = async (): Promise<Array<User>> => {
-  // Symulacja API
-  await new Promise((resolve) => setTimeout(resolve, 500))
-  return users
-}
-
-export const columns: Array<ColumnDef<User>> = [
-  {
-    accessorKey: 'id',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Id" />
-    },
-  },
+export const columns: Array<ColumnDef<ApiUserInfo>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -38,32 +24,44 @@ export const columns: Array<ColumnDef<User>> = [
     ),
   },
   {
-    accessorKey: 'team',
+    accessorKey: 'teams',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Team" />
+      return <DataTableColumnHeader column={column} title="Teams" />
+    },
+    cell: ({ row }) => {
+      const groupNames = row.original.assigned_groups
+        .map((g) => g.name)
+        .join(', ')
+
+      return <span>{groupNames}</span>
     },
   },
   {
-    accessorKey: 'role',
+    accessorKey: 'user_type',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Role" />
+      return <DataTableColumnHeader column={column} title="User type" />
     },
   },
 ]
 
 function RouteComponent() {
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: fetchUsers,
-  })
-
-  if (isLoading) return <PageIsLoading />
+  const { data: users } = useSuspenseQuery(usersQueryOptions)
+  const navigate = Route.useNavigate()
 
   return (
     <div className="h-screen w-full z-1 overflow-hidden">
       <ScrollArea className="h-full">
         <div className="p-6">
-          <DataTable columns={columns} data={users} />
+          <DataTable
+            columns={columns}
+            data={users}
+            onRowClick={(row) => {
+              navigate({
+                to: '/users/$userId',
+                params: { userId: String(row.id) },
+              })
+            }}
+          />
         </div>
       </ScrollArea>
     </div>

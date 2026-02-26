@@ -14,10 +14,6 @@ load_dotenv(".env/api.env")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
 PROMETHEUS_TARGETS_PATH = os.getenv("PROMETHEUS_TARGETS_PATH")
 
-_client = httpx.AsyncClient(
-    timeout=httpx.Timeout(5.0),
-    limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
-)
 DEFAULT_QUERIES = {
     "status": "up",
     "cpu_usage": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode='idle'}[5m])) * 100)",
@@ -46,14 +42,16 @@ async def _request(
     :param backoff_factor: Backoff factor for retries
     :return: Json response from Prometheus
     """
+
     for _ in range(retries):
         try:
-            response = await _client.get(url, params=params)
-            if 400 <= response.status_code < 500:
-                response.raise_for_status()
-            if response.status_code >= 500:
-                response.raise_for_status()
-            return response.json()
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                response = await client.get(url, params=params)
+                if 400 <= response.status_code < 500:
+                    response.raise_for_status()
+                if response.status_code >= 500:
+                    response.raise_for_status()
+                return response.json()
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
             if 400 <= status_code < 500:
@@ -75,6 +73,7 @@ async def _format_metrics_to_readable(item: dict):
     formatted_item = {
         "instance": metric.get("instance"),
         "job": metric.get("job"),
+        "mountpoint": metric.get("mountpoint"),
         "value": float(value[1]) if len(value) > 1 else None,
         "timestamp": float(value[0]) if len(value) > 0 else None,
     }
@@ -157,10 +156,3 @@ def add_prometheus_target(instance: str, labels: dict):
     except TargetSaveError as e:
         raise TargetSaveError(f"Failed to add target: {e}") from e
     return entry
-
-
-async def close_prometheus_client():
-    """
-    Close the HTTP client session.
-    """
-    await _client.aclose()

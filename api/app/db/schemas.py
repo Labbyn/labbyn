@@ -60,6 +60,38 @@ class VersionedBase(BaseModel):
 
 
 # ==========================
+#      TAGS SCHEMAS
+# ==========================
+
+
+class TagsBase(BaseModel):
+    name: str = Field(..., max_length=50, description="Unique name of the tag")
+    color: str = Field(..., max_length=50, description="Color hex or name")
+
+
+class TagsCreate(TagsBase):
+    """Used for creating a new tag in the system."""
+
+    pass
+
+
+class TagsUpdate(BaseModel):
+    """Used for updating tag metadata."""
+
+    name: Optional[str] = Field(None, max_length=50)
+    color: Optional[str] = Field(None, max_length=50)
+
+
+class TagsResponse(TagsBase):
+    """Standard tag response."""
+
+    id: int
+    version_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
 #          LAYOUT
 # ==========================
 
@@ -100,7 +132,7 @@ class LayoutResponse(LayoutBase):
 
 
 # ==========================
-#          ROOMS
+#       ROOMS(LABS)
 # ==========================
 
 
@@ -113,10 +145,15 @@ class RoomsBase(BaseModel):
     room_type: Optional[str] = Field(
         None, max_length=100, description="Type or classification of the room"
     )
+    team_id: Optional[int] = Field(None)
 
 
 class RoomsCreate(RoomsBase):
     """Schema for creating a new Room."""
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this room"
+    )
 
 
 class RoomsUpdate(BaseModel):
@@ -127,6 +164,7 @@ class RoomsUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=100)
     room_type: Optional[str] = Field(None, max_length=100)
+    tag_ids: Optional[List[int]] = Field(None)
 
 
 class RoomsResponse(RoomsBase):
@@ -136,6 +174,54 @@ class RoomsResponse(RoomsBase):
 
     id: int = Field(..., description="Unique identifier of the room")
     version_id: int
+    tags: List[TagsResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoomDashboardResponse(BaseModel):
+    """
+    Schema for displaying room information on the dashboard, including rack count and map link.
+    """
+
+    id: int
+    name: str
+    rack_count: int
+    map_link: Optional[str] = None
+
+
+class LabRackMachine(BaseModel):
+    """
+    Schema for displaying machine information within a rack section on the lab details view.
+    """
+
+    id: int
+    hostname: Optional[str]
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+
+
+class LabRackSection(BaseModel):
+    """
+    Schema for displaying rack information within a room on the lab details view, including its machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    machines: List[LabRackMachine]
+
+
+class RoomDetailsResponse(BaseModel):
+    """
+    Schema for displaying detailed room information on the lab details view, including its racks and machines.
+    """
+
+    id: int
+    name: str
+    tags: List[str]
+    map_link: Optional[str] = None
+    racks: List[LabRackSection]
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -277,9 +363,6 @@ class TeamsBase(BaseModel):
     """
 
     name: str = Field(..., max_length=100, description="Name of the team")
-    team_admin_id: int = Field(
-        ..., description="ID of the user who is the admin of this team"
-    )
 
 
 class TeamsCreate(TeamsBase):
@@ -292,7 +375,6 @@ class TeamsUpdate(BaseModel):
     """
 
     name: Optional[str] = None
-    team_admin_id: Optional[int] = None
 
 
 class TeamsResponse(TeamsBase):
@@ -305,9 +387,108 @@ class TeamsResponse(TeamsBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class TeamMemberSchema(BaseModel):
+    """
+    Schema for representing a team member in the context of team details.
+    """
+
+    id: int
+    full_name: str
+    login: str
+    email: str
+    user_type: str
+    is_group_admin: bool = False
+    user_link: str
+
+
+class TeamDetailResponse(BaseModel):
+    """
+    Schema for reading detailed Team information, including members and admin details.
+    """
+
+    id: int
+    name: str
+    admins: List[TeamMemberSchema] = Field(
+        default=[], description="List of admins in the team"
+    )
+    members: List[TeamMemberSchema] = Field(
+        default=[], description="List of members in the team"
+    )
+    member_count: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TeamRackDetail(BaseModel):
+    """
+    Schema for representing a rack in the context of team details.
+    """
+
+    name: str
+    team_name: str
+    tags: List[str]
+    map_link: str
+    machines_count: int
+
+
+class TeamMachineDetail(BaseModel):
+    """
+    Schema for representing a machine in the context of team details, including its location and identifiers.
+    """
+
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    team_name: str
+    rack_name: str
+    shelf_order: int
+    # TODO: add tags after CPU and Disk merge
+
+
+class TeamInventoryDetail(BaseModel):
+    """
+    Schema for representing an inventory item in the context of team details, including its location and rental status.
+    """
+
+    name: str
+    quantity: int
+    team_name: str
+    room_name: str
+    machine_info: Optional[str]
+    category_name: str
+    rental_status: bool
+    rental_id: Optional[int]
+    location_link: str
+
+
+class TeamFullDetailResponse(BaseModel):
+    """
+    Schema for reading full Team details, including members, racks, machines and inventory items associated with the team.
+    """
+
+    id: int
+    name: str
+    admins: List[Dict[str, str]] = Field(default=[], description="List of team admins")
+    racks: List[TeamRackDetail]
+    machines: List[TeamMachineDetail]
+    inventory: List[TeamInventoryDetail]
+
+
 # ==========================
 #          USER
 # ==========================
+
+
+class UserTeamMemebership(BaseModel):
+    """
+    Schema representing a user's membership in a team, used for displaying team info in user details.
+    """
+
+    team_id: int
+    team_name: str
+    is_group_admin: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
@@ -323,9 +504,6 @@ class UserBase(BaseModel):
     user_type: UserTypeEnum = Field(
         ..., max_length=50, description="User's role in the system"
     )
-    team_id: Optional[int] = Field(
-        None, description="ID of the team the user belongs to"
-    )
 
 
 class UserCreate(UserBase):
@@ -340,6 +518,9 @@ class UserCreate(UserBase):
         max_length=255,
         description="Optional manual password; if not provided, a random one will be generated",
     )
+    team_ids: Optional[List[int]] = Field(
+        default=[], description="List of team IDs to assign the user to upon creation"
+    )
 
 
 class UserUpdate(BaseModel):
@@ -350,7 +531,6 @@ class UserUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50)
     surname: Optional[str] = Field(None, max_length=80)
-    team_id: Optional[int] = None
     email: Optional[EmailStr] = None
     login: Optional[str] = Field(None, max_length=30)
     password: Optional[str] = Field(
@@ -359,6 +539,7 @@ class UserUpdate(BaseModel):
         max_length=255,
         description="New password if change is requested",
     )
+    team_ids: Optional[List[int]] = None
 
 
 class UserResponse(UserBase):
@@ -369,6 +550,9 @@ class UserResponse(UserBase):
 
     id: int
     version_id: int
+    membership: List[UserTeamMemebership] = Field(
+        default=[], description="User's memberships"
+    )
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -378,9 +562,57 @@ class UserCreatedResponse(UserResponse):
     INCLUDES the generated password.
     """
 
+    model_config = ConfigDict(from_attributes=True)
     generated_password: Optional[str] = Field(
         None, description="Generated password if one was created"
     )
+
+
+class UserGroupInfo(BaseModel):
+    """
+    Model representing a simplified group/team information.
+    Used to provide group names in user-related responses.
+    """
+
+    name: str = Field(..., description="Name of the team/group")
+
+
+class UserInfo(BaseModel):
+    """
+    Basic user information for display purposes.
+    Includes identity, role and assigned groups.
+    """
+
+    id: int
+    name: str = Field(..., description="User's first name")
+    surname: str = Field(..., description="User's last name")
+    login: str = Field(..., description="Unique login username")
+    user_type: UserType = Field(..., description="User's role and permissions level")
+    membership: List[UserTeamMemebership] = Field(
+        default=[], description="Detailed team memberships"
+    )
+
+
+class UserInfoExtended(UserInfo):
+    """
+    Extended user profile information for detailed views.
+    Includes avatar, contact details and group links.
+    """
+
+    avatar_url: Optional[str] = None
+    email: EmailStr
+    group_links: List[str] = Field(
+        default=[], description="Links to the assigned groups details"
+    )
+
+
+class UserTeamRoleUpdate(BaseModel):
+    """
+    Update schema for modifying a user's role within a specific team.
+    """
+
+    team_id: int
+    is_group_admin: bool
 
 
 # ==========================
@@ -397,7 +629,7 @@ class UserRead(schemas.BaseUser[int]):
     name: str
     surname: str
     login: str
-    team_id: Optional[int]
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
     user_type: UserTypeEnum
     force_password_change: bool
     version_id: int
@@ -414,9 +646,9 @@ class UserCreate(schemas.BaseUserCreate):
     name: str = Field(..., max_length=50)
     surname: str = Field(..., max_length=80)
     login: str = Field(..., max_length=30)
-    team_id: Optional[int] = None
     user_type: UserTypeEnum = UserTypeEnum.USER
     password: Optional[str] = Field(None, min_length=6, max_length=255)
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
 
 
 class UserUpdate(schemas.BaseUserUpdate):
@@ -427,8 +659,86 @@ class UserUpdate(schemas.BaseUserUpdate):
 
     name: Optional[str] = None
     surname: Optional[str] = None
-    team_id: Optional[int] = None
+    team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
     login: Optional[str] = None
+
+
+# ==========================
+#          CPU & DISKS
+# ==========================
+
+
+class CPUBase(BaseModel):
+    """
+    Base model for CPUs.
+    """
+
+    name: str
+
+
+class CPUCreate(CPUBase):
+    """
+    Schema for creating CPUs.
+    """
+
+    machine_id: int
+
+
+class CPUUpdate(CPUBase):
+    """
+    Schema for updating CPUs.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="CPU naming")
+
+
+class CPUResponse(CPUBase):
+    """
+    Schema for reading cpus.
+    """
+
+    id: int
+    name: str
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DisksBase(BaseModel):
+    """
+    Base model for Disks.
+    """
+
+    name: str
+    capacity: Optional[str]
+
+
+class DiskCreate(DisksBase):
+    """
+    Schema for creating disks.
+    """
+
+    machine_id: int
+
+
+class DiskUpdate(DisksBase):
+    """
+    Schema for updating disks.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="Disk naming")
+    capacity: Optional[str] = Field(None, max_length=50, description="Disk capacity")
+
+
+class DiskResponse(DisksBase):
+    """
+    Schema for reading disks.
+    """
+
+    id: int
+    name: str
+    capacity: Optional[str]
+    machine_id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==========================
@@ -458,13 +768,13 @@ class MachinesBase(BaseModel):
         None, max_length=50, description="Hardware serial number"
     )
     note: Optional[str] = Field(None, max_length=500, description="Optional notes")
-    cpu: Optional[str] = Field(None, max_length=100, description="CPU specification")
+    cpus: Optional[List[CPUBase]] = Field(default=[], description="CPU specification")
     ram: Optional[str] = Field(None, max_length=100, description="RAM specification")
-    disk: Optional[str] = Field(
-        None, max_length=100, description="Disk/Storage specification"
+    disks: Optional[List[DisksBase]] = Field(
+        default=[], description="Disk/Storage specification"
     )
     metadata_id: int = Field(..., description="ID of associated metadata record")
-    layout_id: Optional[int] = Field(
+    shelf_id: Optional[int] = Field(
         None, description="ID of layout coordinates if applicable"
     )
 
@@ -496,7 +806,7 @@ class MachinesUpdate(BaseModel):
     cpu: Optional[str] = Field(None, max_length=100)
     ram: Optional[str] = Field(None, max_length=100)
     disk: Optional[str] = Field(None, max_length=100)
-    layout_id: Optional[int] = None
+    shelf_id: Optional[int] = None
     metadata_id: Optional[int] = None
 
 
@@ -509,6 +819,67 @@ class MachinesResponse(MachinesBase):
     added_on: datetime
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+    cpus: List[CPUResponse]
+    disks: List[DiskResponse]
+
+
+class MachineInRackResponse(BaseModel):
+    """
+    Schema for reading Machine data within a Rack context.
+    Includes shelf information.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    team_id: Optional[int]
+    machine_url: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MachineFullDetailResponse(BaseModel):
+    """
+    Complete machine detail schema combining database records
+    with live Prometheus metrics.
+    """
+
+    id: int
+    name: str
+    ip_address: Optional[str]
+    mac_address: Optional[str]
+    os: Optional[str]
+    cpus: List[CPUResponse] = []
+    ram_info: Optional[str] = Field(None, alias="ram")
+    disks: List[DiskResponse] = []
+    serial_number: Optional[str]
+    note: Optional[str]
+    pdu_port: Optional[int]
+    added_on: datetime
+
+    team_name: str
+    rack_name: Optional[str]
+    room_name: str
+
+    last_update: Optional[date]
+    monitoring: bool
+    ansible_access: bool
+    ansible_root_access: Optional[bool]
+
+    tags: List[TagsResponse]
+    network_status: str = "Unknown"
+    prometheus_live_stats: Dict[str, Any] = {
+        "cpu_usage": None,
+        "ram_usage": None,
+        "disks": [],
+    }
+
+    # TODO: nav links (grafana, map - not implemented)
+    grafana_link: str
+    rack_link: str
+    map_link: str
+
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 # ==========================
@@ -524,7 +895,7 @@ class RentalsBase(BaseModel):
     item_id: int = Field(..., description="ID of the inventory item being rented")
     start_date: date = Field(..., description="Start date of the rental")
     end_date: date = Field(..., description="End date of the rental")
-    user_id: int = Field(..., description="ID of the user renting the item")
+    quantity: int = Field(..., ge=1, description="Number of items to rent")
 
 
 class RentalsCreate(RentalsBase):
@@ -550,6 +921,22 @@ class RentalsResponse(RentalsBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class RentalInfo(BaseModel):
+    id: int
+    borrower_name: str
+    borrower_team: str
+    quantity: int
+    end_date: date
+
+
+class RentalReturn(BaseModel):
+    quantity: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Quantity being returned; if not provided, assumes full return",
+    )
 
 
 # ==========================
@@ -607,6 +994,21 @@ class InventoryResponse(InventoryBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class InventoryDetailResponse(BaseModel):
+    id: int
+    name: str
+    total_quantity: int
+    in_stock_quantity: int
+    team_name: str
+    room_name: str
+    machine_info: Optional[str]
+    category_name: str
+    location_link: str
+    active_rentals: List[RentalInfo] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 # ==========================
 #          HISTORY
 # ==========================
@@ -656,7 +1058,7 @@ class HistoryResponse(HistoryBase):
 
 
 # ==========================
-#       DASHBOARD MODELS
+#    DASHBOARD MODELS
 # ==========================
 
 
@@ -674,31 +1076,6 @@ class DashboardSection(BaseModel):
 
 class DashboardResponse(BaseModel):
     sections: List[DashboardSection]
-
-
-# ==========================
-#       LABS FRONTEND MODELS
-# ==========================
-
-
-class LabsItem(BaseModel):
-    device_id: str
-    hostname: Optional[str] = None
-    ip_address: Optional[str] = None
-    mac_address: Optional[str] = None
-
-
-class LabsSection(BaseModel):
-    id: str
-    tags: List[str]
-    machines: List[LabsItem]
-
-
-class LabsResponse(BaseModel):
-    id: int
-    name: str
-    location: str
-    racks: List[LabsSection]
 
 
 # ==========================
@@ -729,3 +1106,175 @@ class HistoryEnhancedResponse(HistoryResponse):
     user: Optional[UserShortResponse] = Field(
         None, description="User who performed the action"
     )
+
+
+# ==========================
+#       AUTH SCHEMAS
+# ==========================
+
+
+class FirstChangePasswordRequest(BaseModel):
+    """
+    Schema for the first-time password setup.
+    """
+
+    new_password: str = Field(..., min_length=6, max_length=255)
+
+
+# ==========================
+#   DOCUMENTATION SCHEMAS
+# ==========================
+
+
+class DocumentationBase(BaseModel):
+    """
+    Base model containing all shared attributes from the DB.
+    """
+
+    title: str = Field(
+        ..., max_length=50, description="Unique title of the documentation"
+    )
+    added_on: datetime = Field(default_factory=datetime.now)
+    modified_on: Optional[datetime] = None
+    content: str = Field(..., max_length=5000, description="Documentation content")
+
+
+class DocumentationCreate(DocumentationBase):
+    """
+    When creating documentation, you usually pass a list of tag IDs
+    to link them in the association table.
+    """
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs"
+    )
+
+
+class DocumentationUpdate(BaseModel):
+    title: Optional[str] = Field(None, max_length=50)
+    content: Optional[str] = Field(
+        None, max_length=5000, description="Documentation content"
+    )
+    modified_on: datetime = Field(default_factory=datetime.now)
+    tag_ids: Optional[List[int]] = None
+
+
+class DocumentationResponse(DocumentationBase):
+    id: int
+    author: str
+    added_on: datetime
+    modified_on: Optional[datetime]
+    version_id: int
+
+    tags: List[TagsResponse] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ==========================
+#      RACKS & SHELVES
+# ==========================
+
+
+class ShelfBase(BaseModel):
+    """
+    Base model for Shelf containing shared attributes.
+    Represents a shelf within a rack, which can hold machines or inventory.
+    """
+
+    name: str = Field(..., max_length=100, description="Name of the shelf")
+    order: int = Field(..., description="Order of the shelf within the rack")
+
+
+class ShelfCreate(ShelfBase):
+    """Schema for creating a new Shelf."""
+
+    pass
+
+
+class ShelfUpdate(BaseModel):
+    """
+    Schema for updating an existing Shelf.
+    All fields are optional to allow partial updates.
+    """
+
+    name: Optional[str] = Field(None, max_length=100)
+    order: Optional[int] = None
+    rack_id: Optional[int] = None
+
+
+class ShelfResponse(BaseModel):
+    """
+    Schema for reading Shelf data (Response).
+    Includes the database ID.
+    """
+
+    id: int = Field(..., description="Unique identifier of the shelf")
+    name: Optional[str] = Field(None, max_length=100, description="Name of the shelf")
+    order: int = Field(None, description="Order of the shelf within the rack")
+    rack_id: int = Field(..., description="Unique identifier of the rack")
+    rack_name: Optional[str] = Field(None, description="Name of the rack")
+    machines: List[MachineInRackResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RackBase(BaseModel):
+    """
+    Base model for Rack containing shared attributes.
+    Represents a rack that can contain multiple shelves.
+    """
+
+    name: str = Field(..., max_length=100, description="Name of the rack")
+    room_id: int = Field(..., description="Location of the rack")
+    layout_id: Optional[int] = Field(
+        None, description="ID of the layout coordinates for this rack"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team that owns this rack (if applicable)"
+    )
+
+
+class RackCreate(RackBase):
+    """Schema for creating a new Rack."""
+
+    tag_ids: Optional[List[int]] = Field(
+        default=[], description="List of existing Tag IDs to associate with this rack"
+    )
+
+
+class RackUpdate(BaseModel):
+    """
+    Schema for updating an existing Rack.
+    All fields are optional to allow partial updates.
+    """
+
+    name: Optional[str] = Field(None, max_length=100, description="Name of the rack")
+    room_id: Optional[int] = Field(None, description="Location of the rack")
+    layout_id: Optional[int] = Field(
+        None, description="ID of the layout coordinates for this rack"
+    )
+    team_id: Optional[int] = Field(
+        None, description="ID of the team that owns this rack (if applicable)"
+    )
+
+
+class RackResponse(RackBase):
+    """
+    Schema for reading Rack data (Response).
+    Includes the database ID and nested shelves.
+    """
+
+    id: int = Field(..., description="Unique identifier of the rack")
+    room_name: Optional[str]
+    team_name: Optional[str]
+    tags: List[TagsResponse] = []
+    shelves: List[ShelfResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RackWithOrderedMachinesResponse(RackBase):
+    id: int = Field(..., description="Unique identifier of the rack")
+    team_name: Optional[str]
+    tags: List[TagsResponse] = []
+    machines: List[List[MachineInRackResponse]] = [[]]
+    link: str

@@ -18,7 +18,12 @@ import {
 import { DataTableColumnHeader } from '../data-table/column-header'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
-import { userQueryOptions } from '@/integrations/user/user.query'
+import type { UserCreate } from '@/integrations/user/user.types'
+import { adminUsersQueryOptions } from '@/integrations/user/user.query'
+import {
+  useCreateUserMutation,
+  useDeleteUserMutation,
+} from '@/integrations/user/user.mutation'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
 
@@ -86,6 +91,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
     id: 'actions',
     cell: ({ row }) => {
       const user = row.original
+      const deleteMutation = useDeleteUserMutation()
 
       return (
         <DropdownMenu>
@@ -98,11 +104,13 @@ export const columns: Array<ColumnDef<UserItem>> = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {/* @todo implement user editing dialog*/}
 
             <DropdownMenuItem onClick={() => console.log('Edit user', user.id)}>
               Edit User
             </DropdownMenuItem>
 
+            {/* @todo implement password reset*/}
             <DropdownMenuItem
               onClick={() => console.log('Reset password', user.email)}
             >
@@ -111,7 +119,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
 
             <DropdownMenuItem
               className="text-destructive"
-              onClick={() => console.log('Delete user', user.id)}
+              onClick={() => deleteMutation.mutate(user.id)}
             >
               Delete User
             </DropdownMenuItem>
@@ -123,22 +131,25 @@ export const columns: Array<ColumnDef<UserItem>> = [
 ]
 
 export default function UserAdminPanel() {
-  const { data: users = [], isLoading } = useQuery(userQueryOptions)
+  const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  const newUserTemplate = {
+  const createUser = useCreateUserMutation()
+
+  const newUserTemplate: UserCreate = {
     name: '',
     surname: '',
-    login: null,
+    login: '',
     email: '',
-    team_id: null as number | null,
-    user_type: 'USER' as const,
+    team_id: null,
+    user_type: 'user',
     password: '',
   }
 
-  const handleCreateUser = (data: typeof newUserTemplate) => {
-    console.log('Saving new user:', data)
-    setIsDialogOpen(false)
+  const handleCreateUser = (data: UserCreate) => {
+    createUser.mutate(data, {
+      onSuccess: () => setIsDialogOpen(false),
+    })
   }
 
   if (isLoading) return <PageIsLoading />
