@@ -26,24 +26,47 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     ),
   },
   {
-    accessorKey: 'teams',
+    accessorKey: 'surname',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Teams" />
+      return <DataTableColumnHeader column={column} title="Surname" />
     },
-    cell: ({ row }) => {
-      const groupNames = row.original.assigned_groups
-        .map((g) => g.name)
-        .join(', ')
-
-      return <span>{groupNames}</span>
-    },
+    cell: ({ row }) => (
+      <span>
+        {row.getValue('surname')} {row.original.surname}
+      </span>
+    ),
   },
   {
+    accessorKey: 'login',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Login" />
+    },
+    cell: ({ row }) => (
+      <span>
+        {row.getValue('login')} {row.original.surname}
+      </span>
+    ),
+  },
+    {
     accessorKey: 'user_type',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="User type" />
     },
   },
+  {
+    accessorKey: 'membership',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Teams" />
+    },
+    cell: ({ row }) => {
+      const groupNames = row.original.membership
+        .map((g) => g.team_name)
+        .join(', ')
+
+      return <span>{groupNames}</span>
+    },
+  },
+
 ]
 
 function RouteComponent() {
