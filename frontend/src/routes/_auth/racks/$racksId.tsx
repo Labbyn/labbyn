@@ -60,7 +60,6 @@ function RacksDetailsPage() {
       ),
     },
   ]
-  console.log(formData)
 
   return (
     <SubPageTemplate
@@ -114,15 +113,17 @@ function RacksDetailsPage() {
                     </span>
                     {isEditing ? (
                       field.name === 'tags' ? (
-                        <span className="text-sm italic text-muted-foreground">
-                          Tag editing requires a custom selector
-                        </span>
+                        <TagList tags={fieldValue} type="edit" />
                       ) : (
                         <InputChecklist
-                          subpageItem={teams}
-                          inputChangeTarget="team_name"
-                          formData={formData}
-                          setFormData={setFormData}
+                          items={teams}
+                          value={formData.team_name}
+                          onChange={(newTeamName) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              team_name: newTeamName,
+                            }))
+                          }
                         />
                       )
                     ) : field.name === 'tags' ? (

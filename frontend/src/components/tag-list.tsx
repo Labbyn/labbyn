@@ -1,7 +1,10 @@
+import { Plus, X } from 'lucide-react'
 import type { ApiTagsResponse } from '@/integrations/tags/tags.types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { AddTagDialog } from '@/components/add-tag-dialog'
 
-const colorMap = {
+export const colorMap = {
   red: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
   purple:
     'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
@@ -10,18 +13,32 @@ const colorMap = {
   blue: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
 }
 
-export function TagList({ tags }: ApiTagsResponse) {
+export function TagList({ tags, type }: ApiTagsResponse) {
   if (!Array.isArray(tags) || tags.length === 0) {
     return <span className="text-sm text-muted-foreground">No tags</span>
+  } else if (type == 'edit') {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <Badge key={tag.id} className={colorMap[tag.color]}>
+            {tag.name}
+            <X className="h-5 w-5" />
+          </Badge>
+        ))}
+        <Button variant="ghost" size="icon">
+          <AddTagDialog />
+        </Button>
+      </div>
+    )
+  } else {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {tags.map((tag) => (
+          <Badge key={tag.id} className={colorMap[tag.color]}>
+            {tag.name}
+          </Badge>
+        ))}
+      </div>
+    )
   }
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {tags.map((tag) => (
-        <Badge key={tag.id} className={colorMap[tag.color]}>
-          {tag.name}
-        </Badge>
-      ))}
-    </div>
-  )
 }
