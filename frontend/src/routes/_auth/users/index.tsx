@@ -47,7 +47,7 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
       </span>
     ),
   },
-    {
+  {
     accessorKey: 'user_type',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="User type" />
@@ -66,7 +66,6 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
       return <span>{groupNames}</span>
     },
   },
-
 ]
 
 function RouteComponent() {

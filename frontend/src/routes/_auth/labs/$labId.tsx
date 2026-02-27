@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { Separator } from '@/components/ui/separator'
+import { TagList } from '@/components/tag-list'
 
 type RackItem = ApiLabsItem['racks'][number]
 
@@ -50,17 +51,8 @@ export const columns: Array<ColumnDef<RackItem>> = [
     ),
     cell: ({ row }) => {
       const tags = row.getValue<Array<string>>('tags')
-      if (!tags.length) return <span className="text-muted-foreground">-</span>
 
-      return (
-        <div className="flex gap-1 flex-wrap">
-          {tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      )
+      return <TagList tags={tags} />
     },
   },
 ]

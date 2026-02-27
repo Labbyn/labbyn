@@ -208,7 +208,7 @@ class LabRackSection(BaseModel):
 
     id: int
     name: str
-    tags: List[str]
+    tags: List[TagsBase]
     machines: List[LabRackMachine]
 
 
@@ -425,9 +425,10 @@ class TeamRackDetail(BaseModel):
     Schema for representing a rack in the context of team details.
     """
 
+    id: int
     name: str
     team_name: str
-    tags: List[str]
+    tags: List[TagsBase]
     map_link: str
     machines_count: int
 
@@ -437,12 +438,14 @@ class TeamMachineDetail(BaseModel):
     Schema for representing a machine in the context of team details, including its location and identifiers.
     """
 
+    id: int
     name: str
     ip_address: Optional[str]
     mac_address: Optional[str]
     team_name: str
     rack_name: str
     shelf_order: int
+    tags: List[TagsBase]
     # TODO: add tags after CPU and Disk merge
 
 
@@ -451,6 +454,7 @@ class TeamInventoryDetail(BaseModel):
     Schema for representing an inventory item in the context of team details, including its location and rental status.
     """
 
+    id: int
     name: str
     quantity: int
     team_name: str
@@ -470,6 +474,9 @@ class TeamFullDetailResponse(BaseModel):
     id: int
     name: str
     admins: List[Dict[str, str]] = Field(default=[], description="List of team admins")
+    members: List[TeamMemberSchema] = Field(
+        default=[], description="List of members in the team"
+    )
     racks: List[TeamRackDetail]
     machines: List[TeamMachineDetail]
     inventory: List[TeamInventoryDetail]

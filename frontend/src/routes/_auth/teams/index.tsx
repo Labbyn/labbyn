@@ -6,7 +6,7 @@ import type { ApiTeamInfo } from '@/integrations/teams/teams.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { teamsInfoQueryOptions } from '@/integrations/teams/teams.query'
 import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/teams/')({
@@ -22,11 +22,24 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
     cell: ({ row }) => <span>{row.getValue('name')}</span>,
   },
   {
-    accessorKey: 'admin',
+    accessorKey: 'admins',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Administrator" />
     },
-    cell: ({ row }) => <span>{row.original.team_admin_name}</span>,
+    cell: ({ row }) => {
+      const admins = row.getValue<Array<any>>('admins')
+
+      if (!admins.length)
+        return <span className="text-muted-foreground">-</span>
+
+      return (
+        <div className="flex gap-1 flex-wrap">
+          {admins.map((admin, index) => (
+            <span key={index}>{admin.full_name}</span>
+          ))}
+        </div>
+      )
+    },
   },
   {
     accessorKey: 'memberCount',
@@ -38,7 +51,7 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
 ]
 
 function RouteComponent() {
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(teamsInfoQueryOptions)
   const navigate = Route.useNavigate()
 
   return (

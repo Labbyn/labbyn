@@ -94,11 +94,13 @@ function RacksDetailsPage() {
         <>
           {/* Rack Info */}
           <Card className="md:col-span-3 pt-0">
-            <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-              <h2 className="font-semibold text-lg flex items-center gap-2">
-                <Info className="h-5 w-5 text-primary" /> Rack inforamtions
-              </h2>
-            </div>
+            <CardHeader className="px-6 py-4 border-b bg-muted/30">
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5 text-muted-foreground text-primary" />
+                Rack informations
+              </CardTitle>
+              <CardDescription>General rack informations</CardDescription>
+            </CardHeader>
 
             <CardContent className="grid gap-6 sm:grid-cols-2">
               {[
@@ -139,15 +141,19 @@ function RacksDetailsPage() {
             </CardContent>
           </Card>
           {/* Machines Section */}
-          <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-              <h2 className="font-semibold text-lg flex items-center gap-2">
-                <Cpu className="h-5 w-5 text-primary" /> Machines & Platforms
-              </h2>
-              <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                {rack.machines.length} Total
-              </span>
-            </div>
+          <Card className="pt-0">
+            <CardHeader className="px-6 py-4 border-b bg-muted/30">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Cpu className="h-5 w-5 text-muted-foreground text-primary" />
+                  Machines
+                </CardTitle>
+                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                  {rack.machines.length} Total
+                </span>
+              </div>
+              <CardDescription>Rack machines in order</CardDescription>
+            </CardHeader>
             <div className="p-1">
               {isEditing ? (
                 <DndTable
@@ -160,7 +166,7 @@ function RacksDetailsPage() {
                 <DataTable columns={columnsMachines} data={flatMachines} />
               )}
             </div>
-          </section>
+          </Card>
         </>
       }
     />

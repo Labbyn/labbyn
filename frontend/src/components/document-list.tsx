@@ -1,4 +1,4 @@
-import { BookText, Plus, Trash2  } from 'lucide-react'
+import { BookText, Plus, Trash2 } from 'lucide-react'
 import { DataTable } from './ui/data-table'
 import { DataTableColumnHeader } from './data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'

@@ -30,11 +30,28 @@ export const teamsQueryOptions = queryOptions({
   },
 })
 
+export const teamsInfoQueryOptions = queryOptions({
+  queryKey: ['teams', 'info'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiTeamInfoResponse>(PATHS.INFO)
+    return data
+  },
+})
+
 export const singleTeamQueryOptions = (teamId: string | number) =>
   queryOptions({
     queryKey: ['teams', String(teamId)],
     queryFn: async () => {
       const { data } = await api.get<ApiTeamInfo>(PATHS.SINGLE(teamId))
+      return data
+    },
+  })
+
+export const singleTeamInfoQueryOptions = (teamId: string | number) =>
+  queryOptions({
+    queryKey: ['teams', 'info', String(teamId)],
+    queryFn: async () => {
+      const { data } = await api.get<ApiTeamInfo>(PATHS.SINGLE_INFO(teamId))
       return data
     },
   })

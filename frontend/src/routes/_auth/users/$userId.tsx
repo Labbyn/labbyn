@@ -48,24 +48,23 @@ function InventoryDetailsPage() {
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
-          
           {/* Main User Card with Avatar */}
-          <Card className="md:col-span-2">
-            <CardHeader>
+          <Card className="md:col-span-2 pt-0">
+            <CardHeader className="px-6 py-4 border-b bg-muted/30">
               <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                Profile Information
+                <ClipboardList className="h-5 w-5 text-muted-foreground text-primary" />
+                User informations
               </CardTitle>
-              <CardDescription>General account and contact details</CardDescription>
+              <CardDescription>General user information</CardDescription>
             </CardHeader>
-            <Separator />
             <CardContent className="pt-6 flex flex-col sm:flex-row gap-8">
               {/* Avatar Section */}
               <div className="flex flex-col items-center space-y-3">
                 <Avatar className="h-32 w-32 border-4 border-muted shadow-sm">
                   <AvatarImage src={user.avatar_url} alt={user.name} />
                   <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
-                    {user.name.charAt(0)}{user.surname.charAt(0)}
+                    {user.name.charAt(0)}
+                    {user.surname.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
               </div>
@@ -77,7 +76,11 @@ function InventoryDetailsPage() {
                   { label: 'Name', value: user.name, icon: Contact },
                   { label: 'Surname', value: user.surname, icon: Contact },
                   { label: 'Login', value: user.login, icon: FileUser },
-                  { label: 'User type', value: user.user_type, icon: UserSearch },
+                  {
+                    label: 'User type',
+                    value: user.user_type,
+                    icon: UserSearch,
+                  },
                 ].map((field) => (
                   <div key={field.label} className="grid gap-1">
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -91,15 +94,14 @@ function InventoryDetailsPage() {
           </Card>
 
           {/* Teams Card with Integrated Links */}
-          <Card>
-            <CardHeader>
+          <Card className="pt-0">
+            <CardHeader className="px-6 py-4 border-b bg-muted/30">
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-muted-foreground" />
+                <Users className="h-5 w-5 text-muted-foreground text-primary" />
                 Team Memberships
               </CardTitle>
               <CardDescription>Manage and view team access</CardDescription>
             </CardHeader>
-            <Separator />
             <CardContent className="pt-6 space-y-3">
               {user.membership.length > 0 ? (
                 user.membership.map((group, index) => (
@@ -109,7 +111,9 @@ function InventoryDetailsPage() {
                     className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
                   >
                     <div className="flex flex-col gap-1">
-                      <span className="font-bold text-sm">{group.team_name}</span>
+                      <span className="font-bold text-sm">
+                        {group.team_name}
+                      </span>
                       {group.is_group_admin && (
                         <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded w-fit font-bold uppercase">
                           Team Admin
@@ -121,12 +125,13 @@ function InventoryDetailsPage() {
                 ))
               ) : (
                 <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                   <p className="text-sm text-muted-foreground italic">No assigned teams</p>
+                  <p className="text-sm text-muted-foreground italic">
+                    No assigned teams
+                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
-
         </div>
       </div>
     </div>
