@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Users } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiTeamInfo } from '@/integrations/teams/teams.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/teams/')({
   component: RouteComponent,
@@ -40,7 +42,8 @@ function RouteComponent() {
   const navigate = Route.useNavigate()
 
   return (
-    <div className="h-screen w-full z-1 overflow-hidden">
+    <div className="p-6 space-y-6">
+      <PageHeader title="Teams" description="Groups and members" icon={Users} />
       <ScrollArea className="h-full">
         <div className="p-6">
           <DataTable
