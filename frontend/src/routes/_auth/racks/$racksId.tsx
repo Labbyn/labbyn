@@ -60,6 +60,7 @@ function RacksDetailsPage() {
       ),
     },
   ]
+  console.log(formData)
 
   return (
     <SubPageTemplate
@@ -148,7 +149,12 @@ function RacksDetailsPage() {
             </div>
             <div className="p-1">
               {isEditing ? (
-                <DndTable dbItems={rack.machines} />
+                <DndTable
+                  dbItems={rack.machines}
+                  onReorder={(newMachines) => {
+                    setFormData((prev) => ({ ...prev, machines: newMachines }))
+                  }}
+                />
               ) : (
                 <DataTable columns={columnsMachines} data={flatMachines} />
               )}

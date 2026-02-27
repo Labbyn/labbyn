@@ -16,7 +16,7 @@ import {
 
 import { SortableItem } from './sortable-item'
 
-export function DndTable({ dbItems }) {
+export function DndTable({ dbItems, onReorder }) {
   const [items, setItems] = useState(dbItems)
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -45,12 +45,14 @@ export function DndTable({ dbItems }) {
     const { active, over } = event
     // we have a 2D array of machines representing shelfs
     if (active.id !== over.id) {
-      setItems((shelf) => {
-        const oldIndex = shelf.findIndex((item) => item[0].id === active.id)
-        const newIndex = shelf.findIndex((item) => item[0].id === over.id)
+      const oldIndex = items.findIndex((item) => item[0].id === active.id)
+      const newIndex = items.findIndex((item) => item[0].id === over.id)
 
-        return arrayMove(items, oldIndex, newIndex)
-      })
+      const result = arrayMove(items, oldIndex, newIndex)
+      setItems(result)
+      onReorder(result)
+
+      return result
     }
   }
 }
