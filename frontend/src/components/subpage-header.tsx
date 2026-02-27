@@ -2,6 +2,9 @@ import { ArrowLeft, Check, Edit2, X } from 'lucide-react'
 import { Separator } from './ui/separator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ButtonGroup } from '@/components/ui/button-group'
+import { DeleteAlertDialog } from '@/components/delete-alert-dialog'
+import { useRouter } from '@tanstack/react-router'
 
 export function SubpageHeader({
   title,
@@ -11,7 +14,9 @@ export function SubpageHeader({
   onSave,
   onCancel,
   onStartEdit,
+  onDelete
 }) {
+  const router = useRouter()
   return (
     <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur z-10">
       <Button onClick={() => router.history.back()} variant="ghost" size="icon">
@@ -32,17 +37,22 @@ export function SubpageHeader({
 
       <div className="flex gap-2">
         {!isEditing ? (
-          <Button onClick={onStartEdit} variant="outline" size="sm">
+          <>
+          <Button onClick={onStartEdit} variant="secondary" size="sm">
             <Edit2 className="mr-2 h-4 w-4" /> Edit
           </Button>
+          <DeleteAlertDialog onDelete={onDelete} />
+          </>
         ) : (
           <>
-            <Button onClick={onCancel} variant="ghost" size="sm">
+          <ButtonGroup>
+            <Button onClick={onCancel} variant="secondary" size="sm">
               <X className="mr-2 h-4 w-4" /> Cancel
             </Button>
             <Button onClick={onSave} variant="default" size="sm">
               <Check className="mr-2 h-4 w-4" /> Save
             </Button>
+            </ButtonGroup>
           </>
         )}
       </div>

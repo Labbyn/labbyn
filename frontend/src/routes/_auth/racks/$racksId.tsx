@@ -22,6 +22,7 @@ import { SubpageHeader } from '@/components/subpage-header'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { InputChecklist } from '@/components/input-checklist'
 import { SubPageTemplate } from '@/components/subpage-template'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -77,6 +78,16 @@ function RacksDetailsPage() {
           setIsEditing(false)
         },
         onStartEdit: () => setIsEditing(true),
+        onDelete: () =>
+          deleteRack.mutate({
+            onSuccess: () => {
+              toast.success('Rack deleted successfully')
+              router.history.back()
+            },
+            onError: (error: Error) => {
+            toast.error('Operation failed', { description: error.message })
+    },
+          })
       }}
       content={
         <>
@@ -135,7 +146,12 @@ function RacksDetailsPage() {
               </span>
             </div>
             <div className="p-1">
-              <DataTable columns={columnsMachines} data={flatMachines} />
+              {isEditing ? (
+                  <span>wip</span>
+                ) : (
+                    <DataTable columns={columnsMachines} data={flatMachines} />
+                )}
+              
             </div>
           </section>
         </>

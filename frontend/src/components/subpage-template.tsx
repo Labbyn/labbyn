@@ -11,6 +11,7 @@ interface SubPageProps {
     onSave: () => void
     onCancel: () => void
     onStartEdit: () => void
+    onDelete: () => void
   }
   content: React.ReactNode
 }
