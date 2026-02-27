@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge'
 import type { ApiTagsResponse } from '@/integrations/tags/tags.types'
+import { Badge } from '@/components/ui/badge'
 
 const colorMap = {
   red: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',

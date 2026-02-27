@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, Box, Cpu, Server, Users, Info } from 'lucide-react'
+import { ArrowLeft, Box, Cpu, Info, Server, Users } from 'lucide-react'
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,12 +16,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/tag-list'
 import { SubpageHeader } from '@/components/subpage-header'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { InputChecklist } from '@/components/input-checklist'
+import { SubPageTemplate } from '@/components/subpage-template'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -33,20 +34,6 @@ function RacksDetailsPage() {
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...rack })
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSave = () => {
-    updateRack.mutate(formData, {
-      onSuccess: () => setIsEditing(false),
-    })
-    setIsEditing(false)
-  }
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For now based on requierments we don't need to specify shelf
@@ -73,18 +60,26 @@ function RacksDetailsPage() {
   ]
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
-      <SubpageHeader
-        subpageItem={rack}
-        isEditing={isEditing}
-        setIsEditing={setIsEditing}
-        formData={formData}
-        setFormData={setFormData}
-        handleInputChange={handleInputChange}
-        handleSave={handleSave}
-      />
-      <ScrollArea className="h-full bg-slate-50/50 dark:bg-zinc-950/50">
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+    <SubPageTemplate
+      headerProps={{
+        title: rack.name,
+        isEditing: isEditing,
+        editValue: formData.name,
+        onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),
+        onSave: () => {
+          updateRack.mutate(formData, {
+            onSuccess: () => setIsEditing(false),
+          })
+          setIsEditing(false)
+        },
+        onCancel: () => {
+          setFormData({ ...rack })
+          setIsEditing(false)
+        },
+        onStartEdit: () => setIsEditing(true),
+      }}
+      content={
+        <>
           {/* Rack Info */}
           <Card className="md:col-span-3 pt-0">
             <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
@@ -143,8 +138,8 @@ function RacksDetailsPage() {
               <DataTable columns={columnsMachines} data={flatMachines} />
             </div>
           </section>
-        </div>
-      </ScrollArea>
-    </div>
+        </>
+      }
+    />
   )
 }

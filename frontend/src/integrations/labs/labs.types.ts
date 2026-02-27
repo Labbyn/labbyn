@@ -1,4 +1,4 @@
-import { ApiTagsItem } from '@/integrations/tags/tags.types'
+import type { ApiTagsItem } from '@/integrations/tags/tags.types'
 
 export interface ApiLabsItem {
   id: number

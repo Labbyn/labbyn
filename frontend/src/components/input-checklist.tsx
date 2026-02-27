@@ -1,13 +1,13 @@
+import { Check, ChevronsUpDown } from 'lucide-react'
+import { Button } from './ui/button'
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverDescription,
   PopoverHeader,
   PopoverTitle,
-  PopoverDescription,
+  PopoverTrigger,
 } from '@/components/ui/popover'
-import { Button } from './ui/button'
-import { ChevronsUpDown, Check } from 'lucide-react'
 
 export function InputChecklist({
   subpageItem,
