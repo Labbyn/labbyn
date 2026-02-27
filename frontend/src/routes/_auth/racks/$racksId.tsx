@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { ArrowLeft, Box, Cpu, Info, Server, Users } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,7 +23,7 @@ import { SubpageHeader } from '@/components/subpage-header'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { InputChecklist } from '@/components/input-checklist'
 import { SubPageTemplate } from '@/components/subpage-template'
-import { toast } from 'sonner'
+import { DndTable } from '@/components/dnd/dnd-table'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -37,7 +38,7 @@ function RacksDetailsPage() {
   const [formData, setFormData] = useState({ ...rack })
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
-  // For now based on requierments we don't need to specify shelf
+  // For table we don't need nested structure
   const flatMachines = rack.machines.flat()
   const columnsMachines: Array<ColumnDef<any>> = [
     {
@@ -85,9 +86,9 @@ function RacksDetailsPage() {
               router.history.back()
             },
             onError: (error: Error) => {
-            toast.error('Operation failed', { description: error.message })
-    },
-          })
+              toast.error('Operation failed', { description: error.message })
+            },
+          }),
       }}
       content={
         <>
@@ -147,11 +148,10 @@ function RacksDetailsPage() {
             </div>
             <div className="p-1">
               {isEditing ? (
-                  <span>wip</span>
-                ) : (
-                    <DataTable columns={columnsMachines} data={flatMachines} />
-                )}
-              
+                <DndTable dbItems={rack.machines} />
+              ) : (
+                <DataTable columns={columnsMachines} data={flatMachines} />
+              )}
             </div>
           </section>
         </>
