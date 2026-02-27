@@ -1,4 +1,4 @@
-import { Link, createFileRoute  } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { ArrowRight, Map, Server, Settings, User } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {

@@ -19,16 +19,18 @@ import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/tag-list'
 import { SubpageHeader } from '@/components/subpage-header'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { InputChecklist } from '@/components/input-checklist'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
 })
 
-
 function RacksDetailsPage() {
   const router = useRouter()
   const { racksId } = Route.useParams()
   const { data: rack } = useSuspenseQuery(singleRackQueryOptions(racksId))
+  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...rack })
 
@@ -40,10 +42,10 @@ function RacksDetailsPage() {
   }
 
   const handleSave = () => {
-  updateRack.mutate(formData, {
-    onSuccess: () => setIsEditing(false),
-  })
-  setIsEditing(false)
+    updateRack.mutate(formData, {
+      onSuccess: () => setIsEditing(false),
+    })
+    setIsEditing(false)
   }
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
@@ -67,73 +69,80 @@ function RacksDetailsPage() {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="MAC address" />
       ),
-    }
+    },
   ]
 
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
-      <SubpageHeader subpageItem={rack} isEditing={isEditing} setIsEditing={setIsEditing} formData={formData} setFormData={setFormData} handleInputChange={handleInputChange} handleSave={handleSave}/>
+      <SubpageHeader
+        subpageItem={rack}
+        isEditing={isEditing}
+        setIsEditing={setIsEditing}
+        formData={formData}
+        setFormData={setFormData}
+        handleInputChange={handleInputChange}
+        handleSave={handleSave}
+      />
       <ScrollArea className="h-full bg-slate-50/50 dark:bg-zinc-950/50">
         <div className="p-8 max-w-[1600px] mx-auto space-y-8">
-          {/* Rack Info Section */}
-          <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-            <Card className="md:col-span-3">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Info className="h-5 w-5 text-primary" /> Rack inforamtions
-                </h2>
-                </div>
-                
-            
+          {/* Rack Info */}
+          <Card className="md:col-span-3 pt-0">
+            <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <Info className="h-5 w-5 text-primary" /> Rack inforamtions
+              </h2>
+            </div>
+
             <CardContent className="grid gap-6 sm:grid-cols-2">
               {[
                 { label: 'Team', name: 'team_name', icon: Users },
-                { label: 'Tags', name: 'tags', icon: Box}
-              ].map((field) => {  
+                { label: 'Tags', name: 'tags', icon: Box },
+              ].map((field) => {
                 const fieldValue = rack[field.name]
-                return (                  
+                return (
                   <div key={field.name} className="grid gap-2">
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <field.icon className="h-5 w-5" /> {field.label}
-                      </span>
-                      {isEditing ? (
-                        field.name === 'tags' ? (
-              <span className="text-sm italic text-muted-foreground">Tag editing requires a custom selector</span>
-            ) : (
-                        <Input
-                          name={field.name}
-                          value={(formData as any)[field.name]}
-                          onChange={handleInputChange}
-                          className="h-8"
+                      <field.icon className="h-5 w-5" /> {field.label}
+                    </span>
+                    {isEditing ? (
+                      field.name === 'tags' ? (
+                        <span className="text-sm italic text-muted-foreground">
+                          Tag editing requires a custom selector
+                        </span>
+                      ) : (
+                        <InputChecklist
+                          subpageItem={teams}
+                          inputChangeTarget="team_name"
+                          formData={formData}
+                          setFormData={setFormData}
                         />
-                      ) 
+                      )
                     ) : field.name === 'tags' ? (
-            <TagList tags={fieldValue} />
-          ) : 
-                     (
-                        <span className="font-medium">{fieldValue ? fieldValue.toString() : '—'}</span>
-                      )}
+                      <TagList tags={fieldValue} />
+                    ) : (
+                      <span className="font-medium">
+                        {fieldValue ? fieldValue.toString() : '—'}
+                      </span>
+                    )}
                   </div>
                 )
-              })
-              }
+              })}
             </CardContent>
-            </Card>
+          </Card>
+          {/* Machines Section */}
+          <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
+              <h2 className="font-semibold text-lg flex items-center gap-2">
+                <Cpu className="h-5 w-5 text-primary" /> Machines & Platforms
+              </h2>
+              <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
+                {rack.machines.length} Total
+              </span>
+            </div>
+            <div className="p-1">
+              <DataTable columns={columnsMachines} data={flatMachines} />
+            </div>
           </section>
-            {/* Machines Section */}
-            <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Cpu className="h-5 w-5 text-primary" /> Machines & Platforms
-                </h2>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {rack.machines.length} Total
-                </span>
-              </div>
-              <div className="p-1">
-                <DataTable columns={columnsMachines} data={flatMachines} />
-              </div>
-            </section>
         </div>
       </ScrollArea>
     </div>

@@ -3,12 +3,18 @@ import { ArrowLeft, Edit2, X, Check } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Separator } from './ui/separator'
 
-
-export function SubpageHeader({subpageItem, isEditing, setIsEditing, formData, setFormData , handleInputChange, handleSave} ) {
-
-return (
+export function SubpageHeader({
+  subpageItem,
+  isEditing,
+  setIsEditing,
+  formData,
+  setFormData,
+  handleInputChange,
+  handleSave,
+}) {
+  return (
     <>
-<div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur z-10 shrink-0">
+      <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur z-10 shrink-0">
         <Button
           onClick={() => router.history.back()}
           variant="ghost"
@@ -61,6 +67,6 @@ return (
         </div>
       </div>
       <Separator />
-      </>
-    )
+    </>
+  )
 }

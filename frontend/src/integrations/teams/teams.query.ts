@@ -7,8 +7,10 @@ import type {
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/teams/teams_info',
-  SINGLE: (id: string | number) => `/db/teams/team_info/${id}`,
+  BASE: '/db/teams',
+  INFO: '/db/teams/teams_info',
+  SINGLE: (id: string | number) => `/db/teams/${id}`,
+  SINGLE_INFO: (id: string | number) => `/db/teams/team_info/${id}`,
   ADMIN: '/db/teams',
 }
 

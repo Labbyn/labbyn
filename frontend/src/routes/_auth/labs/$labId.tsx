@@ -90,12 +90,16 @@ function RouteComponent() {
       <Separator />
       <ScrollArea className="h-full">
         <div className="p-6 flex flex-col gap-4">
-          <DataTable columns={columns} data={lab.racks} onRowClick={(row) => {
+          <DataTable
+            columns={columns}
+            data={lab.racks}
+            onRowClick={(row) => {
               navigate({
                 to: '/racks/$rackId',
                 params: { rackId: String(row.id) },
               })
-            }} />
+            }}
+          />
         </div>
       </ScrollArea>
     </div>
