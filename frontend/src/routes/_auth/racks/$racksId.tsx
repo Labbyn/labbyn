@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { ArrowLeft, Box, Cpu, Info, Server, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -24,6 +24,7 @@ import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { InputChecklist } from '@/components/input-checklist'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { DndTable } from '@/components/dnd/dnd-table'
+import { SubpageCard } from '@/components/subpage-card'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -36,6 +37,7 @@ function RacksDetailsPage() {
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({ ...rack })
+  const navigate = useNavigate()
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For table we don't need nested structure
@@ -92,81 +94,88 @@ function RacksDetailsPage() {
       }}
       content={
         <>
-          {/* Rack Info */}
-          <Card className="md:col-span-3 pt-0">
-            <CardHeader className="px-6 py-4 border-b bg-muted/30">
-              <CardTitle className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-muted-foreground text-primary" />
-                Rack informations
-              </CardTitle>
-              <CardDescription>General rack informations</CardDescription>
-            </CardHeader>
-
-            <CardContent className="grid gap-6 sm:grid-cols-2">
-              {[
-                { label: 'Team', name: 'team_name', icon: Users },
-                { label: 'Tags', name: 'tags', icon: Box },
-              ].map((field) => {
-                const fieldValue = rack[field.name]
-                return (
-                  <div key={field.name} className="grid gap-2">
-                    <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <field.icon className="h-5 w-5" /> {field.label}
-                    </span>
-                    {isEditing ? (
-                      field.name === 'tags' ? (
-                        <TagList tags={fieldValue} type="edit" />
-                      ) : (
-                        <InputChecklist
-                          items={teams}
-                          value={formData.team_name}
-                          onChange={(newTeamName) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              team_name: newTeamName,
-                            }))
-                          }
-                        />
-                      )
-                    ) : field.name === 'tags' ? (
-                      <TagList tags={fieldValue} />
-                    ) : (
-                      <span className="font-medium">
-                        {fieldValue ? fieldValue.toString() : '—'}
+          {/* Racks Section */}
+          <SubpageCard
+            title={'Rack informations'}
+            description={'General rack informations'}
+            type="info"
+            Icon={Cpu}
+            isEditing={isEditing}
+            content={
+              <>
+                {' '}
+                {[
+                  { label: 'Team', name: 'team_name', icon: Users },
+                  { label: 'Tags', name: 'tags', icon: Box },
+                ].map((field) => {
+                  const fieldValue = rack[field.name]
+                  return (
+                    <div key={field.name} className="grid gap-2">
+                      <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <field.icon className="h-5 w-5" /> {field.label}
                       </span>
-                    )}
-                  </div>
-                )
-              })}
-            </CardContent>
-          </Card>
+                      {isEditing ? (
+                        field.name === 'tags' ? (
+                          <TagList tags={fieldValue} type="edit" />
+                        ) : (
+                          <InputChecklist
+                            items={teams}
+                            value={formData.team_name}
+                            onChange={(newTeamName) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                team_name: newTeamName,
+                              }))
+                            }
+                          />
+                        )
+                      ) : field.name === 'tags' ? (
+                        <TagList tags={fieldValue} />
+                      ) : (
+                        <span className="font-medium">
+                          {fieldValue ? fieldValue.toString() : '—'}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
+              </>
+            }
+          />
           {/* Machines Section */}
-          <Card className="pt-0">
-            <CardHeader className="px-6 py-4 border-b bg-muted/30">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Cpu className="h-5 w-5 text-muted-foreground text-primary" />
-                  Machines
-                </CardTitle>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {rack.machines.length} Total
-                </span>
-              </div>
-              <CardDescription>Rack machines in order</CardDescription>
-            </CardHeader>
-            <div className="p-1">
-              {isEditing ? (
-                <DndTable
-                  dbItems={rack.machines}
-                  onReorder={(newMachines) => {
-                    setFormData((prev) => ({ ...prev, machines: newMachines }))
-                  }}
-                />
-              ) : (
-                <DataTable columns={columnsMachines} data={flatMachines} />
-              )}
-            </div>
-          </Card>
+          <SubpageCard
+            title={'Machines'}
+            description={'Rack machines in order'}
+            type="table"
+            Icon={Cpu}
+            isEditing={isEditing}
+            content={
+              <>
+                {isEditing ? (
+                  <DndTable
+                    dbItems={rack.machines}
+                    onReorder={(newMachines) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        machines: newMachines,
+                      }))
+                    }}
+                  />
+                ) : (
+                  <DataTable
+                    columns={columnsMachines}
+                    data={flatMachines}
+                    onRowClick={(row) => {
+                      navigate({
+                        to: '/machines/$machineId',
+                        params: { machineId: String(row.id) },
+                      })
+                    }}
+                  />
+                )}
+              </>
+            }
+          />
         </>
       }
     />

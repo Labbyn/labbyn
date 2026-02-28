@@ -190,7 +190,6 @@ function TeamsDetailsPage() {
                   columns={columnsRacks}
                   data={team.racks}
                   onRowClick={(row) => {
-                    console.log('Clicked row ID:', row)
                     navigate({
                       to: '/racks/$rackId',
                       params: { rackId: String(row.id) },
