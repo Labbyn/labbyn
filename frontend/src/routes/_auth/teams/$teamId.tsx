@@ -9,6 +9,8 @@ import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { Separator } from '@/components/ui/separator'
 import { TagList } from '@/components/tag-list'
+import { SubPageTemplate } from '@/components/subpage-template'
+import { SubpageCard } from '@/components/subpage-card'
 
 export const Route = createFileRoute('/_auth/teams/$teamId')({
   component: TeamsDetailsPage,
@@ -129,37 +131,20 @@ function TeamsDetailsPage() {
   ]
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
-      <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur z-10 shrink-0">
-        <Button
-          onClick={() => router.history.back()}
-          variant="ghost"
-          size="icon"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl font-bold tracking-tight">{team.name}</h1>
-          </div>
-        </div>
-      </div>
-      <Separator />
-      <ScrollArea className="h-full bg-slate-50/50 dark:bg-zinc-950/50">
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8">
-          {/* Main Content Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Users Section */}
-            <section className="bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" /> Team Members
-                </h2>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {team.members.length} Total
-                </span>
-              </div>
-              <div className="p-1">
+    <SubPageTemplate
+      headerProps={{
+        title: team.name,
+      }}
+      content={
+        <>
+          {/* Users Section */}
+          <SubpageCard
+            title={'Team Members'}
+            description={'Team members desc'}
+            type="table"
+            Icon={Users}
+            content={
+              <>
                 {' '}
                 <DataTable
                   columns={columnsUsers}
@@ -171,21 +156,17 @@ function TeamsDetailsPage() {
                     })
                   }}
                 />
-              </div>
-            </section>
-
-            {/* Racks */}
-            <section className="bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Server className="h-5 w-5 text-primary" /> Racks
-                  Configuration
-                </h2>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {team.racks.length} Total
-                </span>
-              </div>
-              <div className="p-1">
+              </>
+            }
+          />
+          {/* Racks Section */}
+          <SubpageCard
+            title={'Racks'}
+            description={'Racks description'}
+            type="table"
+            Icon={Server}
+            content={
+              <>
                 <DataTable
                   columns={columnsRacks}
                   data={team.racks}
@@ -196,20 +177,17 @@ function TeamsDetailsPage() {
                     })
                   }}
                 />
-              </div>
-            </section>
-
-            {/* Machines Section */}
-            <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Cpu className="h-5 w-5 text-primary" /> Machines & Platforms
-                </h2>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {team.machines.length} Total
-                </span>
-              </div>
-              <div className="p-1">
+              </>
+            }
+          />
+          {/* Machines Section */}
+          <SubpageCard
+            title={'Machines & Platforms'}
+            description={'Machines & Platforms description'}
+            type="table"
+            Icon={Cpu}
+            content={
+              <>
                 <DataTable
                   columns={columnsMachines}
                   data={team.machines}
@@ -220,20 +198,17 @@ function TeamsDetailsPage() {
                     })
                   }}
                 />
-              </div>
-            </section>
-
-            {/* Inventory Section */}
-            <section className="lg:col-span-2 bg-card rounded-xl border shadow-sm flex flex-col overflow-hidden">
-              <div className="px-6 py-4 border-b bg-muted/30 flex justify-between items-center">
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Box className="h-5 w-5 text-primary" /> Inventory items
-                </h2>
-                <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">
-                  {team.inventory.length} Total
-                </span>
-              </div>
-              <div className="p-1">
+              </>
+            }
+          />
+          {/* Inventory Section */}
+          <SubpageCard
+            title={'Inventory items'}
+            description={'Inventory items description'}
+            type="table"
+            Icon={Box}
+            content={
+              <>
                 <DataTable
                   columns={columnsInventory}
                   data={team.inventory}
@@ -244,11 +219,11 @@ function TeamsDetailsPage() {
                     })
                   }}
                 />
-              </div>
-            </section>
-          </div>
-        </div>
-      </ScrollArea>
-    </div>
+              </>
+            }
+          />
+        </>
+      }
+    />
   )
 }

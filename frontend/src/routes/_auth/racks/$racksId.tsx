@@ -99,7 +99,7 @@ function RacksDetailsPage() {
             title={'Rack informations'}
             description={'General rack informations'}
             type="info"
-            Icon={Cpu}
+            Icon={Info}
             isEditing={isEditing}
             content={
               <>
