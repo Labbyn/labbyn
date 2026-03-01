@@ -8,26 +8,17 @@ import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
-import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
+import { inventoryInfoQueryOptions } from '@/integrations/inventory/inventory.query'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { PageHeader } from '@/components/page-header'
+import type { ApiInventoryInfoResponse } from '@/integrations/inventory/inventory.types'
+
 
 export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
-type InventoryItem = ReturnType<typeof fetchInventoryData>[number]
-
-export const columns: Array<ColumnDef<InventoryItem>> = [
-  {
-    accessorKey: 'id',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="ID" />
-    },
-    cell: ({ row }) => (
-      <div className="flex flex-col">{row.getValue('id') || '-'}</div>
-    ),
-  },
+export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -40,104 +31,99 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
     ),
   },
   {
-    accessorKey: 'quantity',
+    accessorKey: 'total_quantity',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Quantity" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col gap-1 items-center justify-center text-center">
         <Badge variant="outline" className="w-fit">
-          {row.getValue('quantity')}
+          {row.getValue('total_quantity')}
         </Badge>
       </div>
     ),
   },
   {
-    accessorKey: 'teamId',
+    accessorKey: 'team_name',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Team ID" />
+      return <DataTableColumnHeader column={column} title="Team name" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
-        <span className="font-medium">{row.getValue('teamId') || '-'} </span>
+        <span className="font-medium">{row.getValue('team_name') || '-'} </span>
       </div>
     ),
   },
   {
-    accessorKey: 'localizationId',
+    accessorKey: 'machine_info',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Quantity" />
+      return <DataTableColumnHeader column={column} title="Assigned machine" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
         <span className="font-medium">
-          {row.getValue('localizationId') || '-'}{' '}
+          {row.getValue('machine_info') || '-'}
         </span>
       </div>
     ),
   },
   {
-    accessorKey: 'machineId',
+    accessorKey: 'category_name',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Machine ID" />
+      return <DataTableColumnHeader column={column} title="Category name" />
     },
     cell: ({ row }) => {
-      const value = row.getValue('machineId')
       return (
         <div className="flex flex-col items-center justify-center text-center">
-          <span className="font-medium">{(value as number | null) ?? '-'}</span>
+          <span className="font-medium">{row.getValue('machine_info') || '-'}</span>
         </div>
       )
     },
   },
   {
-    accessorKey: 'categoryId',
+    accessorKey: 'room_name',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Category ID" />
+      return <DataTableColumnHeader column={column} title="Location name" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
-        {row.getValue('categoryId') || '-'}
+        {row.getValue('room_name') || '-'}
       </div>
     ),
   },
   {
-    accessorKey: 'rentalStatus',
+     accessorKey: 'active_rentals',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Rental Status" />
+      return <DataTableColumnHeader column={column} title="Active rentals" />
     },
-    cell: ({ row }) => (
-      <div className="flex flex-col items-center justify-center text-center">
-        {row.getValue('rentalStatus') || '-'}
+    cell: ({ row }) => {
+      const rentals = row.original.active_rentals;
+      return (
+      <div className="flex flex-col items-center justify-center gap-1 text-center">
+        {rentals?.map((rent: string, index: number) => (
+          <span key={index}>{rent}</span>
+        ))}
+        {!rentals?.length && <span className="text-muted-foreground">—</span>}
       </div>
-    ),
-  },
+    );
+      }
+    },
   {
-    accessorKey: 'rentalId',
+     accessorKey: 'rental_actions',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Rental ID" />
+      return <DataTableColumnHeader column={column} title="Rental actions" />
     },
     cell: ({ row }) => (
       <div className="flex flex-col items-center justify-center text-center">
-        {row.getValue('rentalId') || '-'}
+        <Button>RENT PLACEHOLDER</Button>
       </div>
     ),
   },
-  {
-    accessorKey: 'versionId',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Version ID" />
-    },
-    cell: ({ row }) => (
-      <div className="flex flex-col items-center justify-center text-center">
-        {row.getValue('versionId') || '-'}
-      </div>
-    ),
-  },
+
 ]
 
 function RouteComponent() {
-  const { data: inventory = [], isLoading } = useQuery(inventoryQueryOptions)
+  const { data: inventory = [], isLoading } = useQuery(inventoryInfoQueryOptions)
   const navigate = Route.useNavigate()
 
   if (isLoading) return <PageIsLoading />
