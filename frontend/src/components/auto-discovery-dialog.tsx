@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { AlertCircle, Cpu, Loader2, Plus, Server, Tag } from 'lucide-react'
+import {
+  AlertCircle,
+  Cpu,
+  Loader2,
+  Plus,
+  RefreshCcw,
+  Server,
+} from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { colorMap } from './tag-list'
-import { InputChecklist } from './input-checklist'
-import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
   DialogContent,
@@ -30,12 +34,11 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
-import { useCreateTagMutation } from '@/integrations/tags/tags.mutation'
+import { autoDiscoverMutation } from '@/integrations/machines/machines.mutation'
 
 const schemas = {
-  name: z.string().min(1, 'Name is required'),
-  color: z.string().min(1, 'Color is required'),
+  username: z.string().min(1, 'Username is required'),
+  password: z.string().min(1, 'Password is required'),
 }
 
 function zodValidate(schema: z.ZodType<any>) {
@@ -48,20 +51,31 @@ function zodValidate(schema: z.ZodType<any>) {
   }
 }
 
-export function AddTagDialog() {
+export function AutoDiscovertDialog({
+  machineId,
+  machineHostname,
+}: {
+  machineId: number
+  machineHostname: string
+}) {
   const [open, setOpen] = useState(false)
+
   const queryClient = useQueryClient()
 
-  const colorArray = Object.keys(colorMap).map((key) => ({
-    id: key,
-    name: key,
-  }))
-
   const mutation = useMutation({
-    mutationFn: useCreateTagMutation,
+    mutationFn: (formValues: any) => {
+      const payload = {
+        host: machineHostname,
+        extra_vars: {
+          ansible_user: formValues.username,
+          ansible_password: formValues.password,
+        },
+      }
+      return autoDiscoverMutation(machineId, payload)
+    },
     onSuccess: () => {
-      toast.success('Tag added successfully')
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      toast.success('Platform scaned successfully')
+      queryClient.invalidateQueries({ queryKey: ['auto-discovery'] })
       setOpen(false)
       form.reset()
     },
@@ -72,8 +86,8 @@ export function AddTagDialog() {
 
   const form = useForm({
     defaultValues: {
-      name: '',
-      color: '',
+      username: '',
+      password: '',
     },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
@@ -84,16 +98,16 @@ export function AddTagDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton>
-          <Tag className="h-5 w-5" />
-          <span>Add Tag</span>
+          <RefreshCcw className="h-5 w-5" />
+          <span>Refresh host information</span>
         </SidebarMenuButton>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[35vh] overflow-hidden">
         <DialogHeader className="px-6 py-6 pb-2 shrink-0">
-          <DialogTitle>Add new tag</DialogTitle>
+          <DialogTitle>Refresh machine information</DialogTitle>
           <DialogDescription>
-            Create new tag to group your resources
+            Automatically refresh outdated platform informations
           </DialogDescription>
         </DialogHeader>
 
@@ -107,19 +121,19 @@ export function AddTagDialog() {
         >
           <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-6 px-6 py-4">
-              {/* Tag name - Always Required */}
+              {/* SSH User - Always Required */}
               <form.Field
-                name="name"
-                validators={{ onChange: zodValidate(schemas.name) }}
+                name="username"
+                validators={{ onChange: zodValidate(schemas.username) }}
                 children={(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>SSH User</FieldLabel>
                     <Input
                       id={field.name}
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="e.g. performance"
+                      placeholder="e.g. ansible_user"
                       className={
                         field.state.meta.errors.length
                           ? 'border-destructive'
@@ -131,15 +145,22 @@ export function AddTagDialog() {
                 )}
               />
               <form.Field
-                name="color"
-                validators={{ onChange: zodValidate(schemas.color) }}
+                name="password"
+                validators={{ onChange: zodValidate(schemas.password) }}
                 children={(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>Color</FieldLabel>
-                    <InputChecklist
-                      items={colorArray}
+                    <FieldLabel htmlFor={field.name}>SSH Password</FieldLabel>
+                    <Input
+                      id={field.name}
                       value={field.state.value}
-                      onChange={(newColor) => field.handleChange(newColor)}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      type="password"
+                      className={
+                        field.state.meta.errors.length
+                          ? 'border-destructive'
+                          : ''
+                      }
                     />
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -170,8 +191,8 @@ export function AddTagDialog() {
                     </>
                   ) : (
                     <>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Tag
+                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      Refresh information
                     </>
                   )}
                 </Button>

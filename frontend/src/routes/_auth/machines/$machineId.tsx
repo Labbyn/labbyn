@@ -42,6 +42,8 @@ import { useUpdateMachineMutation } from '@/integrations/machines/machines.mutat
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { TagList } from '@/components/tag-list'
+import { addTextToString, convertTimestampToDate } from '@/utils/'
+import { AutoDiscovertDialog } from '@/components/auto-discovery-dialog'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
   component: MachineDetailsPage,
@@ -103,6 +105,10 @@ function MachineDetailsPage() {
       }}
       content={
         <>
+          <AutoDiscovertDialog
+            machineId={machineId}
+            machineHostname={machine.name}
+          />
           {/* User General info */}
           <SubpageCard
             title={'System Information'}
@@ -131,26 +137,7 @@ function MachineDetailsPage() {
                   { label: 'Added On', name: 'added_on', icon: AlarmClock },
                   { label: 'Tags', name: 'tags', icon: Box },
                 ].map((field, index, array) => {
-                  const isDateField = field.name === 'added_on'
-                  const isCapacityField = field.name === 'ram'
                   const rawValue = machine[field.name]
-
-                  // Helper to format values
-                  const getDisplayValue = () => {
-                    if (isDateField && rawValue) {
-                      return new Date(rawValue).toLocaleString('en-CA', {
-                        hour12: false,
-                      })
-                    }
-                    if (
-                      isCapacityField &&
-                      rawValue &&
-                      !String(rawValue).includes('GB')
-                    ) {
-                      return `${rawValue} GB`
-                    }
-                    return rawValue
-                  }
 
                   return (
                     <div
@@ -166,7 +153,7 @@ function MachineDetailsPage() {
                         {field.label}
                       </div>
                       <div className="flex flex-col gap-2 min-h-[32px] justify-center">
-                        {isEditing && field.name !== 'added_on' ? (
+                        {isEditing ? (
                           <>
                             {field.name === 'tags' ? (
                               <TagList tags={rawValue} type="edit" />
@@ -207,9 +194,7 @@ function MachineDetailsPage() {
                                     placeholder="Disk Name"
                                   />
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-1 rounded font-bold shrink-0">
-                                    {disk.capacity.includes('GB')
-                                      ? disk.capacity
-                                      : `${disk.capacity} GB`}
+                                    {addTextToString(disk.capacity, 'GB')}
                                   </span>
                                 </div>
                               ))
@@ -236,17 +221,19 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {disk.capacity.includes('GB')
-                                      ? disk.capacity
-                                      : `${disk.capacity} GB`}
+                                    {disk.capacity}
                                   </span>
                                 </div>
                               ))
                             ) : field.name === 'tags' ? (
                               <TagList tags={rawValue} />
+                            ) : field.name === 'added_on' ? (
+                              <span className="truncate">
+                                {convertTimestampToDate(rawValue) || '—'}
+                              </span>
                             ) : (
                               <span className="truncate">
-                                {getDisplayValue() || '—'}
+                                {rawValue || '—'}
                               </span>
                             )}
                           </div>
@@ -342,12 +329,7 @@ function MachineDetailsPage() {
                     icon: LockOpen,
                   },
                 ].map((field) => {
-                  const isAgentField = [
-                    'monitoring',
-                    'ansible_access',
-                    'ansible_root_access',
-                  ].includes(field.name)
-                  const rawValue = (machine as any)[field.name]
+                  const rawValue = machine[field.name]
 
                   return (
                     <div
@@ -360,37 +342,22 @@ function MachineDetailsPage() {
                       </div>
 
                       <div className="flex items-center min-h-[32px]">
-                        {isEditing && !isAgentField ? (
-                          <Input
-                            name={field.name}
-                            value={(formData as any)[field.name]}
-                            onChange={handleInputChange}
-                            className="h-8 text-sm rounded-md border-input bg-background"
-                          />
-                        ) : (
-                          <div className="text-sm font-medium">
-                            {isAgentField ? (
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={`h-2 w-2 rounded-full ${rawValue ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
-                                />
-                                <span
-                                  className={
-                                    rawValue
-                                      ? 'text-foreground'
-                                      : 'text-muted-foreground'
-                                  }
-                                >
-                                  {rawValue ? 'Active' : 'Not Active'}
-                                </span>
-                              </div>
-                            ) : (
-                              <span className="text-foreground">
-                                {displayValue || '—'}
-                              </span>
-                            )}
+                        <div className="text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${rawValue ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+                            />
+                            <span
+                              className={
+                                rawValue
+                                  ? 'text-foreground'
+                                  : 'text-muted-foreground'
+                              }
+                            >
+                              {rawValue ? 'Active' : 'Not Active'}
+                            </span>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
                   )
