@@ -19,3 +19,12 @@ export interface ApiRackDetailMachineItem {
   team_id: number
   machine_url: string | null
 }
+
+export interface ApiRacksList {
+  racks: Array<ApiRacksListItem>
+}
+
+export interface ApiRacksListItem {
+  id: number
+  name: string
+}

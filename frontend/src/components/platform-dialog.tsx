@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
+import { zodValidate } from '@/utils/index'
 
 // --- Schemas ---
 
@@ -41,18 +42,6 @@ const schemas = {
     .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
     .optional()
     .or(z.literal('')),
-}
-
-// --- Validator Helper ---
-
-function zodValidate(schema: z.ZodType<any>) {
-  return ({ value }: { value: any }) => {
-    const result = schema.safeParse(value)
-    if (!result.success) {
-      return { message: result.error.errors[0].message }
-    }
-    return undefined
-  }
 }
 
 export function AddPlatformDialog() {

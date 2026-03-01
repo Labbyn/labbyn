@@ -35,20 +35,11 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { autoDiscoverMutation } from '@/integrations/machines/machines.mutation'
+import { zodValidate } from '@/utils/index'
 
 const schemas = {
   username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
-}
-
-function zodValidate(schema: z.ZodType<any>) {
-  return ({ value }: { value: any }) => {
-    const result = schema.safeParse(value)
-    if (!result.success) {
-      return { message: result.error.errors[0].message }
-    }
-    return undefined
-  }
 }
 
 export function AutoDiscovertDialog({

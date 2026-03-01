@@ -24,8 +24,10 @@ import {
   Network,
   Save,
   StickyNote,
+  Users,
   X,
 } from 'lucide-react'
+import { InputChecklist } from '@/components/input-checklist'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { machineSpecInfoQueryOptions } from '@/integrations/machines/machines.query'
@@ -42,8 +44,9 @@ import { useUpdateMachineMutation } from '@/integrations/machines/machines.mutat
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { TagList } from '@/components/tag-list'
-import { addTextToString, convertTimestampToDate } from '@/utils/'
+import { addTextToString, convertTimestampToDate } from '@/utils'
 import { AutoDiscovertDialog } from '@/components/auto-discovery-dialog'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
   component: MachineDetailsPage,
@@ -55,6 +58,7 @@ function MachineDetailsPage() {
   const { data: machine } = useSuspenseQuery(
     machineSpecInfoQueryOptions(machineId),
   )
+  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const updateMachine = useUpdateMachineMutation(machineId)
 
   const [isEditing, setIsEditing] = useState(false)
@@ -136,6 +140,7 @@ function MachineDetailsPage() {
                   },
                   { label: 'Added On', name: 'added_on', icon: AlarmClock },
                   { label: 'Tags', name: 'tags', icon: Box },
+                  { label: 'Team', name: 'team_name', icon: Users },
                 ].map((field, index, array) => {
                   const rawValue = machine[field.name]
 
@@ -157,6 +162,17 @@ function MachineDetailsPage() {
                           <>
                             {field.name === 'tags' ? (
                               <TagList tags={rawValue} type="edit" />
+                            ) : field.name === 'team_name' ? (
+                              <InputChecklist
+                                items={teams}
+                                value={formData.team_name}
+                                onChange={(newTeamName) =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    team_name: newTeamName,
+                                  }))
+                                }
+                              />
                             ) : field.name === 'cpus' ? (
                               formData.cpus.map((cpu: any, idx: number) => (
                                 <Input

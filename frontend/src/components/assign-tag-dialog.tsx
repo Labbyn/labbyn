@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { AlertCircle, Cpu, Loader2, Plus, Server, Tag } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
-import { colorMap } from './tag-list'
 import { InputChecklist } from './input-checklist'
 import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
@@ -33,26 +36,45 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
 import { useCreateTagMutation } from '@/integrations/tags/tags.mutation'
 import { zodValidate } from '@/utils/index'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { tagsQueryOptions } from '@/integrations/tags/tags.query'
+import { racksListQueryOptions } from '@/integrations/racks/racks.query'
+import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
+import { machinesQueryOptions } from '@/integrations/machines/machines.query'
+
+// TO DO: add mutations, add dynamic item fetch
 
 const schemas = {
-  name: z.string().min(1, 'Name is required'),
-  color: z.string().min(1, 'Color is required'),
+  team: z.string().min(1, 'Team is required'),
+  itemType: z.string().min(1, 'ItemType is required'),
+  item: z.string().min(1, 'Item is required'),
+  tag: z.string().min(1, 'Tag is required'),
 }
 
-export function AddTagDialog() {
+export function AssignTagDialog({ itemType, item, tag }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
+  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: tags } = useSuspenseQuery(tagsQueryOptions)
 
-  const colorArray = Object.keys(colorMap).map((key) => ({
+  const itemsMap = {
+    racks: racksListQueryOptions,
+    inventory: inventoryQueryOptions,
+    machines: machinesQueryOptions,
+  }
+
+  const itemTypes = Object.keys(itemsMap).map((key) => ({
     id: key,
-    name: key,
+    name: key.charAt(0).toUpperCase() + key.slice(1),
   }))
+
+  const itemQueries = Object.values(itemsMap)
 
   const mutation = useMutation({
     mutationFn: useCreateTagMutation,
     onSuccess: () => {
-      toast.success('Tag added successfully')
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
+      toast.success('Tag assigned successfully')
+      queryClient.invalidateQueries({ queryKey: ['tags', 'assign'] })
       setOpen(false)
       form.reset()
     },
@@ -63,8 +85,10 @@ export function AddTagDialog() {
 
   const form = useForm({
     defaultValues: {
-      name: '',
-      color: '',
+      team: '',
+      itemType: '',
+      item: '',
+      tag: '',
     },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
@@ -75,17 +99,15 @@ export function AddTagDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton>
-          <Tag className="h-5 w-5" />
-          <span>Add Tag</span>
+          <Plus className="h-5 w-5" />
+          <span>Assign tag</span>
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[35vh] overflow-hidden">
+      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[50vh] overflow-hidden">
         <DialogHeader className="px-6 py-6 pb-2 shrink-0">
-          <DialogTitle>Add new tag</DialogTitle>
-          <DialogDescription>
-            Create new tag to group your resources
-          </DialogDescription>
+          <DialogTitle>Assign tag</DialogTitle>
+          <DialogDescription>Assign tags to resources</DialogDescription>
         </DialogHeader>
 
         <form
@@ -98,23 +120,32 @@ export function AddTagDialog() {
         >
           <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-6 px-6 py-4">
-              {/* Tag name - Always Required */}
               <form.Field
-                name="name"
-                validators={{ onChange: zodValidate(schemas.name) }}
+                name="team"
+                validators={{ onChange: zodValidate(schemas.team) }}
                 children={(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
-                    <Input
-                      id={field.name}
+                    <FieldLabel htmlFor={field.name}>Team</FieldLabel>
+                    <InputChecklist
+                      items={teams}
                       value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="e.g. performance"
-                      className={
-                        field.state.meta.errors.length
-                          ? 'border-destructive'
-                          : ''
+                      onChange={(newTeam) => field.handleChange(newTeam)}
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              />
+              <form.Field
+                name="itemType"
+                validators={{ onChange: zodValidate(schemas.itemType) }}
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Item Type</FieldLabel>
+                    <InputChecklist
+                      items={itemTypes}
+                      value={field.state.value}
+                      onChange={(newItemType) =>
+                        field.handleChange(newItemType)
                       }
                     />
                     <FieldError errors={field.state.meta.errors} />
@@ -122,15 +153,30 @@ export function AddTagDialog() {
                 )}
               />
               <form.Field
-                name="color"
-                validators={{ onChange: zodValidate(schemas.color) }}
+                name="item"
+                validators={{ onChange: zodValidate(schemas.team) }}
                 children={(field) => (
                   <Field>
-                    <FieldLabel htmlFor={field.name}>Color</FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Item</FieldLabel>
                     <InputChecklist
-                      items={colorArray}
+                      items={teams}
                       value={field.state.value}
-                      onChange={(newColor) => field.handleChange(newColor)}
+                      onChange={(newItem) => field.handleChange(newItem)}
+                    />
+                    <FieldError errors={field.state.meta.errors} />
+                  </Field>
+                )}
+              />
+              <form.Field
+                name="tag"
+                validators={{ onChange: zodValidate(schemas.team) }}
+                children={(field) => (
+                  <Field>
+                    <FieldLabel htmlFor={field.name}>Tag</FieldLabel>
+                    <InputChecklist
+                      items={tags}
+                      value={field.state.value}
+                      onChange={(newTeam) => field.handleChange(newTeam)}
                     />
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
@@ -162,7 +208,7 @@ export function AddTagDialog() {
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Tag
+                      Assign Tag
                     </>
                   )}
                 </Button>
