@@ -67,6 +67,7 @@ function RacksDetailsPage() {
     <SubPageTemplate
       headerProps={{
         title: rack.name,
+        type: 'editable',
         isEditing: isEditing,
         editValue: formData.name,
         onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),

@@ -82,6 +82,7 @@ function MachineDetailsPage() {
     <SubPageTemplate
       headerProps={{
         title: machine.name,
+        type: 'editable',
         isEditing: isEditing,
         editValue: formData.name,
         onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),
