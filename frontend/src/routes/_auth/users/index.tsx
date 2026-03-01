@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { User } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiUserInfo } from '@/integrations/user/user.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { usersQueryOptions } from '@/integrations/user/user.query'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/users/')({
   component: RouteComponent,
@@ -24,22 +26,44 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     ),
   },
   {
-    accessorKey: 'teams',
+    accessorKey: 'surname',
     header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Teams" />
+      return <DataTableColumnHeader column={column} title="Surname" />
     },
-    cell: ({ row }) => {
-      const groupNames = row.original.assigned_groups
-        .map((g) => g.name)
-        .join(', ')
-
-      return <span>{groupNames}</span>
+    cell: ({ row }) => (
+      <span>
+        {row.getValue('surname')} {row.original.surname}
+      </span>
+    ),
+  },
+  {
+    accessorKey: 'login',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Login" />
     },
+    cell: ({ row }) => (
+      <span>
+        {row.getValue('login')} {row.original.surname}
+      </span>
+    ),
   },
   {
     accessorKey: 'user_type',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="User type" />
+    },
+  },
+  {
+    accessorKey: 'membership',
+    header: ({ column }) => {
+      return <DataTableColumnHeader column={column} title="Teams" />
+    },
+    cell: ({ row }) => {
+      const groupNames = row.original.membership
+        .map((g) => g.team_name)
+        .join(', ')
+
+      return <span>{groupNames}</span>
     },
   },
 ]
@@ -49,7 +73,8 @@ function RouteComponent() {
   const navigate = Route.useNavigate()
 
   return (
-    <div className="h-screen w-full z-1 overflow-hidden">
+    <div className="p-6 space-y-6">
+      <PageHeader title="Users" description="Users description" icon={User} />
       <ScrollArea className="h-full">
         <div className="p-6">
           <DataTable

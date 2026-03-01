@@ -2,31 +2,20 @@ import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   BanknoteArrowUp,
   Book,
   ChartColumnStacked,
-  Check,
+  ChevronRight,
   ClipboardList,
   Coins,
-  Edit2,
   MapPin,
   WeightTilde,
-  X,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { inventoryItemQueryOptions } from '@/integrations/inventory/inventory.query'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { inventoryItemInfoQueryOptions } from '@/integrations/inventory/inventory.query'
 import { useUpdateInventoryMutation } from '@/integrations/inventory/inventory.mutation'
+import { SubPageTemplate } from '@/components/subpage-template'
+import { SubpageCard } from '@/components/subpage-card'
 
 export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
   component: InventoryDetailsPage,
@@ -36,7 +25,7 @@ function InventoryDetailsPage() {
   const router = useRouter()
   const { inventoryId } = Route.useParams()
   const { data: inventory } = useSuspenseQuery(
-    inventoryItemQueryOptions(inventoryId),
+    inventoryItemInfoQueryOptions(inventoryId),
   )
   const updateMutation = useUpdateInventoryMutation(inventoryId)
 
@@ -50,10 +39,6 @@ function InventoryDetailsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({ ...prev, [name]: checked }))
-  }
-
   const handleSave = () => {
     updateMutation.mutate(
       { id: inventoryId, data: formData },
@@ -62,184 +47,170 @@ function InventoryDetailsPage() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
-      {/* Header*/}
-      <div className="flex items-center gap-4 bg-background/95 px-6 py-4 backdrop-blur sticky top-0 z-10">
-        <Button
-          onClick={() => router.history.back()}
-          variant="ghost"
-          size="icon"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            {isEditing ? (
-              <Input
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="h-8"
-              />
-            ) : (
-              <h1 className="text-xl font-bold tracking-tight">
-                {inventory.name}
-              </h1>
-            )}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <Button
-              onClick={() => setIsEditing(true)}
-              variant="outline"
-              size="sm"
-            >
-              <Edit2 className="mr-2 h-4 w-4" /> Edit
-            </Button>
-          ) : (
-            <>
-              <Button
-                onClick={() => {
-                  setFormData({ ...inventory })
-                  setIsEditing(false)
-                }}
-                variant="ghost"
-                size="sm"
-              >
-                <X className="mr-2 h-4 w-4" /> Cancel
-              </Button>
-              <Button onClick={handleSave} variant="default" size="sm">
-                <Check className="mr-2 h-4 w-4" /> Save
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-      <Separator />
+    <SubPageTemplate
+      headerProps={{
+        title: inventory.name,
+        type: 'editable',
+        isEditing: isEditing,
+        editValue: formData.name,
+        onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),
+        onSave: handleSave,
+        onCancel: () => {
+          setFormData({ ...inventory })
+          setIsEditing(false)
+        },
+        onStartEdit: () => setIsEditing(true),
+      }}
+      content={
+        <div className="flex flex-col gap-6 w-full">
+          {/* Item Information section */}
+          <SubpageCard
+            title="Item Information"
+            description="Item general information"
+            type="info"
+            Icon={ClipboardList}
+            className="w-full"
+            content={
+              <div className="flex flex-col">
+                {[
+                  {
+                    label: 'Total quantity',
+                    name: 'total_quantity',
+                    icon: WeightTilde,
+                  },
+                  {
+                    label: 'In stock quantity',
+                    name: 'in_stock_quantity',
+                    icon: Coins,
+                  },
+                  {
+                    label: 'Category',
+                    name: 'category_name',
+                    icon: ChartColumnStacked,
+                  },
+                  {
+                    label: 'Active rentals',
+                    name: 'active_rentals',
+                    icon: BanknoteArrowUp,
+                    isList: true,
+                  },
+                ].map((field, index, array) => {
+                  const rawValue = (inventory as any)[field.name]
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-3">
-          {/* Item Information*/}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                Item Information
-              </CardTitle>
-              <CardDescription>Item general information</CardDescription>
-            </CardHeader>
-            <Separator />
-            <CardContent className="grid gap-6 sm:grid-cols-2">
-              {[
-                { label: 'Quantity', name: 'quantity', icon: WeightTilde },
-                {
-                  label: 'Category',
-                  name: 'category_id',
-                  icon: ChartColumnStacked,
-                },
-                {
-                  label: 'Is rented',
-                  name: 'rental_status',
-                  icon: BanknoteArrowUp,
-                },
-                { label: 'Rental ID', name: 'rental_id', icon: Coins },
-              ].map((field) => {
-                const isRented = field.name === 'rental_status'
-                const displayValue = (inventory as any)[field.name]
-                return (
-                  <div key={field.name} className="grid gap-2">
-                    <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      <field.icon className="h-5 w-5" /> {field.label}
+                  return (
+                    <div
+                      key={field.name}
+                      className={`flex flex-col gap-1.5 py-4 ${
+                        index !== array.length - 1
+                          ? 'border-b border-border/50'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80">
+                        <field.icon className="h-3.5 w-3.5" />
+                        {field.label}
+                      </div>
+
+                      <div className="flex flex-col gap-2 min-h-[32px] justify-center">
+                        {isEditing ? (
+                          <Input
+                            name={field.name}
+                            value={String((formData as any)[field.name] ?? '')}
+                            onChange={handleInputChange}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <div className="text-sm font-medium text-foreground flex flex-col gap-1">
+                            {field.isList && Array.isArray(rawValue) ? (
+                              rawValue.map((item: any, i: number) => (
+                                <div key={i}>{item}</div>
+                              ))
+                            ) : (
+                              <span className="truncate">
+                                {rawValue || '—'}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            }
+          />
+
+          {/* Localization section */}
+          <SubpageCard
+            title="Localization"
+            description="Rack and environment placement"
+            type="info"
+            Icon={MapPin}
+            className="w-full"
+            content={
+              <div className="flex flex-col">
+                {[
+                  { label: 'Room Name', value: inventory.room_name },
+                  { label: 'Machine Name', value: inventory.machine_info },
+                  { label: 'Team Name', value: inventory.team_name },
+                ].map((item, index, array) => (
+                  <div
+                    key={item.label}
+                    className={`flex flex-col gap-1.5 py-4 ${
+                      index !== array.length - 1
+                        ? 'border-b border-border/50'
+                        : ''
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80">
+                      {item.label}
                     </span>
-                    {isEditing ? (
-                      isRented ? (
-                        <Switch
-                          checked={!!formData.rental_status}
-                          onCheckedChange={(checked) =>
-                            handleSwitchChange('rental_status', checked)
-                          }
-                        />
-                      ) : (
-                        <Input
-                          name={field.name}
-                          value={String((formData as any)[field.name] ?? '')}
-                          onChange={handleInputChange}
-                          className="h-8"
-                        />
-                      )
-                    ) : (
-                      <span className="font-medium">
-                        {isRented
-                          ? displayValue
-                            ? 'Rented'
-                            : 'Not Rented'
-                          : displayValue}
-                      </span>
-                    )}
+                    <span className="text-sm font-medium text-foreground">
+                      {item.value || '—'}
+                    </span>
                   </div>
-                )
-              })}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            }
+          />
 
-          {/* Localization*/}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-muted-foreground" />
-                Localization
-              </CardTitle>
-              <CardDescription>Item location and ownership</CardDescription>
-            </CardHeader>
-            <Separator />
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Location ID
-                </span>
-                <span className="font-medium">{inventory.localization_id}</span>
+          {/* Links section */}
+          <SubpageCard
+            title="Links"
+            description="Quick access to associated resources"
+            type="info"
+            Icon={Book}
+            className="w-full"
+            content={
+              <div className="flex flex-col gap-3">
+                {[
+                  {
+                    label: 'Location link',
+                    sub: 'Inventory placement',
+                    to: inventory.location_link,
+                  },
+                ].map((item, index) => (
+                  <Link
+                    key={index}
+                    to={item.to}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="font-bold text-sm tracking-tight">
+                        {item.label}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold opacity-70">
+                        {item.sub}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                ))}
               </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Machine ID
-                </span>
-                <span className="font-medium">{inventory.machine_id}</span>
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  Team ID
-                </span>
-                <span className="font-medium">{inventory.team_id}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Links */}
-            <Card className="md:col-span-1">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Book className="h-5 w-5 text-muted-foreground" />
-                  Links
-                </CardTitle>
-                <CardDescription>Item links</CardDescription>
-              </CardHeader>
-              <Separator />
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    Location link
-                  </span>
-                  <Link to="/">placeholder</Link>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+            }
+          />
         </div>
-      </div>
-    </div>
+      }
+    />
   )
 }

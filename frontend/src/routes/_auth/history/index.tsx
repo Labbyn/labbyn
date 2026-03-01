@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog'
 import { historyQueryOptions } from '@/integrations/history/history.query'
 import { useRollbackMutation } from '@/integrations/history/history.mutation'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/history/')({
   loader: ({ context: { queryClient } }) =>
@@ -149,15 +150,11 @@ function RouteComponent() {
 
   return (
     <div className="p-6 space-y-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <History className="h-6 w-6 text-primary" /> Infrastructure Audit Logs
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Review and revert modifications across the platform.
-        </p>
-      </header>
-
+      <PageHeader
+        title="Infrastructure Audit Logs"
+        description="Review and revert modifications across the platform."
+        icon={History}
+      />
       <DataTable
         columns={columns}
         data={history}

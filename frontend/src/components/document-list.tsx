@@ -1,9 +1,9 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { BookText, Plus, Trash2 } from 'lucide-react'
 import { DataTable } from './ui/data-table'
 import { DataTableColumnHeader } from './data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Document } from '@/types/types'
-
+import { PageHeader } from '@/components/page-header'
 import { Button } from '@/components/ui/button'
 
 interface DocumentListProps {
@@ -80,17 +80,24 @@ export function DocumentList({
   ]
 
   return (
-    <DataTable
-      data={documents}
-      columns={columns}
-      onRowClick={onSelectDocument}
-      selectedId={selectedDoc?.id.toString()}
-      actionElement={
-        <Button onClick={onCreateDocument} variant={'outline'}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create new document
-        </Button>
-      }
-    />
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Documentation"
+        description="Notes, scripts, instructions..."
+        icon={BookText}
+      />
+      <DataTable
+        data={documents}
+        columns={columns}
+        onRowClick={onSelectDocument}
+        selectedId={selectedDoc?.id.toString()}
+        actionElement={
+          <Button onClick={onCreateDocument} variant={'outline'}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create new document
+          </Button>
+        }
+      />
+    </div>
   )
 }

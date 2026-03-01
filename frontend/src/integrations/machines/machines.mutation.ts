@@ -15,6 +15,7 @@ const PATHS = {
   SETUP_AGENT: '/ansible/setup_agent',
   PROMETHEUS: '/prometheus/target',
   DETAIL: (id: string | number) => `/db/machines/${id}`,
+  REFRESH: (id: string | number) => `/ansible/machine/${id}/refresh`,
 }
 
 export const handlePlatformSubmission = async (values: PlatformFormValues) => {
@@ -107,4 +108,12 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
       })
     },
   })
+}
+
+export async function autoDiscoverMutation(
+  machineId: string | number,
+  formData,
+) {
+  const { data } = await api.post(PATHS.REFRESH(machineId), formData)
+  return data
 }

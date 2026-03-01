@@ -26,6 +26,7 @@ import { Route as AuthHistoryIndexRouteImport } from './routes/_auth/history/ind
 import { Route as AuthDocsIndexRouteImport } from './routes/_auth/docs/index'
 import { Route as AuthUsersUserIdRouteImport } from './routes/_auth/users/$userId'
 import { Route as AuthTeamsTeamIdRouteImport } from './routes/_auth/teams/$teamId'
+import { Route as AuthRacksRacksIdRouteImport } from './routes/_auth/racks/$racksId'
 import { Route as AuthMachinesMachineIdRouteImport } from './routes/_auth/machines/$machineId'
 import { Route as AuthLabsLabIdRouteImport } from './routes/_auth/labs/$labId'
 import { Route as AuthInventoryInventoryIdRouteImport } from './routes/_auth/inventory/$inventoryId'
@@ -122,6 +123,11 @@ const AuthTeamsTeamIdRoute = AuthTeamsTeamIdRouteImport.update({
   path: '/teams/$teamId',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthRacksRacksIdRoute = AuthRacksRacksIdRouteImport.update({
+  id: '/racks/$racksId',
+  path: '/racks/$racksId',
+  getParentRoute: () => AuthRoute,
+} as any)
 const AuthMachinesMachineIdRoute = AuthMachinesMachineIdRouteImport.update({
   id: '/machines/$machineId',
   path: '/machines/$machineId',
@@ -181,7 +187,6 @@ const AuthInventoryDeviceDeviceidRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthIndexRoute
   '/login': typeof LoginRoute
   '/add-items': typeof AuthAddItemsRoute
   '/docs': typeof AuthDocsRouteWithChildren
@@ -189,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/map': typeof AuthMapRoute
   '/settings': typeof AuthSettingsRoute
   '/user-dashboard': typeof AuthUserDashboardRoute
+  '/': typeof AuthIndexRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
   '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
@@ -199,14 +205,15 @@ export interface FileRoutesByFullPath {
   '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/labs/$labId': typeof AuthLabsLabIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs/': typeof AuthDocsIndexRoute
-  '/history/': typeof AuthHistoryIndexRoute
-  '/inventory/': typeof AuthInventoryIndexRoute
-  '/labs/': typeof AuthLabsIndexRoute
-  '/teams/': typeof AuthTeamsIndexRoute
-  '/users/': typeof AuthUsersIndexRoute
+  '/history': typeof AuthHistoryIndexRoute
+  '/inventory': typeof AuthInventoryIndexRoute
+  '/labs': typeof AuthLabsIndexRoute
+  '/teams': typeof AuthTeamsIndexRoute
+  '/users': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
 export interface FileRoutesByTo {
@@ -227,6 +234,7 @@ export interface FileRoutesByTo {
   '/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/labs/$labId': typeof AuthLabsLabIdRoute
   '/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/docs': typeof AuthDocsIndexRoute
@@ -258,6 +266,7 @@ export interface FileRoutesById {
   '/_auth/inventory/$inventoryId': typeof AuthInventoryInventoryIdRoute
   '/_auth/labs/$labId': typeof AuthLabsLabIdRoute
   '/_auth/machines/$machineId': typeof AuthMachinesMachineIdRoute
+  '/_auth/racks/$racksId': typeof AuthRacksRacksIdRoute
   '/_auth/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/_auth/users/$userId': typeof AuthUsersUserIdRoute
   '/_auth/docs/': typeof AuthDocsIndexRoute
@@ -271,7 +280,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/login'
     | '/add-items'
     | '/docs'
@@ -279,6 +287,7 @@ export interface FileRouteTypes {
     | '/map'
     | '/settings'
     | '/user-dashboard'
+    | '/'
     | '/admin-panel/inventory'
     | '/admin-panel/logging'
     | '/admin-panel/machines'
@@ -289,14 +298,15 @@ export interface FileRouteTypes {
     | '/inventory/$inventoryId'
     | '/labs/$labId'
     | '/machines/$machineId'
+    | '/racks/$racksId'
     | '/teams/$teamId'
     | '/users/$userId'
     | '/docs/'
-    | '/history/'
-    | '/inventory/'
-    | '/labs/'
-    | '/teams/'
-    | '/users/'
+    | '/history'
+    | '/inventory'
+    | '/labs'
+    | '/teams'
+    | '/users'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/inventory/$inventoryId'
     | '/labs/$labId'
     | '/machines/$machineId'
+    | '/racks/$racksId'
     | '/teams/$teamId'
     | '/users/$userId'
     | '/docs'
@@ -347,6 +358,7 @@ export interface FileRouteTypes {
     | '/_auth/inventory/$inventoryId'
     | '/_auth/labs/$labId'
     | '/_auth/machines/$machineId'
+    | '/_auth/racks/$racksId'
     | '/_auth/teams/$teamId'
     | '/_auth/users/$userId'
     | '/_auth/docs/'
@@ -375,7 +387,7 @@ declare module '@tanstack/react-router' {
     '/_auth': {
       id: '/_auth'
       path: ''
-      fullPath: '/'
+      fullPath: ''
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -431,35 +443,35 @@ declare module '@tanstack/react-router' {
     '/_auth/users/': {
       id: '/_auth/users/'
       path: '/users'
-      fullPath: '/users/'
+      fullPath: '/users'
       preLoaderRoute: typeof AuthUsersIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/teams/': {
       id: '/_auth/teams/'
       path: '/teams'
-      fullPath: '/teams/'
+      fullPath: '/teams'
       preLoaderRoute: typeof AuthTeamsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/labs/': {
       id: '/_auth/labs/'
       path: '/labs'
-      fullPath: '/labs/'
+      fullPath: '/labs'
       preLoaderRoute: typeof AuthLabsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/inventory/': {
       id: '/_auth/inventory/'
       path: '/inventory'
-      fullPath: '/inventory/'
+      fullPath: '/inventory'
       preLoaderRoute: typeof AuthInventoryIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/history/': {
       id: '/_auth/history/'
       path: '/history'
-      fullPath: '/history/'
+      fullPath: '/history'
       preLoaderRoute: typeof AuthHistoryIndexRouteImport
       parentRoute: typeof AuthRoute
     }
@@ -482,6 +494,13 @@ declare module '@tanstack/react-router' {
       path: '/teams/$teamId'
       fullPath: '/teams/$teamId'
       preLoaderRoute: typeof AuthTeamsTeamIdRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/racks/$racksId': {
+      id: '/_auth/racks/$racksId'
+      path: '/racks/$racksId'
+      fullPath: '/racks/$racksId'
+      preLoaderRoute: typeof AuthRacksRacksIdRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/machines/$machineId': {
@@ -595,6 +614,7 @@ interface AuthRouteChildren {
   AuthInventoryInventoryIdRoute: typeof AuthInventoryInventoryIdRoute
   AuthLabsLabIdRoute: typeof AuthLabsLabIdRoute
   AuthMachinesMachineIdRoute: typeof AuthMachinesMachineIdRoute
+  AuthRacksRacksIdRoute: typeof AuthRacksRacksIdRoute
   AuthTeamsTeamIdRoute: typeof AuthTeamsTeamIdRoute
   AuthUsersUserIdRoute: typeof AuthUsersUserIdRoute
   AuthHistoryIndexRoute: typeof AuthHistoryIndexRoute
@@ -622,6 +642,7 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthInventoryInventoryIdRoute: AuthInventoryInventoryIdRoute,
   AuthLabsLabIdRoute: AuthLabsLabIdRoute,
   AuthMachinesMachineIdRoute: AuthMachinesMachineIdRoute,
+  AuthRacksRacksIdRoute: AuthRacksRacksIdRoute,
   AuthTeamsTeamIdRoute: AuthTeamsTeamIdRoute,
   AuthUsersUserIdRoute: AuthUsersUserIdRoute,
   AuthHistoryIndexRoute: AuthHistoryIndexRoute,

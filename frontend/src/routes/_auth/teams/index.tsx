@@ -1,11 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { Users } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiTeamInfo } from '@/integrations/teams/teams.types'
 import { DataTable } from '@/components/ui/data-table'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { teamsInfoQueryOptions } from '@/integrations/teams/teams.query'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/teams/')({
   component: RouteComponent,
@@ -20,11 +22,24 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
     cell: ({ row }) => <span>{row.getValue('name')}</span>,
   },
   {
-    accessorKey: 'admin',
+    accessorKey: 'admins',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Administrator" />
     },
-    cell: ({ row }) => <span>{row.original.team_admin_name}</span>,
+    cell: ({ row }) => {
+      const admins = row.getValue<Array<any>>('admins')
+
+      if (!admins.length)
+        return <span className="text-muted-foreground">-</span>
+
+      return (
+        <div className="flex gap-1 flex-wrap">
+          {admins.map((admin, index) => (
+            <span key={index}>{admin.full_name}</span>
+          ))}
+        </div>
+      )
+    },
   },
   {
     accessorKey: 'memberCount',
@@ -36,11 +51,12 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
 ]
 
 function RouteComponent() {
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(teamsInfoQueryOptions)
   const navigate = Route.useNavigate()
 
   return (
-    <div className="h-screen w-full z-1 overflow-hidden">
+    <div className="p-6 space-y-6">
+      <PageHeader title="Teams" description="Groups and members" icon={Users} />
       <ScrollArea className="h-full">
         <div className="p-6">
           <DataTable

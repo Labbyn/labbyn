@@ -7,8 +7,10 @@ import type {
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/teams/teams_info',
-  SINGLE: (id: string | number) => `/db/teams/team_info/${id}`,
+  BASE: '/db/teams',
+  INFO: '/db/teams/teams_info',
+  SINGLE: (id: string | number) => `/db/teams/${id}`,
+  SINGLE_INFO: (id: string | number) => `/db/teams/team_info/${id}`,
   ADMIN: '/db/teams',
 }
 
@@ -28,11 +30,28 @@ export const teamsQueryOptions = queryOptions({
   },
 })
 
+export const teamsInfoQueryOptions = queryOptions({
+  queryKey: ['teams', 'info'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiTeamInfoResponse>(PATHS.INFO)
+    return data
+  },
+})
+
 export const singleTeamQueryOptions = (teamId: string | number) =>
   queryOptions({
     queryKey: ['teams', String(teamId)],
     queryFn: async () => {
       const { data } = await api.get<ApiTeamInfo>(PATHS.SINGLE(teamId))
+      return data
+    },
+  })
+
+export const singleTeamInfoQueryOptions = (teamId: string | number) =>
+  queryOptions({
+    queryKey: ['teams', 'info', String(teamId)],
+    queryFn: async () => {
+      const { data } = await api.get<ApiTeamInfo>(PATHS.SINGLE_INFO(teamId))
       return data
     },
   })

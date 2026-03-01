@@ -5,6 +5,7 @@ import api from '@/lib/api'
 const PATHS = {
   BASE: '/db/machines',
   SINGLE: (id: string) => `/db/machines/${id}`,
+  SINGLE_INFO: (id: string) => `/db/machines/${id}/full`,
 }
 
 // Fetch all machines
@@ -22,6 +23,18 @@ export const machineSpecQueryOptions = (machineId: string) =>
     queryKey: ['machines', 'spec', machineId],
     queryFn: async () => {
       const { data } = await api.get<ApiMachineItem>(PATHS.SINGLE(machineId))
+      return data
+    },
+  })
+
+// Fetch single machine by id - full info
+export const machineSpecInfoQueryOptions = (machineId: string) =>
+  queryOptions({
+    queryKey: ['machines', 'spec', 'info', machineId],
+    queryFn: async () => {
+      const { data } = await api.get<ApiMachineItem>(
+        PATHS.SINGLE_INFO(machineId),
+      )
       return data
     },
   })

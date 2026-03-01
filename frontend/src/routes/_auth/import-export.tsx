@@ -1,8 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { FolderInput } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import ImportTab from '@/components/import-export/import-tab'
 import { ExportTab } from '@/components/import-export/export-tab'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/import-export')({
   component: RouteComponent,
@@ -10,11 +12,12 @@ export const Route = createFileRoute('/_auth/import-export')({
 
 function RouteComponent() {
   return (
-    <div className="p-6 flex flex-col gap-6">
-      <article className="prose prose-neutral dark:prose-invert">
-        <h2>Import & Export</h2>
-        Bulk import or export your records for backup or analysis
-      </article>
+    <div className="p-6 space-y-6">
+      <PageHeader
+        title="Import & Export"
+        description="Import and export data to/from .csv file"
+        icon={FolderInput}
+      />
       <Separator />
       <Tabs defaultValue="import">
         <TabsList>
