@@ -868,6 +868,7 @@ class MachineFullDetailResponse(BaseModel):
     team_name: str
     rack_name: Optional[str]
     room_name: str
+    shelf_number: int
 
     last_update: Optional[date]
     monitoring: bool
