@@ -1,14 +1,16 @@
+import type { z } from 'zod'
+
 // Helper functions
 
 // time converter
-export function convertTimestampToDate(timestamp) {
+export function convertTimestampToDate(timestamp: string) {
   return new Date(timestamp).toLocaleString('en-CA', {
     hour12: false,
   })
 }
 
 // string concat
-export function addTextToString(text, textToAdd) {
+export function addTextToString(text: string, textToAdd: string) {
   if (text) {
     return `${text} ${textToAdd}`
   } else {

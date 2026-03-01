@@ -1,25 +1,13 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, Box, Cpu, Info, Server, Users } from 'lucide-react'
+import { Box, Cpu, Info, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Separator } from '@/components/ui/separator'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { TagList } from '@/components/tag-list'
-import { SubpageHeader } from '@/components/subpage-header'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { InputChecklist } from '@/components/input-checklist'
 import { SubPageTemplate } from '@/components/subpage-template'

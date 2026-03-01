@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, Cpu, Loader2, Plus, Server, Tag } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import {
   useMutation,
@@ -9,7 +9,6 @@ import {
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { InputChecklist } from './input-checklist'
-import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
   DialogContent,
@@ -19,21 +18,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
 import { useCreateTagMutation } from '@/integrations/tags/tags.mutation'
 import { zodValidate } from '@/utils/index'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
@@ -68,7 +56,7 @@ export function AssignTagDialog({ itemType, item, tag }) {
     name: key.charAt(0).toUpperCase() + key.slice(1),
   }))
 
-  const itemQueries = Object.values(itemsMap)
+  // const itemQueries = Object.values(itemsMap)
 
   const mutation = useMutation({
     mutationFn: useCreateTagMutation,

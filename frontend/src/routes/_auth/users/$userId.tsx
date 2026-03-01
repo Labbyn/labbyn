@@ -1,26 +1,15 @@
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   ChevronRight,
-  ClipboardList,
   Contact,
-  ExternalLink,
   FileUser,
   Info,
   Mail,
   UserSearch,
   Users,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { singleUserQueryOptions } from '@/integrations/user/user.query'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SubPageTemplate } from '@/components/subpage-template'

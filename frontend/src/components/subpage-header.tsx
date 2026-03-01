@@ -1,6 +1,5 @@
 import { ArrowLeft, Check, Edit2, X } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
-import { Separator } from './ui/separator'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ButtonGroup } from '@/components/ui/button-group'

@@ -2,18 +2,14 @@ import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  Activity,
   AlarmClock,
   ArrowDownUp,
-  ArrowLeft,
   Book,
   Box,
   Cable,
   Cctv,
-  Check,
   ChevronRight,
   Cpu,
-  Edit2,
   FileText,
   Info,
   Lock,
@@ -25,21 +21,11 @@ import {
   Save,
   StickyNote,
   Users,
-  X,
 } from 'lucide-react'
 import { InputChecklist } from '@/components/input-checklist'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { machineSpecInfoQueryOptions } from '@/integrations/machines/machines.query'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { TextField } from '@/components/text-field'
-import { Separator } from '@/components/ui/separator'
 import { useUpdateMachineMutation } from '@/integrations/machines/machines.mutation'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'

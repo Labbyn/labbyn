@@ -1,12 +1,5 @@
 import { useState } from 'react'
-import {
-  AlertCircle,
-  Cpu,
-  Loader2,
-  Plus,
-  RefreshCcw,
-  Server,
-} from 'lucide-react'
+import { Loader2, RefreshCcw } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -20,20 +13,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from '@/components/ui/field'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { autoDiscoverMutation } from '@/integrations/machines/machines.mutation'
 import { zodValidate } from '@/utils/index'
 

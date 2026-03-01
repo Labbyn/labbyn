@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BookText, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import {
   Empty,
   EmptyDescription,

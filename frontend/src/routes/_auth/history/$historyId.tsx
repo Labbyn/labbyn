@@ -2,28 +2,15 @@ import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
-  ArrowLeft,
   CircleQuestionMark,
   Clapperboard,
-  ClipboardList,
-  FolderInput,
-  FolderOutput,
   Info,
   Redo,
   RotateCcw,
   Undo,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { convertTimestampToDate } from '@/utils'
 import { singleHistoryQueryOptions } from '@/integrations/history/history.query'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 

@@ -12,19 +12,19 @@ export interface InventoryResponse {
 }
 
 export interface ApiInventoryInfoItem {
-   id: number
-   name: string
-   total_quantity: number
-   in_stock_quantity: number
-   team_name: string
-   room_name: string
-   machine_info: string
-   category_name: string
-   location_link: string
-   active_rentals: Array<any>
+  id: number
+  name: string
+  total_quantity: number
+  in_stock_quantity: number
+  team_name: string
+  room_name: string
+  machine_info: string
+  category_name: string
+  location_link: string
+  active_rentals: Array<any>
 }
 
 export type ApiInventoryItem = InventoryResponse
 export type ApiInventoryResponse = Array<InventoryResponse>
 
-export type ApiInventoryInfoResponse = Array<ApiInventoryInfoResponse
+export type ApiInventoryInfoResponse = Array<ApiInventoryInfoResponse>

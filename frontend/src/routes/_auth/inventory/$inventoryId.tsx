@@ -2,31 +2,17 @@ import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   BanknoteArrowUp,
   Book,
   ChartColumnStacked,
-  Check,
+  ChevronRight,
   ClipboardList,
   Coins,
-  Edit2,
   MapPin,
   WeightTilde,
-  X,
-  ChevronRight
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
 import { inventoryItemInfoQueryOptions } from '@/integrations/inventory/inventory.query'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { useUpdateInventoryMutation } from '@/integrations/inventory/inventory.mutation'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
@@ -77,21 +63,37 @@ function InventoryDetailsPage() {
       }}
       content={
         <div className="flex flex-col gap-6 w-full">
-          
           {/* Item Information section */}
           <SubpageCard
             title="Item Information"
             description="Item general information"
             type="info"
             Icon={ClipboardList}
-            className="w-full" 
+            className="w-full"
             content={
               <div className="flex flex-col">
                 {[
-                  { label: 'Total quantity', name: 'total_quantity', icon: WeightTilde },
-                  { label: 'In stock quantity', name: 'in_stock_quantity', icon: Coins },
-                  { label: 'Category', name: 'category_name', icon: ChartColumnStacked },
-                  { label: 'Active rentals', name: 'active_rentals', icon: BanknoteArrowUp, isList: true },
+                  {
+                    label: 'Total quantity',
+                    name: 'total_quantity',
+                    icon: WeightTilde,
+                  },
+                  {
+                    label: 'In stock quantity',
+                    name: 'in_stock_quantity',
+                    icon: Coins,
+                  },
+                  {
+                    label: 'Category',
+                    name: 'category_name',
+                    icon: ChartColumnStacked,
+                  },
+                  {
+                    label: 'Active rentals',
+                    name: 'active_rentals',
+                    icon: BanknoteArrowUp,
+                    isList: true,
+                  },
                 ].map((field, index, array) => {
                   const rawValue = (inventory as any)[field.name]
 
@@ -99,7 +101,9 @@ function InventoryDetailsPage() {
                     <div
                       key={field.name}
                       className={`flex flex-col gap-1.5 py-4 ${
-                        index !== array.length - 1 ? 'border-b border-border/50' : ''
+                        index !== array.length - 1
+                          ? 'border-b border-border/50'
+                          : ''
                       }`}
                     >
                       <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80">
@@ -122,7 +126,9 @@ function InventoryDetailsPage() {
                                 <div key={i}>{item}</div>
                               ))
                             ) : (
-                              <span className="truncate">{rawValue || '—'}</span>
+                              <span className="truncate">
+                                {rawValue || '—'}
+                              </span>
                             )}
                           </div>
                         )}
@@ -151,7 +157,9 @@ function InventoryDetailsPage() {
                   <div
                     key={item.label}
                     className={`flex flex-col gap-1.5 py-4 ${
-                      index !== array.length - 1 ? 'border-b border-border/50' : ''
+                      index !== array.length - 1
+                        ? 'border-b border-border/50'
+                        : ''
                     }`}
                   >
                     <span className="text-[11px] font-bold uppercase tracking-tight text-muted-foreground/80">

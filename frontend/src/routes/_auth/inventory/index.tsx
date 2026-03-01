@@ -2,7 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Package } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { fetchInventoryData } from '@/integrations/inventory/inventory.adapter'
+import type { ApiInventoryInfoResponse } from '@/integrations/inventory/inventory.types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
@@ -11,8 +11,6 @@ import { PageIsLoading } from '@/components/page-is-loading'
 import { inventoryInfoQueryOptions } from '@/integrations/inventory/inventory.query'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { PageHeader } from '@/components/page-header'
-import type { ApiInventoryInfoResponse } from '@/integrations/inventory/inventory.types'
-
 
 export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
@@ -75,7 +73,9 @@ export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
     cell: ({ row }) => {
       return (
         <div className="flex flex-col items-center justify-center text-center">
-          <span className="font-medium">{row.getValue('machine_info') || '-'}</span>
+          <span className="font-medium">
+            {row.getValue('machine_info') || '-'}
+          </span>
         </div>
       )
     },
@@ -92,24 +92,24 @@ export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
     ),
   },
   {
-     accessorKey: 'active_rentals',
+    accessorKey: 'active_rentals',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Active rentals" />
     },
     cell: ({ row }) => {
-      const rentals = row.original.active_rentals;
+      const rentals = row.original.active_rentals
       return (
-      <div className="flex flex-col items-center justify-center gap-1 text-center">
-        {rentals?.map((rent: string, index: number) => (
-          <span key={index}>{rent}</span>
-        ))}
-        {!rentals?.length && <span className="text-muted-foreground">—</span>}
-      </div>
-    );
-      }
+        <div className="flex flex-col items-center justify-center gap-1 text-center">
+          {rentals?.map((rent: string, index: number) => (
+            <span key={index}>{rent}</span>
+          ))}
+          {!rentals?.length && <span className="text-muted-foreground">—</span>}
+        </div>
+      )
     },
+  },
   {
-     accessorKey: 'rental_actions',
+    accessorKey: 'rental_actions',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Rental actions" />
     },
@@ -119,11 +119,12 @@ export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
       </div>
     ),
   },
-
 ]
 
 function RouteComponent() {
-  const { data: inventory = [], isLoading } = useQuery(inventoryInfoQueryOptions)
+  const { data: inventory = [], isLoading } = useQuery(
+    inventoryInfoQueryOptions,
+  )
   const navigate = Route.useNavigate()
 
   if (isLoading) return <PageIsLoading />

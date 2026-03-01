@@ -1,18 +1,13 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowLeft, Box } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiLabsItem } from '@/integrations/labs/labs.types'
 import { labQueryOptions } from '@/integrations/labs/labs.query'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Separator } from '@/components/ui/separator'
 import { TagList } from '@/components/tag-list'
 import { SubPageTemplate } from '@/components/subpage-template'
-import { SubpageCard } from '@/components/subpage-card'
 
 type RackItem = ApiLabsItem['racks'][number]
 

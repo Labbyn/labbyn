@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { AssignTagDialog } from './assign-tag-dialog'
 import type { ApiTagsResponse } from '@/integrations/tags/tags.types'
 import { Badge } from '@/components/ui/badge'
