@@ -5,13 +5,14 @@ import { ScrollArea } from './ui/scroll-area'
 interface SubPageProps {
   headerProps: {
     title: string
-    isEditing: boolean
-    editValue: string
-    onEditChange: (val: string) => void
-    onSave: () => void
-    onCancel: () => void
-    onStartEdit: () => void
-    onDelete: () => void
+    isEditing?: boolean
+    editValue?: string
+    onEditChange?: (val: string) => void
+    onSave?: () => void
+    onCancel?: () => void
+    onStartEdit?: () => void
+    onDelete?: () => void
+    type?: string
   }
   content: React.ReactNode
 }

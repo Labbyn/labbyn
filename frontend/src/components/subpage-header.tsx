@@ -5,17 +5,29 @@ import { Input } from '@/components/ui/input'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { DeleteAlertDialog } from '@/components/delete-alert-dialog'
 
+interface SubpageHeaderProps {
+  title: string
+  isEditing?: boolean
+  editValue?: string
+  onEditChange?: () => void
+  onSave?: () => void
+  onCancel?: () => void
+  onStartEdit?: () => void
+  onDelete?: () => void
+  type?: string
+}
+
 export function SubpageHeader({
   title,
-  isEditing,
-  editValue,
+  isEditing = false,
+  type = 'default',
   onEditChange,
   onSave,
   onCancel,
   onStartEdit,
   onDelete,
-  type,
-}) {
+  editValue,
+}: SubpageHeaderProps) {
   const router = useRouter()
 
   if (type == 'editable') {

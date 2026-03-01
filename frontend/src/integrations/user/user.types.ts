@@ -1,5 +1,3 @@
-import type { ApiTeamItem } from '../teams/teams.types'
-
 export type UserType = 'admin' | 'group_admin' | 'user'
 
 export interface UserRead {
@@ -45,7 +43,16 @@ export type ApiUserInfo = {
   surname: string
   login: string
   user_type: UserType
-  assigned_groups: Array<ApiTeamItem>
+  membership: Array<ApiUserInfoMembership>
+  avatar_url: string
+  email: string
+  group_links: Array<string>
+}
+
+export type ApiUserInfoMembership = {
+  team_id: number
+  team_name: string
+  is_group_admin: boolean
 }
 
 export type ApiUsersInfoRespnse = Array<ApiUserInfo>

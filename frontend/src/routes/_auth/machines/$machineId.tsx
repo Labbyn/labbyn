@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
@@ -22,7 +22,9 @@ import {
   StickyNote,
   Users,
 } from 'lucide-react'
+import type { TagItem } from '@/integrations/tags/tags.types'
 import { InputChecklist } from '@/components/input-checklist'
+// import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { machineSpecInfoQueryOptions } from '@/integrations/machines/machines.query'
 import { TextField } from '@/components/text-field'
@@ -39,7 +41,6 @@ export const Route = createFileRoute('/_auth/machines/$machineId')({
 })
 
 function MachineDetailsPage() {
-  const router = useRouter()
   const { machineId } = Route.useParams()
   const { data: machine } = useSuspenseQuery(
     machineSpecInfoQueryOptions(machineId),
@@ -57,6 +58,19 @@ function MachineDetailsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleListInputChange = (
+    field: string,
+    index: number,
+    key: string,
+    value: string,
+  ) => {
+    setFormData((prev) => {
+      const list = [...(prev[field as keyof typeof prev] as Array<any>)]
+      list[index] = { ...list[index], [key]: value }
+      return { ...prev, [field]: list }
+    })
+  }
+
   const handleSave = () => {
     updateMachine.mutate(formData, {
       onSuccess: () => setIsEditing(false),
@@ -72,27 +86,22 @@ function MachineDetailsPage() {
         isEditing: isEditing,
         editValue: formData.name,
         onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),
-        onSave: () => {
-          updateMachine.mutate(formData, {
-            onSuccess: () => setIsEditing(false),
-          })
-          setIsEditing(false)
-        },
+        onSave: () => handleSave,
         onCancel: () => {
           setFormData({ ...machine })
           setIsEditing(false)
         },
         onStartEdit: () => setIsEditing(true),
-        onDelete: () =>
-          deleteMachine.mutate({
-            onSuccess: () => {
-              toast.success('Machine deleted successfully')
-              router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
-            },
-          }),
+        onDelete: () => {},
+        // deleteMachine.mutate({
+        //  onSuccess: () => {
+        //    toast.success('Machine deleted successfully')
+        //    router.history.back()
+        //  },
+        //  onError: (error: Error) => {
+        //    toast.error('Operation failed', { description: error.message })
+        //  },
+        // }),
       }}
       content={
         <>
@@ -109,25 +118,51 @@ function MachineDetailsPage() {
             content={
               <>
                 {[
-                  { label: 'IP Address', name: 'ip_address', icon: Network },
+                  {
+                    label: 'IP Address',
+                    name: 'ip_address' as const,
+                    icon: Network,
+                  },
                   {
                     label: 'MAC Address',
-                    name: 'mac_address',
+                    name: 'mac_address' as const,
                     icon: ArrowDownUp,
                   },
-                  { label: 'Operating System', name: 'os', icon: MonitorCog },
-                  { label: 'CPU', name: 'cpus', icon: Cpu, isList: true },
-                  { label: 'RAM Memory', name: 'ram', icon: MemoryStick },
-                  { label: 'Storage', name: 'disks', icon: Save, isList: true },
-                  { label: 'PDU Port', name: 'pdu_port', icon: Cable },
+                  {
+                    label: 'Operating System',
+                    name: 'os' as const,
+                    icon: MonitorCog,
+                  },
+                  {
+                    label: 'CPU',
+                    name: 'cpus' as const,
+                    icon: Cpu,
+                    isList: true,
+                  },
+                  {
+                    label: 'RAM Memory',
+                    name: 'ram' as const,
+                    icon: MemoryStick,
+                  },
+                  {
+                    label: 'Storage',
+                    name: 'disks' as const,
+                    icon: Save,
+                    isList: true,
+                  },
+                  { label: 'PDU Port', name: 'pdu_port' as const, icon: Cable },
                   {
                     label: 'Serial Number',
-                    name: 'serial_number',
+                    name: 'serial_number' as const,
                     icon: FileText,
                   },
-                  { label: 'Added On', name: 'added_on', icon: AlarmClock },
-                  { label: 'Tags', name: 'tags', icon: Box },
-                  { label: 'Team', name: 'team_name', icon: Users },
+                  {
+                    label: 'Added On',
+                    name: 'added_on' as const,
+                    icon: AlarmClock,
+                  },
+                  { label: 'Tags', name: 'tags' as const, icon: Box },
+                  { label: 'Team', name: 'team_name' as const, icon: Users },
                 ].map((field, index, array) => {
                   const rawValue = machine[field.name]
 
@@ -148,12 +183,15 @@ function MachineDetailsPage() {
                         {isEditing ? (
                           <>
                             {field.name === 'tags' ? (
-                              <TagList tags={rawValue} type="edit" />
+                              <TagList
+                                tags={rawValue as Array<TagItem>}
+                                type="edit"
+                              />
                             ) : field.name === 'team_name' ? (
                               <InputChecklist
                                 items={teams}
                                 value={formData.team_name}
-                                onChange={(newTeamName) =>
+                                onChange={(newTeamName: string) =>
                                   setFormData((prev) => ({
                                     ...prev,
                                     team_name: newTeamName,
@@ -212,12 +250,14 @@ function MachineDetailsPage() {
                           </>
                         ) : (
                           <div className="text-sm font-medium text-foreground flex flex-col gap-1">
-                            {field.name === 'cpus' ? (
-                              rawValue?.map((cpu: any) => (
+                            {field.name === 'cpus' &&
+                            Array.isArray(rawValue) ? (
+                              rawValue.map((cpu: any) => (
                                 <div key={cpu.id}>{cpu.name}</div>
                               ))
-                            ) : field.name === 'disks' ? (
-                              rawValue?.map((disk: any) => (
+                            ) : field.name === 'disks' &&
+                              Array.isArray(rawValue) ? (
+                              rawValue.map((disk: any) => (
                                 <div
                                   key={disk.id}
                                   className="flex justify-between items-center max-w-[240px]"
@@ -229,14 +269,18 @@ function MachineDetailsPage() {
                                 </div>
                               ))
                             ) : field.name === 'tags' ? (
-                              <TagList tags={rawValue} />
+                              <TagList tags={rawValue as Array<TagItem>} />
                             ) : field.name === 'added_on' ? (
                               <span className="truncate">
-                                {convertTimestampToDate(rawValue) || '—'}
+                                {convertTimestampToDate(rawValue as string) ||
+                                  '—'}
                               </span>
                             ) : (
                               <span className="truncate">
-                                {rawValue || '—'}
+                                {typeof rawValue === 'string' ||
+                                typeof rawValue === 'number'
+                                  ? rawValue
+                                  : '—'}
                               </span>
                             )}
                           </div>
@@ -320,15 +364,19 @@ function MachineDetailsPage() {
             content={
               <>
                 {[
-                  { label: 'Monitoring', name: 'monitoring', icon: Cctv },
+                  {
+                    label: 'Monitoring',
+                    name: 'monitoring' as const,
+                    icon: Cctv,
+                  },
                   {
                     label: 'Ansible access',
-                    name: 'ansible_access',
+                    name: 'ansible_access' as const,
                     icon: Lock,
                   },
                   {
                     label: 'Ansible root access',
-                    name: 'ansible_root_access',
+                    name: 'ansible_root_access' as const,
                     icon: LockOpen,
                   },
                 ].map((field) => {

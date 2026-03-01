@@ -6,14 +6,23 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 
+interface SubpageCardProps {
+  title: string
+  description: string
+  content: React.Node
+  type?: string
+  Icon: Icon
+  isEditing?: boolean
+}
+
 export function SubpageCard({
   title,
   description,
   content,
-  isEditing,
-  type,
+  isEditing = false,
+  type = 'info',
   Icon,
-}) {
+}: SubpageCardProps) {
   const contentStyle =
     type === 'table'
       ? 'p-5'

@@ -30,7 +30,7 @@ export function AutoDiscovertDialog({
   machineId,
   machineHostname,
 }: {
-  machineId: number
+  machineId: string
   machineHostname: string
 }) {
   const [open, setOpen] = useState(false)

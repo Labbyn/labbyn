@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   ChevronRight,
@@ -10,7 +10,6 @@ import {
   Users,
 } from 'lucide-react'
 import { singleUserQueryOptions } from '@/integrations/user/user.query'
-import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
@@ -20,7 +19,6 @@ export const Route = createFileRoute('/_auth/users/$userId')({
 })
 
 function InventoryDetailsPage() {
-  const router = useRouter()
   const { userId } = Route.useParams()
   const { data: user } = useSuspenseQuery(singleUserQueryOptions(userId))
 

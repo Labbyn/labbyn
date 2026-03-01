@@ -1,11 +1,11 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { Box, Cpu, Server, Users } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
+import type { TagItem } from '@/integrations/tags/tags.types'
 import { singleTeamInfoQueryOptions } from '@/integrations/teams/teams.query'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
-import { Separator } from '@/components/ui/separator'
 import { TagList } from '@/components/tag-list'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
@@ -16,7 +16,6 @@ export const Route = createFileRoute('/_auth/teams/$teamId')({
 
 // TODO: Add admin operations
 function TeamsDetailsPage() {
-  const router = useRouter()
   const { teamId } = Route.useParams()
   const { data: team } = useSuspenseQuery(singleTeamInfoQueryOptions(teamId))
   const navigate = Route.useNavigate()
@@ -64,7 +63,7 @@ function TeamsDetailsPage() {
         <DataTableColumnHeader column={column} title="Tags" />
       ),
       cell: ({ row }) => {
-        const tags = row.getValue<Array<string>>('tags')
+        const tags = row.getValue<Array<TagItem>>('tags')
         return <TagList tags={tags} />
       },
     },
@@ -95,7 +94,7 @@ function TeamsDetailsPage() {
         <DataTableColumnHeader column={column} title="Tags" />
       ),
       cell: ({ row }) => {
-        const tags = row.getValue<Array<string>>('tags')
+        const tags = row.getValue<Array<TagItem>>('tags')
         return <TagList tags={tags} />
       },
     },
@@ -170,8 +169,8 @@ function TeamsDetailsPage() {
                   data={team.racks}
                   onRowClick={(row) => {
                     navigate({
-                      to: '/racks/$rackId',
-                      params: { rackId: String(row.id) },
+                      to: '/racks/$racksId',
+                      params: { racksId: String(row.id) },
                     })
                   }}
                 />
@@ -212,8 +211,8 @@ function TeamsDetailsPage() {
                   data={team.inventory}
                   onRowClick={(row) => {
                     navigate({
-                      to: '/inventory/$invnetoryId',
-                      params: { invnetoryId: String(row.id) },
+                      to: '/inventory/$inventoryId',
+                      params: { inventoryId: String(row.id) },
                     })
                   }}
                 />

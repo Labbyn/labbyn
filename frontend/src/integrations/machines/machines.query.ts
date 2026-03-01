@@ -1,5 +1,9 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiMachineItem, ApiMachineResponse } from './machines.types'
+import type {
+  ApiMachineInfo,
+  ApiMachineItem,
+  ApiMachineResponse,
+} from './machines.types'
 import api from '@/lib/api'
 
 const PATHS = {
@@ -32,7 +36,7 @@ export const machineSpecInfoQueryOptions = (machineId: string) =>
   queryOptions({
     queryKey: ['machines', 'spec', 'info', machineId],
     queryFn: async () => {
-      const { data } = await api.get<ApiMachineItem>(
+      const { data } = await api.get<ApiMachineInfo>(
         PATHS.SINGLE_INFO(machineId),
       )
       return data
