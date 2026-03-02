@@ -131,6 +131,11 @@ async def service_header():
 
 @pytest.fixture(scope="function")
 def service_header_sync(test_client):
+    """
+    Generate service authorization header for synchronous tests.
+    :param test_client:
+    :return:
+    """
     res = test_client.post(
         "/auth/login", data={"username": "Service", "password": "Service"}
     )
@@ -173,3 +178,49 @@ async def alpha_admin_header(test_client_async, service_header):
 
     token = login_res.json()["access_token"]
     return {"Authorization": f"Bearer {token}", "team_id": team_id}
+
+
+@pytest.fixture(scope="function")
+def rbac_data_suite(test_client, service_header_sync):
+    ac = test_client
+    h_service = service_header_sync
+
+    t_a = ac.post("/db/teams/", json={"name": f"Team_A_{uuid.uuid4().hex[:4]}"}, headers=h_service).json()["id"]
+    t_b = ac.post("/db/teams/", json={"name": f"Team_B_{uuid.uuid4().hex[:4]}"}, headers=h_service).json()["id"]
+
+    u_a_login = f"user_a_{uuid.uuid4().hex[:4]}"
+    u_a_res = ac.post("/db/users/", json={
+        "login": u_a_login, "email": f"{u_a_login}@lab.pl",
+        "user_type": "user", "team_ids": [t_a], "name": "User", "surname": "A"
+    }, headers=h_service).json()
+
+    u_a_pwd = u_a_res["generated_password"]
+    u_a_id = u_a_res["id"]
+
+    l_a = ac.post("/auth/login", data={"username": u_a_login, "password": u_a_pwd}).json()
+    h_a = {"Authorization": f"Bearer {l_a['access_token']}"}
+
+    u_b_login = f"admin_b_{uuid.uuid4().hex[:4]}"
+    u_b_res = ac.post("/db/users/", json={
+        "login": u_b_login, "email": f"{u_b_login}@lab.pl",
+        "user_type": "group_admin", "team_ids": [t_b], "name": "Admin", "surname": "B"
+    }, headers=h_service).json()
+
+    u_b_pwd = u_b_res["generated_password"]
+    u_b_id = u_b_res["id"]
+
+    l_b = ac.post("/auth/login", data={"username": u_b_login, "password": u_b_pwd}).json()
+    h_b = {"Authorization": f"Bearer {l_b['access_token']}"}
+
+    return {
+        "team_a_id": t_a,
+        "team_b_id": t_b,
+        "user_a_id": u_a_id,
+        "user_a_login": u_a_login,
+        "user_a_password": u_a_pwd,
+        "user_a_header": h_a,
+        "admin_b_id": u_b_id,
+        "admin_b_login": u_b_login,
+        "admin_b_password": u_b_pwd,
+        "admin_b_header": h_b
+    }
