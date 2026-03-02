@@ -2,7 +2,7 @@
 
 from typing import List
 from app.database import get_db
-from app.db.models import Teams, Inventory, Rack, Shelf, UsersTeams
+from app.db.models import Teams, Inventory, Rack, Shelf, UsersTeams, Rooms
 from app.db.schemas import (
     TeamsCreate,
     TeamsResponse,
@@ -175,6 +175,11 @@ def create_team(
     ctx.require_admin()
     obj = Teams(**team_data.model_dump())
     db.add(obj)
+    db.flush()
+
+    virtual_lab = Rooms(name="virtual", room_type="virtual", team_id=obj.id)
+    db.add(virtual_lab)
+
     db.commit()
     db.refresh(obj)
     return obj
