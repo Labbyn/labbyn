@@ -386,7 +386,6 @@ async def update_user_team_role(
 
     target_membership.is_group_admin = role_data.is_group_admin
 
-
     if role_data.is_group_admin:
         user_to_update = db.query(User).filter(User.id == user_id).first()
         if user_to_update and user_to_update.user_type == UserType.USER:
