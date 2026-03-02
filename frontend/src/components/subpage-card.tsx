@@ -25,19 +25,17 @@ export function SubpageCard({
 }: SubpageCardProps) {
   const contentStyle =
     type === 'table'
-      ? 'p-5'
+      ? 'px-5'
       : type === 'info'
         ? 'grid gap-6 sm:grid-cols-2'
         : ''
   return (
-    <Card className="pt-0">
-      <CardHeader className="px-6 py-4 border-b bg-muted/30">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            {<Icon className="h-5 w-5 text-muted-foreground text-primary" />}
-            {title}
-          </CardTitle>
-        </div>
+    <Card className="pt-0 overflow-hidden">
+      <CardHeader className="px-6 py-6 border-b bg-muted/30">
+        <CardTitle className="flex items-center gap-2">
+          {<Icon className="h-5 w-5 text-primary" />}
+          {title}
+        </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className={contentStyle}>{content}</CardContent>

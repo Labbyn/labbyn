@@ -35,7 +35,7 @@ function RouteComponent() {
         icon={Server}
       />
       <ScrollArea className="h-screen w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-6 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
           {labs.map((lab) => (
             <Card>
               <CardHeader>

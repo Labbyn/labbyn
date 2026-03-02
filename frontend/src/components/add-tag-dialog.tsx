@@ -5,7 +5,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
 import { colorMap } from './tag-list'
-import { InputChecklist } from './input-checklist'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
 import {
   Dialog,
   DialogContent,
@@ -19,7 +25,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCreateTagMutation } from '@/integrations/tags/tags.mutation'
 import { zodValidate } from '@/utils/index'
 
@@ -38,6 +43,7 @@ export function AddTagDialog() {
   }))
 
   const mutation = useMutation({
+    mutationKey: ['create-tag'],
     mutationFn: useCreateTagMutation,
     onSuccess: () => {
       toast.success('Tag added successfully')
@@ -64,13 +70,13 @@ export function AddTagDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <SidebarMenuButton>
-          <Tag className="h-5 w-5" />
+          <Tag />
           <span>Add Tag</span>
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[35vh] overflow-hidden">
-        <DialogHeader className="px-6 py-6 pb-2 shrink-0">
+      <DialogContent>
+        <DialogHeader>
           <DialogTitle>Add new tag</DialogTitle>
           <DialogDescription>
             Create new tag to group your resources
@@ -83,52 +89,61 @@ export function AddTagDialog() {
             e.stopPropagation()
             form.handleSubmit()
           }}
-          className="flex flex-col flex-1 min-h-0 overflow-hidden"
         >
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="space-y-6 px-6 py-4">
-              {/* Tag name - Always Required */}
-              <form.Field
-                name="name"
-                validators={{ onChange: zodValidate(schemas.name) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="e.g. performance"
-                      className={
-                        field.state.meta.errors.length
-                          ? 'border-destructive'
-                          : ''
-                      }
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="color"
-                validators={{ onChange: zodValidate(schemas.color) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Color</FieldLabel>
-                    <InputChecklist
-                      items={colorArray}
-                      value={field.state.value}
-                      onChange={(newColor) => field.handleChange(newColor)}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-            </div>
-          </ScrollArea>
-
-          <DialogFooter className="p-6 pt-2 shrink-0 border-t bg-background">
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1 mb-6">
+            {/* Tag name - Always Required */}
+            <form.Field
+              name="name"
+              validators={{ onChange: zodValidate(schemas.name) }}
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Tag Name</FieldLabel>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g. performance"
+                    className={
+                      field.state.meta.errors.length ? 'border-destructive' : ''
+                    }
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            />
+            <form.Field
+              name="color"
+              validators={{ onChange: zodValidate(schemas.color) }}
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Color</FieldLabel>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => field.handleChange(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colorArray.map((color) => (
+                        <SelectItem key={color.id} value={color.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: color.name }}
+                            />
+                            <span className="capitalize">{color.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+          </div>
+          <DialogFooter>
             <Button
               variant="outline"
               type="button"
@@ -145,12 +160,12 @@ export function AddTagDialog() {
                 >
                   {mutation.isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="animate-spin" />
                       Processing...
                     </>
                   ) : (
                     <>
-                      <Plus className="mr-2 h-4 w-4" />
+                      <Plus />
                       Add Tag
                     </>
                   )}

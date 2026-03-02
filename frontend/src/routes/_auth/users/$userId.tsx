@@ -38,7 +38,7 @@ function InventoryDetailsPage() {
             content={
               <>
                 {/* Avatar Section */}
-                <div className="flex flex-col items-center space-y-3">
+                <div className="flex flex-col place-self-center">
                   <Avatar className="h-32 w-32 border-4 border-muted shadow-sm">
                     <AvatarImage src={user.avatar_url} alt={user.name} />
                     <AvatarFallback className="text-2xl font-bold bg-primary/10 text-primary">
@@ -65,7 +65,9 @@ function InventoryDetailsPage() {
                       <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <field.icon className="h-4 w-4" /> {field.label}
                       </span>
-                      <span className="font-semibold">{field.value}</span>
+                      <span className="font-semibold md:break-all">
+                        {field.value}
+                      </span>
                     </div>
                   ))}
                 </div>

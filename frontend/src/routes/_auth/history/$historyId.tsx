@@ -76,7 +76,7 @@ function HistoryDetailsPage() {
                         {field.label}
                       </div>
 
-                      <div className="flex flex-col gap-2 min-h-[32px] justify-center">
+                      <div className="flex flex-col gap-2 min-h-8 justify-center">
                         <div className="text-sm font-medium text-foreground flex flex-col gap-1">
                           <span className="truncate">
                             {canRollback

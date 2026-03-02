@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { BookText } from 'lucide-react'
 import { DocsProvider } from './docs/-context'
 import type { Document } from '@/types/types'
 import { DocumentList } from '@/components/document-list'
@@ -22,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { PageHeader } from '@/components/page-header'
 
 export const Route = createFileRoute('/_auth/docs')({
   component: DocsLayout,
@@ -76,6 +78,13 @@ function DocsLayout() {
       <div className="h-auto xl:h-screen w-full xl:overflow-hidden">
         <div className="grid grid-cols-1 xl:grid-cols-5 h-full">
           <div className="xl:col-span-2 h-full xl:overflow-y-hidden">
+            <div className="p-4 pb-0 xl:p-6 xl:pb-0 xl:pr-3">
+              <PageHeader
+                title="Documentation"
+                description="Notes, scripts, instructions..."
+                icon={BookText}
+              />
+            </div>
             <ScrollArea className="h-full" dir="rtl">
               <div className="p-4 pb-0 xl:p-6 xl:pb-6 xl:pr-3" dir="ltr">
                 <DocumentList

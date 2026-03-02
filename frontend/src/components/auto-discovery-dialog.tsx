@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { z } from 'zod'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -14,10 +15,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { autoDiscoverMutation } from '@/integrations/machines/machines.mutation'
 import { zodValidate } from '@/utils/index'
 
@@ -72,86 +71,75 @@ export function AutoDiscovertDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <RefreshCcw className="h-5 w-5" />
-          <span>Refresh host information</span>
-        </SidebarMenuButton>
+        <Button variant="ghost">
+          <RefreshCcw />
+          Refresh host information
+        </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[35vh] overflow-hidden">
-        <DialogHeader className="px-6 py-6 pb-2 shrink-0">
+      <DialogContent>
+        <DialogHeader>
           <DialogTitle>Refresh machine information</DialogTitle>
           <DialogDescription>
             Automatically refresh outdated platform informations
           </DialogDescription>
         </DialogHeader>
-
         <form
           onSubmit={(e) => {
             e.preventDefault()
             e.stopPropagation()
             form.handleSubmit()
           }}
-          className="flex flex-col flex-1 min-h-0 overflow-hidden"
+          className="flex flex-col"
         >
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="space-y-6 px-6 py-4">
-              {/* SSH User - Always Required */}
-              <form.Field
-                name="username"
-                validators={{ onChange: zodValidate(schemas.username) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>SSH User</FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="e.g. ansible_user"
-                      className={
-                        field.state.meta.errors.length
-                          ? 'border-destructive'
-                          : ''
-                      }
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="password"
-                validators={{ onChange: zodValidate(schemas.password) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>SSH Password</FieldLabel>
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      type="password"
-                      className={
-                        field.state.meta.errors.length
-                          ? 'border-destructive'
-                          : ''
-                      }
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-            </div>
-          </ScrollArea>
+          <div className="max-h-[60vh] overflow-y-auto space-y-4 py-1 mb-6">
+            {/* SSH User - Always Required */}
+            <form.Field
+              name="username"
+              validators={{ onChange: zodValidate(schemas.username) }}
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>SSH User</FieldLabel>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g. ansible_user"
+                    className={
+                      field.state.meta.errors.length ? 'border-destructive' : ''
+                    }
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            />
+            <form.Field
+              name="password"
+              validators={{ onChange: zodValidate(schemas.password) }}
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>SSH Password</FieldLabel>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    type="password"
+                    className={
+                      field.state.meta.errors.length ? 'border-destructive' : ''
+                    }
+                  />
+                  <FieldError errors={field.state.meta.errors} />
+                </Field>
+              )}
+            />
+          </div>
 
-          <DialogFooter className="p-6 pt-2 shrink-0 border-t bg-background">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
             <form.Subscribe
               selector={(state) => [state.canSubmit]}
               children={([canSubmit]) => (
@@ -161,12 +149,12 @@ export function AutoDiscovertDialog({
                 >
                   {mutation.isPending ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="animate-spin" />
                       Processing...
                     </>
                   ) : (
                     <>
-                      <RefreshCcw className="mr-2 h-4 w-4" />
+                      <RefreshCcw />
                       Refresh information
                     </>
                   )}

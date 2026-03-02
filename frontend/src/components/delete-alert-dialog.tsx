@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -7,6 +8,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
@@ -16,24 +18,28 @@ export function DeleteAlertDialog({ onDelete }: { onDelete: () => void }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button className="text-red-500" variant="destructive" size="sm">
-          <Trash2 className="mr-2 h-4 w-4" /> Delete
+        <Button variant="destructive">
+          <Trash2 /> Delete
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent size="sm">
         <AlertDialogHeader>
+          <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+            <Trash2 />
+          </AlertDialogMedia>
           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="text-pretty">
             This action will delete the item. Remember you can always rollback
-            changes in history section.
+            changes in{' '}
+            <Link to="/history" className="underline">
+              history
+            </Link>{' '}
+            section.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onDelete}
-            className="text-red-500 bg-red-900 hover:bg-red-800"
-          >
+          <AlertDialogCancel variant="outline">Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} variant="destructive">
             Delete
           </AlertDialogAction>
         </AlertDialogFooter>

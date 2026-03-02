@@ -179,7 +179,7 @@ function MachineDetailsPage() {
                         <field.icon className="h-3.5 w-3.5" />
                         {field.label}
                       </div>
-                      <div className="flex flex-col gap-2 min-h-[32px] justify-center">
+                      <div className="flex flex-col gap-2 min-h-8 justify-center">
                         {isEditing ? (
                           <>
                             {field.name === 'tags' ? (
@@ -260,7 +260,7 @@ function MachineDetailsPage() {
                               rawValue.map((disk: any) => (
                                 <div
                                   key={disk.id}
-                                  className="flex justify-between items-center max-w-[240px]"
+                                  className="flex justify-between items-center max-w-60"
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
@@ -392,7 +392,7 @@ function MachineDetailsPage() {
                         {field.label}
                       </div>
 
-                      <div className="flex items-center min-h-[32px]">
+                      <div className="flex items-center min-h-8">
                         <div className="text-sm font-medium">
                           <div className="flex items-center gap-2">
                             <div
@@ -444,23 +444,32 @@ function MachineDetailsPage() {
                       sub: 'System metrics',
                       to: machine.grafana_link,
                     },
-                  ].map((item, index) => (
-                    <Link
-                      key={index}
-                      to={item.to}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <span className="font-bold text-sm tracking-tight">
-                          {item.label}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground uppercase font-semibold opacity-70">
-                          {item.sub}
-                        </span>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  ))}
+                  ].map((item, index) => {
+                    const isExternal = item.to.startsWith('http')
+                    const Component = isExternal ? 'a' : Link
+
+                    const extraProps = isExternal
+                      ? { href: item.to, target: '_blank', rel: 'noreferrer' }
+                      : { to: item.to }
+                    return (
+                      <Component
+                        key={index}
+                        {...(extraProps as any)}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
+                      >
+                        <div className="flex flex-col gap-1">
+                          <span className="font-bold text-sm tracking-tight">
+                            {item.label}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-semibold opacity-70">
+                            {item.sub}
+                          </span>
+                        </div>
+
+                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                      </Component>
+                    )
+                  })}
                 </div>
               </>
             }

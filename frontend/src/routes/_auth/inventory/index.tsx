@@ -137,23 +137,21 @@ function RouteComponent() {
         icon={Package}
       />
       <ScrollArea className="h-full">
-        <div className="p-6">
-          <DataTable
-            columns={columns}
-            data={inventory}
-            onRowClick={(row) => {
-              navigate({
-                to: '/inventory/$inventoryId',
-                params: { inventoryId: String(row.id) },
-              })
-            }}
-            actionElement={
-              <Button>
-                <Link to="/add-items">Add items</Link>
-              </Button>
-            }
-          />
-        </div>
+        <DataTable
+          columns={columns}
+          data={inventory}
+          onRowClick={(row) => {
+            navigate({
+              to: '/inventory/$inventoryId',
+              params: { inventoryId: String(row.id) },
+            })
+          }}
+          actionElement={
+            <Button>
+              <Link to="/add-items">Add items</Link>
+            </Button>
+          }
+        />
       </ScrollArea>
     </div>
   )

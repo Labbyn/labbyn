@@ -76,18 +76,16 @@ function RouteComponent() {
     <div className="p-6 space-y-6">
       <PageHeader title="Users" description="Users description" icon={User} />
       <ScrollArea className="h-full">
-        <div className="p-6">
-          <DataTable
-            columns={columns}
-            data={users}
-            onRowClick={(row) => {
-              navigate({
-                to: '/users/$userId',
-                params: { userId: String(row.id) },
-              })
-            }}
-          />
-        </div>
+        <DataTable
+          columns={columns}
+          data={users}
+          onRowClick={(row) => {
+            navigate({
+              to: '/users/$userId',
+              params: { userId: String(row.id) },
+            })
+          }}
+        />
       </ScrollArea>
     </div>
   )

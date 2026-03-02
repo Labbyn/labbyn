@@ -10,11 +10,11 @@ interface SubPageProps {
 
 export function SubPageTemplate({ headerProps, content }: SubPageProps) {
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
+    <div className="flex flex-col h-screen w-full">
       <SubpageHeader {...headerProps} />
       <Separator />
-      <ScrollArea className="h-full bg-slate-50/50 dark:bg-zinc-950/50">
-        <div className="p-8 max-w-[1600px] mx-auto space-y-8">{content}</div>
+      <ScrollArea className="overflow-hidden w-full">
+        <div className="p-6 space-y-6 mx-auto max-w-400">{content}</div>
       </ScrollArea>
     </div>
   )
