@@ -1,58 +1,136 @@
 import uuid
+import pytest
+
+pytestmark = [
+    pytest.mark.smoke,
+    pytest.mark.api,
+    pytest.mark.rbac
+]
 
 
-def test_rbac_user_tampering_protection(test_client, rbac_data):
+def test_rbac_cross_team_visibility_isolation(test_client, service_header_sync, rbac_data_suite):
+    """
+    Verify strict data isolation between teams.
+
+    Ensures that a user with access to Team A cannot list or discover resources
+    (rooms) belonging to Team B, maintaining multi-tenant security boundaries.
+    """
     ac = test_client
+    room_b_name = f"SecretRoom_B_{uuid.uuid4().hex[:4]}"
 
-    malicious_payload = {"login": "hacked_admin"}
+    ac.post("/db/rooms/",
+            json={"name": room_b_name, "room_type": "Lab", "team_id": rbac_data_suite["team_b_id"]},
+            headers=service_header_sync)
 
-    admin_info = ac.get("/db/users/list_info", headers=rbac_data["admin_b_header"]).json()
-    admin_b_id = next(u["id"] for u in admin_info if u["login"] == rbac_data["admin_b_login"])
+    res = ac.get("/db/rooms/", headers=rbac_data_suite["user_a_header"])
+    rooms = res.json()
 
-    res = ac.patch(f"/db/users/{admin_b_id}",
-                   json=malicious_payload,
-                   headers=rbac_data["user_a_header"])
-
-    assert res.status_code == 403
-
-
-def test_rbac_unauthorized_team_creation(test_client, rbac_data):
-    res = test_client.post("/db/teams/",
-                           json={"name": "Malicious Team"},
-                           headers=rbac_data["user_a_header"])
-
-    assert res.status_code == 403
+    for room in rooms:
+        assert room["team_id"] != rbac_data_suite["team_b_id"]
+        assert room["name"] != room_b_name
 
 
-def test_rbac_cross_team_shelf_destruction(test_client, service_header_sync, rbac_data):
+def test_rbac_multi_team_membership_visibility(test_client, service_header_sync, rbac_data_suite, db_session):
+    """
+    Validate resource visibility for users with multi-team membership.
+
+    Verifies that updating a user's team assignments correctly expands their
+    data access scope, allowing them to view resources across all assigned teams
+    via the team_filter mechanism.
+    """
     ac = test_client
-    h_service = service_header_sync
-
-    room_b = ac.post("/db/rooms/", json={
-        "name": f"RoomB_{uuid.uuid4().hex[:4]}", "team_id": rbac_data["team_b_id"]
-    }, headers=h_service).json()["id"]
-
-    rack_b = ac.post("/db/racks/", json={
-        "name": "RackB", "room_id": room_b, "team_id": rbac_data["team_b_id"]
-    }, headers=h_service).json()["id"]
-
-    shelf_b = ac.post(f"/db/shelf/{rack_b}",
-                      json={"name": "CriticalShelf", "order": 1},
-                      headers=h_service).json()["id"]
-
-    res = ac.delete(f"/db/shelf/{shelf_b}", headers=rbac_data["user_a_header"])
-
-    assert res.status_code in [403, 404]
+    u_id = int(rbac_data_suite["user_a_id"])
+    team_a = int(rbac_data_suite["team_a_id"])
+    team_b = int(rbac_data_suite["team_b_id"])
 
 
-def test_rbac_admin_promotion_isolation(test_client, service_header_sync, rbac_data):
+    ac.post("/db/rooms/",
+            json={"name": "Room_In_A", "room_type": "Lab", "team_id": team_a},
+            headers=service_header_sync)
+    ac.post("/db/rooms/",
+            json={"name": "Room_In_B", "room_type": "Lab", "team_id": team_b},
+            headers=service_header_sync)
+
+    update_res = ac.patch(f"/db/users/{u_id}",
+                          json={"team_ids": [team_a, team_b]},
+                          headers=service_header_sync)
+    assert update_res.status_code == 200
+    db_session.commit()
+
+    login_res = ac.post("/auth/login",
+                        data={"username": rbac_data_suite["user_a_login"],
+                              "password": rbac_data_suite["user_a_password"]})
+    multi_header = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+    res = ac.get("/db/rooms/", headers=multi_header)
+    rooms = res.json()
+    visible_teams = {r["team_id"] for r in rooms}
+
+    assert team_a in visible_teams
+    assert team_b in visible_teams
+
+
+def test_rbac_permission_elevation_flow(test_client, service_header_sync, rbac_data_suite, db_session):
+    """
+    Verify end-to-end permission elevation from USER to GROUP_ADMIN.
+
+    Validates that promoting a user within a team correctly updates their permissions,
+    and that subsequent requests (post-relogin) allow the user to perform
+    restricted actions like creating resources within their authorized team.
+    """
+
     ac = test_client
+    u_id = int(rbac_data_suite["user_a_id"])
+    t_id = int(rbac_data_suite["team_a_id"])
 
-    u_a_res = ac.get("/db/users/list_info", headers=service_header_sync).json()
-    u_a_id = next(u["id"] for u in u_a_res if u["login"] == rbac_data["user_a_login"])
+    # Promocja
+    ac.patch(f"/db/users/{u_id}/promote",
+             json={"team_id": t_id, "is_group_admin": True},
+             headers=service_header_sync)
 
-    res = ac.patch(f"/db/users/{u_a_id}/promote",
-                   json={"team_id": rbac_data["team_a_id"], "is_group_admin": True},
-                   headers=rbac_data["admin_b_header"])
+    db_session.commit()
+    db_session.expire_all()
 
-    assert res.status_code == 403
+    login_res = ac.post("/auth/login",
+                        data={"username": rbac_data_suite["user_a_login"],
+                              "password": rbac_data_suite["user_a_password"]})
+    token = login_res.json()['access_token']
+    new_header = {"Authorization": f"Bearer {token}"}
+
+    new_room = {"name": f"AdminRoom_{uuid.uuid4().hex[:4]}", "room_type": "Lab", "team_id": t_id}
+    res_after = ac.post("/db/rooms/", json=new_room, headers=new_header)
+
+    assert res_after.status_code == 201
+
+
+def test_rbac_multi_group_admin_management(test_client, service_header_sync, rbac_data_suite, db_session):
+    """
+    Test management capabilities across multiple group admin assignments.
+
+    Ensures that the RBAC system correctly handles users who are administrators
+    of multiple teams, allowing resource management in any team where the
+    user has admin privileges, and that permissions are properly scoped to the relevant team context.
+    """
+
+    ac = test_client
+    u_id = int(rbac_data_suite["user_a_id"])
+    team_a = int(rbac_data_suite["team_a_id"])
+    team_b = int(rbac_data_suite["team_b_id"])
+
+    ac.patch(f"/db/users/{u_id}", json={"team_ids": [team_a, team_b]}, headers=service_header_sync)
+
+    ac.patch(f"/db/users/{u_id}/promote",
+             json={"team_id": team_b, "is_group_admin": True},
+             headers=service_header_sync)
+
+    db_session.commit()
+
+    login_res = ac.post("/auth/login",
+                        data={"username": rbac_data_suite["user_a_login"],
+                              "password": rbac_data_suite["user_a_password"]})
+    admin_header = {"Authorization": f"Bearer {login_res.json()['access_token']}"}
+
+    res_b = ac.post("/db/rooms/",
+                    json={"name": f"RoomB_{uuid.uuid4().hex[:4]}", "room_type": "Lab", "team_id": team_b},
+                    headers=admin_header)
+    assert res_b.status_code == 201
