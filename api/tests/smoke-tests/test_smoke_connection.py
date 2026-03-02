@@ -1,10 +1,8 @@
 import pytest
 import subprocess
 
-pytestmark = [
-    pytest.mark.smoke,
-    pytest.mark.legacy
-]
+pytestmark = [pytest.mark.smoke, pytest.mark.legacy]
+
 
 @pytest.mark.skip(reason="Redis connection covered by other tests")
 def test_redis_connection():

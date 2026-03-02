@@ -32,7 +32,9 @@ async def test_prometheus_metrics_endpoint(test_client, service_header_sync):
 
 
 @pytest.mark.xfail
-@pytest.mark.skip(reason="WebSocket testing with WebSocketClient is causing issues in CI/CD pipeline. Please test manually if needed.")
+@pytest.mark.skip(
+    reason="WebSocket testing with WebSocketClient is causing issues in CI/CD pipeline. Please test manually if needed."
+)
 async def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
     """
     Smoke test for /ws/metrics WebSocket endpoint.
