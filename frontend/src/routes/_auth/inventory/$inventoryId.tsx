@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   BanknoteArrowUp,
@@ -22,7 +22,6 @@ export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
 })
 
 function InventoryDetailsPage() {
-  const router = useRouter()
   const { inventoryId } = Route.useParams()
   const { data: inventory } = useSuspenseQuery(
     inventoryItemInfoQueryOptions(inventoryId),
@@ -69,7 +68,6 @@ function InventoryDetailsPage() {
             description="Item general information"
             type="info"
             Icon={ClipboardList}
-            className="w-full"
             content={
               <div className="flex flex-col">
                 {[
@@ -146,7 +144,6 @@ function InventoryDetailsPage() {
             description="Rack and environment placement"
             type="info"
             Icon={MapPin}
-            className="w-full"
             content={
               <div className="flex flex-col">
                 {[
@@ -180,7 +177,6 @@ function InventoryDetailsPage() {
             description="Quick access to associated resources"
             type="info"
             Icon={Book}
-            className="w-full"
             content={
               <div className="flex flex-col gap-3">
                 {[

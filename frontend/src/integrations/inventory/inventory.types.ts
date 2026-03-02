@@ -27,4 +27,4 @@ export interface ApiInventoryInfoItem {
 export type ApiInventoryItem = InventoryResponse
 export type ApiInventoryResponse = Array<InventoryResponse>
 
-export type ApiInventoryInfoResponse = Array<ApiInventoryInfoResponse>
+export type ApiInventoryInfoResponse = Array<ApiInventoryInfoItem>

@@ -2,7 +2,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Package } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiInventoryInfoResponse } from '@/integrations/inventory/inventory.types'
+import type { ApiInventoryInfoItem } from '@/integrations/inventory/inventory.types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_auth/inventory/')({
   component: RouteComponent,
 })
 
-export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
+export const columns: Array<ColumnDef<ApiInventoryInfoItem>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => {
@@ -100,10 +100,10 @@ export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
       const rentals = row.original.active_rentals
       return (
         <div className="flex flex-col items-center justify-center gap-1 text-center">
-          {rentals?.map((rent: string, index: number) => (
+          {rentals.map((rent: string, index: number) => (
             <span key={index}>{rent}</span>
           ))}
-          {!rentals?.length && <span className="text-muted-foreground">—</span>}
+          {!rentals.length && <span className="text-muted-foreground">—</span>}
         </div>
       )
     },
@@ -113,7 +113,7 @@ export const columns: Array<ColumnDef<ApiInventoryInfoResponse>> = [
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Rental actions" />
     },
-    cell: ({ row }) => (
+    cell: ({ row: _ }) => (
       <div className="flex flex-col items-center justify-center text-center">
         <Button>RENT PLACEHOLDER</Button>
       </div>

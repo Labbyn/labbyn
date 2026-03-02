@@ -13,10 +13,16 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
-
 import { SortableItem } from './sortable-item'
+import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
+import type { DragEndEvent } from '@dnd-kit/core'
 
-export function DndTable({ dbItems, onReorder }) {
+interface DndTableProps {
+  dbItems: Array<Array<ApiRackDetailMachineItem>>
+  onReorder: (newItems: Array<Array<ApiRackDetailMachineItem>>) => void
+}
+
+export function DndTable({ dbItems, onReorder }: DndTableProps) {
   const [items, setItems] = useState(dbItems)
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -41,18 +47,19 @@ export function DndTable({ dbItems, onReorder }) {
     </DndContext>
   )
 
-  function handleDragEnd(event) {
+  function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     // we have a 2D array of machines representing shelfs
-    if (active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item[0].id === active.id)
-      const newIndex = items.findIndex((item) => item[0].id === over.id)
-
-      const result = arrayMove(items, oldIndex, newIndex)
-      setItems(result)
-      onReorder(result)
-
-      return result
+    if (!over || active.id === over.id) {
+      return
     }
+    const oldIndex = items.findIndex((item) => item[0].id === active.id)
+    const newIndex = items.findIndex((item) => item[0].id === over.id)
+
+    const result = arrayMove(items, oldIndex, newIndex)
+    setItems(result)
+    onReorder(result)
+
+    return result
   }
 }

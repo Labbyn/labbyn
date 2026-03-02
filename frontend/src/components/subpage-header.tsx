@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input'
 import { ButtonGroup } from '@/components/ui/button-group'
 import { DeleteAlertDialog } from '@/components/delete-alert-dialog'
 
-interface SubpageHeaderProps {
+export interface SubpageHeaderProps {
   title: string
   isEditing?: boolean
   editValue?: string
-  onEditChange?: () => void
+  onEditChange?: (val: string) => void
   onSave?: () => void
   onCancel?: () => void
   onStartEdit?: () => void
@@ -43,11 +43,15 @@ export function SubpageHeader({
 
         <div className="flex-1">
           {isEditing ? (
-            <Input
-              value={editValue}
-              onChange={(e) => onEditChange(e.target.value)}
-              className="h-8"
-            />
+            <>
+              {onEditChange && (
+                <Input
+                  value={editValue}
+                  onChange={(e) => onEditChange(e.target.value)}
+                  className="h-8"
+                />
+              )}
+            </>
           ) : (
             <h1 className="text-xl font-bold tracking-tight">{title}</h1>
           )}
@@ -59,7 +63,7 @@ export function SubpageHeader({
               <Button onClick={onStartEdit} variant="secondary" size="sm">
                 <Edit2 className="mr-2 h-4 w-4" /> Edit
               </Button>
-              <DeleteAlertDialog onDelete={onDelete} />
+              {onDelete && <DeleteAlertDialog onDelete={onDelete} />}
             </>
           ) : (
             <>

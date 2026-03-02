@@ -1,19 +1,10 @@
 import { SubpageHeader } from './subpage-header'
 import { Separator } from './ui/separator'
 import { ScrollArea } from './ui/scroll-area'
+import type { SubpageHeaderProps } from './subpage-header'
 
 interface SubPageProps {
-  headerProps: {
-    title: string
-    isEditing?: boolean
-    editValue?: string
-    onEditChange?: (val: string) => void
-    onSave?: () => void
-    onCancel?: () => void
-    onStartEdit?: () => void
-    onDelete?: () => void
-    type?: string
-  }
+  headerProps: SubpageHeaderProps
   content: React.ReactNode
 }
 

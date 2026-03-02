@@ -39,7 +39,15 @@ const schemas = {
   tag: z.string().min(1, 'Tag is required'),
 }
 
-export function AssignTagDialog({ itemType, item, tag }) {
+interface AssignTagDialogProps {
+  itemType?: string
+  item?: any
+  tag?: any
+}
+
+// WIP - waiting for endpoints
+export function AssignTagDialog(props: AssignTagDialogProps) {
+  console.log(props)
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
@@ -79,7 +87,7 @@ export function AssignTagDialog({ itemType, item, tag }) {
       tag: '',
     },
     onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value)
+      await mutation.mutateAsync(value as any)
     },
   })
 

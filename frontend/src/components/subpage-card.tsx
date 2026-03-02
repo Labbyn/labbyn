@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react'
+
 import {
   Card,
   CardContent,
@@ -9,17 +11,15 @@ import {
 interface SubpageCardProps {
   title: string
   description: string
-  content: React.Node
+  content: React.ReactNode
   type?: string
-  Icon: Icon
-  isEditing?: boolean
+  Icon: LucideIcon
 }
 
 export function SubpageCard({
   title,
   description,
   content,
-  isEditing = false,
   type = 'info',
   Icon,
 }: SubpageCardProps) {
@@ -34,9 +34,7 @@ export function SubpageCard({
       <CardHeader className="px-6 py-4 border-b bg-muted/30">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            {Icon && (
-              <Icon className="h-5 w-5 text-muted-foreground text-primary" />
-            )}
+            {<Icon className="h-5 w-5 text-muted-foreground text-primary" />}
             {title}
           </CardTitle>
         </div>

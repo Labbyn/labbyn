@@ -1,7 +1,8 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiLabsItem } from '@/integrations/labs/labs.types'
+import type { TagItem } from '@/integrations/tags/tags.types'
+import type { ApiLabsDetailRack } from '@/integrations/labs/labs.types'
 import { labQueryOptions } from '@/integrations/labs/labs.query'
 import { Badge } from '@/components/ui/badge'
 import { DataTable } from '@/components/ui/data-table'
@@ -9,13 +10,11 @@ import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { TagList } from '@/components/tag-list'
 import { SubPageTemplate } from '@/components/subpage-template'
 
-type RackItem = ApiLabsItem['racks'][number]
-
 export const Route = createFileRoute('/_auth/labs/$labId')({
   component: RouteComponent,
 })
 
-export const columns: Array<ColumnDef<RackItem>> = [
+export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
   {
     accessorKey: 'name',
     header: ({ column }) => (
@@ -47,7 +46,7 @@ export const columns: Array<ColumnDef<RackItem>> = [
       <DataTableColumnHeader column={column} title="Tags" />
     ),
     cell: ({ row }) => {
-      const tags = row.getValue<Array<string>>('tags')
+      const tags = row.getValue<Array<TagItem>>('tags')
 
       return <TagList tags={tags} />
     },
@@ -55,7 +54,6 @@ export const columns: Array<ColumnDef<RackItem>> = [
 ]
 
 function RouteComponent() {
-  const router = useRouter()
   const navigate = Route.useNavigate()
   const { labId } = Route.useParams()
   const { data: lab } = useSuspenseQuery(labQueryOptions(labId))
@@ -72,8 +70,8 @@ function RouteComponent() {
             data={lab.racks}
             onRowClick={(row) => {
               navigate({
-                to: '/racks/$rackId',
-                params: { rackId: String(row.id) },
+                to: '/racks/$racksId',
+                params: { racksId: String(row.id) },
               })
             }}
           />

@@ -116,6 +116,14 @@ export interface MachineUpdate {
   metadata_id?: number | null
 }
 
+export interface AutoDiscoverPayload {
+  host: string
+  extra_vars: {
+    ansible_user: string
+    ansible_password: string
+  }
+}
+
 export type ApiMachineItem = MachinesResponse
 export type ApiMachineInfoResponse = Array<ApiMachineInfo>
 export type ApiMachineResponse = Array<MachinesResponse>

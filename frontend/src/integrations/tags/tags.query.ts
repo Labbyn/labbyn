@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiTagsResponse } from './racks.types'
+import type { ApiTagsResponse } from './tags.types'
 import api from '@/lib/api'
 
 const PATHS = {

@@ -2,9 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Eye, History, MoreHorizontal, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
-
 import type { ApiHistoryItem } from '@/integrations/history/history.types'
 import type { ColumnDef } from '@tanstack/react-table'
+import { convertTimestampToDate } from '@/utils'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -71,7 +71,7 @@ function RouteComponent() {
   const columns: Array<ColumnDef<ApiHistoryItem>> = [
     {
       id: 'timeStamp',
-      accessorFn: (row) => new Date(row.timestamp).toLocaleString(),
+      accessorFn: (row) => convertTimestampToDate(row.timestamp),
       header: ({ column }: any) => (
         <DataTableColumnHeader column={column} title="Timestamp" />
       ),

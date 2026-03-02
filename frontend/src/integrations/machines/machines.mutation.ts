@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type {
+  AutoDiscoverPayload,
   MachineUpdate,
   MachinesResponse,
   MetadataResponse,
@@ -112,7 +113,7 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
 
 export async function autoDiscoverMutation(
   machineId: string | number,
-  formData,
+  formData: AutoDiscoverPayload,
 ) {
   const { data } = await api.post(PATHS.REFRESH(machineId), formData)
   return data

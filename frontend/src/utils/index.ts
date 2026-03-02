@@ -3,7 +3,7 @@ import type { z } from 'zod'
 // Helper functions
 
 // time converter
-export function convertTimestampToDate(timestamp: string) {
+export function convertTimestampToDate(timestamp: string | Date) {
   return new Date(timestamp).toLocaleString('en-CA', {
     hour12: false,
   })

@@ -59,7 +59,7 @@ function RouteComponent() {
                 <Separator />
                 <div className="flex flex-col items-center gap-2 mb-3 pb-3 px-6 mt-6">
                   <Button asChild className="w-full">
-                    <Link to="/labs/$labId" params={{ labId: lab.id.toString() }}>
+                    <Link to="/labs/$labId" params={{ labId: String(lab.id) }}>
                       <Settings className="mr-2 h-4 w-4" />
                       Room details
                       <ArrowRight className="ml-auto h-4 w-4" />

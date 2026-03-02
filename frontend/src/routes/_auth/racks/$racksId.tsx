@@ -90,7 +90,6 @@ function RacksDetailsPage() {
             description={'General rack informations'}
             type="info"
             Icon={Info}
-            isEditing={isEditing}
             content={
               <>
                 {' '}
@@ -141,7 +140,6 @@ function RacksDetailsPage() {
             description={'Rack machines in order'}
             type="table"
             Icon={Cpu}
-            isEditing={isEditing}
             content={
               <>
                 {isEditing ? (

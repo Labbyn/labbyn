@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
@@ -19,7 +19,6 @@ export const Route = createFileRoute('/_auth/history/$historyId')({
 })
 
 function HistoryDetailsPage() {
-  const router = useRouter()
   const { historyId } = Route.useParams()
   const { data: history } = useSuspenseQuery(
     singleHistoryQueryOptions(historyId),

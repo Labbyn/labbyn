@@ -6,7 +6,22 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 
-export function InputChecklist({ items, value, onChange }) {
+interface ChecklistItem {
+  id: string | number
+  name: string
+}
+
+interface InputChecklistProps<T extends ChecklistItem> {
+  items: Array<T>
+  value: string
+  onChange: (val: string) => void
+}
+
+export function InputChecklist<T extends ChecklistItem>({
+  items,
+  value,
+  onChange,
+}: InputChecklistProps<T>) {
   return (
     <Popover>
       <PopoverTrigger asChild>

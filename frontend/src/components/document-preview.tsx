@@ -3,6 +3,7 @@ import { MarkdownRenderer } from './markdown-renderer'
 import type { Document } from '@/types/types'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { convertTimestampToDate } from '@/utils'
 
 interface DocumentPreviewProps {
   document: Document
@@ -11,11 +12,7 @@ interface DocumentPreviewProps {
 
 export function DocumentPreview({ document, onEdit }: DocumentPreviewProps) {
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
+    return convertTimestampToDate(date)
   }
 
   return (
