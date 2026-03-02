@@ -177,11 +177,7 @@ def create_team(
     db.add(obj)
     db.flush()
 
-    virtual_lab = Rooms(
-        name="virtual",
-        room_type="virtual",
-        team_id = obj.id
-    )
+    virtual_lab = Rooms(name="virtual", room_type="virtual", team_id=obj.id)
     db.add(virtual_lab)
 
     db.commit()

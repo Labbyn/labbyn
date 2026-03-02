@@ -273,12 +273,15 @@ def delete_rack(
             detail="Rack not found or you don't have permission to delete it",
         )
 
-    virtual_room = db.query(Rooms).filter(
-        Rooms.team_id == db_rack.team_id,
-        Rooms.room_type == "virtual"
-    ).first()
+    virtual_room = (
+        db.query(Rooms)
+        .filter(Rooms.team_id == db_rack.team_id, Rooms.room_type == "virtual")
+        .first()
+    )
     if not virtual_room:
-        raise HTTPException(status_code=500, detail="Virtual lab not found for this team")
+        raise HTTPException(
+            status_code=500, detail="Virtual lab not found for this team"
+        )
 
     shelf_ids = [shelf.id for shelf in db_rack.shelves]
     machines_to_move = db.query(Machines).filter(Machines.shelf_id.in_(shelf_ids)).all()
