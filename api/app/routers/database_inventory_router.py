@@ -124,7 +124,7 @@ def get_inventory_details(
                 "room_name": item.room.name if item.room else "N/A",
                 "machine_info": item.machine.name if item.machine else "None",
                 "category_name": item.category.name if item.category else "N/A",
-                "location_link": f"room/{item.localization_id}",
+                "location_link": f"/labs/{item.localization_id}",
                 "active_rentals": active_rentals_list,
             }
         )
@@ -232,7 +232,7 @@ def get_inventory_item_details(
         "room_name": item.room.name if item.room else "N/A",
         "machine_info": item.machine.name if item.machine else "None",
         "category_name": item.category.name if item.category else "N/A",
-        "location_link": f"room/{item.localization_id}",
+        "location_link": f"/labs/{item.localization_id}",
         "active_rentals": active_rentals_list,
     }
 

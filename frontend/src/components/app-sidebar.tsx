@@ -39,6 +39,7 @@ import {
 } from './ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { AddPlatformDialog } from './platform-dialog'
+import { AddTagDialog } from './add-tag-dialog'
 import {
   Collapsible,
   CollapsibleContent,
@@ -175,6 +176,9 @@ export function AppSidebar() {
                   <DropdownMenuCheckboxItem checked>
                     Add platform
                   </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem checked>
+                    Add tag
+                  </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem>
                     Add inventory item
                   </DropdownMenuCheckboxItem>
@@ -188,6 +192,7 @@ export function AppSidebar() {
           <SidebarContent>
             <SidebarMenuItem>
               <AddPlatformDialog />
+              <AddTagDialog />
             </SidebarMenuItem>
           </SidebarContent>
         </SidebarGroup>

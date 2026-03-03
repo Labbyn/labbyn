@@ -1,10 +1,10 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiLabsItem, ApiLabsResponse } from './labs.types'
+import type { ApiLabsDetailItem, ApiLabsResponse } from './labs.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/labs',
-  SINGLE: (id: string) => `/labs/${id}`,
+  BASE: '/db/rooms/dashboard',
+  SINGLE: (id: string) => `/db/rooms/${id}/details`,
 }
 
 // Fetch all labs
@@ -21,7 +21,7 @@ export const labQueryOptions = (labId: string) =>
   queryOptions({
     queryKey: ['labs', labId],
     queryFn: async () => {
-      const { data } = await api.get<ApiLabsItem>(PATHS.SINGLE(labId))
+      const { data } = await api.get<ApiLabsDetailItem>(PATHS.SINGLE(labId))
       return data
     },
   })

@@ -88,12 +88,20 @@ def format_team_full_detail(team: Teams):
             for machine in shelf.machines:
                 sorted_machines.append(
                     {
+                        "id": machine.id,
                         "name": machine.name,
                         "ip_address": machine.ip_address,
                         "mac_address": machine.mac_address,
                         "team_name": team.name,
                         "rack_name": rack.name,
                         "shelf_order": shelf.order,
+                        "tags": [
+                            {
+                                "name": getattr(t, "name", "Unnamed"),
+                                "color": getattr(t, "color", "red"),
+                            }
+                            for t in (machine.tags or [])
+                        ],
                     }
                 )
 
@@ -102,6 +110,7 @@ def format_team_full_detail(team: Teams):
         if machine.name not in placed_machine_names:
             sorted_machines.append(
                 {
+                    "id": machine.id,
                     "name": machine.name,
                     "ip_address": machine.ip_address,
                     "mac_address": machine.mac_address,
@@ -129,10 +138,17 @@ def format_team_full_detail(team: Teams):
         ],
         "racks": [
             {
+                "id": r.id,
                 "name": r.name,
                 "team_name": team.name,
                 "map_link": f"/map/{r.room_id}",
-                "tags": [tag.name for tag in r.tags],
+                "tags": [
+                    {
+                        "name": getattr(t, "name", "Unnamed"),
+                        "color": getattr(t, "color", "red"),
+                    }
+                    for t in (r.tags or [])
+                ],
                 "machines_count": sum(len(shelf.machines) for shelf in r.shelves),
             }
             for r in team.racks
@@ -140,6 +156,7 @@ def format_team_full_detail(team: Teams):
         "machines": sorted_machines,
         "inventory": [
             {
+                "id": i.id,
                 "name": i.name,
                 "quantity": i.quantity,
                 "team_name": team.name,

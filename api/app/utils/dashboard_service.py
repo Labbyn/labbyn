@@ -15,7 +15,6 @@ def build_dashboard(db: Session, ctx: RequestContext):
     rooms = ctx.team_filter(db.query(Rooms), Rooms).all()
     inventories = ctx.team_filter(db.query(Inventory), Inventory).all()
     teams = ctx.team_filter(db.query(Teams), Teams).all()
-    users = ctx.team_filter(db.query(User), User).all()
     histories = ctx.team_filter(db.query(History), History).all()
 
     machine_items = [
@@ -71,20 +70,6 @@ def build_dashboard(db: Session, ctx: RequestContext):
         for team in teams
     ]
 
-    user_items = [
-        {
-            "type": "User",
-            "id": user.name,
-            "location": f"/users/{user.id}",
-            "tags": (
-                [f"Team ID: {user.team_id}", f"User type: {user.user_type}"]
-                if user.team_id is not None
-                else []
-            ),
-        }
-        for user in users
-    ]
-
     history_items = [
         {
             "type": "History",
@@ -119,10 +104,6 @@ def build_dashboard(db: Session, ctx: RequestContext):
             {
                 "name": "Teams",
                 "items": team_items,
-            },
-            {
-                "name": "Users",
-                "items": user_items,
             },
             {
                 "name": "History",

@@ -1,3 +1,5 @@
+import type { ApiTagsItem } from '../tags/tags.types'
+
 export type CPU = {
   id: number
   name: string
@@ -29,6 +31,41 @@ export interface MachinesResponse {
   shelf_id: number | null
   added_on: string // format: date-time
   version_id: number
+}
+
+export interface ApiMachineInfo {
+  id: number
+  name: string
+  ip_address: string
+  mac_address: string
+  os: string
+  cpus: Array<CPU>
+  ram: string | null
+  disks: Array<Disk>
+  serial_number: string | null
+  note: string | null
+  pdu_port: number
+  added_on: string // format: date-time
+  shelf_number: number | null
+  team_name: string
+  rack_name: string
+  room_name: string
+  last_update: string // format: date-time
+  monitoring: boolean
+  ansible_access: boolean
+  ansible_root_access: boolean
+  tags: Array<ApiTagsItem>
+  network_status: string
+  prometheus_live_stats: ApiMachineInfoPrometheus
+  grafana_link: string
+  rack_link: string
+  map_link: string
+}
+
+export interface ApiMachineInfoPrometheus {
+  cpu_usage: string | null
+  ram_usage: string | null
+  disks: Array<Disk>
 }
 
 export interface MetadataResponse {
@@ -79,5 +116,14 @@ export interface MachineUpdate {
   metadata_id?: number | null
 }
 
+export interface AutoDiscoverPayload {
+  host: string
+  extra_vars: {
+    ansible_user: string
+    ansible_password: string
+  }
+}
+
 export type ApiMachineItem = MachinesResponse
+export type ApiMachineInfoResponse = Array<ApiMachineInfo>
 export type ApiMachineResponse = Array<MachinesResponse>

@@ -173,7 +173,7 @@ async def get_machine_full_detail(
 
     grafana_link = f"http://grafana.{target_ip}:9100"
 
-    rack_link = f"/rack/{machine.shelf.rack_id}" if machine.shelf else "#"
+    rack_link = f"/racks/{machine.shelf.rack_id}" if machine.shelf else "#"
 
     map_link = "/map/view"
 
@@ -194,6 +194,7 @@ async def get_machine_full_detail(
         "rack_name": (
             machine.shelf.rack.name if (machine.shelf and machine.shelf.rack) else "N/A"
         ),
+        "shelf_number": machine.shelf.order if machine.shelf else "N/A",
         "room_name": machine.room.name if machine.room else "N/A",
         "last_update": machine.machine_metadata.last_update,
         "monitoring": machine.machine_metadata.agent_prometheus,

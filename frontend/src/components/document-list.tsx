@@ -3,7 +3,6 @@ import { DataTable } from './ui/data-table'
 import { DataTableColumnHeader } from './data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Document } from '@/types/types'
-
 import { Button } from '@/components/ui/button'
 
 interface DocumentListProps {
@@ -28,7 +27,7 @@ export function DocumentList({
         return <DataTableColumnHeader column={column} title="Title" />
       },
       cell: ({ row }) => (
-        <div className="font-medium truncate max-w-37.5">
+        <div className="font-medium truncate max-w-60">
           {row.getValue('title')}
         </div>
       ),
@@ -72,7 +71,7 @@ export function DocumentList({
               onDeleteDocument(String(row.original.id))
             }}
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 />
           </Button>
         </div>
       ),
@@ -87,7 +86,7 @@ export function DocumentList({
       selectedId={selectedDoc?.id.toString()}
       actionElement={
         <Button onClick={onCreateDocument} variant={'outline'}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus />
           Create new document
         </Button>
       }
