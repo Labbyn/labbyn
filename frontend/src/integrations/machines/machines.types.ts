@@ -110,7 +110,7 @@ export interface MachineUpdate {
   serial_number?: string | null
   note?: string | null
   cpu?: Array<CPU> | null
-  ram?: number | null
+  ram?: string | null
   disk?: Array<Disk> | null
   layout_id?: number | null
   metadata_id?: number | null

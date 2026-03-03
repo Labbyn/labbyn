@@ -41,6 +41,13 @@ import { zodValidate } from '@/utils/index'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
+type RoomsFormValues = {
+  name: string
+  room_type: string
+  team_id: number
+  tag_ids?: Array<string>
+}
+
 const schemas = {
   name: z.string().min(1, 'Name is required'),
   room_type: z.string().min(1, 'Room type is required'),
@@ -71,9 +78,9 @@ export function AddRoomsDialog() {
     defaultValues: {
       name: '',
       room_type: '',
-      team_id: undefined,
+      team_id: 0,
       tag_ids: [],
-    },
+    } as RoomsFormValues,
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },
@@ -151,7 +158,7 @@ export function AddRoomsDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
                   <Select
-                    value={field.state.value?.toString() ?? ''}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => field.handleChange(Number(value))}
                   >
                     <SelectTrigger>
@@ -187,7 +194,7 @@ export function AddRoomsDialog() {
                     <MultiSelectContent>
                       <MultiSelectGroup>
                         {tags.map((tag) => (
-                          <MultiSelectItem key={tag.id} value={tag.id}>
+                          <MultiSelectItem key={tag.id} value={String(tag.id)}>
                             {tag.name}
                           </MultiSelectItem>
                         ))}

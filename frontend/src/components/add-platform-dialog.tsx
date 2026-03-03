@@ -28,14 +28,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectGroup,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from '@/components/ui/multi-select'
-import {
   Field,
   FieldError,
   FieldGroup,
@@ -53,7 +45,6 @@ import { handlePlatformSubmission } from '@/integrations/machines/machines.mutat
 import { zodValidate } from '@/utils/index'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
-import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
 import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 
@@ -71,11 +62,13 @@ const schemas = {
 
 export function AddPlatformDialog() {
   const [open, setOpen] = useState(false)
+  const [selectedRack, setSelectedRack] = useState<number | undefined>(
+    undefined,
+  )
   const queryClient = useQueryClient()
 
   const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
-  const { data: tags } = useSuspenseQuery(tagsQueryOptions)
   const { data: racks } = useSuspenseQuery(racksBaseListQueryOptions)
 
   const mutation = useMutation({
@@ -132,23 +125,20 @@ export function AddPlatformDialog() {
 
   const selectedTeam = formValues.team_id
   const selectedRoom = formValues.localization_id
-  const selectedRack = formValues.rack
 
-  const availableRooms =
-    selectedTeam != null
-      ? labs?.filter((lab) => Number(lab.team_id) === Number(selectedTeam))
-      : []
+  const availableRooms = labs.filter(
+    (lab) => Number(lab.team_id) === Number(selectedTeam),
+  )
 
-  const availableRacks =
-    racks?.filter(
-      (rack) =>
-        Number(rack.team_id) === Number(selectedTeam) &&
-        Number(rack.room_id) === Number(selectedRoom),
-    ) || []
+  const availableRacks = racks.filter(
+    (rack) =>
+      Number(rack.team_id) === Number(selectedTeam) &&
+      Number(rack.room_id) === Number(selectedRoom),
+  )
 
   const { data: shelves, isLoading: isLoadingShelves } = useQuery({
     ...(selectedRack != null
-      ? singleShelfQueryOptions(selectedRack)
+      ? singleShelfQueryOptions(String(selectedRack))
       : { queryKey: ['shelf'], queryFn: () => [] }),
     enabled: selectedRack != null,
   })
@@ -524,7 +514,7 @@ export function AddPlatformDialog() {
                                     'localization_id',
                                     undefined,
                                   )
-                                  form.setFieldValue('rack', undefined)
+                                  setSelectedRack(undefined)
                                   form.setFieldValue('shelf_id', undefined)
                                 }}
                               >
@@ -532,7 +522,7 @@ export function AddPlatformDialog() {
                                   <SelectValue placeholder="Select a team" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {teams?.map((team) => (
+                                  {teams.map((team) => (
                                     <SelectItem
                                       key={team.id}
                                       value={team.id.toString()}
@@ -559,7 +549,7 @@ export function AddPlatformDialog() {
                                 value={field.state.value?.toString() ?? ''}
                                 onValueChange={(value) => {
                                   field.handleChange(Number(value))
-                                  form.setFieldValue('rack', undefined)
+                                  setSelectedRack(undefined)
                                   form.setFieldValue('shelf_id', undefined)
                                 }}
                               >
@@ -590,44 +580,39 @@ export function AddPlatformDialog() {
                         />
 
                         {/* Rack Selection  */}
-                        <form.Field
-                          name="rack"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>Rack</FieldLabel>
-                              <Select
-                                disabled={selectedRoom == null}
-                                value={field.state.value?.toString() ?? ''}
-                                onValueChange={(value) => {
-                                  field.handleChange(Number(value))
-                                  form.setFieldValue('shelf_id', undefined)
-                                }}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue
-                                    placeholder={
-                                      selectedRoom == null
-                                        ? 'Select a Room first'
-                                        : availableRacks.length === 0
-                                          ? 'No racks available'
-                                          : 'Select a rack'
-                                    }
-                                  />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableRacks.map((rack) => (
-                                    <SelectItem
-                                      key={rack.id}
-                                      value={rack.id.toString()}
-                                    >
-                                      {rack.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </Field>
-                          )}
-                        />
+                        <Field>
+                          <FieldLabel htmlFor={'rack-select'}>Rack</FieldLabel>
+                          <Select
+                            disabled={selectedRoom == null}
+                            value={selectedRack?.toString() ?? ''}
+                            onValueChange={(value) => {
+                              setSelectedRack(Number(value))
+                              form.setFieldValue('shelf_id', undefined)
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  selectedRoom == null
+                                    ? 'Select a Room first'
+                                    : availableRacks.length === 0
+                                      ? 'No racks available'
+                                      : 'Select a rack'
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableRacks.map((rack) => (
+                                <SelectItem
+                                  key={rack.id}
+                                  value={rack.id.toString()}
+                                >
+                                  {rack.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </Field>
 
                         {/* Shelf Selection */}
                         <form.Field
@@ -744,7 +729,7 @@ export function AddPlatformDialog() {
                       <FieldGroup className="grid-cols-1 md:grid-cols-2 gap-6">
                         {/* CPU Dynamic Field */}
                         <form.Field
-                          name="cpu"
+                          name="cpus"
                           children={(field) => {
                             const cpus = field.state.value || []
 
@@ -759,7 +744,7 @@ export function AddPlatformDialog() {
                                     onClick={() =>
                                       field.handleChange([
                                         ...cpus,
-                                        { name: '' },
+                                        { id: 0, machine_id: 0, name: '' },
                                       ])
                                     }
                                   >
@@ -814,7 +799,7 @@ export function AddPlatformDialog() {
 
                         {/* Disk Dynamic Field */}
                         <form.Field
-                          name="disk"
+                          name="disks"
                           children={(field) => {
                             const disks = field.state.value || []
 
@@ -829,7 +814,12 @@ export function AddPlatformDialog() {
                                     onClick={() =>
                                       field.handleChange([
                                         ...disks,
-                                        { name: '', capacity: '' },
+                                        {
+                                          id: 0,
+                                          machine_id: 0,
+                                          name: '',
+                                          capacity: '',
+                                        },
                                       ])
                                     }
                                   >
@@ -860,7 +850,7 @@ export function AddPlatformDialog() {
                                         placeholder="Capacity"
                                         className="w-1/3"
                                         type="number"
-                                        value={disk.capacity}
+                                        value={disk.capacity || ''}
                                         onChange={(e) => {
                                           const newDisks = [...disks]
                                           newDisks[index] = {

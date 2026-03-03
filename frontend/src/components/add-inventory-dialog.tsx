@@ -16,14 +16,6 @@ import {
   SelectValue,
 } from './ui/select'
 import {
-  MultiSelect,
-  MultiSelectContent,
-  MultiSelectGroup,
-  MultiSelectItem,
-  MultiSelectTrigger,
-  MultiSelectValue,
-} from '@/components/ui/multi-select'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -44,6 +36,15 @@ import { categoryListQueryOptions } from '@/integrations/category/category.query
 
 const schemas = {
   name: z.string().min(1, 'Name is required'),
+}
+
+type InventoryFormValues = {
+  name: string
+  quantity: number
+  category_id: number
+  team_id: number
+  localization_id: number
+  rental_status: boolean
 }
 
 export function AddInventoryDialog() {
@@ -70,12 +71,12 @@ export function AddInventoryDialog() {
   const form = useForm({
     defaultValues: {
       name: '',
-      quantity: undefined,
-      category_id: undefined,
-      team_id: undefined,
-      localizaton_id: undefined,
+      quantity: 0,
+      category_id: 0,
+      team_id: 0,
+      localization_id: 0,
       rental_status: false,
-    },
+    } as InventoryFormValues,
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },
@@ -84,9 +85,8 @@ export function AddInventoryDialog() {
   const formValues = useStore(form.store, (state) => state.values)
 
   const selectedTeam = formValues.team_id
-  const selectedRoom = formValues.localization_id
 
-  const availableRooms = labs?.filter(
+  const availableRooms = labs.filter(
     (lab) => Number(lab.team_id) === Number(selectedTeam),
   )
 
@@ -144,7 +144,7 @@ export function AddInventoryDialog() {
                     placeholder="e.g. 5"
                     type="number"
                     value={field.state.value || ''}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
                   />
                 </Field>
               )}
@@ -155,7 +155,7 @@ export function AddInventoryDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Category</FieldLabel>
                   <Select
-                    value={field.state.value?.toString()}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => {
                       field.handleChange(Number(value))
                     }}
@@ -164,7 +164,7 @@ export function AddInventoryDialog() {
                       <SelectValue placeholder="Select a team" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories?.map((category) => (
+                      {categories.map((category) => (
                         <SelectItem
                           key={category.id}
                           value={category.id.toString()}
@@ -184,17 +184,17 @@ export function AddInventoryDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                   <Select
-                    value={field.state.value?.toString()}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => {
                       field.handleChange(Number(value))
-                      form.setFieldValue('localization_id')
+                      form.setFieldValue('localization_id', 0)
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a team" />
                     </SelectTrigger>
                     <SelectContent>
-                      {teams?.map((team) => (
+                      {teams.map((team) => (
                         <SelectItem key={team.id} value={team.id.toString()}>
                           {team.name}
                         </SelectItem>
@@ -212,8 +212,8 @@ export function AddInventoryDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Room / Lab</FieldLabel>
                   <Select
-                    disabled={selectedTeam == null}
-                    value={field.state.value?.toString()}
+                    disabled={selectedTeam == 0}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => {
                       field.handleChange(Number(value))
                     }}
@@ -221,7 +221,7 @@ export function AddInventoryDialog() {
                     <SelectTrigger>
                       <SelectValue
                         placeholder={
-                          selectedTeam == null
+                          selectedTeam == 0
                             ? 'Select a Team first'
                             : availableRooms.length === 0
                               ? 'No rooms for this team'

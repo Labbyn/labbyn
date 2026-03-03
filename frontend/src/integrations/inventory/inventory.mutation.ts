@@ -11,11 +11,9 @@ export async function useCreateInventoryItemMutation(invData: {
   name: string
   quantity: number
   localization_id: number
-  machine_id: number
   category_id: number
   team_id: number
   rental_status: boolean
-  rental_id: number
 }) {
   const { data } = await api.post(PATHS.BASE, invData)
   return data

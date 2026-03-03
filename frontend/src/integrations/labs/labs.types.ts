@@ -2,6 +2,7 @@ import type { ApiTagsItem } from '@/integrations/tags/tags.types'
 
 export interface ApiLabsItem {
   id: number
+  team_id: number
   name: string
   team_name: string
   rack_count: number

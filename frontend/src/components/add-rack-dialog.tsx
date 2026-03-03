@@ -42,6 +42,13 @@ import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsQueryOptions } from '@/integrations/labs/labs.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
+type RackFormValues = {
+  name: string
+  room_id: number
+  team_id: number
+  tag_ids: Array<string>
+}
+
 const schemas = {
   name: z.string().min(1, 'Name is required'),
   room_id: z.number().positive(),
@@ -72,10 +79,10 @@ export function AddRackDialog() {
   const form = useForm({
     defaultValues: {
       name: '',
-      room_id: undefined,
-      team_id: undefined,
+      room_id: 0,
+      team_id: 0,
       tag_ids: [],
-    },
+    } as RackFormValues,
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },
@@ -135,7 +142,7 @@ export function AddRackDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Room Name</FieldLabel>
                   <Select
-                    value={field.state.value?.toString() ?? ''}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => field.handleChange(Number(value))}
                   >
                     <SelectTrigger>
@@ -161,7 +168,7 @@ export function AddRackDialog() {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
                   <Select
-                    value={field.state.value?.toString() ?? ''}
+                    value={field.state.value.toString()}
                     onValueChange={(value) => field.handleChange(Number(value))}
                   >
                     <SelectTrigger>
@@ -197,7 +204,7 @@ export function AddRackDialog() {
                     <MultiSelectContent>
                       <MultiSelectGroup>
                         {tags.map((tag) => (
-                          <MultiSelectItem key={tag.id} value={tag.id}>
+                          <MultiSelectItem key={tag.id} value={String(tag.id)}>
                             {tag.name}
                           </MultiSelectItem>
                         ))}
