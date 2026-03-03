@@ -91,14 +91,6 @@ class TagsResponse(TagsBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class TagsAssignment(BaseModel):
-    """Used for tag assignment to various entities like rooms, machines, etc."""
-
-    tag_id: int
-    entity_id: int
-    entity_type: str
-
-
 # ==========================
 #          LAYOUT
 # ==========================
