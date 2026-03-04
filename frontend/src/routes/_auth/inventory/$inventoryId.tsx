@@ -59,6 +59,7 @@ function InventoryDetailsPage() {
           setIsEditing(false)
         },
         onStartEdit: () => setIsEditing(true),
+        onDelete: () => {},
       }}
       content={
         <div className="flex flex-col gap-6 w-full">

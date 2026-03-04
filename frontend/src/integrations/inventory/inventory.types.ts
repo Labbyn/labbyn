@@ -14,12 +14,12 @@ export interface InventoryResponse {
 export interface ApiInventoryInfoItem {
   id: number
   name: string
-  total_quantity: number
-  in_stock_quantity: number
-  team_name: string
-  room_name: string
-  machine_info: string
-  category_name: string
+  total_quantity: number | null
+  in_stock_quantity: number | null
+  team_name: string | null
+  room_name: string | null
+  machine_info: string | null
+  category_name: string | null
   location_link: string
   active_rentals: Array<any>
 }

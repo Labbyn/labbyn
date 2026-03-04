@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload, Session
 from typing import List, Optional
 
 from app.database import get_db
-from app.db.models import Rack, Shelf, Rooms, Tags, Teams
+from app.db.models import Rack, Shelf, Rooms, Tags, Teams, Machines
 from app.auth.dependencies import RequestContext
 from app.db.schemas import (
     RackCreate,
@@ -272,6 +272,23 @@ def delete_rack(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rack not found or you don't have permission to delete it",
         )
+
+    virtual_room = (
+        db.query(Rooms)
+        .filter(Rooms.team_id == db_rack.team_id, Rooms.room_type == "virtual")
+        .first()
+    )
+    if not virtual_room:
+        raise HTTPException(
+            status_code=500, detail="Virtual lab not found for this team"
+        )
+
+    shelf_ids = [shelf.id for shelf in db_rack.shelves]
+    machines_to_move = db.query(Machines).filter(Machines.shelf_id.in_(shelf_ids)).all()
+
+    for machine in machines_to_move:
+        machine.shelf_id = None
+        machine.localization_id = virtual_room.id
 
     db.delete(db_rack)
     db.commit()

@@ -28,3 +28,5 @@ export interface ApiRacksListItem {
   id: number
   name: string
 }
+
+export type ApiRackListResponse = Array<ApiRackDetailItem>

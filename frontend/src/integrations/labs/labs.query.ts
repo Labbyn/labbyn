@@ -3,15 +3,25 @@ import type { ApiLabsDetailItem, ApiLabsResponse } from './labs.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/rooms/dashboard',
+  BASE: 'db/rooms',
+  INFO: '/db/rooms/dashboard',
   SINGLE: (id: string) => `/db/rooms/${id}/details`,
 }
+
+// Fetch all labs
+export const labsBaseQueryOptions = queryOptions({
+  queryKey: ['labs', 'list', 'base'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiLabsResponse>(PATHS.BASE)
+    return data
+  },
+})
 
 // Fetch all labs
 export const labsQueryOptions = queryOptions({
   queryKey: ['labs', 'list'],
   queryFn: async () => {
-    const { data } = await api.get<ApiLabsResponse>(PATHS.BASE)
+    const { data } = await api.get<ApiLabsResponse>(PATHS.INFO)
     return data
   },
 })

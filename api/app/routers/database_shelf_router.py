@@ -30,7 +30,7 @@ def get_shelves_by_rack(
     ctx.require_user()
 
     rack_query = db.query(Rack).filter(Rack.id == rack_id).first()
-    rack = ctx.team_filter(rack_query, Rack).first()
+    rack = ctx.team_filter(rack_query, Rack)
     if not rack:
         raise HTTPException(status_code=404, detail="Rack does not exist.")
 
