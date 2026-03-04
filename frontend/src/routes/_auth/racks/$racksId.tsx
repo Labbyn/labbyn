@@ -122,7 +122,11 @@ function RacksDetailsPage() {
                           />
                         )
                       ) : field.name === 'tags' ? (
-                        <TagList tags={fieldValue as Array<TagItem>} />
+                        <TagList
+                          tags={fieldValue as Array<TagItem>}
+                          entityType="rack"
+                          entityId={racksId}
+                        />
                       ) : (
                         <span className="font-medium">
                           {fieldValue ? fieldValue.toString() : '—'}

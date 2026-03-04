@@ -94,7 +94,7 @@ class TagsResponse(TagsBase):
 class TagsAssignment(BaseModel):
     """Used for tag assignment to various entities like rooms, machines, etc."""
 
-    tag_id: int
+    tag_ids: List[int]
     entity_id: int
     entity_type: str
 
@@ -688,7 +688,7 @@ class CPUBase(BaseModel):
     """
     Base model for CPUs.
     """
-
+    id: int
     name: str
 
 
@@ -723,7 +723,7 @@ class DisksBase(BaseModel):
     """
     Base model for Disks.
     """
-
+    id: int
     name: str
     capacity: Optional[str]
 
@@ -813,15 +813,18 @@ class MachinesUpdate(BaseModel):
 
     name: Optional[str] = Field(None, max_length=100)
     localization_id: Optional[int] = None
+    ip_address: Optional[str] = Field(None, max_length=16)
     mac_address: Optional[str] = Field(None, max_length=17)
     pdu_port: Optional[int] = None
     team_id: Optional[int] = None
     os: Optional[str] = Field(None, max_length=30)
     serial_number: Optional[str] = Field(None, max_length=50)
     note: Optional[str] = Field(None, max_length=500)
-    cpu: Optional[str] = Field(None, max_length=100)
+    cpus: Optional[List[CPUBase]] = Field(default=[], description="CPU specification")
     ram: Optional[str] = Field(None, max_length=100)
-    disk: Optional[str] = Field(None, max_length=100)
+    disks: Optional[List[DisksBase]] = Field(
+        default=[], description="Disk/Storage specification"
+    )
     shelf_id: Optional[int] = None
     metadata_id: Optional[int] = None
 
@@ -873,6 +876,7 @@ class MachineFullDetailResponse(BaseModel):
     pdu_port: Optional[int]
     added_on: datetime
 
+    team_id: Optional[int]
     team_name: str
     rack_name: Optional[str]
     room_name: str

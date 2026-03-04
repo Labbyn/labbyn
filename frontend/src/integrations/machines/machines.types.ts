@@ -47,6 +47,7 @@ export interface ApiMachineInfo {
   pdu_port: number
   added_on: string // format: date-time
   shelf_number: number | null
+  team_id: string | null
   team_name: string
   rack_name: string
   room_name: string
@@ -105,14 +106,14 @@ export interface MachineUpdate {
   mac_address?: string | null
   ip_address?: string | null
   pdu_port?: number | null
-  team_id?: number | null
+  team_id?: string | null
   os?: string | null
   serial_number?: string | null
   note?: string | null
-  cpu?: Array<CPU> | null
+  cpus?: Array<CPU> | null
   ram?: string | null
-  disk?: Array<Disk> | null
-  layout_id?: number | null
+  disks?: Array<Disk> | null
+  shelf_id?: number | null
   metadata_id?: number | null
 }
 

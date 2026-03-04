@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import {
-  useMutation,
-  useQueryClient,
-  useSuspenseQuery,
-} from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { z } from 'zod'
-import { InputChecklist } from './input-checklist'
+import type { AssignDetachTagForm } from '@/integrations/tags/tags.types'
+import {
+  MultiSelect,
+  MultiSelectContent,
+  MultiSelectGroup,
+  MultiSelectItem,
+  MultiSelectTrigger,
+  MultiSelectValue,
+} from '@/components/ui/multi-select'
 import {
   Dialog,
   DialogContent,
@@ -22,72 +25,40 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { SidebarMenuButton } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useCreateTagMutation } from '@/integrations/tags/tags.mutation'
-import { zodValidate } from '@/utils/index'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { useAttachTagMutation } from '@/integrations/tags/tags.mutation'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
-import { racksListQueryOptions } from '@/integrations/racks/racks.query'
-import { inventoryQueryOptions } from '@/integrations/inventory/inventory.query'
-import { machinesQueryOptions } from '@/integrations/machines/machines.query'
-
-// TO DO: add mutations, add dynamic item fetch
-
-const schemas = {
-  team: z.string().min(1, 'Team is required'),
-  itemType: z.string().min(1, 'ItemType is required'),
-  item: z.string().min(1, 'Item is required'),
-  tag: z.string().min(1, 'Tag is required'),
-}
 
 interface AssignTagDialogProps {
-  itemType?: string
-  item?: any
-  tag?: any
+  entityType?: 'machine' | 'rack' | 'document' | 'room'
+  entityId?: string
 }
 
-// WIP - waiting for endpoints
-export function AssignTagDialog(props: AssignTagDialogProps) {
-  console.log(props)
+export function AssignTagDialog({
+  entityType,
+  entityId,
+}: AssignTagDialogProps) {
   const [open, setOpen] = useState(false)
-  const queryClient = useQueryClient()
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const { data: tags } = useSuspenseQuery(tagsQueryOptions)
 
-  const itemsMap = {
-    racks: racksListQueryOptions,
-    inventory: inventoryQueryOptions,
-    machines: machinesQueryOptions,
-  }
-
-  const itemTypes = Object.keys(itemsMap).map((key) => ({
-    id: key,
-    name: key.charAt(0).toUpperCase() + key.slice(1),
-  }))
-
-  // const itemQueries = Object.values(itemsMap)
-
-  const mutation = useMutation({
-    mutationFn: useCreateTagMutation,
-    onSuccess: () => {
-      toast.success('Tag assigned successfully')
-      queryClient.invalidateQueries({ queryKey: ['tags', 'assign'] })
-      setOpen(false)
-      form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
-    },
-  })
+  const mutation = useAttachTagMutation()
 
   const form = useForm({
     defaultValues: {
-      team: '',
-      itemType: '',
-      item: '',
-      tag: '',
-    },
-    onSubmit: async ({ value }) => {
-      await mutation.mutateAsync(value as any)
+      entity_type: entityType!,
+      entity_id: entityId!,
+      tag_ids: [],
+    } as AssignDetachTagForm,
+    onSubmit: ({ value }) => {
+      mutation.mutate(value, {
+        onSuccess: () => {
+          toast.success('Tags assigned successfully')
+          setOpen(false)
+          form.reset()
+        },
+        onError: (error: Error) => {
+          toast.error('Operation failed', { description: error.message })
+        },
+      })
     },
   })
 
@@ -100,10 +71,10 @@ export function AssignTagDialog(props: AssignTagDialogProps) {
         </SidebarMenuButton>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[50vh] overflow-hidden">
+      <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[25vh] overflow-hidden">
         <DialogHeader className="px-6 py-6 pb-2 shrink-0">
-          <DialogTitle>Assign tag</DialogTitle>
-          <DialogDescription>Assign tags to resources</DialogDescription>
+          <DialogTitle>Assign tags</DialogTitle>
+          <DialogDescription>Assign tags to resource</DialogDescription>
         </DialogHeader>
 
         <form
@@ -117,63 +88,32 @@ export function AssignTagDialog(props: AssignTagDialogProps) {
           <ScrollArea className="flex-1 min-h-0">
             <div className="space-y-6 px-6 py-4">
               <form.Field
-                name="team"
-                validators={{ onChange: zodValidate(schemas.team) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Team</FieldLabel>
-                    <InputChecklist
-                      items={teams}
-                      value={field.state.value}
-                      onChange={(newTeam) => field.handleChange(newTeam)}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="itemType"
-                validators={{ onChange: zodValidate(schemas.itemType) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Item Type</FieldLabel>
-                    <InputChecklist
-                      items={itemTypes}
-                      value={field.state.value}
-                      onChange={(newItemType) =>
-                        field.handleChange(newItemType)
-                      }
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="item"
-                validators={{ onChange: zodValidate(schemas.team) }}
-                children={(field) => (
-                  <Field>
-                    <FieldLabel htmlFor={field.name}>Item</FieldLabel>
-                    <InputChecklist
-                      items={teams}
-                      value={field.state.value}
-                      onChange={(newItem) => field.handleChange(newItem)}
-                    />
-                    <FieldError errors={field.state.meta.errors} />
-                  </Field>
-                )}
-              />
-              <form.Field
-                name="tag"
-                validators={{ onChange: zodValidate(schemas.team) }}
+                name="tag_ids"
                 children={(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>Tag</FieldLabel>
-                    <InputChecklist
-                      items={tags}
-                      value={field.state.value}
-                      onChange={(newTeam) => field.handleChange(newTeam)}
-                    />
+                    <MultiSelect
+                      values={field.state.value}
+                      onValuesChange={(values) => {
+                        field.handleChange(values)
+                      }}
+                    >
+                      <MultiSelectTrigger className="w-full">
+                        <MultiSelectValue placeholder="Select tags" />
+                      </MultiSelectTrigger>
+                      <MultiSelectContent>
+                        <MultiSelectGroup>
+                          {tags.map((tag) => (
+                            <MultiSelectItem
+                              key={tag.id}
+                              value={String(tag.id)}
+                            >
+                              {tag.name}
+                            </MultiSelectItem>
+                          ))}
+                        </MultiSelectGroup>
+                      </MultiSelectContent>
+                    </MultiSelect>
                     <FieldError errors={field.state.meta.errors} />
                   </Field>
                 )}
@@ -204,7 +144,7 @@ export function AssignTagDialog(props: AssignTagDialogProps) {
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      Assign Tag
+                      Assign Tags
                     </>
                   )}
                 </Button>

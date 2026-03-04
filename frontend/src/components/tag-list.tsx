@@ -3,6 +3,7 @@ import { AssignTagDialog } from './assign-tag-dialog'
 import type { TagItem } from '@/integrations/tags/tags.types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useDetachTagMutation } from '@/integrations/tags/tags.mutation'
 
 // Tags color definition
 export const colorMap = {
@@ -17,11 +18,21 @@ export const colorMap = {
 interface TagListProps {
   tags: Array<TagItem>
   type?: 'view' | 'edit'
+  entityId?: string
+  entityType?: 'machine' | 'rack' | 'document' | 'room'
 }
 
-export function TagList({ tags, type }: TagListProps) {
+export function TagList({ tags, type, entityType, entityId }: TagListProps) {
   const isEditing = type === 'edit'
+  const mutation = useDetachTagMutation()
 
+  const handleDetachTag = (tagId: string) => {
+    mutation.mutate({
+      tag_ids: [tagId],
+      entity_id: entityId!,
+      entity_type: entityType!,
+    })
+  }
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {tags.length === 0 && (
@@ -31,13 +42,22 @@ export function TagList({ tags, type }: TagListProps) {
       {tags.map((tag) => (
         <Badge key={tag.id} className={colorMap[tag.color]}>
           {tag.name}
-          {isEditing && <X className="ml-1 h-3 w-3" />}
+          {isEditing && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handleDetachTag(String(tag.id))}
+            >
+              <X className="ml-1 h-3 w-3" />
+            </Button>
+          )}
         </Badge>
       ))}
 
       {isEditing && (
         <Button variant="ghost" size="icon" className="h-8 w-8">
-          <AssignTagDialog />
+          <AssignTagDialog entityType={entityType} entityId={entityId} />
         </Button>
       )}
     </div>

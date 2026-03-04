@@ -47,7 +47,6 @@ export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
     ),
     cell: ({ row }) => {
       const tags = row.getValue<Array<TagItem>>('tags')
-
       return <TagList tags={tags} />
     },
   },

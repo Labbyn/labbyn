@@ -15,4 +15,10 @@ export interface TagItem {
   color: TagColor
 }
 
+export interface AssignDetachTagForm {
+  tag_ids: Array<string>
+  entity_id: string
+  entity_type: string
+}
+
 export type ApiTagsResponse = Array<ApiTagsItem>

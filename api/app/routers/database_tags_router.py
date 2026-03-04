@@ -59,15 +59,16 @@ async def assign_tag(
             status_code=404, detail=f"{data.entity_type} not found or access denied"
         )
 
-    tag = db.query(Tags).filter(Tags.id == data.tag_id).first()
-    if not tag:
+    tag_list = db.query(Tags).filter(Tags.id.in_(data.tag_ids)).all()
+    if not tag_list:
         raise HTTPException(status_code=404, detail="Tag not found")
 
-    if tag not in entity.tags:
-        entity.tags.append(tag)
+    new_tags = set(tag_list) - set(entity.tags)
+    if new_tags:
+        entity.tags.extend(new_tags)
         db.commit()
 
-    return {f"Tag {tag.name} assigned to {data.entity_type}"}
+    return {f"Tags assigned to {data.entity_type}"}
 
 
 @router.post("/db/tags/detach", status_code=status.HTTP_200_OK, tags=["Tags"])
@@ -82,7 +83,7 @@ async def detach_tag(
     if not entity:
         raise HTTPException(status_code=404, detail="Entity not found")
 
-    tag = db.query(Tags).filter(Tags.id == data.tag_id).first()
+    tag = db.query(Tags).filter(Tags.id == data.tag_ids[0]).first()
 
     if tag in entity.tags:
         entity.tags.remove(tag)

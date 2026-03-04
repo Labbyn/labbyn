@@ -97,8 +97,9 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
   const queryClient = useQueryClient()
 
   return useMutation({
+    mutationKey: ['update-machine'],
     mutationFn: async (machineData: MachineUpdate) => {
-      const { data } = await api.put(PATHS.DETAIL(machineId), machineData)
+      const { data } = await api.patch(PATHS.DETAIL(machineId), machineData)
       return data
     },
     onSuccess: () => {

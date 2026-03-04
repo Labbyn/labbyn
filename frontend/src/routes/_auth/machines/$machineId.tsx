@@ -23,7 +23,13 @@ import {
   Users,
 } from 'lucide-react'
 import type { TagItem } from '@/integrations/tags/tags.types'
-import { InputChecklist } from '@/components/input-checklist'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 // import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { machineSpecInfoQueryOptions } from '@/integrations/machines/machines.query'
@@ -86,7 +92,7 @@ function MachineDetailsPage() {
         isEditing: isEditing,
         editValue: formData.name,
         onEditChange: (val) => setFormData((prev) => ({ ...prev, name: val })),
-        onSave: () => handleSave,
+        onSave: () => handleSave(),
         onCancel: () => {
           setFormData({ ...machine })
           setIsEditing(false)
@@ -162,7 +168,7 @@ function MachineDetailsPage() {
                     icon: AlarmClock,
                   },
                   { label: 'Tags', name: 'tags' as const, icon: Box },
-                  { label: 'Team', name: 'team_name' as const, icon: Users },
+                  { label: 'Team', name: 'team_id' as const, icon: Users },
                 ].map((field, index, array) => {
                   const rawValue = machine[field.name]
 
@@ -186,18 +192,33 @@ function MachineDetailsPage() {
                               <TagList
                                 tags={rawValue as Array<TagItem>}
                                 type="edit"
+                                entityType="machine"
+                                entityId={machineId}
                               />
-                            ) : field.name === 'team_name' ? (
-                              <InputChecklist
-                                items={teams}
-                                value={formData.team_name}
-                                onChange={(newTeamName: string) =>
+                            ) : field.name === 'team_id' ? (
+                              <Select
+                                value={String(formData.team_id)}
+                                onValueChange={(newTeamId: string) =>
                                   setFormData((prev) => ({
                                     ...prev,
-                                    team_name: newTeamName,
+                                    team_id: newTeamId,
                                   }))
                                 }
-                              />
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a team" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {teams.map((team) => (
+                                    <SelectItem
+                                      key={team.id}
+                                      value={String(team.id)}
+                                    >
+                                      {team.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             ) : field.name === 'cpus' ? (
                               formData.cpus.map((cpu: any, idx: number) => (
                                 <Input
@@ -234,9 +255,20 @@ function MachineDetailsPage() {
                                     className="h-8 text-sm flex-1"
                                     placeholder="Disk Name"
                                   />
-                                  <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-1 rounded font-bold shrink-0">
-                                    {addTextToString(disk.capacity, 'GB')}
-                                  </span>
+                                  <Input
+                                    value={disk.capacity}
+                                    type="number"
+                                    onChange={(e) =>
+                                      handleListInputChange(
+                                        'disks',
+                                        idx,
+                                        'capacity',
+                                        e.target.value,
+                                      )
+                                    }
+                                    className="h-8 text-sm flex-1"
+                                    placeholder="Disk Capacity"
+                                  />
                                 </div>
                               ))
                             ) : (
@@ -264,7 +296,7 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {disk.capacity}
+                                    {addTextToString(disk.capacity, 'GB')}
                                   </span>
                                 </div>
                               ))
@@ -274,6 +306,11 @@ function MachineDetailsPage() {
                               <span className="truncate">
                                 {convertTimestampToDate(rawValue as string) ||
                                   '—'}
+                              </span>
+                            ) : field.name === 'team_id' ? (
+                              <span className="truncate">
+                                {teams.find((team) => team.id === rawValue)
+                                  ?.name || '—'}
                               </span>
                             ) : (
                               <span className="truncate">

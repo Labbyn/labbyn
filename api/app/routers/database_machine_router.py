@@ -190,6 +190,7 @@ async def get_machine_full_detail(
         "note": machine.note,
         "pdu_port": machine.pdu_port,
         "added_on": machine.added_on,
+        "team_id": machine.team_id,
         "team_name": machine.team.name if machine.team else "N/A",
         "rack_name": (
             machine.shelf.rack.name if (machine.shelf and machine.shelf.rack) else "N/A"
@@ -229,13 +230,13 @@ async def update_machine(
     ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
         query = db.query(Machines).filter(Machines.id == machine_id).first()
-        query = ctx.team_filter(query, Machines)
-        machine = query.first()
+        machine = ctx.team_filter(query, Machines)
         if not machine:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Machine not found or access denied",
             )
+
         update_data = machine_data.model_dump(exclude_unset=True)
         if "team_id" in update_data and not ctx.is_admin:
             if update_data["team_id"] not in ctx.team_ids:
@@ -243,8 +244,22 @@ async def update_machine(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="You don't have permission to assign this machine to the specified team",
                 )
+
         for k, v in update_data.items():
-            setattr(machine, k, v)
+            if k == "cpus":
+                for cpu in v:
+                    db.query(CPUs).filter(CPUs.id == cpu["id"]).update(
+                        {"name": cpu["name"]}
+                    )
+                db.commit()
+            elif k == "disks":
+                for disk in v:
+                    db.query(Disks).filter(Disks.id == disk["id"]).update(
+                        {"name": disk["name"], "capacity": disk["capacity"]}
+                    )
+                db.commit()
+            else:
+                setattr(machine, k, v)
 
         db.commit()
         db.refresh(machine)
