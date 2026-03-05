@@ -1309,6 +1309,7 @@ class SearchItem(BaseModel):
     class Config:
         from_attributes = True
 
+
 class GroupedSearchResponse(BaseModel):
     machines: List[SearchItem] = []
     users: List[SearchItem] = []

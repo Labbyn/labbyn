@@ -4,15 +4,15 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.db.schemas import GroupSearchResponse
+from app.db.schemas import GroupedSearchResponse
 from app.db.models import Rack, Rooms, Teams, Machines, User, Inventory, Documentation
 from app.auth.dependencies import RequestContext
 
 router = APIRouter(tags=["Search"])
 
 
-@router.get("/db/search", response_model=List[GroupedSearchResponse])
-async def get_search_data(
+@router.get("/db/search", response_model=GroupedSearchResponse)
+def get_search_data(
     ctx: RequestContext = Depends(), db: Session = Depends(get_db)
 ):
     """
