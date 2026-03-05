@@ -5,26 +5,26 @@ from app.main import app
 from app.db.models import User, UserType
 
 
-pytestmark = [pytest.mark.smoke, pytest.mark.prometheus]
+pytestmark = [pytest.mark.smoke, pytest.mark.prometheus, pytest.mark.asyncio]
 
 
-def test_prometheus_instances_endpoint(test_client, service_header_sync):
+async def test_prometheus_instances_endpoint(test_client, service_header):
     """Smoke test for /prometheus/instances endpoint."""
-    response = test_client.get("/prometheus/instances", headers=service_header_sync)
+    response = await test_client.get("/prometheus/instances", headers=service_header)
     assert response.status_code == 200
     assert "instances" in response.json()
 
 
-def test_prometheus_hosts_endpoint(test_client, service_header_sync):
+async def test_prometheus_hosts_endpoint(test_client, service_header):
     """Smoke test for /prometheus/hosts endpoint."""
-    response = test_client.get("/prometheus/hosts", headers=service_header_sync)
+    response = await test_client.get("/prometheus/hosts", headers=service_header)
     assert response.status_code == 200
     assert "hosts" in response.json()
 
 
-async def test_prometheus_metrics_endpoint(test_client, service_header_sync):
+async def test_prometheus_metrics_endpoint(test_client, service_header):
     """Smoke test for /prometheus/metrics endpoint."""
-    response = test_client.get("/prometheus/metrics", headers=service_header_sync)
+    response = await test_client.get("/prometheus/metrics", headers=service_header)
     assert response.status_code == 200
     data = response.json()
     for key in ["status", "cpu_usage", "memory_usage", "disk_usage"]:
@@ -46,10 +46,10 @@ async def test_prometheus_websocket_endpoint(test_client, refresh_redis_client):
             assert isinstance(message[key], (dict, list))
 
 
-def test_prometheus_target_endpoint_connection(test_client, service_header_sync):
+async def test_prometheus_target_endpoint_connection(test_client, service_header):
     """Smoke test for /prometheus/target endpoint."""
     payload = {"instance": "dummy:9100", "labels": {"env": "ci-test"}}
-    response = test_client.post(
-        "/prometheus/target", json=payload, headers=service_header_sync
+    response = await test_client.post(
+        "/prometheus/target", json=payload, headers=service_header
     )
     assert response.status_code in (200, 400, 422)

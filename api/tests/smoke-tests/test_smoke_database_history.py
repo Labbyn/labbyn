@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from sqlalchemy import select
 from app.db import models, schemas
 from app.utils import database_service as service
 from app.routers.database_history_router import (
@@ -10,7 +11,7 @@ from app.routers.database_history_router import (
 )
 
 
-pytestmark = [pytest.mark.smoke, pytest.mark.database]
+pytestmark = [pytest.mark.smoke, pytest.mark.database, pytest.mark.asyncio]
 
 
 def unique_str(prefix: str):
@@ -22,7 +23,8 @@ def unique_str(prefix: str):
     return f"{prefix}_{uuid.uuid4().hex[:6]}"
 
 
-def test_history_full_cycle_with_rollback(db_session):
+@pytest.mark.database
+async def test_history_full_cycle_with_rollback(db_session):
     """
     Test full history cycle with rollbacks:
     1. CREATE User -> Check log
@@ -35,11 +37,11 @@ def test_history_full_cycle_with_rollback(db_session):
 
     test_team = models.Teams(name=unique_str("HistoryTeam"))
     db_session.add(test_team)
-    db_session.commit()
-    db_session.refresh(test_team)
+    await db_session.commit()
+    await db_session.refresh(test_team)
     team_ids = [test_team.id]
 
-    admin = service.create_user(
+    admin = await service.create_user(
         db_session,
         schemas.UserCreate(
             name="Admin",
@@ -56,7 +58,7 @@ def test_history_full_cycle_with_rollback(db_session):
     unique_login = unique_str("HistoryUser")
     original_email = f"{unique_login}@labbyn.service"
 
-    user = service.create_user(
+    user = await service.create_user(
         db_session,
         schemas.UserCreate(
             name="John",
@@ -73,18 +75,18 @@ def test_history_full_cycle_with_rollback(db_session):
     assert user_id is not None
 
     log_create = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == user_id,
-            models.History.entity_type == models.EntityType.USER,
-            models.History.action == models.ActionType.CREATE,
-        )
-        .first()
+        (await db_session.execute(
+            select(models.History).filter(
+                models.History.entity_id == user_id,
+                models.History.entity_type == models.EntityType.USER,
+                models.History.action == models.ActionType.CREATE,
+            )
+        )).scalars().first()
     )
     assert log_create is not None, "No Create log found in history"
 
     new_email = f"updated-{unique_login}@test.com"
-    service.update_user(
+    await service.update_user(
         db_session,
         user_id,
         schemas.UserUpdate(email=new_email),
@@ -92,38 +94,38 @@ def test_history_full_cycle_with_rollback(db_session):
     )
 
     log_update = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == user_id,
-            models.History.action == models.ActionType.UPDATE,
-        )
-        .order_by(models.History.timestamp.desc())
-        .first()
+        (await db_session.execute(
+            select(models.History).filter(
+                models.History.entity_id == user_id,
+                models.History.action == models.ActionType.UPDATE,
+            )
+            .order_by(models.History.timestamp.desc())
+        )).scalars().first()
     )
     assert log_update is not None, "No Update log found in history"
     assert "email" in log_update.extra_data
     assert log_update.extra_data["email"]["new"] == new_email
 
-    service.delete_entity(db_session, models.User, user_id, user_id=admin_id)
+    await service.delete_entity(db_session, models.User, user_id, user_id=admin_id)
 
-    deleted_user = service.get_entity_by_id(db_session, models.User, user_id)
+    deleted_user = await service.get_entity_by_id(db_session, models.User, user_id)
     assert deleted_user is None
 
     log_delete = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == user_id,
-            models.History.action == models.ActionType.DELETE,
-        )
-        .first()
+        (await db_session.execute(
+            select(models.History).filter(
+                models.History.entity_id == user_id,
+                models.History.action == models.ActionType.DELETE,
+            )
+        )).scalars().first()
     )
     assert log_delete is not None, "No Delete log found in history"
     assert log_delete.before_state["id"] == user_id
 
-    msg = _rollback_delete(models.User, log_delete, db_session)
-    db_session.commit()
+    msg = await _rollback_delete(models.User, log_delete, db_session)
+    await db_session.commit()
 
-    restored_user = service.get_entity_by_id(db_session, models.User, user_id)
+    restored_user = await service.get_entity_by_id(db_session, models.User, user_id)
     assert restored_user is not None, "Rollback DELETE didn't restore the user"
     assert (
         restored_user.id == user_id
@@ -132,16 +134,16 @@ def test_history_full_cycle_with_rollback(db_session):
         restored_user.email == new_email
     ), f"Wrong email after restoring expected: {new_email}, get: {restored_user.email}"
 
-    msg = _rollback_update(models.User, log_update, db_session)
-    db_session.commit()
-    db_session.refresh(restored_user)
+    msg = await _rollback_update(models.User, log_update, db_session)
+    await db_session.commit()
+    await db_session.refresh(restored_user)
 
     assert (
         restored_user.email == original_email
     ), "Rollback UPDATE didn't revert email to original"
 
-    msg = _rollback_create(models.User, log_create, db_session)
-    db_session.commit()
+    msg = await _rollback_create(models.User, log_create, db_session)
+    await db_session.commit()
 
-    final_check = service.get_entity_by_id(db_session, models.User, user_id)
+    final_check = await service.get_entity_by_id(db_session, models.User, user_id)
     assert final_check is None, "Rollback CREATE didn't delete the user"
