@@ -1,5 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from app.auth.auth_config import fastapi_users
+from sqlalchemy import Select
 from sqlalchemy.orm import Query, Session
 from app.db.models import User, UserType, UsersTeams
 from app.database import get_db
@@ -41,14 +42,25 @@ class RequestContext:
     def team_filter(self, query: Query, model_class):
         if self.is_admin:
             return query
+
+        is_select = isinstance(query, Select)
+
+        def apply_filter(q, condition):
+            return q.where(condition) if is_select else q.filter(condition)
+
         if not self.team_ids:
-            return query.filter(False)
+            return apply_filter(query, False)
+
         if hasattr(model_class, "team_id"):
-            return query.filter(model_class.team_id.in_(self.team_ids))
+            return apply_filter(query, model_class.team_id.in_(self.team_ids))
+
         if model_class == User:
+            if is_select:
+                return query.join(User.teams).where(UsersTeams.team_id.in_(self.team_ids))
             return query.join(User.teams).filter(UsersTeams.team_id.in_(self.team_ids))
 
         return query
+
 
     def require_admin(self):
         if not self.is_admin:
