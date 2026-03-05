@@ -1,3 +1,5 @@
+"""Router for global search across multiple database tables"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
@@ -13,6 +15,13 @@ router = APIRouter(tags=["Search"])
 async def get_search_data(
     ctx: RequestContext = Depends(), db: Session = Depends(get_db)
 ):
+    """
+    Global search endpoint that aggregates data from multiple tables
+    :param ctx: Request context containing user and team information
+    :param db: Current database session
+    :return: List of search results with type, label, sublabel, and target URL
+    """
+
     ctx.require_user()
 
     res = {
