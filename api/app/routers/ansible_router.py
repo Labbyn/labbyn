@@ -66,7 +66,7 @@ PLAYBOOK_MAP = {
 
 async def verify_machine_ownership(
     machine_id: int,
-    db: Union[Session, AsyncSession],
+    db: AsyncSession,
     ctx: RequestContext
 ):
     """
@@ -76,11 +76,9 @@ async def verify_machine_ownership(
     stmt = select(Machines).where(Machines.id == machine_id)
     stmt = ctx.team_filter(stmt, Machines)
 
-    if isinstance(db, AsyncSession):
-        result = await db.execute(stmt)
-        machine = result.scalar_one_or_none()
-    else:
-        machine = db.execute(stmt).scalar_one_or_none()
+    result = await db.execute(stmt)
+    machine = result.scalar_one_or_none()
+
 
     if not machine:
         raise HTTPException(
@@ -91,7 +89,7 @@ async def verify_machine_ownership(
 
 
 @router.post("/ansible/create_user")
-async def create_ansible_user(request: HostRequest, ctx: RequestContext = Depends()):
+async def create_ansible_user(request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)):
     """
     Create Ansible user on a host.
     :param request: HostRequest containing the host IP or hostname
@@ -104,7 +102,7 @@ async def create_ansible_user(request: HostRequest, ctx: RequestContext = Depend
 
 
 @router.post("/ansible/scan_platform")
-async def scan_platform(request: HostRequest, ctx: RequestContext = Depends()):
+async def scan_platform(request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)):
     """
     Gather information about platform.
     :param reqest: HostRequest containing the host IP or hostname
@@ -117,7 +115,7 @@ async def scan_platform(request: HostRequest, ctx: RequestContext = Depends()):
 
 
 @router.post("/ansible/deploy_agent")
-async def deploy_agent(request: HostRequest, ctx: RequestContext = Depends()):
+async def deploy_agent(request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)):
     """
     Deploy Node Exporter on a host.
     :param request: HostRequest containing the host IP or hostname
@@ -130,7 +128,7 @@ async def deploy_agent(request: HostRequest, ctx: RequestContext = Depends()):
 
 
 @router.post("/ansible/setup_agent")
-async def setup_agent(request: HostRequest, ctx: RequestContext = Depends()):
+async def setup_agent(request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)):
     """
     Workflow endpoint: first create Ansible user (if needed), then deploy Node Exporter.
     :param request: HostRequest containing the host IP or hostname
@@ -164,7 +162,7 @@ async def setup_agent(request: HostRequest, ctx: RequestContext = Depends()):
 async def discover_hosts(
     request: DiscoveryRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     ctx.require_user()
     if not request.hosts:
@@ -245,7 +243,7 @@ async def refresh_machine_hardware(
     request: HostRequest,
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     machine = await verify_machine_ownership(machine_id, db, ctx)
     await run_playbook_task(PLAYBOOK_MAP[AnsiblePlaybook.scan_platform], [machine.name], request.extra_vars)
@@ -282,7 +280,7 @@ async def cleanup_machine(
     machine_id: int,
     request: HostRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     async with acquire_lock(f"machine_lock:{machine_id}"):
         machine = await verify_machine_ownership(machine_id, db, ctx)
@@ -310,7 +308,7 @@ async def remove_agent(
     machine_id: int,
     request: HostRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     async with acquire_lock(f"machine_lock:{machine_id}"):
         machine = await verify_machine_ownership(machine_id, db, ctx)

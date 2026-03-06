@@ -126,7 +126,7 @@ async def websocket_endpoint(
     user = await strategy.read_token(token, user_manager)
 
     try:
-        ctx = await RequestContext.for_websocket(user)
+        ctx = await RequestContext.for_websocket(user, db)
         query = select(Machines.name)
         query = ctx.team_filter(query, Machines)
         result = await db.execute(query)
@@ -320,7 +320,7 @@ async def add_prometheus_new_target(
 
         if ":" not in target.instance or ":9090" in target.instance:
             target.instance = f"{target.instance}:9100"
-        entry = add_prometheus_target(target.instance, target.labels)
+        entry = await add_prometheus_target(target.instance, target.labels)
     except TargetSaveError as e:
         return {"error": str(e)}
     return {"message": "Target added successfully", "target": entry}
