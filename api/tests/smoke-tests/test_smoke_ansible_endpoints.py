@@ -4,6 +4,7 @@ import json
 from sqlalchemy import select
 from app.utils.ansible_service import REPORTS_DIR
 from app.db.models import Machines, Rooms, Metadata
+from sqlalchemy.orm import joinedload
 
 pytestmark = [pytest.mark.smoke, pytest.mark.api, pytest.mark.ansible, pytest.mark.asyncio]
 
@@ -57,7 +58,11 @@ async def test_discovery_flow(
     assert "summary" in response.json()
     assert response.json()["summary"][0]["status"] != "error"
 
-    stmt = select(Machines).where(Machines.name == test_ip)
+    stmt = (
+        select(Machines)
+        .options(joinedload(Machines.cpus), joinedload(Machines.disks))
+        .where(Machines.name == test_ip)
+    )
     result = await db_session.execute(stmt)
     machine = result.unique().scalar_one_or_none()
 
@@ -107,9 +112,15 @@ async def test_refresh_flow(
     )
 
     assert response.status_code == 200
-    assert response.json()["message"] == "Machine hardware info updated successfully"
+    assert response.json()["message"] == "Updated successfully"
 
-    stmt_updated = select(Machines).where(Machines.id == machine_id)
+    db_session.expire_all()
+
+    stmt_updated = (
+        select(Machines)
+        .options(joinedload(Machines.cpus))
+        .where(Machines.id == machine_id)
+    )
     result_updated = await db_session.execute(stmt_updated)
     updated_machine = result_updated.unique().scalar_one()
 
