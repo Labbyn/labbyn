@@ -197,7 +197,17 @@ def get_history_by_id(
     :return: History object
     """
     ctx.require_user()
-    history = db.query(History).filter(History.id == history_id).first()
+
+    query = (
+        db.query(History)
+        .join(User, History.user_id == User.id)
+        .filter(History.id == history_id)
+    )
+
+    query = ctx.team_filter(query, User)
+
+    history = query.first()
+
     if not history:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="History not found"

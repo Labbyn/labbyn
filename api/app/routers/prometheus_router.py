@@ -102,6 +102,7 @@ async def websocket_endpoint(
     ws: WebSocket,
     instance: str = Query(None, description="Filter by instance"),
     db: Session = Depends(get_db),
+    ctx: RequestContext = Depends(),
     user_manager=Depends(get_user_manager),
     strategy=Depends(get_database_strategy),
 ):
@@ -113,6 +114,9 @@ async def websocket_endpoint(
     :param instance: Optional instance filter
     :return: None
     """
+
+    ctx.require_user()
+
     manager.websocket = ws
     await ws.accept()
 
