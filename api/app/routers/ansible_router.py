@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from enum import Enum
 
-from app.database import get_db, get_async_db
+from app.database import get_async_db
 from app.db.models import Machines, Metadata, Rooms, Disks, CPUs
 from app.utils.ansible_service import parse_platform_report, run_playbook_task
 from app.utils.redis_service import acquire_lock

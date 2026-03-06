@@ -55,7 +55,7 @@ async def get_racks(
     room_ids: Optional[List[int]] = Query(None),
     team_ids: Optional[List[int]] = Query(None),
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Returns ALL racks with their shelves and machines nested inside.
@@ -93,7 +93,7 @@ async def get_racks(
 @router.get("/db/racks-list", tags=["Racks"])
 async def get_racks_list(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Returns a simple list of rack names and IDs for dropdowns
@@ -115,7 +115,7 @@ async def get_racks_list(
 async def get_rack_detail(
     rack_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific rack by ID with its nested shelves and machines
@@ -156,7 +156,7 @@ async def get_rack_detail(
 async def create_rack(
     rack: RackCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Create a new rack with team and room validation
@@ -207,7 +207,7 @@ async def update_rack(
     rack_id: int,
     rack_data: RackUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update an existing rack including team or room changes
@@ -278,7 +278,7 @@ async def update_rack(
 async def delete_rack(
     rack_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete a specific rack from the database
@@ -336,7 +336,7 @@ async def delete_rack(
 async def get_rack_info_by_id(
     rack_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch detailed information about a specific rack by ID including ordered machine list

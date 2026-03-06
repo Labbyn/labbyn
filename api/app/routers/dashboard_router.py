@@ -14,5 +14,5 @@ router = APIRouter()
     response_model=DashboardResponse,
     tags=["Dashboard"],
 )
-async def get_dashboard(db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()):
+async def get_dashboard(db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)):
     return await build_dashboard(db, ctx)

@@ -26,7 +26,7 @@ router = APIRouter()
 )
 async def get_documentation(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Get all documents from documentation
@@ -49,7 +49,7 @@ async def get_documentation(
 async def create_documentation(
     documentation_data: DocumentationCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new document
@@ -75,7 +75,7 @@ async def create_documentation(
     db.add(obj)
     await db.commit()
     await db.refresh(obj)
-
+    await db.refresh(obj, attribute_names=["tags"])
     return obj
 
 
@@ -87,7 +87,7 @@ async def create_documentation(
 async def get_documentation_by_id(
     documentation_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Get specific document from documentation by ID
@@ -112,7 +112,7 @@ async def get_documentation_by_id(
     return document
 
 
-@router.put(
+@router.patch(
     "/db/documentation/{documentation_id}",
     response_model=DocumentationResponse,
     tags=["Documentation"],
@@ -121,7 +121,7 @@ async def update_documentation(
     documentation_id: int,
     documentation_data: DocumentationUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update document data
@@ -147,11 +147,18 @@ async def update_documentation(
             )
 
         update_data = documentation_data.model_dump(exclude_unset=True)
+        if "tag_ids" in update_data:
+            tag_ids = update_data.pop("tag_ids")
+            tag_stmt = select(Tags).where(Tags.id.in_(tag_ids))
+            tag_result = await db.execute(tag_stmt)
+            document.tags = tag_result.scalars().all()
+
         for k, v in update_data.items():
             setattr(document, k, v)
 
         await db.commit()
         await db.refresh(document)
+        await db.refresh(document, attribute_names=["tags"])
         return document
 
 
@@ -163,7 +170,7 @@ async def update_documentation(
 async def delete_document(
     documentation_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete document

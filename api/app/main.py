@@ -12,7 +12,7 @@ from app.routers import (
     prometheus_router,
     database_category_router,
     database_inventory_router,
-    database_layouts_router,
+    #database_layouts_router, # To be removed after new map implementation
     database_rack_router,
     database_shelf_router,
     database_machine_router,
@@ -32,7 +32,6 @@ from app.routers import (
     database_disks_router,
 )
 from app.routers.prometheus_router import metrics_worker, status_worker
-from app.database import SessionLocal
 from app.utils.database_service import init_super_user, init_virtual_lab, init_document
 
 # pylint: disable=unused-import
@@ -60,7 +59,7 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
         await init_virtual_lab(db)
         await init_document(db)
     finally:
-        db.close()
+        await db.close()
     status_task = asyncio.create_task(status_worker())
     metrics_task = asyncio.create_task(metrics_worker())
     try:
@@ -83,7 +82,7 @@ app.mount(
     name="avatars",
 )
 
-# Configure CORS middleware temporaryly for local development
+# Configure CORS middleware temporarily for local development
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -97,6 +96,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# FastAPI Users routers
 app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/auth", tags=["auth"]
 )
@@ -105,10 +105,12 @@ app.include_router(
     prefix="/users",
     tags=["users"],
 )
+
+# Custom application routers
 app.include_router(prometheus_router.router)
 app.include_router(database_category_router.router)
 app.include_router(database_inventory_router.router)
-app.include_router(database_layouts_router.router)
+#app.include_router(database_layouts_router.router) # To be removed after new map implementation
 app.include_router(database_machine_router.router)
 app.include_router(database_metadata_router.router)
 app.include_router(database_rental_router.router)

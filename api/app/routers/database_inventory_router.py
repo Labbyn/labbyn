@@ -31,7 +31,7 @@ router = APIRouter()
 async def create_item(
     inventory_data: InventoryCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create and add new inventory to database
@@ -55,7 +55,7 @@ async def create_item(
 )
 async def get_inventory(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all inventory items
@@ -77,7 +77,7 @@ async def get_inventory(
 )
 async def get_inventory_details(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all inventory items with detailed information from related tables (team, room, machine, category).
@@ -149,7 +149,7 @@ async def get_inventory_details(
 async def bulk_create_items(
     items_data: List[InventoryCreate],
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Bulk import inventory items
@@ -183,7 +183,7 @@ async def bulk_create_items(
 async def get_inventory_item_details(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all specific item with detailed information from related tables (team, room, machine, category).
@@ -254,7 +254,7 @@ async def get_inventory_item_details(
 async def get_inventory_item(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific inventory item by ID
@@ -284,7 +284,7 @@ async def update_item(
     item_id: int,
     item_data: InventoryUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update item in inventory
@@ -329,7 +329,7 @@ async def update_item(
 async def delete_item(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete item in inventory

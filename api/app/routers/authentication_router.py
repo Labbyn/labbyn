@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from app.database import get_db
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import get_async_db
 from app.auth.auth_config import fastapi_users
 from app.db.models import User
 from app.db.schemas import FirstChangePasswordRequest
@@ -15,7 +16,7 @@ current_user = fastapi_users.current_user(active=True)
 async def setup_first_password(
     data: FirstChangePasswordRequest,
     user: User = Depends(current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
 
     if not user.force_password_change:
@@ -24,7 +25,10 @@ async def setup_first_password(
             detail="Password change not required.",
         )
 
-    db_user = db.query(User).filter(User.id == user.id).first()
+    stmt = select(User).where(User.id == user.id)
+    result = await db.execute(stmt)
+    db_user = result.scalar_one_or_none()
+
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -34,6 +38,6 @@ async def setup_first_password(
     db_user.hashed_password = hash_password(data.new_password)
     db_user.force_password_change = False
     db.add(db_user)
-    db.commit()
+    await db.commit()
 
     return {"message": "Password has been set successfully."}

@@ -26,7 +26,7 @@ router = APIRouter()
 async def create_cpu(
     cpu_data: CPUCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new CPU
@@ -64,7 +64,7 @@ async def create_cpu(
 @router.get("/db/cpus/", response_model=List[CPUResponse], tags=["Cpus"])
 async def get_cpus(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all CPUs
@@ -82,7 +82,7 @@ async def get_cpus(
 async def get_cpu_by_id(
     cpu_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific CPU by ID
@@ -104,12 +104,12 @@ async def get_cpu_by_id(
     return cpu
 
 
-@router.put("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
+@router.patch("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
 async def update_cpu(
     cpu_id: int,
     cpu_data: CPUUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update CPU
@@ -147,7 +147,7 @@ async def update_cpu(
 async def delete_cpu(
     cpu_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete CPU

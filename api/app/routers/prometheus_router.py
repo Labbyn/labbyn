@@ -205,7 +205,7 @@ async def websocket_endpoint(
 
 @router.get("/prometheus/instances")
 async def get_prometheus_instances(
-    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all unique host instances [HOST::PORT] from Prometheus.
@@ -231,7 +231,7 @@ async def get_prometheus_instances(
 
 @router.get("/prometheus/hosts")
 async def get_prometheus_hosts(
-    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
@@ -261,7 +261,7 @@ async def get_prometheus_all_metrics(
         description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
     ),
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch metrics for selected instances directly from Prometheus (bypasses cache).
@@ -308,7 +308,7 @@ async def get_prometheus_all_metrics(
 
 @router.post("/prometheus/target")
 async def add_prometheus_new_target(
-    target: PrometheusTarget, ctx: RequestContext = Depends()
+    target: PrometheusTarget, ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Add a new target to Prometheus targets file.

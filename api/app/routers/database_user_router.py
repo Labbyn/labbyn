@@ -82,7 +82,7 @@ def get_masked_user_model(u: User, ctx: RequestContext, detailed: bool = False):
 async def create_user(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create and add new user to database
@@ -157,7 +157,7 @@ async def create_user(
 
 @router.get("/db/users/list_info", response_model=List[UserInfo], tags=["Users"])
 async def get_users_with_groups(
-    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all users with their assigned groups (masked based on permissions).
@@ -174,7 +174,7 @@ async def get_users_with_groups(
 
 @router.get("/db/users/{user_id}", response_model=UserInfoExtended, tags=["Users"])
 async def get_user_detail_with_groups(
-    user_id: int, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    user_id: int, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch full user profile including avatar and group links (requires permissions).
@@ -210,7 +210,7 @@ async def update_user(
     user_id: int,
     user_data: UserUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update user data
@@ -273,7 +273,7 @@ async def update_user(
     "/db/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Users"]
 )
 async def delete_user(
-    user_id: int, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    user_id: int, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete user
@@ -305,7 +305,7 @@ async def delete_user(
 async def upload_user_avatar(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     ctx.require_user()
     user_id = ctx.current_user.id
@@ -349,7 +349,7 @@ async def update_user_team_role(
     user_id: int,
     role_data: UserTeamRoleUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update user's group admin role within a specific team

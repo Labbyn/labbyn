@@ -26,7 +26,7 @@ router = APIRouter()
 async def create_rental(
     rent_data: RentalsCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new item rent
@@ -92,7 +92,7 @@ async def return_rental(
     rental_id: int,
     return_data: Optional[RentalReturn] = None,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     End item rental
@@ -161,7 +161,7 @@ async def return_rental(
 @router.get("/db/rentals/", response_model=List[RentalsResponse], tags=["Rentals"])
 async def get_rentals(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Get all rentals
@@ -180,7 +180,7 @@ async def get_rentals(
 async def get_rental_by_id(
     rental_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Get specific rental by ID
@@ -213,7 +213,7 @@ async def get_rental_by_id(
 async def delete_rental(
     rental_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete rental history

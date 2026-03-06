@@ -4,7 +4,7 @@ import json
 from typing import List
 
 from app.database import get_async_db
-from app.db.models import Machines, User, UserType, Rack, Shelf, CPUs, Disks
+from app.db.models import Machines, User, UserType, Rack, Shelf, CPUs, Disks, Metadata
 from app.db.schemas import (
     MachinesCreate,
     MachinesResponse,
@@ -31,7 +31,7 @@ router = APIRouter()
 async def create_machine(
     machine_data: MachinesCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create and add new machine to database
@@ -46,16 +46,23 @@ async def create_machine(
     data = machine_data.model_dump(exclude={"cpus", "disks"})
     data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
 
+    if not data.get("metadata_id"):
+        new_metadata = Metadata()
+        db.add(new_metadata)
+        await db.flush()
+        data["metadata_id"] = new_metadata.id
+
     obj = Machines(**data)
     obj.cpus = [CPUs(name=item.name) for item in cpus]
     obj.disks = [Disks(name=item.name) for item in disks]
+
 
     db.add(obj)
     await db.commit()
     await db.refresh(obj, attribute_names=[
         "team",
-        "localization",
-        "metadata",
+        "room",
+        "machine_metadata",
         "shelf",
         "cpus",
         "disks"
@@ -66,7 +73,7 @@ async def create_machine(
 @router.get("/db/machines/", response_model=List[MachinesResponse], tags=["Machines"])
 async def get_machines(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all machines
@@ -87,7 +94,7 @@ async def get_machines(
 async def get_machine_by_id(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific machine by ID
@@ -118,7 +125,7 @@ async def get_machine_by_id(
 async def get_machine_full_detail(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific machine by ID
@@ -235,7 +242,7 @@ async def update_machine(
     machine_id: int,
     machine_data: MachinesUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update machine data
@@ -288,7 +295,7 @@ async def update_machine(
 async def delete_machine(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete Machine
@@ -320,7 +327,7 @@ async def mount_machine(
     machine_id: int,
     shelf_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Mounts a machine onto a specific shelf
@@ -370,7 +377,7 @@ async def mount_machine(
 async def unmount_machine(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Removes a machine from its current shelf (sets shelf_id to NULL)

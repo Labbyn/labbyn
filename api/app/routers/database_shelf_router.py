@@ -23,7 +23,7 @@ router = APIRouter(tags=["shelves"])
 async def get_shelves_by_rack(
     rack_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Get all shelves for a specific rack
@@ -55,7 +55,7 @@ async def get_shelves_by_rack(
 async def get_single_shelf(
     shelf_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific shelf by ID with its nested machines
@@ -98,7 +98,7 @@ async def create_shelf(
     rack_id: int,
     shelf_data: ShelfCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create a new shelf in a specific rack
@@ -135,7 +135,7 @@ async def update_shelf(
     shelf_id: int,
     shelf_data: ShelfUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update shelf details like name or order
@@ -178,7 +178,7 @@ async def update_shelf(
 async def delete_shelf(
     shelf_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete a specific shelf if it is empty

@@ -27,7 +27,7 @@ router = APIRouter()
 async def create_category(
     category_data: CategoriesCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new category (Async)
@@ -51,7 +51,7 @@ async def create_category(
 )
 async def get_categories(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all categories (Async)
@@ -73,7 +73,7 @@ async def get_categories(
 async def get_category_by_id(
     cat_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific category by ID (Async)
@@ -94,7 +94,7 @@ async def get_category_by_id(
     return cat
 
 
-@router.put(
+@router.patch(
     "/db/categories/{cat_id}",
     response_model=CategoriesResponse,
     tags=["Categories"]
@@ -103,7 +103,7 @@ async def update_category(
     cat_id: int,
     cat_data: CategoriesUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update Category (Async)
@@ -140,7 +140,7 @@ async def update_category(
 async def delete_category(
     cat_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete category (Async)

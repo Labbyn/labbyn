@@ -5,9 +5,7 @@ import os
 from fastapi import Depends
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
-from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 from app.db.models import User, AccessToken
 
@@ -38,24 +36,6 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
-# ---- SYNC ENGINE (COMMON DB OPERATIONS)
-sync_engine = create_engine(
-    DB_URL, pool_pre_ping=True, pool_size=50, max_overflow=60, pool_timeout=1800
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
-
-
-def get_db():
-    """
-    Dependency generator that yields a database session.
-    Ensures the session is closed after the request is finished.
-    """
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 async def get_async_db():

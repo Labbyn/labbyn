@@ -28,7 +28,7 @@ ENTITY_MAP = {
 )
 async def get_tags(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Get all tags from DB
@@ -46,7 +46,7 @@ async def get_tags(
 async def assign_tag(
     data: TagsAssignment,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     ctx.require_user()
 
@@ -90,7 +90,7 @@ async def assign_tag(
 async def detach_tag(
     data: TagsAssignment,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     ctx.require_user()
 
@@ -128,7 +128,7 @@ async def detach_tag(
 async def create_tag(
     tag_data: TagsCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new tag
@@ -154,7 +154,7 @@ async def create_tag(
 async def get_tag_by_id(
     tag_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Get specific tag from DB by ID
@@ -175,7 +175,7 @@ async def get_tag_by_id(
     return tag
 
 
-@router.put(
+@router.patch(
     "/db/tags/{tag_id}",
     response_model=TagsResponse,
     tags=["Tags"],
@@ -184,7 +184,7 @@ async def update_tag(
     tag_id: int,
     tag_data: TagsUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update tag data
@@ -222,7 +222,7 @@ async def update_tag(
 async def delete_tag(
     tag_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete tag

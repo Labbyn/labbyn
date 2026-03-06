@@ -145,7 +145,7 @@ async def _rollback_update(model_class, log_entry: History, db: AsyncSession) ->
     "/db/history/", response_model=List[HistoryEnhancedResponse], tags=["History"]
 )
 async def get_history_logs(
-    limit=200, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends()
+    limit=200, db: AsyncSession = Depends(get_async_db), ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Retrieve history logs with enhanced information.
@@ -202,7 +202,7 @@ async def get_history_logs(
 async def get_history_by_id(
     history_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific history by ID
@@ -230,7 +230,7 @@ async def get_history_by_id(
 async def rollback_history_entry(
     history_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Rollback a specific history entry by ID.

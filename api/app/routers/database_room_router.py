@@ -31,7 +31,7 @@ router = APIRouter()
 async def create_room(
     room_data: RoomsCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new room
@@ -55,14 +55,14 @@ async def create_room(
 
     db.add(obj)
     await db.commit()
-    await db.refresh(obj, attribute_names=["team", "racks"])
+    await db.refresh(obj, attribute_names=["team", "racks", "tags"])
     return obj
 
 
 @router.get("/db/rooms/", response_model=List[RoomsResponse], tags=["Rooms"])
 async def get_rooms(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all rooms
@@ -82,7 +82,7 @@ async def get_rooms(
 )
 async def get_rooms_dashboard(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch all rooms with rack count and map link for dashboard
@@ -119,7 +119,7 @@ async def get_rooms_dashboard(
 async def get_room_details(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific room by ID with nested racks, shelves and machines for dashboard details
@@ -189,7 +189,7 @@ async def get_room_details(
 async def get_room_by_id(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Fetch specific room by ID
@@ -217,7 +217,7 @@ async def update_room(
     room_id: int,
     room_data: RoomsUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update room
@@ -272,7 +272,7 @@ async def update_room(
 async def delete_room(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends()
+    ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Delete Room
