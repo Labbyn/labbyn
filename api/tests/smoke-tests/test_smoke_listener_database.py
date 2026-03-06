@@ -1,15 +1,16 @@
 """Smoke tests for Database Listener functionality."""
 
 import pytest
+from sqlalchemy import select
 from app.db import models
 
 # pylint: disable=unused-import
 import app.db.listeners
 
-pytestmark = [pytest.mark.smoke, pytest.mark.database]
+pytestmark = [pytest.mark.smoke, pytest.mark.database, pytest.mark.asyncio]
 
 
-def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
+async def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
     """
     Test full lifecycle of Entity for listener
     1. CREATE -> Check if history logs creating new entity
@@ -18,19 +19,23 @@ def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
     """
     new_cat = models.Categories(name=unique_category_name)
     db_session.add(new_cat)
-    db_session.commit()
-    db_session.refresh(new_cat)
+    await db_session.commit()
+    await db_session.refresh(new_cat)
 
     assert new_cat.id is not None
     assert new_cat.version_id == 1
 
     history_create = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == new_cat.id,
-            models.History.entity_type == models.EntityType.CATEGORIES,
-            models.History.action == models.ActionType.CREATE,
+        (
+            await db_session.execute(
+                select(models.History).filter(
+                    models.History.entity_id == new_cat.id,
+                    models.History.entity_type == models.EntityType.CATEGORIES,
+                    models.History.action == models.ActionType.CREATE,
+                )
+            )
         )
+        .scalars()
         .first()
     )
 
@@ -39,19 +44,24 @@ def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
 
     updated_name = f"UPDATED-{unique_category_name}"
     new_cat.name = updated_name
-    db_session.commit()
-    db_session.refresh(new_cat)
+    await db_session.commit()
+    await db_session.refresh(new_cat)
 
     assert new_cat.version_id == 2
     assert new_cat.name == updated_name
 
     history_update = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == new_cat.id,
-            models.History.action == models.ActionType.UPDATE,
+        (
+            await db_session.execute(
+                select(models.History)
+                .filter(
+                    models.History.entity_id == new_cat.id,
+                    models.History.action == models.ActionType.UPDATE,
+                )
+                .order_by(models.History.timestamp.desc())
+            )
         )
-        .order_by(models.History.timestamp.desc())
+        .scalars()
         .first()
     )
 
@@ -62,15 +72,19 @@ def test_full_entity_lifecycle_with_history(db_session, unique_category_name):
     assert changes["name"]["old"] == unique_category_name
     assert changes["name"]["new"] == updated_name
 
-    db_session.delete(new_cat)
-    db_session.commit()
+    await db_session.delete(new_cat)
+    await db_session.commit()
 
     history_delete = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == new_cat.id,
-            models.History.action == models.ActionType.DELETE,
+        (
+            await db_session.execute(
+                select(models.History).filter(
+                    models.History.entity_id == new_cat.id,
+                    models.History.action == models.ActionType.DELETE,
+                )
+            )
         )
+        .scalars()
         .first()
     )
     assert history_delete is not None, "No DELETE log in history table"

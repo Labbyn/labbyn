@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 from datetime import date
-from app.database import get_db
+from app.database import get_async_db
 from app.db.models import (
     Rentals,
     Inventory,
@@ -11,8 +11,8 @@ from app.db.schemas import RentalsCreate, RentalsResponse, RentalReturn
 from app.utils.redis_service import acquire_lock
 from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
@@ -25,8 +25,8 @@ router = APIRouter()
 )
 async def create_rental(
     rent_data: RentalsCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new item rent
@@ -38,25 +38,24 @@ async def create_rental(
     ctx.require_user()
 
     async with acquire_lock(f"inventory_lock:{rent_data.item_id}"):
-        item = (
-            db.query(Inventory)
+        stmt = (
+            select(Inventory)
             .filter(Inventory.id == rent_data.item_id)
             .with_for_update(nowait=True)
-            .first()
         )
+        result = await db.execute(stmt)
+        item = result.scalar_one_or_none()
 
         if not item:
             raise HTTPException(status_code=404, detail="Item not found")
 
-        active_rentals_sum = (
-            db.query(func.coalesce(func.sum(Rentals.quantity), 0))
-            .filter(
-                Rentals.item_id == item.id,
-                Rentals.start_date <= rent_data.end_date,
-                Rentals.end_date >= rent_data.start_date,
-            )
-            .scalar()
+        sum_stmt = select(func.coalesce(func.sum(Rentals.quantity), 0)).filter(
+            Rentals.item_id == item.id,
+            Rentals.start_date <= rent_data.end_date,
+            Rentals.end_date >= rent_data.start_date,
         )
+        sum_result = await db.execute(sum_stmt)
+        active_rentals_sum = sum_result.scalar()
 
         in_stock = item.quantity - active_rentals_sum
 
@@ -80,8 +79,8 @@ async def create_rental(
             item.rental_status = True
             item.rental_id = None
 
-        db.commit()
-        db.refresh(rental)
+        await db.commit()
+        await db.refresh(rental)
         return rental
 
 
@@ -89,8 +88,8 @@ async def create_rental(
 async def return_rental(
     rental_id: int,
     return_data: Optional[RentalReturn] = None,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     End item rental
@@ -101,36 +100,33 @@ async def return_rental(
     """
     ctx.require_user()
 
-    query = (
-        db.query(Rentals)
+    # Wstępne sprawdzenie uprawnień
+    check_stmt = (
+        select(Rentals)
         .join(Inventory, Rentals.item_id == Inventory.id)
         .filter(Rentals.id == rental_id)
     )
-    query = ctx.team_filter(query, Inventory)
+    check_stmt = ctx.team_filter(check_stmt, Inventory)
+    check_res = await db.execute(check_stmt)
+    rental_check = check_res.scalar_one_or_none()
 
-    rental = query.first()
-
-    if not rental:
+    if not rental_check:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rental not found or access denied",
         )
 
-    item_id = rental.item_id
+    item_id = rental_check.item_id
 
-    async with acquire_lock(f"inventory_lock:{rental.item_id}"):
-        db.expire_all()
+    async with acquire_lock(f"inventory_lock:{item_id}"):
+        rent_stmt = select(Rentals).filter(Rentals.id == rental_id).with_for_update()
+        item_stmt = select(Inventory).filter(Inventory.id == item_id).with_for_update()
 
-        rental = (
-            db.query(Rentals).filter(Rentals.id == rental_id).with_for_update().first()
-        )
+        rent_res = await db.execute(rent_stmt)
+        rental = rent_res.scalar_one_or_none()
 
-        item = (
-            db.query(Inventory)
-            .filter(Inventory.id == item_id)
-            .with_for_update()
-            .first()
-        )
+        item_res = await db.execute(item_stmt)
+        item = item_res.scalar_one_or_none()
 
         qty_to_return = (
             return_data.quantity
@@ -146,25 +142,24 @@ async def return_rental(
 
         if qty_to_return == rental.quantity:
             rental.end_date = date.today()
-            if item:
-                item.rental_status = False
             message = "Returned successfully (Full)"
         else:
             rental.quantity -= qty_to_return
-            if item:
-                item.rental_status = False
             message = f"Partially returned {qty_to_return} items. Remaining: {rental.quantity}"
 
         if item:
             item.rental_status = False
 
-        db.commit()
+        await db.commit()
 
     return {"message": message}
 
 
 @router.get("/db/rentals/", response_model=List[RentalsResponse], tags=["Rentals"])
-def get_rentals(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_rentals(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Get all rentals
     :param db: Active database session
@@ -172,14 +167,17 @@ def get_rentals(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
     :return: List of all rentals
     """
     ctx.require_user()
-    query = db.query(Rentals).join(Inventory, Rentals.item_id == Inventory.id)
-    query = ctx.team_filter(query, Inventory)
-    return query.all()
+    stmt = select(Rentals).join(Inventory, Rentals.item_id == Inventory.id)
+    stmt = ctx.team_filter(stmt, Inventory)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/db/rentals/{rental_id}", response_model=RentalsResponse, tags=["Rentals"])
-def get_rental_by_id(
-    rental_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_rental_by_id(
+    rental_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Get specific rental by ID
@@ -189,13 +187,15 @@ def get_rental_by_id(
     :return: Rental object
     """
     ctx.require_user()
-    query = (
-        db.query(Rentals)
+    stmt = (
+        select(Rentals)
         .join(Inventory, Rentals.item_id == Inventory.id)
         .filter(Rentals.id == rental_id)
     )
-    query = ctx.team_filter(query, Inventory)
-    rental = query.first()
+    stmt = ctx.team_filter(stmt, Inventory)
+    result = await db.execute(stmt)
+    rental = result.scalar_one_or_none()
+
     if not rental:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -208,7 +208,9 @@ def get_rental_by_id(
     "/db/rentals/{rental_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rentals"]
 )
 async def delete_rental(
-    rental_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    rental_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete rental history
@@ -218,13 +220,15 @@ async def delete_rental(
     :return: None
     """
     ctx.require_user()
-    query = (
-        db.query(Rentals)
+    stmt = (
+        select(Rentals)
         .join(Inventory, Rentals.item_id == Inventory.id)
         .filter(Rentals.id == rental_id)
     )
-    query = ctx.team_filter(query, Inventory)
-    rental = query.first()
+    stmt = ctx.team_filter(stmt, Inventory)
+    result = await db.execute(stmt)
+    rental = result.scalar_one_or_none()
+
     if not rental:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -232,10 +236,13 @@ async def delete_rental(
         )
 
     async with acquire_lock(f"inventory_lock:{rental.item_id}"):
-        item = db.query(Inventory).filter(Inventory.id == rental.item_id).first()
+        item_stmt = select(Inventory).filter(Inventory.id == rental.item_id)
+        item_res = await db.execute(item_stmt)
+        item = item_res.scalar_one_or_none()
+
         if item and item.rental_id == rental.id:
             item.rental_status = False
             item.rental_id = None
 
-        db.delete(rental)
-        db.commit()
+        await db.delete(rental)
+        await db.commit()

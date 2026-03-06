@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
 from pydantic import BaseModel
 from urllib.parse import unquote
-from app.database import get_db
 from starlette import status
 
 from ..auth.auth_config import auth_backend
+from ..database import get_async_db
 from ..db.models import Machines
 from app.auth.auth_config import auth_backend, fastapi_users, get_database_strategy
 from ..utils.prometheus_service import (
@@ -24,7 +24,8 @@ from ..utils.prometheus_service import (
 from app.auth.dependencies import RequestContext
 from app.auth.manager import get_user_manager
 from ..utils.redis_service import get_cache, set_cache
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 load_dotenv(".env/api.env")
 HOST_STATUS_INTERVAL = int(os.getenv("HOST_STATUS_INTERVAL"))
@@ -101,7 +102,7 @@ async def metrics_worker():
 async def websocket_endpoint(
     ws: WebSocket,
     instance: str = Query(None, description="Filter by instance"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     user_manager=Depends(get_user_manager),
     strategy=Depends(get_database_strategy),
 ):
@@ -125,10 +126,11 @@ async def websocket_endpoint(
     user = await strategy.read_token(token, user_manager)
 
     try:
-        ctx = await RequestContext.for_websocket(user)
-        query = db.query(Machines.name)
+        ctx = await RequestContext.for_websocket(user, db)
+        query = select(Machines.name)
         query = ctx.team_filter(query, Machines)
-        allowed_hosts = {row[0] for row in query.all()}
+        result = await db.execute(query)
+        allowed_hosts = {row[0] for row in result.all()}
         while True:
             status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
             metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
@@ -203,7 +205,8 @@ async def websocket_endpoint(
 
 @router.get("/prometheus/instances")
 async def get_prometheus_instances(
-    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch all unique host instances [HOST::PORT] from Prometheus.
@@ -212,9 +215,10 @@ async def get_prometheus_instances(
     ctx.require_user()
     payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
 
-    query = db.query(Machines.name)
+    query = select(Machines.name)
     query = ctx.team_filter(query, Machines)
-    allowed_hosts = {row[0] for row in query.all()}
+    result = await db.execute(query)
+    allowed_hosts = {row[0] for row in result.all()}
 
     all_instances = set()
     for item in payload.get("status", []):
@@ -228,7 +232,8 @@ async def get_prometheus_instances(
 
 @router.get("/prometheus/hosts")
 async def get_prometheus_hosts(
-    db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch all unique hostnames/IPs [ex.192.168.1.2, server1-example.com] from Prometheus.
@@ -237,9 +242,10 @@ async def get_prometheus_hosts(
     ctx.require_user()
 
     payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
-    query = db.query(Machines.name)
+    query = select(Machines.name)
     query = ctx.team_filter(query, Machines)
-    allowed_hosts = {row[0] for row in query.all()}
+    result = await db.execute(query)
+    allowed_hosts = {row[0] for row in result.all()}
 
     all_hosts = set()
     for item in payload.get("status", []):
@@ -256,8 +262,8 @@ async def get_prometheus_all_metrics(
         None,
         description="List of instances or comma-separated string (e.g. host1:9100,host2:9100)",
     ),
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch metrics for selected instances directly from Prometheus (bypasses cache).
@@ -266,9 +272,10 @@ async def get_prometheus_all_metrics(
     """
     ctx.require_user()
 
-    query = db.query(Machines.name)
+    query = select(Machines.name)
     query = ctx.team_filter(query, Machines)
-    allowed_hosts = {row[0] for row in query.all()}
+    result = await db.execute(query)
+    allowed_hosts = {row[0] for row in result.all()}
 
     if not instances:
         if ctx.is_admin:
@@ -303,7 +310,7 @@ async def get_prometheus_all_metrics(
 
 @router.post("/prometheus/target")
 async def add_prometheus_new_target(
-    target: PrometheusTarget, ctx: RequestContext = Depends()
+    target: PrometheusTarget, ctx: RequestContext = Depends(RequestContext.create)
 ):
     """
     Add a new target to Prometheus targets file.
@@ -315,7 +322,7 @@ async def add_prometheus_new_target(
 
         if ":" not in target.instance or ":9090" in target.instance:
             target.instance = f"{target.instance}:9100"
-        entry = add_prometheus_target(target.instance, target.labels)
+        entry = await add_prometheus_target(target.instance, target.labels)
     except TargetSaveError as e:
         return {"error": str(e)}
     return {"message": "Target added successfully", "target": entry}

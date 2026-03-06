@@ -1,10 +1,12 @@
 """Router for Rack Database API CRUD."""
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
-from sqlalchemy.orm import joinedload, Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
-from app.database import get_db
+from app.database import get_async_db
 from app.db.models import Rack, Shelf, Rooms, Tags, Teams, Machines
 from app.auth.dependencies import RequestContext
 from app.db.schemas import (
@@ -25,7 +27,7 @@ def format_rack_output(rack: Rack):
     :param rack: Rack object
     :return: Formatted rack dict
     """
-
+    # Zakładamy, że relacje są już załadowane przez joinedload w wywołaniu nadrzędnym
     sorted_shelves = sorted(rack.shelves, key=lambda s: s.order or 0)
     ordered_machines = []
 
@@ -49,10 +51,11 @@ def format_rack_output(rack: Rack):
 
 
 @router.get("/db/racks", response_model=List[RackResponse], tags=["Racks"])
-def get_racks(
+async def get_racks(
     room_ids: Optional[List[int]] = Query(None),
     team_ids: Optional[List[int]] = Query(None),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Returns ALL racks with their shelves and machines nested inside.
@@ -62,20 +65,23 @@ def get_racks(
     :return: List of racks with nested structures
     """
     ctx.require_user()
-    query = ctx.db.query(Rack)
-
-    query = ctx.team_filter(query, Rack)
+    stmt = select(Rack)
+    stmt = ctx.team_filter(stmt, Rack)
 
     if room_ids:
-        query = query.filter(Rack.room_id.in_(room_ids))
+        stmt = stmt.where(Rack.room_id.in_(room_ids))
     if team_ids:
-        query = query.filter(Rack.team_id.in_(team_ids))
+        stmt = stmt.where(Rack.team_id.in_(team_ids))
 
-    racks = query.options(
+    stmt = stmt.options(
         joinedload(Rack.room),
         joinedload(Rack.team),
+        joinedload(Rack.tags),
         joinedload(Rack.shelves).joinedload(Shelf.machines),
-    ).all()
+    )
+
+    result = await db.execute(stmt)
+    racks = result.unique().scalars().all()
 
     for r in racks:
         r.room_name = r.room.name if r.room else "N/A"
@@ -85,7 +91,10 @@ def get_racks(
 
 
 @router.get("/db/racks-list", tags=["Racks"])
-def get_racks_list(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_racks_list(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Returns a simple list of rack names and IDs for dropdowns
     :param db: Active database session
@@ -93,15 +102,20 @@ def get_racks_list(db: Session = Depends(get_db), ctx: RequestContext = Depends(
     :return: List of dictionaries with id and name
     """
     ctx.require_user()
-    query = db.query(Rack.id, Rack.name)
-    racks = ctx.team_filter(query, Rack).all()
+    stmt = select(Rack.id, Rack.name)
+    stmt = ctx.team_filter(stmt, Rack)
+
+    result = await db.execute(stmt)
+    racks = result.all()
 
     return [{"id": r.id, "name": r.name} for r in racks]
 
 
 @router.get("/db/racks/{rack_id}", response_model=RackResponse, tags=["Racks"])
-def get_rack_detail(
-    rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_rack_detail(
+    rack_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific rack by ID with its nested shelves and machines
@@ -111,16 +125,15 @@ def get_rack_detail(
     :return: Detailed rack object
     """
     ctx.require_user()
-    query = db.query(Rack).filter(Rack.id == rack_id)
-    rack = (
-        ctx.team_filter(query, Rack)
-        .options(
-            joinedload(Rack.room),
-            joinedload(Rack.team),
-            joinedload(Rack.shelves).joinedload(Shelf.machines),
-        )
-        .first()
+    stmt = select(Rack).where(Rack.id == rack_id)
+    stmt = ctx.team_filter(stmt, Rack).options(
+        joinedload(Rack.room),
+        joinedload(Rack.team),
+        joinedload(Rack.shelves).joinedload(Shelf.machines),
     )
+
+    result = await db.execute(stmt)
+    rack = result.unique().scalar_one_or_none()
 
     if not rack:
         raise HTTPException(
@@ -140,8 +153,10 @@ def get_rack_detail(
     status_code=status.HTTP_201_CREATED,
     tags=["Racks"],
 )
-def create_rack(
-    rack: RackCreate, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def create_rack(
+    rack: RackCreate,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create a new rack with team and room validation
@@ -153,7 +168,9 @@ def create_rack(
     ctx.require_user()
     effective_team_id = resolve_target_team_id(ctx, rack.team_id)
 
-    room = db.query(Rooms).filter(Rooms.id == rack.room_id).first()
+    room_stmt = select(Rooms).where(Rooms.id == rack.room_id)
+    room_res = await db.execute(room_stmt)
+    room = room_res.scalar_one_or_none()
 
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
@@ -171,12 +188,13 @@ def create_rack(
     )
 
     if rack.tag_ids:
-        tags = ctx.db.query(Tags).filter(Tags.id.in_(rack.tag_ids)).all()
-        db_rack.tags = tags
+        tag_stmt = select(Tags).where(Tags.id.in_(rack.tag_ids))
+        tag_res = await db.execute(tag_stmt)
+        db_rack.tags = tag_res.scalars().all()
 
     db.add(db_rack)
-    db.commit()
-    db.refresh(db_rack)
+    await db.commit()
+    await db.refresh(db_rack, attribute_names=["room", "team", "tags", "shelves"])
 
     db_rack.room_name = db_rack.room.name if db_rack.room else "N/A"
     db_rack.team_name = db_rack.team.name if db_rack.team else "N/A"
@@ -185,11 +203,11 @@ def create_rack(
 
 
 @router.patch("/db/racks/{rack_id}", response_model=RackResponse, tags=["Racks"])
-def update_rack(
+async def update_rack(
     rack_id: int,
     rack_data: RackUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update an existing rack including team or room changes
@@ -201,8 +219,10 @@ def update_rack(
     """
     ctx.require_user()
 
-    query = db.query(Rack).filter(Rack.id == rack_id)
-    db_rack = ctx.team_filter(query, Rack).first()
+    stmt = select(Rack).where(Rack.id == rack_id)
+    stmt = ctx.team_filter(stmt, Rack)
+    result = await db.execute(stmt)
+    db_rack = result.scalar_one_or_none()
 
     if not db_rack:
         raise HTTPException(
@@ -215,8 +235,9 @@ def update_rack(
     if "tag_ids" in update_dict:
         tag_ids = update_dict.pop("tag_ids")
         if tag_ids is not None:
-            new_tags = ctx.db.query(Tags).filter(Tags.id.in_(tag_ids)).all()
-            db_rack.tags = new_tags
+            tag_stmt = select(Tags).where(Tags.id.in_(tag_ids))
+            tag_res = await db.execute(tag_stmt)
+            db_rack.tags = tag_res.scalars().all()
 
     if "team_id" in update_dict:
         if not ctx.is_admin and update_dict["team_id"] not in ctx.team_ids:
@@ -227,7 +248,9 @@ def update_rack(
 
     if "room_id" in update_dict:
         new_room_id = update_dict["room_id"]
-        room = db.query(Rooms).filter(Rooms.id == new_room_id).first()
+        room_stmt = select(Rooms).where(Rooms.id == new_room_id)
+        room_res = await db.execute(room_stmt)
+        room = room_res.scalar_one_or_none()
         if not room:
             raise HTTPException(status_code=404, detail="New room not found")
 
@@ -240,8 +263,8 @@ def update_rack(
     for key, value in update_dict.items():
         setattr(db_rack, key, value)
 
-    db.commit()
-    db.refresh(db_rack)
+    await db.commit()
+    await db.refresh(db_rack, attribute_names=["room", "team", "tags", "shelves"])
 
     db_rack.room_name = db_rack.room.name if db_rack.room else "N/A"
     db_rack.team_name = db_rack.team.name if db_rack.team else "N/A"
@@ -252,8 +275,10 @@ def update_rack(
 @router.delete(
     "/db/racks/{rack_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Racks"]
 )
-def delete_rack(
-    rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def delete_rack(
+    rack_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete a specific rack from the database
@@ -264,8 +289,10 @@ def delete_rack(
     """
     ctx.require_user()
 
-    query = db.query(Rack).filter(Rack.id == rack_id)
-    db_rack = ctx.team_filter(query, Rack).first()
+    stmt = select(Rack).where(Rack.id == rack_id).options(joinedload(Rack.shelves))
+    stmt = ctx.team_filter(stmt, Rack)
+    result = await db.execute(stmt)
+    db_rack = result.unique().scalar_one_or_none()
 
     if not db_rack:
         raise HTTPException(
@@ -273,25 +300,30 @@ def delete_rack(
             detail="Rack not found or you don't have permission to delete it",
         )
 
-    virtual_room = (
-        db.query(Rooms)
-        .filter(Rooms.team_id == db_rack.team_id, Rooms.room_type == "virtual")
-        .first()
+    v_room_stmt = select(Rooms).where(
+        Rooms.team_id == db_rack.team_id, Rooms.room_type == "virtual"
     )
+    v_room_res = await db.execute(v_room_stmt)
+    virtual_room = v_room_res.scalar_one_or_none()
+
     if not virtual_room:
         raise HTTPException(
             status_code=500, detail="Virtual lab not found for this team"
         )
 
     shelf_ids = [shelf.id for shelf in db_rack.shelves]
-    machines_to_move = db.query(Machines).filter(Machines.shelf_id.in_(shelf_ids)).all()
 
-    for machine in machines_to_move:
-        machine.shelf_id = None
-        machine.localization_id = virtual_room.id
+    if shelf_ids:
+        m_stmt = select(Machines).where(Machines.shelf_id.in_(shelf_ids))
+        m_res = await db.execute(m_stmt)
+        machines_to_move = m_res.scalars().all()
 
-    db.delete(db_rack)
-    db.commit()
+        for machine in machines_to_move:
+            machine.shelf_id = None
+            machine.localization_id = virtual_room.id
+
+    await db.delete(db_rack)
+    await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -300,8 +332,10 @@ def delete_rack(
     response_model=RackWithOrderedMachinesResponse,
     tags=["Racks"],
 )
-def get_rack_info_by_id(
-    rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_rack_info_by_id(
+    rack_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch detailed information about a specific rack by ID including ordered machine list
@@ -311,14 +345,18 @@ def get_rack_info_by_id(
     :return: Rack object
     """
     ctx.require_user()
-    rack = (
-        db.query(Rack)
-        .filter(Rack.id == rack_id)
+    stmt = (
+        select(Rack)
+        .where(Rack.id == rack_id)
         .options(
-            joinedload(Rack.team), joinedload(Rack.shelves).joinedload(Shelf.machines)
+            joinedload(Rack.team),
+            joinedload(Rack.tags),
+            joinedload(Rack.shelves).joinedload(Shelf.machines),
         )
-        .first()
     )
+
+    result = await db.execute(stmt)
+    rack = result.unique().scalar_one_or_none()
 
     if not rack:
         raise HTTPException(status_code=404, detail="Rack not found")

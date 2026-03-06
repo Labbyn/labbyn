@@ -789,7 +789,9 @@ class MachinesBase(BaseModel):
     disks: Optional[List[DisksBase]] = Field(
         default=[], description="Disk/Storage specification"
     )
-    metadata_id: int = Field(..., description="ID of associated metadata record")
+    metadata_id: Optional[int] = Field(
+        ..., description="ID of associated metadata record"
+    )
     shelf_id: Optional[int] = Field(
         None, description="ID of layout coordinates if applicable"
     )

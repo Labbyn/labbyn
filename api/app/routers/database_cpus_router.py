@@ -1,7 +1,9 @@
 """Router for CPUs Database API CRUD."""
 
 from typing import List
-from app.database import get_db
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.database import get_async_db
 from app.db.models import CPUs, Machines
 from app.db.schemas import (
     CPUCreate,
@@ -11,7 +13,6 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock
 from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
 router = APIRouter()
 
@@ -22,10 +23,10 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Cpus"],
 )
-def create_cpu(
+async def create_cpu(
     cpu_data: CPUCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new CPU
@@ -42,8 +43,10 @@ def create_cpu(
                 detail="Non-admin users must attach CPUs to a specific machine.",
             )
 
-    machine = db.query(Machines).filter(Machines.id == cpu_data.machine_id)
-    machine = ctx.team_filter(machine, Machines).first()
+    stmt = select(Machines).where(Machines.id == cpu_data.machine_id)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    machine = result.scalar_one_or_none()
 
     if not machine:
         raise HTTPException(
@@ -53,28 +56,33 @@ def create_cpu(
 
     obj = CPUs(**cpu_data.model_dump())
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    await db.commit()
+    await db.refresh(obj)
     return obj
 
 
 @router.get("/db/cpus/", response_model=List[CPUResponse], tags=["Cpus"])
-def get_cpus(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_cpus(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch all CPUs
     :param db: Active database session
     :param ctx: Request context for user and team info
     :return: List of all CPUs
     """
-
-    query = db.query(CPUs).join(Machines)
-    query = ctx.team_filter(query, Machines)
-    return query.all()
+    stmt = select(CPUs).join(Machines)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
-def get_cpu_by_id(
-    cpu_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_cpu_by_id(
+    cpu_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific CPU by ID
@@ -84,9 +92,10 @@ def get_cpu_by_id(
     :return: CPU object
     """
     ctx.require_user()
-    query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
-    query = ctx.team_filter(query, Machines)
-    cpu = query.first()
+    stmt = select(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    cpu = result.scalar_one_or_none()
 
     if not cpu:
         raise HTTPException(
@@ -95,12 +104,12 @@ def get_cpu_by_id(
     return cpu
 
 
-@router.put("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
+@router.patch("/db/cpus/{cpu_id}", response_model=CPUResponse, tags=["Cpus"])
 async def update_cpu(
     cpu_id: int,
     cpu_data: CPUUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update CPU
@@ -114,17 +123,19 @@ async def update_cpu(
     ctx.require_admin()
 
     async with acquire_lock(f"cpu_lock:{cpu_id}"):
-        query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
-        query = ctx.team_filter(query, Machines)
-        cpu = query.first()
+        stmt = select(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+        stmt = ctx.team_filter(stmt, Machines)
+        result = await db.execute(stmt)
+        cpu = result.scalar_one_or_none()
+
         if not cpu:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found"
             )
         for k, v in cpu_data.model_dump(exclude_unset=True).items():
             setattr(cpu, k, v)
-        db.commit()
-        db.refresh(cpu)
+        await db.commit()
+        await db.refresh(cpu)
         return cpu
 
 
@@ -134,7 +145,9 @@ async def update_cpu(
     tags=["Cpus"],
 )
 async def delete_cpu(
-    cpu_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    cpu_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete CPU
@@ -146,14 +159,15 @@ async def delete_cpu(
 
     ctx.require_admin()
 
-    async with acquire_lock(f"CPU_lock:{cpu_id}"):
-        query = db.query(CPUs).join(Machines).filter(CPUs.id == cpu_id)
-        query = ctx.team_filter(query, Machines)
-        cpu = query.first()
+    async with acquire_lock(f"cpu_lock:{cpu_id}"):
+        stmt = select(CPUs).join(Machines).filter(CPUs.id == cpu_id)
+        stmt = ctx.team_filter(stmt, Machines)
+        result = await db.execute(stmt)
+        cpu = result.scalar_one_or_none()
 
         if not cpu:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="CPU not found"
             )
-        db.delete(cpu)
-        db.commit()
+        await db.delete(cpu)
+        await db.commit()

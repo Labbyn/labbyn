@@ -1,7 +1,10 @@
 """Router for Room Database API CRUD."""
 
 from typing import List
-from app.database import get_db
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+from app.database import get_async_db
 from app.db.models import Rooms, Tags, Rack, Shelf
 from app.db.schemas import (
     RoomsCreate,
@@ -13,7 +16,6 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.dependencies import RequestContext
-from sqlalchemy.orm import Session, joinedload
 from app.utils.database_service import resolve_target_team_id
 
 
@@ -26,10 +28,10 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Rooms"],
 )
-def create_room(
+async def create_room(
     room_data: RoomsCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new room
@@ -47,32 +49,41 @@ def create_room(
     )
 
     if tag_ids:
-        tags = db.query(Tags).filter(Tags.id.in_(tag_ids)).all()
-        obj.tags = tags
+        tag_stmt = select(Tags).where(Tags.id.in_(tag_ids))
+        tag_res = await db.execute(tag_stmt)
+        obj.tags = tag_res.scalars().all()
 
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    await db.commit()
+    await db.refresh(obj, attribute_names=["team", "racks", "tags"])
     return obj
 
 
 @router.get("/db/rooms/", response_model=List[RoomsResponse], tags=["Rooms"])
-def get_rooms(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_rooms(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch all rooms
     :param db: Active database session
     :return: List of all rooms
     """
     ctx.require_user()
-    query = db.query(Rooms).options(joinedload(Rooms.tags))
-    query = ctx.team_filter(query, Rooms)
-    return query.all()
+    stmt = select(Rooms).options(joinedload(Rooms.tags))
+    stmt = ctx.team_filter(stmt, Rooms)
+
+    result = await db.execute(stmt)
+    return result.unique().scalars().all()
 
 
 @router.get(
     "/db/rooms/dashboard", response_model=List[RoomDashboardResponse], tags=["Rooms"]
 )
-def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_rooms_dashboard(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch all rooms with rack count and map link for dashboard
     :param db: Active database session
@@ -80,11 +91,13 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
     :return: Room object
     """
     ctx.require_user()
-    query = db.query(Rooms).options(
+    stmt = select(Rooms).options(
         joinedload(Rooms.racks), joinedload(Rooms.layouts), joinedload(Rooms.team)
     )
-    query = ctx.team_filter(query, Rooms)
-    rooms = query.all()
+    stmt = ctx.team_filter(stmt, Rooms)
+
+    result = await db.execute(stmt)
+    rooms = result.unique().scalars().all()
 
     results = []
     for r in rooms:
@@ -92,7 +105,7 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
             {
                 "id": r.id,
                 "name": r.name,
-                "team_name": r.team.name,
+                "team_name": r.team.name if r.team else "N/A",
                 "rack_count": len(r.racks),
                 "map_link": f"/map/room/{r.id}",
             }
@@ -103,8 +116,10 @@ def get_rooms_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Dep
 @router.get(
     "/db/rooms/{room_id}/details", response_model=RoomDetailsResponse, tags=["Rooms"]
 )
-def get_room_details(
-    room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_room_details(
+    room_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific room by ID with nested racks, shelves and machines for dashboard details
@@ -114,8 +129,8 @@ def get_room_details(
     :return: Room object
     """
     ctx.require_user()
-    query = (
-        db.query(Rooms)
+    stmt = (
+        select(Rooms)
         .options(
             joinedload(Rooms.tags),
             joinedload(Rooms.layouts),
@@ -125,8 +140,9 @@ def get_room_details(
         .filter(Rooms.id == room_id)
     )
 
-    query = ctx.team_filter(query, Rooms)
-    room = query.first()
+    stmt = ctx.team_filter(stmt, Rooms)
+    result = await db.execute(stmt)
+    room = result.unique().scalar_one_or_none()
 
     if not room:
         raise HTTPException(status_code=404, detail="Lab not found")
@@ -170,8 +186,10 @@ def get_room_details(
 
 
 @router.get("/db/rooms/{room_id}", response_model=RoomsResponse, tags=["Rooms"])
-def get_room_by_id(
-    room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_room_by_id(
+    room_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific room by ID
@@ -181,9 +199,12 @@ def get_room_by_id(
     :return: Room object
     """
     ctx.require_user()
-    query = db.query(Rooms).filter(Rooms.id == room_id)
-    query = ctx.team_filter(query, Rooms)
-    room = query.first()
+    stmt = select(Rooms).filter(Rooms.id == room_id)
+    stmt = ctx.team_filter(stmt, Rooms)
+
+    result = await db.execute(stmt)
+    room = result.scalar_one_or_none()
+
     if not room:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Room not found"
@@ -195,8 +216,8 @@ def get_room_by_id(
 async def update_room(
     room_id: int,
     room_data: RoomsUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update room
@@ -209,34 +230,39 @@ async def update_room(
     ctx.require_group_admin()
 
     async with acquire_lock(f"room_lock:{room_id}"):
-        query = db.query(Rooms).filter(Rooms.id == room_id)
-        query = ctx.team_filter(query, Rooms)
+        stmt = select(Rooms).filter(Rooms.id == room_id)
+        stmt = ctx.team_filter(stmt, Rooms)
 
-        room = query.first()
+        result = await db.execute(stmt)
+        room = result.scalar_one_or_none()
+
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Room not found or access denied",
             )
 
-        if room_data.tag_ids is not None:
-            tags = db.query(Tags).filter(Tags.id.in_(room_data.tag_ids)).all()
-            room.tags = tags
+        update_data = room_data.model_dump(exclude_unset=True)
 
-        data = room_data.model_dump(exlude_unset=True, exclude={"tag_ids"})
-        if "team_id" in data and not ctx.is_admin:
-            if data["team_id"] not in ctx.team_ids:
+        if "tag_ids" in update_data:
+            tag_ids = update_data.pop("tag_ids")
+            if tag_ids is not None:
+                tag_stmt = select(Tags).where(Tags.id.in_(tag_ids))
+                tag_res = await db.execute(tag_stmt)
+                room.tags = tag_res.scalars().all()
+
+        if "team_id" in update_data and not ctx.is_admin:
+            if update_data["team_id"] not in ctx.team_ids:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Cannot assign room to a team you don't belong to",
                 )
-        if room.data.tag_ids is not None:
-            tags = db.query(Tags).filter(Tags.id.in_(room_data.tag_ids)).all()
-            room.tags = tags
-        for k, v in room_data.model_dump(exclude_unset=True).items():
+
+        for k, v in update_data.items():
             setattr(room, k, v)
-        db.commit()
-        db.refresh(room)
+
+        await db.commit()
+        await db.refresh(room, attribute_names=["team", "racks"])
         return room
 
 
@@ -244,7 +270,9 @@ async def update_room(
     "/db/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Rooms"]
 )
 async def delete_room(
-    room_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    room_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete Room
@@ -256,13 +284,17 @@ async def delete_room(
     ctx.require_group_admin()
 
     async with acquire_lock(f"room_lock:{room_id}"):
-        query = db.query(Rooms).filter(Rooms.id == room_id)
-        query = ctx.team_filter(query, Rooms)
-        room = query.first()
+        stmt = select(Rooms).filter(Rooms.id == room_id)
+        stmt = ctx.team_filter(stmt, Rooms)
+
+        result = await db.execute(stmt)
+        room = result.scalar_one_or_none()
+
         if not room:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Room not found or access denied",
             )
-        db.delete(room)
-        db.commit()
+
+        await db.delete(room)
+        await db.commit()

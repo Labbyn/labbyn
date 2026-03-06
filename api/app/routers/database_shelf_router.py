@@ -2,9 +2,11 @@
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
-from app.database import get_db
+from app.database import get_async_db
 from app.db.models import Rack, Shelf
 from app.auth.dependencies import RequestContext
 from app.db.schemas import (
@@ -12,13 +14,16 @@ from app.db.schemas import (
     ShelfUpdate,
     ShelfResponse,
 )
+from app.utils.redis_service import acquire_lock
 
 router = APIRouter(tags=["shelves"])
 
 
 @router.get("/db/rack/{rack_id}/all", response_model=List[ShelfResponse])
-def get_shelves_by_rack(
-    rack_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_shelves_by_rack(
+    rack_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Get all shelves for a specific rack
@@ -29,22 +34,24 @@ def get_shelves_by_rack(
     """
     ctx.require_user()
 
-    rack_query = db.query(Rack).filter(Rack.id == rack_id).first()
-    rack = ctx.team_filter(rack_query, Rack)
+    rack_stmt = select(Rack).filter(Rack.id == rack_id)
+    rack_stmt = ctx.team_filter(rack_stmt, Rack)
+    rack_res = await db.execute(rack_stmt)
+    rack = rack_res.scalar_one_or_none()
+
     if not rack:
         raise HTTPException(status_code=404, detail="Rack does not exist.")
 
-    return (
-        db.query(Shelf)
-        .filter(Shelf.rack_id == rack_id)
-        .order_by(Shelf.order.desc())
-        .all()
-    )
+    stmt = select(Shelf).filter(Shelf.rack_id == rack_id).order_by(Shelf.order.desc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/db/shelf/{shelf_id}", response_model=ShelfResponse)
-def get_single_shelf(
-    shelf_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_single_shelf(
+    shelf_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific shelf by ID with its nested machines
@@ -55,19 +62,23 @@ def get_single_shelf(
     """
     ctx.require_user()
 
-    shelf = (
-        db.query(Shelf)
-        .options(joinedload(Shelf.machines))
-        .filter(Shelf.id == shelf_id)
-        .first()
+    stmt = (
+        select(Shelf).options(joinedload(Shelf.machines)).filter(Shelf.id == shelf_id)
     )
-    rack_query = db.query(Rack).filter(Rack.id == shelf.rack_id)
-    if not ctx.team_filter(rack_query, Rack).first():
+    result = await db.execute(stmt)
+    shelf = result.unique().scalar_one_or_none()
+
+    if not shelf:
+        raise HTTPException(status_code=404, detail="Shelf does not exist.")
+
+    rack_stmt = select(Rack).filter(Rack.id == shelf.rack_id)
+    rack_stmt = ctx.team_filter(rack_stmt, Rack)
+    rack_res = await db.execute(rack_stmt)
+
+    if not rack_res.scalar_one_or_none():
         raise HTTPException(
             status_code=403, detail="You do not have permission to view this shelf."
         )
-    if not shelf:
-        raise HTTPException(status_code=404, detail="Shelf does not exist.")
 
     return shelf
 
@@ -77,11 +88,11 @@ def get_single_shelf(
     response_model=ShelfResponse,
     status_code=status.HTTP_201_CREATED,
 )
-def create_shelf(
+async def create_shelf(
     rack_id: int,
     shelf_data: ShelfCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create a new shelf in a specific rack
@@ -92,29 +103,33 @@ def create_shelf(
     :return: Created shelf object with rack context
     """
     ctx.require_user()
-    rack_query = db.query(Rack).filter(Rack.id == rack_id)
-    rack = ctx.team_filter(rack_query, Rack).first()
-    if not rack:
-        raise HTTPException(
-            status_code=404, detail="Rack does not exist or access denied."
-        )
+    async with acquire_lock(f"rack_lock:{rack_id}"):
+        rack_stmt = select(Rack).filter(Rack.id == rack_id)
+        rack_stmt = ctx.team_filter(rack_stmt, Rack)
+        rack_res = await db.execute(rack_stmt)
+        rack = rack_res.scalar_one_or_none()
 
-    db_shelf = Shelf(**shelf_data.model_dump(), rack_id=rack_id)
-    db.add(db_shelf)
-    db.commit()
-    db.refresh(db_shelf)
+        if not rack:
+            raise HTTPException(
+                status_code=404, detail="Rack does not exist or access denied."
+            )
 
-    db_shelf.rack_name = rack.name
+        db_shelf = Shelf(**shelf_data.model_dump(), rack_id=rack_id)
+        db.add(db_shelf)
+        await db.commit()
+        await db.refresh(db_shelf, attribute_names=["rack", "machines"])
 
-    return db_shelf
+        db_shelf.rack_name = rack.name
+
+        return db_shelf
 
 
 @router.patch("/db/shelf/{shelf_id}", response_model=ShelfResponse)
-def update_shelf(
+async def update_shelf(
     shelf_id: int,
     shelf_data: ShelfUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update shelf details like name or order
@@ -126,29 +141,39 @@ def update_shelf(
     """
     ctx.require_user()
 
-    db_shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
-    if not db_shelf:
-        raise HTTPException(status_code=404, detail="Shelf does not exist.")
+    async with acquire_lock(f"shelf_lock:{shelf_id}"):
+        stmt = select(Shelf).filter(Shelf.id == shelf_id)
+        result = await db.execute(stmt)
+        db_shelf = result.scalar_one_or_none()
 
-    rack_query = db.query(Rack).filter(Rack.id == db_shelf.rack_id)
-    if not ctx.team_filter(rack_query, Rack).first():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to manage this shelf."
-        )
+        if not db_shelf:
+            raise HTTPException(status_code=404, detail="Shelf does not exist.")
 
-    update_dict = shelf_data.model_dump(exclude_unset=True)
+        rack_stmt = select(Rack).filter(Rack.id == db_shelf.rack_id)
+        rack_stmt = ctx.team_filter(rack_stmt, Rack)
+        rack_res = await db.execute(rack_stmt)
 
-    for key, value in update_dict.items():
-        setattr(db_shelf, key, value)
+        if not rack_res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to manage this shelf.",
+            )
 
-    db.commit()
-    db.refresh(db_shelf)
-    return db_shelf
+        update_dict = shelf_data.model_dump(exclude_unset=True)
+
+        for key, value in update_dict.items():
+            setattr(db_shelf, key, value)
+
+        await db.commit()
+        await db.refresh(db_shelf, attribute_names=["rack", "machines"])
+        return db_shelf
 
 
 @router.delete("/db/shelf/{shelf_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_shelf(
-    shelf_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def delete_shelf(
+    shelf_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete a specific shelf if it is empty
@@ -157,25 +182,36 @@ def delete_shelf(
     :param ctx: Request context for authorization
     :return: No content response
     """
-
     ctx.require_user()
 
-    db_shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
-    if not db_shelf:
-        raise HTTPException(status_code=404, detail="Shelf does not exist.")
-
-    rack_query = db.query(Rack).filter(Rack.id == db_shelf.rack_id)
-    if not ctx.team_filter(rack_query, Rack).first():
-        raise HTTPException(
-            status_code=403, detail="You do not have permission to manage this shelf."
+    async with acquire_lock(f"shelf_lock:{shelf_id}"):
+        stmt = (
+            select(Shelf)
+            .options(joinedload(Shelf.machines))
+            .filter(Shelf.id == shelf_id)
         )
+        result = await db.execute(stmt)
+        db_shelf = result.unique().scalar_one_or_none()
 
-    if db_shelf.machines:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Shelf is not empty. Please remove all machines from the shelf before deleting it.",
-        )
+        if not db_shelf:
+            raise HTTPException(status_code=404, detail="Shelf does not exist.")
 
-    db.delete(db_shelf)
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+        rack_stmt = select(Rack).filter(Rack.id == db_shelf.rack_id)
+        rack_stmt = ctx.team_filter(rack_stmt, Rack)
+        rack_res = await db.execute(rack_stmt)
+
+        if not rack_res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to manage this shelf.",
+            )
+
+        if db_shelf.machines:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Shelf is not empty. Please remove all machines from the shelf before deleting it.",
+            )
+
+        await db.delete(db_shelf)
+        await db.commit()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)

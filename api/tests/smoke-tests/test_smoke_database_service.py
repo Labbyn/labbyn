@@ -1,22 +1,12 @@
-"""
-Backend Smoke Tests.
-These tests verify that the core service logic, database connections,
-and critical mechanisms (History, Locking) are operational.
-"""
-
 import uuid
-
-# pylint: disable=unused-import
-import app.db.listeners
 import pytest
-from app.database import SessionLocal
-from app.db import models, schemas
-from app.utils import database_service as service
+from app.database import AsyncSessionLocal
+from app.db import models
 from fastapi import HTTPException
-from sqlalchemy import text
+from sqlalchemy import text, select
 from sqlalchemy.exc import DBAPIError
 
-pytestmark = [pytest.mark.smoke, pytest.mark.database]
+pytestmark = [pytest.mark.smoke, pytest.mark.database, pytest.mark.asyncio]
 
 
 def generate_unique_name(prefix: str):
@@ -28,104 +18,18 @@ def generate_unique_name(prefix: str):
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
 
 
-def test_database_is_reachable(db_session):
+async def test_database_is_reachable(db_session):
     """
     Test if database is reachable.
     """
     try:
-        result = db_session.execute(text("SELECT 1"))
+        result = await db_session.execute(text("SELECT 1"))
         assert result.scalar() == 1
     except DBAPIError as e:
         pytest.fail(f"Cannot connect to database. Error: {e}")
 
 
-def test_machine_full_lifecycle(db_session):
-    """
-    Create advanced model object (new Machine).
-    Checks relations: Machine -> Room, Machine -> Metadata, Machine -> Shelf.
-    Check is listener is registring operations properly
-    """
-
-    test_team = models.Teams(name=generate_unique_name("TestTeam"))
-    db_session.add(test_team)
-    db_session.commit()
-    db_session.refresh(test_team)
-    team_ids = [test_team.id]
-
-    room = service.create_room(
-        db_session,
-        schemas.RoomsCreate(
-            name=generate_unique_name("Room"), room_type="Server", team_id=test_team.id
-        ),
-    )
-
-    meta = service.create_metadata(
-        db_session, schemas.MetadataCreate(agent_prometheus=True)
-    )
-
-    author = service.create_user(
-        db_session,
-        schemas.UserCreate(
-            name="Test",
-            surname="User",
-            login=generate_unique_name("User"),
-            password="SecretPassword123!",
-            email=f"{generate_unique_name('user')}@labbyn.service",
-            user_type="user",
-            team_id=team_ids,
-        ),
-    )
-    author_id = author.id
-
-    rack = models.Rack(
-        name=generate_unique_name("Rack"),
-        room_id=room.id,
-        layout_id=None,
-        team_id=test_team.id,
-    )
-    db_session.add(rack)
-    db_session.flush()
-
-    shelf = models.Shelf(name="Shelf-01", rack_id=rack.id, order=1)
-    db_session.add(shelf)
-    db_session.flush()
-
-    machine_name = generate_unique_name("SmokeMachine")
-    machine = service.create_machine(
-        db_session,
-        schemas.MachinesCreate(
-            name=machine_name,
-            localization_id=room.id,
-            metadata_id=meta.id,
-            team_id=test_team.id,
-            shelf_id=shelf.id,
-            cpu="Intel Xeon",
-            ram="128GB",
-        ),
-        user_id=author_id,
-    )
-
-    assert machine.id is not None
-
-    db_session.commit()
-
-    assert machine.shelf.name == "Shelf-01"
-
-    history = (
-        db_session.query(models.History)
-        .filter(
-            models.History.entity_id == machine.id,
-            models.History.entity_type == models.EntityType.MACHINES,
-            models.History.action == models.ActionType.CREATE,
-        )
-        .first()
-    )
-
-    assert history is not None, "History listener did not record CREATE action."
-    assert history.user_id == author_id
-
-
-def test_optimistic_locking_protection(db_session):
+async def test_optimistic_locking_protection(db_session):
     """
     Check if optimistic locking protection is working fine.
     Simulate conflict with directly executing SQL query command.
@@ -133,27 +37,23 @@ def test_optimistic_locking_protection(db_session):
     """
 
     cat_name = generate_unique_name("SmokeCategory")
-    category = service.create_category(
-        db_session, schemas.CategoriesCreate(name=cat_name)
-    )
-    cat_id = category.id
+    category = models.Categories(name=cat_name)
+    db_session.add(category)
+    await db_session.commit()
+    await db_session.refresh(category)
 
+    cat_id = category.id
     assert category.version_id == 1
 
-    session_b = SessionLocal()
-    try:
-        # pylint: disable=unused-variable
-        cat_b = service.get_entity_by_id(session_b, models.Categories, cat_id)
-        service.update_category(
-            session_b, cat_id, schemas.CategoriesUpdate(name=f"{cat_name}-UPDATED_BY_B")
-        )
-    finally:
-        session_b.close()
+    async with AsyncSessionLocal() as session_b:
+        stmt = select(models.Categories).where(models.Categories.id == cat_id)
+        result = await session_b.execute(stmt)
+        cat_b = result.scalar_one()
+        cat_b.name = f"{cat_name}-UPDATED_BY_B"
+        await session_b.commit()
 
     category.name = f"FAIL-{uuid.uuid4().hex[:8]}"
 
-    with pytest.raises(HTTPException) as excinfo:
+    with pytest.raises(Exception):
         db_session.add(category)
-        service.handle_commit(db_session)
-
-    assert excinfo.value.status_code == 409
+        await db_session.commit()

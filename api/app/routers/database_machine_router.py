@@ -3,8 +3,8 @@
 import json
 from typing import List
 
-from app.database import get_db
-from app.db.models import Machines, User, UserType, Rack, Shelf, CPUs, Disks
+from app.database import get_async_db
+from app.db.models import Machines, User, UserType, Rack, Shelf, CPUs, Disks, Metadata
 from app.db.schemas import (
     MachinesCreate,
     MachinesResponse,
@@ -14,7 +14,9 @@ from app.db.schemas import (
 from app.utils.redis_service import acquire_lock, get_cache
 from app.auth.dependencies import RequestContext
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from app.utils.database_service import resolve_target_team_id
 
 router = APIRouter()
@@ -26,10 +28,10 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["Machines"],
 )
-def create_machine(
+async def create_machine(
     machine_data: MachinesCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create and add new machine to database
@@ -43,17 +45,31 @@ def create_machine(
     disks = machine_data.disks or []
     data = machine_data.model_dump(exclude={"cpus", "disks"})
     data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
+
+    if not data.get("metadata_id"):
+        new_metadata = Metadata()
+        db.add(new_metadata)
+        await db.flush()
+        data["metadata_id"] = new_metadata.id
+
     obj = Machines(**data)
     obj.cpus = [CPUs(name=item.name) for item in cpus]
     obj.disks = [Disks(name=item.name) for item in disks]
+
     db.add(obj)
-    db.commit()
-    db.refresh(obj)
+    await db.commit()
+    await db.refresh(
+        obj,
+        attribute_names=["team", "room", "machine_metadata", "shelf", "cpus", "disks"],
+    )
     return obj
 
 
 @router.get("/db/machines/", response_model=List[MachinesResponse], tags=["Machines"])
-def get_machines(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_machines(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch all machines
     :param db: Active database session
@@ -61,16 +77,19 @@ def get_machines(db: Session = Depends(get_db), ctx: RequestContext = Depends())
     :return: List of machines
     """
     ctx.require_user()
-    query = db.query(Machines)
-    query = ctx.team_filter(query, Machines)
-    return query.all()
+    stmt = select(Machines)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get(
     "/db/machines/{machine_id}", response_model=MachinesResponse, tags=["Machines"]
 )
-def get_machine_by_id(
-    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_machine_by_id(
+    machine_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific machine by ID
@@ -80,9 +99,11 @@ def get_machine_by_id(
     :return: Machine object
     """
     ctx.require_user()
-    query = db.query(Machines).filter(Machines.id == machine_id)
-    query = ctx.team_filter(query, Machines)
-    machine = query.first()
+    stmt = select(Machines).filter(Machines.id == machine_id)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    machine = result.scalar_one_or_none()
+
     if not machine:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -97,7 +118,9 @@ def get_machine_by_id(
     tags=["Machines"],
 )
 async def get_machine_full_detail(
-    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    machine_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch specific machine by ID
@@ -108,21 +131,21 @@ async def get_machine_full_detail(
     """
 
     ctx.require_user()
-    query = db.query(Machines).filter(Machines.id == machine_id)
+    stmt = select(Machines).filter(Machines.id == machine_id)
+    stmt = ctx.team_filter(stmt, Machines)
 
-    query = ctx.team_filter(query, Machines)
+    stmt = stmt.options(
+        joinedload(Machines.team),
+        joinedload(Machines.room),
+        joinedload(Machines.machine_metadata),
+        joinedload(Machines.tags),
+        joinedload(Machines.cpus),
+        joinedload(Machines.disks),
+        joinedload(Machines.shelf).joinedload(Shelf.rack),
+    )
 
-    machine = (
-        query.options(
-            joinedload(Machines.team),
-            joinedload(Machines.room),
-            joinedload(Machines.machine_metadata),
-            joinedload(Machines.tags),
-            joinedload(Machines.cpus),
-            joinedload(Machines.disks),
-            joinedload(Machines.shelf).joinedload(Shelf.rack),
-        )
-    ).first()
+    result = await db.execute(stmt)
+    machine = result.unique().scalar_one_or_none()
 
     if not machine:
         raise HTTPException(status_code=404, detail="Machine not found")
@@ -160,7 +183,7 @@ async def get_machine_full_detail(
             ),
             None,
         )
-        disks = [
+        disks_stats = [
             {
                 "mountpoint": m.get("mountpoint", "/"),
                 "value": round(m["value"], 2) if m["value"] is not None else None,
@@ -169,12 +192,10 @@ async def get_machine_full_detail(
             for m in metrics_parsed.get("disk_usage", [])
             if target_ip in m["instance"]
         ]
-        live_payload["disks"] = disks
+        live_payload["disks"] = disks_stats
 
     grafana_link = f"http://grafana.{target_ip}:9100"
-
     rack_link = f"/racks/{machine.shelf.rack_id}" if machine.shelf else "#"
-
     map_link = "/map/view"
 
     return {
@@ -215,8 +236,8 @@ async def get_machine_full_detail(
 async def update_machine(
     machine_id: int,
     machine_data: MachinesUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update machine data
@@ -228,14 +249,17 @@ async def update_machine(
     """
     ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        query = db.query(Machines).filter(Machines.id == machine_id).first()
-        query = ctx.team_filter(query, Machines)
-        machine = query.first()
+        stmt = select(Machines).filter(Machines.id == machine_id)
+        stmt = ctx.team_filter(stmt, Machines)
+        result = await db.execute(stmt)
+        machine = result.scalar_one_or_none()
+
         if not machine:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Machine not found or access denied",
             )
+
         update_data = machine_data.model_dump(exclude_unset=True)
         if "team_id" in update_data and not ctx.is_admin:
             if update_data["team_id"] not in ctx.team_ids:
@@ -246,8 +270,18 @@ async def update_machine(
         for k, v in update_data.items():
             setattr(machine, k, v)
 
-        db.commit()
-        db.refresh(machine)
+        await db.commit()
+        await db.refresh(
+            machine,
+            attribute_names=[
+                "team",
+                "localization",
+                "metadata",
+                "shelf",
+                "cpus",
+                "disks",
+            ],
+        )
         return machine
 
 
@@ -257,7 +291,9 @@ async def update_machine(
     tags=["Machines"],
 )
 async def delete_machine(
-    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    machine_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete Machine
@@ -268,16 +304,18 @@ async def delete_machine(
     """
     ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        query = db.query(Machines).filter(Machines.id == machine_id)
-        query = ctx.team_filter(query, Machines)
-        machine = query.first()
+        stmt = select(Machines).filter(Machines.id == machine_id)
+        stmt = ctx.team_filter(stmt, Machines)
+        result = await db.execute(stmt)
+        machine = result.scalar_one_or_none()
+
         if not machine:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Machine not found or access denied",
             )
-        db.delete(machine)
-        db.commit()
+        await db.delete(machine)
+        await db.commit()
 
 
 @router.post(
@@ -286,8 +324,8 @@ async def delete_machine(
 async def mount_machine(
     machine_id: int,
     shelf_id: int,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Mounts a machine onto a specific shelf
@@ -299,32 +337,36 @@ async def mount_machine(
     """
     ctx.require_user()
     async with acquire_lock(f"machine_lock:{machine_id}"):
-        machine_query = db.query(Machines).filter(Machines.id == machine_id)
-        machine = ctx.team_filter(machine_query, Machines).first()
+        machine_stmt = select(Machines).filter(Machines.id == machine_id)
+        machine_stmt = ctx.team_filter(machine_stmt, Machines)
+        machine_res = await db.execute(machine_stmt)
+        machine = machine_res.scalar_one_or_none()
 
         if not machine:
             raise HTTPException(
                 status_code=404, detail="Machine not found or access denied"
             )
 
-        shelf = db.query(Shelf).filter(Shelf.id == shelf_id).first()
+        shelf_stmt = (
+            select(Shelf).filter(Shelf.id == shelf_id).options(joinedload(Shelf.rack))
+        )
+        shelf_res = await db.execute(shelf_stmt)
+        shelf = shelf_res.scalar_one_or_none()
 
         if not shelf:
             raise HTTPException(status_code=404, detail="Target shelf not found")
 
         if not ctx.is_admin:
-            rack = db.query(Rack).filter(Rack.id == shelf.rack_id).first()
-            if rack.team_id not in ctx.team_ids:
+            if shelf.rack.team_id not in ctx.team_ids:
                 raise HTTPException(
                     status_code=403,
                     detail="You don't have permission to use this rack/shelf",
                 )
 
         machine.shelf_id = shelf_id
-
         machine.localization_id = shelf.rack.room_id
 
-        db.commit()
+        await db.commit()
         return {
             "status": "success",
             "message": f"Machine {machine.name} mounted on shelf {shelf.name} (Rack: {shelf.rack.name})",
@@ -332,8 +374,10 @@ async def mount_machine(
 
 
 @router.post("/db/machines/{machine_id}/unmount", status_code=status.HTTP_200_OK)
-def unmount_machine(
-    machine_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def unmount_machine(
+    machine_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Removes a machine from its current shelf (sets shelf_id to NULL)
@@ -344,8 +388,10 @@ def unmount_machine(
     """
     ctx.require_user()
 
-    query = db.query(Machines).filter(Machines.id == machine_id)
-    machine = ctx.team_filter(query, Machines).first()
+    stmt = select(Machines).filter(Machines.id == machine_id)
+    stmt = ctx.team_filter(stmt, Machines)
+    result = await db.execute(stmt)
+    machine = result.scalar_one_or_none()
 
     if not machine:
         raise HTTPException(
@@ -355,7 +401,7 @@ def unmount_machine(
 
     machine.shelf_id = None
 
-    db.commit()
+    await db.commit()
     return {
         "status": "success",
         "message": f"Machine {machine.name} has been unmounted.",

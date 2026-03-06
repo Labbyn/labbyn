@@ -1,8 +1,13 @@
 """Router for Team Database API CRUD."""
 
 from typing import List
-from app.database import get_db
-from app.db.models import Teams, Inventory, Rack, Shelf, UsersTeams, Rooms
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.database import get_async_db
+from app.db.models import Teams, Inventory, Rack, Shelf, UsersTeams, Rooms, Machines
 from app.db.schemas import (
     TeamsCreate,
     TeamsResponse,
@@ -11,11 +16,7 @@ from app.db.schemas import (
     TeamFullDetailResponse,
 )
 from app.utils.redis_service import acquire_lock
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session, joinedload
 from app.auth.dependencies import RequestContext
-
-from app.db.models import UserType
 
 router = APIRouter()
 
@@ -27,11 +28,6 @@ def format_team_output(team: Teams):
     :return: Formatted team dictionary with admin names and member details
     """
     group_admins = [m.user for m in team.users if m.is_group_admin]
-    admin_display = (
-        ", ".join([f"{a.name} {a.surname}" for a in group_admins])
-        if group_admins
-        else "No admin assigned"
-    )
     admins_info = [
         {
             "id": a.id,
@@ -84,7 +80,7 @@ def format_team_full_detail(team: Teams):
 
     sorted_machines = []
     for rack in team.racks:
-        for shelf in sorted(rack.shelves, key=lambda s: s.order):
+        for shelf in sorted(rack.shelves, key=lambda s: s.order or 0):
             for machine in shelf.machines:
                 sorted_machines.append(
                     {
@@ -117,6 +113,9 @@ def format_team_full_detail(team: Teams):
                     "team_name": team.name,
                     "rack_name": "Unplaced",
                     "shelf_order": 0,
+                    "tags": [
+                        {"name": t.name, "color": t.color} for t in (machine.tags or [])
+                    ],
                 }
             )
 
@@ -141,7 +140,7 @@ def format_team_full_detail(team: Teams):
                 "id": r.id,
                 "name": r.name,
                 "team_name": team.name,
-                "map_link": f"/map/{r.room_id}",
+                "map_link": f"/map/room/{r.room_id}",
                 "tags": [
                     {
                         "name": getattr(t, "name", "Unnamed"),
@@ -178,10 +177,10 @@ def format_team_full_detail(team: Teams):
     status_code=status.HTTP_201_CREATED,
     tags=["Teams"],
 )
-def create_team(
+async def create_team(
     team_data: TeamsCreate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Create new team
@@ -192,31 +191,39 @@ def create_team(
     ctx.require_admin()
     obj = Teams(**team_data.model_dump())
     db.add(obj)
-    db.flush()
+    await db.flush()
 
     virtual_lab = Rooms(name="virtual", room_type="virtual", team_id=obj.id)
     db.add(virtual_lab)
 
-    db.commit()
-    db.refresh(obj)
+    await db.commit()
+    await db.refresh(obj)
     return obj
 
 
 @router.get("/db/teams/", response_model=List[TeamsResponse], tags=["Teams"])
-def get_teams(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_teams(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch all teams
     :param db: Active database session
     :return: List of all teams
     """
     ctx.require_user()
-    return db.query(Teams).all()
+    stmt = select(Teams)
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get(
     "/db/teams/teams_info", response_model=List[TeamDetailResponse], tags=["Teams"]
 )
-def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
+async def get_team_info(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
     """
     Fetch detailed information about the current user's team, including admin names and member details.
     :param db: Active database session
@@ -224,11 +231,10 @@ def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     :return: Detailed team information with admin names and member details
     """
     ctx.require_user()
-    teams = (
-        db.query(Teams)
-        .options(joinedload(Teams.users).joinedload(UsersTeams.user))
-        .all()
-    )
+    stmt = select(Teams).options(joinedload(Teams.users).joinedload(UsersTeams.user))
+    result = await db.execute(stmt)
+    teams = result.unique().scalars().all()
+
     return [format_team_output(t) for t in teams]
 
 
@@ -237,8 +243,10 @@ def get_team_info(db: Session = Depends(get_db), ctx: RequestContext = Depends()
     response_model=TeamFullDetailResponse,
     tags=["Teams"],
 )
-def get_team_info_by_id(
-    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+async def get_team_info_by_id(
+    team_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Fetch detailed information about a specific team by ID, including user, machines, and inventory details.
@@ -249,18 +257,25 @@ def get_team_info_by_id(
     """
     ctx.require_user()
 
-    team = (
-        db.query(Teams)
+    stmt = (
+        select(Teams)
         .filter(Teams.id == team_id)
         .options(
             joinedload(Teams.users).joinedload(UsersTeams.user),
-            joinedload(Teams.racks).joinedload(Rack.shelves).joinedload(Shelf.machines),
+            joinedload(Teams.racks).joinedload(Rack.tags),
+            joinedload(Teams.racks)
+            .joinedload(Rack.shelves)
+            .joinedload(Shelf.machines)
+            .joinedload(Machines.tags),
+            joinedload(Teams.machines).joinedload(Machines.tags),
             joinedload(Teams.inventory).joinedload(Inventory.room),
             joinedload(Teams.inventory).joinedload(Inventory.category),
-            joinedload(Teams.machines),
+            joinedload(Teams.inventory).joinedload(Inventory.machine),
         )
-        .first()
     )
+
+    result = await db.execute(stmt)
+    team = result.unique().scalar_one_or_none()
 
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -268,31 +283,12 @@ def get_team_info_by_id(
     return format_team_full_detail(team)
 
 
-@router.get("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])
-def get_team_by_id(
-    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
-):
-    """
-    Fetch specific team by ID
-    :param team_id: Team ID
-    :param db: Active database session
-    :return: Team object
-    """
-    ctx.require_user()
-    team = db.query(Teams).filter(Teams.id == team_id).first()
-    if not team:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
-        )
-    return team
-
-
 @router.patch("/db/teams/{team_id}", response_model=TeamsResponse, tags=["Teams"])
 async def update_team(
     team_id: int,
     team_data: TeamsUpdate,
-    db: Session = Depends(get_db),
-    ctx: RequestContext = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Update Team
@@ -304,28 +300,30 @@ async def update_team(
 
     if not ctx.is_admin:
         ctx.require_group_admin()
-        membership = (
-            db.query(UsersTeams)
-            .filter(
-                UsersTeams.user_id == ctx.current_user.id,
-                UsersTeams.team_id == team_id,
-                UsersTeams.is_group_admin == True,
-            )
-            .first()
+        stmt_check = select(UsersTeams).filter(
+            UsersTeams.user_id == ctx.current_user.id,
+            UsersTeams.team_id == team_id,
+            UsersTeams.is_group_admin == True,
         )
-        if not membership:
+        res_check = await db.execute(stmt_check)
+        if not res_check.scalar_one_or_none():
             raise HTTPException(
                 status_code=403, detail="You are not an admin of this team"
             )
 
     async with acquire_lock(f"team_lock:{team_id}"):
-        team = db.query(Teams).filter(Teams.id == team_id).first()
+        stmt = select(Teams).filter(Teams.id == team_id)
+        result = await db.execute(stmt)
+        team = result.scalar_one_or_none()
+
         if not team:
             raise HTTPException(404, detail="Team not found")
+
         for k, v in team_data.model_dump(exclude_unset=True).items():
             setattr(team, k, v)
-        db.commit()
-        db.refresh(team)
+
+        await db.commit()
+        await db.refresh(team)
         return team
 
 
@@ -333,7 +331,9 @@ async def update_team(
     "/db/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Teams"]
 )
 async def delete_team(
-    team_id: int, db: Session = Depends(get_db), ctx: RequestContext = Depends()
+    team_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
 ):
     """
     Delete Team
@@ -343,10 +343,14 @@ async def delete_team(
     """
     ctx.require_admin()
     async with acquire_lock(f"team_lock:{team_id}"):
-        team = db.query(Teams).filter(Teams.id == team_id).first()
+        stmt = select(Teams).filter(Teams.id == team_id)
+        result = await db.execute(stmt)
+        team = result.scalar_one_or_none()
+
         if not team:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Team not found"
             )
-        db.delete(team)
-        db.commit()
+
+        await db.delete(team)
+        await db.commit()

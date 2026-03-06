@@ -6,8 +6,8 @@ import asyncio
 import os
 from typing import List, Optional
 import json
-from threading import Lock
 import httpx
+import aiofiles
 from dotenv import load_dotenv
 
 load_dotenv(".env/api.env")
@@ -23,8 +23,7 @@ DEFAULT_QUERIES = {
     '/ node_filesystem_size_bytes{fstype!="tmpfs", mountpoint!="/boot"}',
 }
 
-# Global lock for file operations
-_targets_lock = Lock()
+_targets_lock = asyncio.Lock()
 
 
 class TargetSaveError(Exception):
@@ -96,7 +95,7 @@ async def fetch_prometheus_metrics(
     for m in metrics:
         query = DEFAULT_QUERIES.get(m)
         if not query:
-            metrics[m] = {"error": "Metric not found"}
+            results[m] = {"error": "Metric not found"}
             continue
         try:
             payload = await _request(url, params={"query": query})
@@ -112,7 +111,7 @@ async def fetch_prometheus_metrics(
     return results
 
 
-def load_targets_file():
+async def load_targets_file():
     """
     Load Prometheus targets from the targets file.
     :return: List of target dictionaries or empty list if file not found or invalid
@@ -121,14 +120,17 @@ def load_targets_file():
     if not PROMETHEUS_TARGETS_PATH:
         return []
     try:
-        with open(PROMETHEUS_TARGETS_PATH, "r", encoding="utf-8") as file:
-            targets = json.load(file)
+        async with aiofiles.open(
+            PROMETHEUS_TARGETS_PATH, mode="r", encoding="utf-8"
+        ) as file:
+            content = await file.read()
+            targets = json.loads(content)
         return targets
     except (FileNotFoundError, OSError, json.JSONDecodeError):
         return []
 
 
-def save_targets_file(targets: List[dict]):
+async def save_targets_file(targets: List[dict]):
     """
     Save Prometheus targets to the targets file.
     :param targets: List of target dictionaries
@@ -136,23 +138,26 @@ def save_targets_file(targets: List[dict]):
     if not PROMETHEUS_TARGETS_PATH:
         raise TargetSaveError("PROMETHEUS_TARGETS_PATH is not set.")
     try:
-        with open(PROMETHEUS_TARGETS_PATH, "w", encoding="utf-8") as file:
-            json.dump(targets, file, indent=2)
+        async with aiofiles.open(
+            PROMETHEUS_TARGETS_PATH, mode="w", encoding="utf-8"
+        ) as file:
+            await file.write(json.dumps(targets, indent=2))
     except (OSError, TypeError) as e:
         raise TargetSaveError(f"Failed to save targets file: {e}") from e
 
 
-def add_prometheus_target(instance: str, labels: dict):
+async def add_prometheus_target(instance: str, labels: dict):
     """
     Add a new target to the Prometheus targets file.
-    :param new_target: Target dictionary to add
+    :param instance: Target instance to add
+    :param labels: Labels for the new target
     """
     entry = {"targets": [instance], "labels": labels}
-    with _targets_lock:
-        targets = load_targets_file()
+    async with _targets_lock:
+        targets = await load_targets_file()
         targets.append(entry)
-    try:
-        save_targets_file(targets)
-    except TargetSaveError as e:
-        raise TargetSaveError(f"Failed to add target: {e}") from e
+        try:
+            await save_targets_file(targets)
+        except TargetSaveError as e:
+            raise TargetSaveError(f"Failed to add target: {e}") from e
     return entry

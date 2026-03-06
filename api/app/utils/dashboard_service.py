@@ -2,20 +2,26 @@
 User dashboard items parser. Prepares json file with database data for user-dashboard page.
 """
 
-from sqlalchemy.orm import Session
-from app.db.models import Machines, Rooms, Inventory, Teams, User, History
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.models import Machines, Rooms, Inventory, Teams, History
 from app.auth.dependencies import RequestContext
 
-# TO DO: add proper tags and handling
 
-
-def build_dashboard(db: Session, ctx: RequestContext):
+async def build_dashboard(db: AsyncSession, ctx: RequestContext):
     ctx.require_user()
-    machines = ctx.team_filter(db.query(Machines), Machines).all()
-    rooms = ctx.team_filter(db.query(Rooms), Rooms).all()
-    inventories = ctx.team_filter(db.query(Inventory), Inventory).all()
-    teams = ctx.team_filter(db.query(Teams), Teams).all()
-    histories = ctx.team_filter(db.query(History), History).all()
+
+    machines_stmt = ctx.team_filter(select(Machines), Machines)
+    rooms_stmt = ctx.team_filter(select(Rooms), Rooms)
+    inventory_stmt = ctx.team_filter(select(Inventory), Inventory)
+    teams_stmt = ctx.team_filter(select(Teams), Teams)
+    history_stmt = ctx.team_filter(select(History), History)
+
+    machines = (await db.execute(machines_stmt)).scalars().all()
+    rooms = (await db.execute(rooms_stmt)).scalars().all()
+    inventories = (await db.execute(inventory_stmt)).scalars().all()
+    teams = (await db.execute(teams_stmt)).scalars().all()
+    histories = (await db.execute(history_stmt)).scalars().all()
 
     machine_items = [
         {

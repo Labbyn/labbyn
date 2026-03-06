@@ -7,9 +7,9 @@ import pytest
 from app.utils.prometheus_service import fetch_prometheus_metrics
 from app.utils.prometheus_service import add_prometheus_target
 
+pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
-@pytest.mark.unit
-@pytest.mark.asyncio
+
 async def test_fetch_prometheus_metrics_success():
     """Test fetching Prometheus metrics successfully."""
     with mock.patch("app.utils.prometheus_service._request") as request:
@@ -19,8 +19,6 @@ async def test_fetch_prometheus_metrics_success():
         assert result["status"] == []
 
 
-@pytest.mark.unit
-@pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_failure():
     """Test fetching Prometheus metrics with a failure."""
     with mock.patch("app.utils.prometheus_service._request") as request:
@@ -31,8 +29,6 @@ async def test_fetch_prometheus_metrics_failure():
         assert "Request failed" in result["status"]["error"]
 
 
-@pytest.mark.unit
-@pytest.mark.asyncio
 async def test_fetch_prometheus_metrics_with_filtered_instances():
     """Test fetching Prometheus metrics filtered by instances."""
     with mock.patch("app.utils.prometheus_service._request") as request:
@@ -57,15 +53,14 @@ async def test_fetch_prometheus_metrics_with_filtered_instances():
         assert result["status"][0]["value"] == 1.0
 
 
-@pytest.mark.unit
-def test_add_prometheus_target():
+async def test_add_prometheus_target():
     """Test adding a Prometheus target."""
     mock_fake_file = mock.mock_open(read_data="[]")
 
     with mock.patch("builtins.open", mock_fake_file), mock.patch(
         "json.load", return_value=[]
     ):
-        entry = add_prometheus_target("host1:9100", {"env": "dev"})
+        entry = await add_prometheus_target("host1:9100", {"env": "dev"})
 
     assert entry["targets"] == ["host1:9100"]
     assert entry["labels"]["env"] == {"env": "dev"} or entry["labels"]["env"] == "dev"

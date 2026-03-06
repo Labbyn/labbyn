@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_async_db
 from app.db.schemas import DashboardResponse
 from app.utils.dashboard_service import build_dashboard
 from app.auth.dependencies import RequestContext
@@ -14,5 +14,8 @@ router = APIRouter()
     response_model=DashboardResponse,
     tags=["Dashboard"],
 )
-def get_dashboard(db: Session = Depends(get_db), ctx: RequestContext = Depends()):
-    return build_dashboard(db, ctx)
+async def get_dashboard(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: RequestContext = Depends(RequestContext.create),
+):
+    return await build_dashboard(db, ctx)

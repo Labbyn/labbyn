@@ -1,4 +1,5 @@
 """Redis service for caching using aioredis."""
+
 import asyncio
 import os
 from contextlib import asynccontextmanager
