@@ -28,9 +28,9 @@ done
 
 run_compose() {
     if [[ -n "$COMPOSE_FILE_DEV" ]]; then
-        docker-compose -f "$COMPOSE_FILE" -f "$COMPOSE_FILE_DEV" "$@"
+        docker compose -f "$COMPOSE_FILE" -f "$COMPOSE_FILE_DEV" "$@"
     else
-        docker-compose -f "$COMPOSE_FILE" "$@"
+        docker compose -f "$COMPOSE_FILE" "$@"
     fi
 }
 
