@@ -9,21 +9,19 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import StaleDataError
 
 # pylint: disable=unused-import
 from app.db import models
-from app.utils.security import hash_password
+from app.utils import security
 
 # ==========================
 #          UTILS
 # ==========================
 
 
-def set_user_context(db: Session, user_id: Optional[int] = None):
+def set_user_context(db: orm.Session, user_id: Optional[int] = None):
     """Injects user ID into the database session info.
 
     :param db: The current database session.
@@ -33,7 +31,7 @@ def set_user_context(db: Session, user_id: Optional[int] = None):
         db.info["user_id"] = user_id
 
 
-def handle_commit(db: Session):
+def handle_commit(db: orm.Session):
     """Commits the transaction handling Optimistic Locking.
 
     :param db: The current database session.
@@ -41,7 +39,7 @@ def handle_commit(db: Session):
     """
     try:
         db.commit()
-    except StaleDataError as exc:
+    except orm.exc.StaleDataError as exc:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -54,7 +52,7 @@ async def init_service_team(db: AsyncSession):
 
     :param db: The current database session.
     """
-    stmt = select(models.Teams).filter(models.Teams.name == "Service Team")
+    stmt = sql.select(models.Teams).filter(models.Teams.name == "Service Team")
     result = await db.execute(stmt)
     service_team = result.scalar_one_or_none()
 
@@ -73,7 +71,7 @@ async def init_super_user(db: AsyncSession):
     """
     service_team = await init_service_team(db)
 
-    stmt = select(models.User).filter(models.User.login == "Service")
+    stmt = sql.select(models.User).filter(models.User.login == "Service")
     result = await db.execute(stmt)
     super_user = result.scalar_one_or_none()
 
@@ -83,7 +81,7 @@ async def init_super_user(db: AsyncSession):
             name="Service Account",
             surname="System",
             email="service@labbyn.service",
-            hashed_password=hash_password("Service"),
+            hashed_password=security.hash_password("Service"),
             user_type=models.UserType.ADMIN,
             is_active=True,
             is_superuser=True,
@@ -95,7 +93,7 @@ async def init_super_user(db: AsyncSession):
 
         super_user = admin_user
 
-        link_stmt = select(models.UsersTeams).filter_by(
+        link_stmt = sql.select(models.UsersTeams).filter_by(
             user_id=super_user.id, team_id=service_team.id
         )
         link_res = await db.execute(link_stmt)
@@ -115,7 +113,7 @@ async def init_virtual_lab(db: AsyncSession):
     """
     service_team = await init_service_team(db)
 
-    stmt = select(models.Rooms).filter(
+    stmt = sql.select(models.Rooms).filter(
         models.Rooms.name == "virtual", models.Rooms.team_id == service_team.id
     )
     result = await db.execute(stmt)
@@ -133,7 +131,9 @@ async def init_document(db: AsyncSession):
 
     :param db: The current database session.
     """
-    stmt = select(models.Documentation).filter(models.Documentation.title == "labbyn")
+    stmt = sql.select(models.Documentation).filter(
+        models.Documentation.title == "labbyn"
+    )
     result = await db.execute(stmt)
 
     if not result.scalar_one_or_none():
@@ -212,7 +212,7 @@ async def init_document(db: AsyncSession):
 async def delete_old_history_logs(db: AsyncSession, days: int = 3) -> int:
     """Deletes history log entries older than a specified number of days."""
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    stmt = delete(models.History).where(models.History.timestamp < cutoff)
+    stmt = sql.delete(models.History).where(models.History.timestamp < cutoff)
 
     result = await db.execute(stmt)
     await db.commit()

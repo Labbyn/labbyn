@@ -9,7 +9,7 @@ import redis.asyncio as aioredis
 from dotenv import load_dotenv
 from redis import RedisError
 
-from app.core.exceptions import ConflictError, ExternalServiceError
+from app.core import exceptions
 
 logger = logging.getLogger(__name__)
 load_dotenv(".env/api.env")
@@ -56,9 +56,6 @@ class RedisClientManager:
             finally:
                 self.client = None
                 self._loop = None
-
-
-redis_manager = RedisClientManager()
 
 
 redis_manager = RedisClientManager()
@@ -113,7 +110,7 @@ async def acquire_lock(
     try:
         is_locked = await lock.acquire(blocking=True)
         if not is_locked:
-            raise ConflictError(
+            raise exceptions.ConflictError(
                 f"Resource '{lock_name.replace('lock:', '').replace(':', '')}' "
                 f"is currently locked by another user. "
                 f"Please try again in a moment."
@@ -121,7 +118,7 @@ async def acquire_lock(
         yield
 
     except RedisError as e:
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             service="Redis", detail="Distributed lock system failure."
         ) from e
 

@@ -3,11 +3,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import RequestContext
-from app.db.models import History, Inventory, Machines, Rooms, Teams
+from app.auth import dependencies
+from app.db import models
 
 
-async def build_dashboard(db: AsyncSession, ctx: RequestContext):
+async def build_dashboard(db: AsyncSession, ctx: dependencies.RequestContext):
     """Build user dashboard.
 
     :param db: Active database session
@@ -16,11 +16,11 @@ async def build_dashboard(db: AsyncSession, ctx: RequestContext):
     """
     ctx.require_user()
 
-    machines_stmt = ctx.team_filter(select(Machines), Machines)
-    rooms_stmt = ctx.team_filter(select(Rooms), Rooms)
-    inventory_stmt = ctx.team_filter(select(Inventory), Inventory)
-    teams_stmt = ctx.team_filter(select(Teams), Teams)
-    history_stmt = ctx.team_filter(select(History), History)
+    machines_stmt = ctx.team_filter(select(models.Machines), models.Machines)
+    rooms_stmt = ctx.team_filter(select(models.Rooms), models.Rooms)
+    inventory_stmt = ctx.team_filter(select(models.Inventory), models.Inventory)
+    teams_stmt = ctx.team_filter(select(models.Teams), models.Teams)
+    history_stmt = ctx.team_filter(select(models.History), models.History)
 
     machines = (await db.execute(machines_stmt)).scalars().all()
     rooms = (await db.execute(rooms_stmt)).scalars().all()

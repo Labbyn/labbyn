@@ -7,10 +7,7 @@ import time
 
 import ansible_runner
 
-from app.core.exceptions import (
-    ObjectNotFoundError,
-    ValidationError,
-)
+from app.core import exceptions
 
 REPORTS_DIR = "/code/ansible/platform_reports"
 PLAYBOOK_DIR = "/code/ansible"
@@ -26,7 +23,7 @@ def parse_platform_report(hostname: str) -> dict:
     report_path = os.path.join(REPORTS_DIR, f"{hostname}-platform-info.json")
 
     if not os.path.exists(report_path):
-        raise ObjectNotFoundError("Platform report", name=hostname)
+        raise exceptions.ObjectNotFoundError("Platform report", name=hostname)
 
     time.sleep(1)
     try:
@@ -79,7 +76,7 @@ def parse_platform_report(hostname: str) -> dict:
         }
 
     except Exception as e:
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Error parsing platform report for host '{hostname}'"
         ) from e
 
@@ -110,13 +107,13 @@ async def run_playbook_task(playbook_path: str, host: str | list, extra_vars: di
     try:
         r = await asyncio.to_thread(_run)
     except Exception as e:
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Failed to initialize Ansible runner for hosts '{hosts_display}'"
         ) from e
 
     if r.rc != 0 or r.status != "successful":
         playbook_name = os.path.basename(playbook_path)
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Ansible task '{playbook_name}' failed for hosts: {hosts_display}. "
             f"Status: {r.status}, Return Code: {r.rc}"
         )
