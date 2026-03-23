@@ -4,15 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
-from app.core.exceptions import (
-    AccessDeniedError,
-    AppBaseException,
-    ConflictError,
-    ExternalServiceError,
-    InsufficientAmountError,
-    ObjectNotFoundError,
-    ValidationError,
-)
+from app.core import exceptions
 
 
 def setup_exception_handlers(app: FastAPI):
@@ -21,8 +13,8 @@ def setup_exception_handlers(app: FastAPI):
     :param app: FastApi session
     """
 
-    @app.exception_handler(AppBaseException)
-    async def app_exception_handler(request: Request, exc: AppBaseException):
+    @app.exception_handler(exceptions.AppBaseException)
+    async def app_exception_handler(request: Request, exc: exceptions.AppBaseException):
         """Create mapping to preapared exceptions.
 
         :param request: Request body
@@ -31,15 +23,17 @@ def setup_exception_handlers(app: FastAPI):
         """
         status_code = 400
 
-        if isinstance(exc, ObjectNotFoundError):
+        if isinstance(exc, exceptions.ObjectNotFoundError):
             status_code = 404
-        elif isinstance(exc, AccessDeniedError):
+        elif isinstance(exc, exceptions.AccessDeniedError):
             status_code = 403
-        elif isinstance(exc, ValidationError):
+        elif isinstance(exc, exceptions.ValidationError):
             status_code = 400
-        elif isinstance(exc, (ConflictError, InsufficientAmountError)):
+        elif isinstance(
+            exc, (exceptions.ConflictError, exceptions.InsufficientAmountError)
+        ):
             status_code = 409
-        elif isinstance(exc, ExternalServiceError):
+        elif isinstance(exc, exceptions.ExternalServiceError):
             status_code = 502
 
         return JSONResponse(
