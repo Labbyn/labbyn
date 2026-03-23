@@ -3,22 +3,22 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import RequestContext
+from app.auth import dependencies
 from app.database import get_async_db
-from app.db.schemas import DashboardResponse
-from app.utils.dashboard_service import build_dashboard
+from app.schemas import dashboard_schemas
+from app.utils import dashboard_service
 
-router = APIRouter()
+router = APIRouter(tags=["Dashboard"])
 
 
 @router.get(
     "/dashboard",
-    response_model=DashboardResponse,
+    response_model=dashboard_schemas.DashboardResponse,
     tags=["Dashboard"],
 )
 async def get_dashboard(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create dashboard view for user.
 
@@ -26,4 +26,4 @@ async def get_dashboard(
     :param ctx: Request context for user and team info
     :return: Dashboard view
     """
-    return await build_dashboard(db, ctx)
+    return await dashboard_service.build_dashboard(db, ctx)

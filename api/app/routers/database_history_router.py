@@ -3,46 +3,36 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import ObjectNotFoundError, ValidationError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import (
-    ActionType,
-    Categories,
-    EntityType,
-    History,
-    Inventory,
-    Machines,
-    Rooms,
-    User,
-)
-from app.db.schemas import HistoryEnhancedResponse
+from app.db import models
+from app.schemas import history_schemas
 
 router = APIRouter(prefix="/db", tags=["History"])
 
 
-def get_model_class(entity_type: EntityType):
+def get_model_class(entity_type: models.EntityType):
     """Map EntityType to corresponding SQLAlchemy model class.
 
     :param entity_type: EntityType enum value
     :return: Corresponding SQLAlchemy model class or None.
     """
     mapping = {
-        EntityType.MACHINES: Machines,
-        EntityType.INVENTORY: Inventory,
-        EntityType.ROOM: Rooms,
-        EntityType.USER: User,
-        EntityType.CATEGORIES: Categories,
+        models.EntityType.MACHINES: models.Machines,
+        models.EntityType.INVENTORY: models.Inventory,
+        models.EntityType.ROOM: models.Rooms,
+        models.EntityType.USER: models.User,
+        models.EntityType.CATEGORIES: models.Categories,
     }
     return mapping.get(entity_type)
 
 
-async def resolve_entity_name(log: History, db: AsyncSession):
+async def resolve_entity_name(log: models.History, db: AsyncSession):
     """Fetch the name of the entity based on its type and ID.
 
     :param log: History log entry
@@ -58,7 +48,7 @@ async def resolve_entity_name(log: History, db: AsyncSession):
 
     model_class = get_model_class(log.entity_type)
     if model_class:
-        stmt = select(model_class).filter(model_class.id == log.entity_id)
+        stmt = sql.select(model_class).filter(model_class.id == log.entity_id)
         result = await db.execute(stmt)
         entity = result.scalar_one_or_none()
         if entity:
@@ -69,7 +59,9 @@ async def resolve_entity_name(log: History, db: AsyncSession):
     return f"{log.entity_type.value} (ID: {log.entity_id})"
 
 
-async def _rollback_create(model_class, log_entry: History, db: AsyncSession) -> str:
+async def _rollback_create(
+    model_class, log_entry: models.History, db: AsyncSession
+) -> str:
     """Helper to rollback a CREATE action (performs DELETE).
 
     :param model_class: SQLAlchemy model class
@@ -77,7 +69,7 @@ async def _rollback_create(model_class, log_entry: History, db: AsyncSession) ->
     :param db: Active database session
     :return: Success message.
     """
-    stmt = select(model_class).filter(model_class.id == log_entry.entity_id)
+    stmt = sql.select(model_class).filter(model_class.id == log_entry.entity_id)
     result = await db.execute(stmt)
     obj = result.scalar_one_or_none()
 
@@ -93,7 +85,9 @@ async def _rollback_create(model_class, log_entry: History, db: AsyncSession) ->
     )
 
 
-async def _rollback_delete(model_class, log_entry: History, db: AsyncSession) -> str:
+async def _rollback_delete(
+    model_class, log_entry: models.History, db: AsyncSession
+) -> str:
     """Helper to rollback a DELETE action (performs CREATE/RESTORE).
 
     :param model_class: SQLAlchemy model class
@@ -115,7 +109,9 @@ async def _rollback_delete(model_class, log_entry: History, db: AsyncSession) ->
     )
 
 
-async def _rollback_update(model_class, log_entry: History, db: AsyncSession) -> str:
+async def _rollback_update(
+    model_class, log_entry: models.History, db: AsyncSession
+) -> str:
     """Helper to rollback an UPDATE action (reverts fields).
 
     :param model_class: SQLAlchemy model class
@@ -123,7 +119,7 @@ async def _rollback_update(model_class, log_entry: History, db: AsyncSession) ->
     :param db: Active database session
     :return: Success message.
     """
-    stmt = select(model_class).filter(model_class.id == log_entry.entity_id)
+    stmt = sql.select(model_class).filter(model_class.id == log_entry.entity_id)
     result = await db.execute(stmt)
     obj = result.scalar_one_or_none()
 
@@ -143,11 +139,15 @@ async def _rollback_update(model_class, log_entry: History, db: AsyncSession) ->
     )
 
 
-@router.get("/history/", response_model=List[HistoryEnhancedResponse], tags=["History"])
+@router.get(
+    "/history/",
+    response_model=List[history_schemas.HistoryEnhancedResponse],
+    tags=["History"],
+)
 async def get_history_logs(
     limit=200,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Retrieve history logs with enhanced information.
 
@@ -158,12 +158,12 @@ async def get_history_logs(
     """
     ctx.require_user()
     stmt = (
-        select(History)
-        .join(User, History.user_id == User.id)
-        .options(joinedload(History.user))
+        sql.select(models.History)
+        .join(models.User, models.History.user_id == models.User.id)
+        .options(models.joinedload(models.History.user))
     )
-    stmt = ctx.team_filter(stmt, User)
-    stmt = stmt.order_by(History.timestamp).limit(limit)
+    stmt = ctx.team_filter(stmt, models.User)
+    stmt = stmt.order_by(models.History.timestamp).limit(limit)
 
     result = await db.execute(stmt)
     logs = result.unique().scalars().all()
@@ -198,11 +198,13 @@ async def get_history_logs(
     return results
 
 
-@router.get("/history/{history_id}", response_model=HistoryEnhancedResponse)
+@router.get(
+    "/history/{history_id}", response_model=history_schemas.HistoryEnhancedResponse
+)
 async def get_history_by_id(
     history_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific history by ID.
 
@@ -212,17 +214,17 @@ async def get_history_by_id(
     """
     ctx.require_user()
     stmt = (
-        select(History)
-        .join(User, History.user_id == User.id)
-        .options(joinedload(History.user))
-        .filter(History.id == history_id)
+        sql.select(models.History)
+        .join(models.User, models.History.user_id == models.User.id)
+        .options(orm.joinedload(models.History.user))
+        .filter(models.History.id == history_id)
     )
-    stmt = ctx.team_filter(stmt, User)
+    stmt = ctx.team_filter(stmt, models.User)
     result = await db.execute(stmt)
     history = result.unique().scalar_one_or_none()
 
     if not history:
-        raise ObjectNotFoundError("History")
+        raise exceptions.ObjectNotFoundError("History")
 
     return history
 
@@ -234,7 +236,7 @@ async def get_history_by_id(
 async def rollback_history_entry(
     history_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Rollback a specific history entry by ID.
 
@@ -244,32 +246,32 @@ async def rollback_history_entry(
     """
     ctx.require_group_admin()
     stmt = (
-        select(History)
-        .join(User, History.user_id == User.id)
-        .filter(History.id == history_id)
+        sql.select(models.History)
+        .join(models.User, models.History.user_id == models.User.id)
+        .filter(models.History.id == history_id)
     )
-    stmt = ctx.team_filter(stmt, User)
+    stmt = ctx.team_filter(stmt, models.User)
 
     result = await db.execute(stmt)
     log_entry = result.scalar_one_or_none()
 
     if not log_entry:
-        raise ObjectNotFoundError("History")
+        raise exceptions.ObjectNotFoundError("History")
 
     if not log_entry.can_rollback:
-        raise ValidationError("This specific action cannot be rolled back")
+        raise exceptions.ValidationError("This specific action cannot be rolled back")
 
     model_class = get_model_class(log_entry.entity_type)
     if not model_class:
-        raise ObjectNotFoundError("Entity model")
+        raise exceptions.ObjectNotFoundError("Entity model")
 
     try:
         msg = ""
-        if log_entry.action == ActionType.CREATE:
+        if log_entry.action == models.ActionType.CREATE:
             msg = await _rollback_create(model_class, log_entry, db)
-        elif log_entry.action == ActionType.DELETE:
+        elif log_entry.action == models.ActionType.DELETE:
             msg = await _rollback_delete(model_class, log_entry, db)
-        elif log_entry.action == ActionType.UPDATE:
+        elif log_entry.action == models.ActionType.UPDATE:
             msg = await _rollback_update(model_class, log_entry, db)
 
         await db.commit()
@@ -277,7 +279,9 @@ async def rollback_history_entry(
 
     except IntegrityError as e:
         await db.rollback()
-        raise ValidationError("Rollback failed: Conflict with existing data") from e
+        raise exceptions.ValidationError(
+            "Rollback failed: Conflict with existing data"
+        ) from e
     except Exception as e:
         await db.rollback()
-        raise ValidationError("Rollback operation failed") from e
+        raise exceptions.ValidationError("Rollback operation failed") from e

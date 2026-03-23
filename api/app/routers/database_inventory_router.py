@@ -4,34 +4,28 @@ from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import AccessDeniedError, ObjectNotFoundError, ValidationError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Inventory, Rentals, User, UsersTeams
-from app.db.schemas import (
-    InventoryCreate,
-    InventoryDetailResponse,
-    InventoryResponse,
-    InventoryUpdate,
-)
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import inventory_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Inventory"])
 
 
 @router.post(
     "/inventory/",
-    response_model=InventoryResponse,
+    response_model=inventory_schemas.InventoryResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_item(
-    inventory_data: InventoryCreate,
+    inventory_data: inventory_schemas.InventoryCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create and add new inventory to database.
 
@@ -46,22 +40,22 @@ async def create_item(
         data = inventory_data.model_dump()
         await ctx.validate_team_access(data["team_id"])
 
-        obj = Inventory(**data)
+        obj = models.Inventory(**data)
         db.add(obj)
         await db.commit()
         await db.refresh(obj, attribute_names=["category", "team"])
         return obj
     except Exception as e:
         await db.rollback()
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Could not create inventory item '{inventory_data.name}'"
         ) from e
 
 
-@router.get("/inventory/", response_model=List[InventoryResponse])
+@router.get("/inventory/", response_model=List[inventory_schemas.InventoryResponse])
 async def get_inventory(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all inventory items.
 
@@ -70,19 +64,19 @@ async def get_inventory(
     :return: List of inventory items.
     """
     ctx.require_user()
-    stmt = select(Inventory)
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = sql.select(models.Inventory)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     return result.scalars().all()
 
 
 @router.get(
     "/inventory/details",
-    response_model=List[InventoryDetailResponse],
+    response_model=List[inventory_schemas.InventoryDetailResponse],
 )
 async def get_inventory_details(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all inventory items with detailed information.
 
@@ -93,18 +87,18 @@ async def get_inventory_details(
     :return: List of inventory items.
     """
     ctx.require_user()
-    stmt = select(Inventory).options(
-        joinedload(Inventory.team),
-        joinedload(Inventory.room),
-        joinedload(Inventory.machine),
-        joinedload(Inventory.category),
-        joinedload(Inventory.rental_history)
-        .joinedload(Rentals.user)
-        .joinedload(User.teams)
-        .joinedload(UsersTeams.team),
+    stmt = sql.select(models.Inventory).options(
+        orm.joinedload(models.Inventory.team),
+        orm.joinedload(models.Inventory.room),
+        orm.joinedload(models.Inventory.machine),
+        orm.joinedload(models.Inventory.category),
+        orm.joinedload(models.Inventory.rental_history),
+        orm.joinedload(models.Rentals.user),
+        orm.joinedload(models.User.teams),
+        orm.joinedload(models.UsersTeams.team),
     )
 
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     items = result.unique().scalars().all()
     today = datetime.now().date()
@@ -152,13 +146,13 @@ async def get_inventory_details(
 
 @router.post(
     "/inventory/bulk",
-    response_model=List[InventoryResponse],
+    response_model=List[inventory_schemas.InventoryResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def bulk_create_items(
-    items_data: List[InventoryCreate],
+    items_data: List[inventory_schemas.InventoryCreate],
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Bulk import inventory items.
 
@@ -172,15 +166,14 @@ async def bulk_create_items(
     new_items = []
     for item_data in items_data:
         data = item_data.model_dump()
-        data["team_id"] = resolve_target_team_id(ctx, data.get("team_id"))
-        new_items.append(Inventory(**data))
+        new_items.append(models.Inventory(**data))
 
     try:
         db.add_all(new_items)
         await db.commit()
     except Exception as e:
         await db.rollback()
-        raise ValidationError(
+        raise exceptions.ValidationError(
             "Bulk import failed: database integrity error or invalid data"
         ) from e
 
@@ -192,12 +185,12 @@ async def bulk_create_items(
 
 @router.get(
     "/inventory/details/{item_id}",
-    response_model=InventoryDetailResponse,
+    response_model=inventory_schemas.InventoryDetailResponse,
 )
 async def get_inventory_item_details(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all specific item with detailed information.
 
@@ -209,26 +202,26 @@ async def get_inventory_item_details(
     """
     ctx.require_user()
     stmt = (
-        select(Inventory)
-        .filter(Inventory.id == item_id)
+        sql.select(models.Inventory)
+        .filter(models.Inventory.id == item_id)
         .options(
-            joinedload(Inventory.team),
-            joinedload(Inventory.room),
-            joinedload(Inventory.machine),
-            joinedload(Inventory.category),
-            joinedload(Inventory.rental_history)
-            .joinedload(Rentals.user)
-            .joinedload(User.teams)
-            .joinedload(UsersTeams.team),
+            orm.joinedload(models.Inventory.team),
+            orm.joinedload(models.Inventory.room),
+            orm.joinedload(models.Inventory.machine),
+            orm.joinedload(models.Inventory.category),
+            orm.joinedload(models.Inventory.rental_history)
+            .joinedload(models.Rentals.user)
+            .joinedload(models.User.teams)
+            .joinedload(models.UsersTeams.team),
         )
     )
 
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     item = result.unique().scalar_one_or_none()
 
     if not item:
-        raise ObjectNotFoundError("Inventory item")
+        raise exceptions.ObjectNotFoundError("Inventory item")
 
     today = datetime.now().date()
 
@@ -267,11 +260,11 @@ async def get_inventory_item_details(
     }
 
 
-@router.get("/inventory/{item_id}", response_model=InventoryResponse)
+@router.get("/inventory/{item_id}", response_model=inventory_schemas.InventoryResponse)
 async def get_inventory_item(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific inventory item by ID.
 
@@ -281,22 +274,24 @@ async def get_inventory_item(
     :return: Inventory item.
     """
     ctx.require_user()
-    stmt = select(Inventory).filter(Inventory.id == item_id)
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = sql.select(models.Inventory).filter(models.Inventory.id == item_id)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
     if not item:
-        raise ObjectNotFoundError("Inventory item")
+        raise exceptions.ObjectNotFoundError("Inventory item")
     return item
 
 
-@router.patch("/inventory/{item_id}", response_model=InventoryResponse)
+@router.patch(
+    "/inventory/{item_id}", response_model=inventory_schemas.InventoryResponse
+)
 async def update_item(
     item_id: int,
-    item_data: InventoryUpdate,
+    item_data: inventory_schemas.InventoryUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update item in inventory.
 
@@ -306,19 +301,19 @@ async def update_item(
     :return: Updated Inventory item.
     """
     ctx.require_user()
-    async with acquire_lock(f"inventory_lock:{item_id}"):
-        stmt = select(Inventory).filter(Inventory.id == item_id)
-        stmt = ctx.team_filter(stmt, Inventory)
+    async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
+        stmt = sql.select(models.Inventory).filter(models.Inventory.id == item_id)
+        stmt = ctx.team_filter(stmt, models.Inventory)
         result = await db.execute(stmt)
         item = result.scalar_one_or_none()
 
         if not item:
-            raise ObjectNotFoundError("Inventory item")
+            raise exceptions.ObjectNotFoundError("Inventory item")
 
         data = item_data.model_dump(exclude_unset=True)
         if "team_id" in data and not ctx.is_admin:
             if data["team_id"] not in ctx.team_ids:
-                raise AccessDeniedError("Cannot move item to this team")
+                raise exceptions.AccessDeniedError("Cannot move item to this team")
 
         try:
             for k, v in data.items():
@@ -328,7 +323,9 @@ async def update_item(
             return item
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Failed to update item '{item.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to update item '{item.name}'"
+            ) from e
 
 
 @router.delete(
@@ -338,7 +335,7 @@ async def update_item(
 async def delete_item(
     item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete item in inventory.
 
@@ -347,14 +344,14 @@ async def delete_item(
     :return: 204 No Content as success
     """
     ctx.require_user()
-    async with acquire_lock(f"inventory_lock:{item_id}"):
-        stmt = select(Inventory).filter(Inventory.id == item_id)
-        stmt = ctx.team_filter(stmt, Inventory)
+    async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
+        stmt = sql.select(models.Inventory).filter(models.Inventory.id == item_id)
+        stmt = ctx.team_filter(stmt, models.Inventory)
         result = await db.execute(stmt)
         item = result.scalar_one_or_none()
 
         if not item:
-            raise ObjectNotFoundError("Inventory item")
+            raise exceptions.ObjectNotFoundError("Inventory item")
 
         try:
             await db.delete(item)
@@ -362,4 +359,6 @@ async def delete_item(
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Could not delete item '{item.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not delete item '{item.name}'"
+            ) from e

@@ -6,16 +6,15 @@ Creating Ansible user, gathering platform information and deploying Node Exporte
 from datetime import datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import delete, select
+from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import ExternalServiceError, ValidationError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import CPUs, Disks, Machines, Metadata, Rooms
-from app.db.schemas import AnsiblePlaybook, DiscoveryRequest, HostRequest
-from app.utils.ansible_service import parse_platform_report, run_playbook_task
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import service_schemas
+from app.utils import ansible_service, redis_service
 
 router = APIRouter(tags=["Ansible"])
 
@@ -23,17 +22,18 @@ REPORTS_DIR = "./platform_reports"
 PLAYBOOK_DIR = "/code/ansible"
 
 PLAYBOOK_MAP = {
-    AnsiblePlaybook.create_user: f"{PLAYBOOK_DIR}/create_ansible_user.yaml",
-    AnsiblePlaybook.scan_platform: f"{PLAYBOOK_DIR}/scan_platform.yaml",
-    AnsiblePlaybook.deploy_agent: f"{PLAYBOOK_DIR}/deploy_agent.yaml",
-    AnsiblePlaybook.delete_agent: f"{PLAYBOOK_DIR}/delete_agent.yaml",
-    AnsiblePlaybook.delete_ansible: f"{PLAYBOOK_DIR}/delete_ansible.yaml",
+    service_schemas.AnsiblePlaybook.create_user: f"{PLAYBOOK_DIR}/create_ansible_user.yaml",
+    service_schemas.AnsiblePlaybook.scan_platform: f"{PLAYBOOK_DIR}/scan_platform.yaml",
+    service_schemas.AnsiblePlaybook.deploy_agent: f"{PLAYBOOK_DIR}/deploy_agent.yaml",
+    service_schemas.AnsiblePlaybook.delete_agent: f"{PLAYBOOK_DIR}/delete_agent.yaml",
+    service_schemas.AnsiblePlaybook.delete_ansible: f"{PLAYBOOK_DIR}/delete_ansible.yaml",
 }
 
 
 @router.post("/ansible/create_user")
 async def create_ansible_user(
-    request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)
+    request: service_schemas.HostRequest,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create Ansible user on a host.
 
@@ -43,18 +43,21 @@ async def create_ansible_user(
     """
     ctx.require_user()
     try:
-        return await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
+        return await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.create_user],
+            request.host,
+            request.extra_vars,
         )
     except Exception as e:
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Ansible (User Creation: {request.host}) failed", str(e)
         ) from e
 
 
 @router.post("/ansible/scan_platform")
 async def scan_platform(
-    request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)
+    request: service_schemas.HostRequest,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Gather information about platform.
 
@@ -64,20 +67,21 @@ async def scan_platform(
     """
     ctx.require_user()
     try:
-        return await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.scan_platform],
+        return await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.scan_platform],
             request.host,
             request.extra_vars,
         )
     except Exception as e:
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Ansible (Platform Scan: {request.host}) failed", str(e)
         ) from e
 
 
 @router.post("/ansible/deploy_agent")
 async def deploy_agent(
-    request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)
+    request: service_schemas.HostRequest,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Deploy Node Exporter on a host.
 
@@ -87,18 +91,21 @@ async def deploy_agent(
     """
     ctx.require_user()
     try:
-        return await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
+        return await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.deploy_agent],
+            request.host,
+            request.extra_vars,
         )
     except Exception as e:
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Node Exporter (Prometheus Deployment: {request.host}) failed", str(e)
         ) from e
 
 
 @router.post("/ansible/setup_agent")
 async def setup_agent(
-    request: HostRequest, ctx: RequestContext = Depends(RequestContext.create)
+    request: service_schemas.HostRequest,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create Ansible user (if needed), then deploy Node Exporter.
 
@@ -109,28 +116,32 @@ async def setup_agent(
     ctx.require_user()
 
     try:
-        user_result = await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.create_user], request.host, request.extra_vars
+        user_result = await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.create_user],
+            request.host,
+            request.extra_vars,
         )
 
-        deploy_result = await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.deploy_agent], request.host, request.extra_vars
+        deploy_result = await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.deploy_agent],
+            request.host,
+            request.extra_vars,
         )
         return {
             "user_creation": user_result,
             "node_exporter_deployment": deploy_result,
         }
     except Exception as e:
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Ansible + Prometheus Workflow ({request.host}) failed", str(e)
         ) from e
 
 
 @router.post("/ansible/discovery")
 async def discover_hosts(
-    request: DiscoveryRequest,
+    request: service_schemas.DiscoveryRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Discover hosts not connected to database.
 
@@ -141,37 +152,39 @@ async def discover_hosts(
     """
     ctx.require_user()
     if not request.hosts:
-        raise ValidationError("Host list cannot be empty.")
+        raise exceptions.ValidationError("Host list cannot be empty.")
 
     target_team_id = request.target_team_id
     if not target_team_id:
         if len(ctx.team_ids) == 1:
             target_team_id = ctx.team_ids[0]
         else:
-            raise ValidationError("Target team ID required.")
+            raise exceptions.ValidationError("Target team ID required.")
 
     await ctx.validate_team_access(target_team_id)
 
     try:
-        await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.scan_platform],
+        await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.scan_platform],
             request.hosts,
             request.extra_vars,
         )
     except Exception as e:
         hosts_str = ", ".join(request.hosts)
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Ansible Discovery Scan for hosts [{hosts_str}] failed", str(e)
         ) from e
 
     results = []
     res_room = await db.execute(
-        select(Rooms).filter(Rooms.name == "virtual", Rooms.team_id == target_team_id)
+        sql.select(models.Rooms).filter(
+            models.Rooms.name == "virtual", models.Rooms.team_id == target_team_id
+        )
     )
     default_room = res_room.scalar_one_or_none()
 
     if not default_room:
-        default_room = Rooms(
+        default_room = models.Rooms(
             name="virtual", room_type="virtual", team_id=target_team_id
         )
         db.add(default_room)
@@ -180,9 +193,9 @@ async def discover_hosts(
 
     for host in request.hosts:
         try:
-            specs = parse_platform_report(host)
-            stmt = select(Machines).filter(Machines.name == host)
-            stmt = ctx.team_filter(stmt, Machines)
+            specs = ansible_service.parse_platform_report(host)
+            stmt = sql.select(models.Machines).filter(models.Machines.name == host)
+            stmt = ctx.team_filter(stmt, models.Machines)
             m_res = await db.execute(stmt)
             machine = m_res.scalar_one_or_none()
 
@@ -190,14 +203,20 @@ async def discover_hosts(
                 for field in ["os", "ram", "mac_address", "ip_address"]:
                     setattr(machine, field, specs.get(field))
 
-                await db.execute(delete(CPUs).where(CPUs.machine_id == machine.id))
+                await db.execute(
+                    sql.delete(models.CPUs).where(models.CPUs.machine_id == machine.id)
+                )
                 for cpu_data in specs.get("cpus", []):
-                    db.add(CPUs(name=cpu_data["name"], machine_id=machine.id))
+                    db.add(models.CPUs(name=cpu_data["name"], machine_id=machine.id))
 
-                await db.execute(delete(Disks).where(Disks.machine_id == machine.id))
+                await db.execute(
+                    sql.delete(models.Disks).where(
+                        models.Disks.machine_id == machine.id
+                    )
+                )
                 for disk_data in specs.get("disks", []):
                     db.add(
-                        Disks(
+                        models.Disks(
                             name=disk_data["name"],
                             capacity=disk_data.get("capacity"),
                             machine_id=machine.id,
@@ -205,7 +224,9 @@ async def discover_hosts(
                     )
 
                 meta_res = await db.execute(
-                    select(Metadata).where(Metadata.id == machine.metadata_id)
+                    sql.select(models.Metadata).where(
+                        models.Metadata.id == machine.metadata_id
+                    )
                 )
                 meta = meta_res.scalar_one_or_none()
                 if meta:
@@ -214,7 +235,7 @@ async def discover_hosts(
                     meta.last_update = datetime.now()
                 results.append({"host": host, "status": "updated"})
             else:
-                new_meta = Metadata(
+                new_meta = models.Metadata(
                     last_update=datetime.now(),
                     agent_prometheus=specs["agent_prometheus"],
                     ansible_access=True,
@@ -223,7 +244,7 @@ async def discover_hosts(
                 db.add(new_meta)
                 await db.flush()
 
-                new_machine = Machines(
+                new_machine = models.Machines(
                     name=host,
                     team_id=target_team_id,
                     metadata_id=new_meta.id,
@@ -238,10 +259,12 @@ async def discover_hosts(
                 await db.flush()
 
                 for cpu_data in specs.get("cpus", []):
-                    db.add(CPUs(name=cpu_data["name"], machine_id=new_machine.id))
+                    db.add(
+                        models.CPUs(name=cpu_data["name"], machine_id=new_machine.id)
+                    )
                 for disk_data in specs.get("disks", []):
                     db.add(
-                        Disks(
+                        models.Disks(
                             name=disk_data["name"],
                             capacity=disk_data.get("capacity"),
                             machine_id=new_machine.id,
@@ -264,10 +287,10 @@ async def discover_hosts(
 
 @router.post("/ansible/machine/{machine_id}/refresh")
 async def refresh_machine_hardware(
-    request: HostRequest,
+    request: service_schemas.HostRequest,
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Refresh information about machine hardware.
 
@@ -277,27 +300,33 @@ async def refresh_machine_hardware(
     :param ctx: Request context for user and team info
     :return: Success or error message.
     """
-    stmt = select(Machines).filter(Machines.id == machine_id)
-    machine = (await db.execute(ctx.team_filter(stmt, Machines))).scalar_one_or_none()
+    stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
+    machine = (
+        await db.execute(ctx.team_filter(stmt, models.Machines))
+    ).scalar_one_or_none()
 
     try:
-        await run_playbook_task(
-            PLAYBOOK_MAP[AnsiblePlaybook.scan_platform],
+        await ansible_service.run_playbook_task(
+            PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.scan_platform],
             [machine.name],
             request.extra_vars,
         )
-        specs = parse_platform_report(machine.name)
+        specs = ansible_service.parse_platform_report(machine.name)
         for field in ["os", "ram", "mac_address", "ip_address", "name"]:
             setattr(machine, field, specs.get(field))
 
-        await db.execute(delete(CPUs).where(CPUs.machine_id == machine.id))
+        await db.execute(
+            sql.delete(models.CPUs).where(models.CPUs.machine_id == machine.id)
+        )
         for cpu_data in specs.get("cpus", []):
-            db.add(CPUs(name=cpu_data["name"], machine_id=machine.id))
+            db.add(models.CPUs(name=cpu_data["name"], machine_id=machine.id))
 
-        await db.execute(delete(Disks).where(Disks.machine_id == machine.id))
+        await db.execute(
+            sql.delete(models.Disks).where(models.Disks.machine_id == machine.id)
+        )
         for disk_data in specs.get("disks", []):
             db.add(
-                Disks(
+                models.Disks(
                     name=disk_data["name"],
                     capacity=disk_data.get("capacity"),
                     machine_id=machine.id,
@@ -305,7 +334,7 @@ async def refresh_machine_hardware(
             )
 
         meta_res = await db.execute(
-            select(Metadata).where(Metadata.id == machine.metadata_id)
+            sql.select(models.Metadata).where(models.Metadata.id == machine.metadata_id)
         )
         meta = meta_res.scalar_one_or_none()
         if meta:
@@ -320,7 +349,7 @@ async def refresh_machine_hardware(
         }
     except Exception as e:
         await db.rollback()
-        raise ExternalServiceError(
+        raise exceptions.ExternalServiceError(
             f"Hardware Refresh for {machine.name} failed", str(e)
         ) from e
 
@@ -328,9 +357,9 @@ async def refresh_machine_hardware(
 @router.post("/ansible/machine/{machine_id}/cleanup")
 async def cleanup_machine(
     machine_id: int,
-    request: HostRequest,
+    request: service_schemas.HostRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete Ansible/Node exporters from machine.
 
@@ -340,25 +369,27 @@ async def cleanup_machine(
     :param ctx: Request context for user and team info
     :return: Success or error message.
     """
-    async with acquire_lock(f"machine_lock:{machine_id}"):
-        stmt = select(Machines).filter(Machines.id == machine_id)
+    async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
+        stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
         machine = (
-            await db.execute(ctx.team_filter(stmt, Machines))
+            await db.execute(ctx.team_filter(stmt, models.Machines))
         ).scalar_one_or_none()
         try:
-            agent_res = await run_playbook_task(
-                PLAYBOOK_MAP[AnsiblePlaybook.delete_agent],
+            agent_res = await ansible_service.run_playbook_task(
+                PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.delete_agent],
                 machine.name,
                 request.extra_vars,
             )
-            ansible_res = await run_playbook_task(
-                PLAYBOOK_MAP[AnsiblePlaybook.delete_ansible],
+            ansible_res = await ansible_service.run_playbook_task(
+                PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.delete_ansible],
                 machine.name,
                 request.extra_vars,
             )
 
             meta_res = await db.execute(
-                select(Metadata).where(Metadata.id == machine.metadata_id)
+                sql.select(models.Metadata).where(
+                    models.Metadata.id == machine.metadata_id
+                )
             )
             meta = meta_res.scalar_one_or_none()
             if meta:
@@ -375,7 +406,7 @@ async def cleanup_machine(
             }
         except Exception as e:
             await db.rollback()
-            raise ExternalServiceError(
+            raise exceptions.ExternalServiceError(
                 f"Ansible Cleanup for {machine.name} failed", str(e)
             ) from e
 
@@ -383,9 +414,9 @@ async def cleanup_machine(
 @router.post("/ansible/machine/{machine_id}/remove_agent")
 async def remove_agent(
     machine_id: int,
-    request: HostRequest,
+    request: service_schemas.HostRequest,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete Node exporter from machine.
 
@@ -395,19 +426,21 @@ async def remove_agent(
     :param ctx: Request context for user and team info
     :return: Success or error message.
     """
-    async with acquire_lock(f"machine_lock:{machine_id}"):
-        stmt = select(Machines).filter(Machines.id == machine_id)
+    async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
+        stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
         machine = (
-            await db.execute(ctx.team_filter(stmt, Machines))
+            await db.execute(ctx.team_filter(stmt, models.Machines))
         ).scalar_one_or_none()
         try:
-            agent_res = await run_playbook_task(
-                PLAYBOOK_MAP[AnsiblePlaybook.delete_agent],
+            agent_res = await ansible_service.run_playbook_task(
+                PLAYBOOK_MAP[service_schemas.AnsiblePlaybook.delete_agent],
                 machine.name,
                 request.extra_vars,
             )
             meta_res = await db.execute(
-                select(Metadata).where(Metadata.id == machine.metadata_id)
+                sql.select(models.Metadata).where(
+                    models.Metadata.id == machine.metadata_id
+                )
             )
             meta = meta_res.scalar_one_or_none()
             if meta:
@@ -421,6 +454,6 @@ async def remove_agent(
             }
         except Exception as e:
             await db.rollback()
-            raise ExternalServiceError(
+            raise exceptions.ExternalServiceError(
                 f"Agent Removal for {machine.name} failed"
             ) from e

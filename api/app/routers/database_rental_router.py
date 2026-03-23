@@ -4,33 +4,28 @@ from datetime import date
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import (
-    InsufficientAmountError,
-    ObjectNotFoundError,
-    ValidationError,
-)
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Inventory, Rentals
-from app.db.schemas import RentalReturn, RentalsCreate, RentalsResponse
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import inventory_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Inventory-Rentals"])
 
 
 @router.post(
     "/rentals",
-    response_model=RentalsResponse,
+    response_model=inventory_schemas.RentalsResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_rental(
-    rent_data: RentalsCreate,
+    rent_data: inventory_schemas.RentalsCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create new item rent.
 
@@ -41,22 +36,24 @@ async def create_rental(
     """
     ctx.require_user()
 
-    async with acquire_lock(f"inventory_lock:{rent_data.item_id}"):
+    async with redis_service.acquire_lock(f"inventory_lock:{rent_data.item_id}"):
         stmt = (
-            select(Inventory)
-            .filter(Inventory.id == rent_data.item_id)
+            sql.select(models.Inventory)
+            .filter(models.Inventory.id == rent_data.item_id)
             .with_for_update(nowait=True)
         )
         result = await db.execute(stmt)
         item = result.scalar_one_or_none()
 
         if not item:
-            raise ObjectNotFoundError("Item for this rental")
+            raise exceptions.ObjectNotFoundError("Item for this rental")
 
-        sum_stmt = select(func.coalesce(func.sum(Rentals.quantity), 0)).filter(
-            Rentals.item_id == item.id,
-            Rentals.start_date <= rent_data.end_date,
-            Rentals.end_date >= rent_data.start_date,
+        sum_stmt = sql.select(
+            func.coalesce(func.sum(models.Rentals.quantity), 0)
+        ).filter(
+            models.Rentals.item_id == item.id,
+            models.Rentals.start_date <= rent_data.end_date,
+            models.Rentals.end_date >= rent_data.start_date,
         )
         sum_result = await db.execute(sum_stmt)
         active_rentals_sum = sum_result.scalar()
@@ -64,12 +61,12 @@ async def create_rental(
         in_stock = item.quantity - active_rentals_sum
 
         if rent_data.quantity > in_stock:
-            raise InsufficientAmountError(
+            raise exceptions.InsufficientAmountError(
                 requested=rent_data.quantity, available=in_stock
             )
 
         try:
-            rental = Rentals(
+            rental = models.Rentals(
                 item_id=rent_data.item_id,
                 quantity=rent_data.quantity,
                 start_date=rent_data.start_date,
@@ -87,15 +84,17 @@ async def create_rental(
             return rental
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Failed to create rental for '{item.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to create rental for '{item.name}'"
+            ) from e
 
 
 @router.post("/rentals/{rental_id}/return")
 async def return_rental(
     rental_id: int,
-    return_data: Optional[RentalReturn] = None,
+    return_data: Optional[inventory_schemas.RentalReturn] = None,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """End item rental.
 
@@ -107,20 +106,20 @@ async def return_rental(
     ctx.require_user()
 
     check_stmt = (
-        select(Rentals)
-        .join(Inventory, Rentals.item_id == Inventory.id)
-        .filter(Rentals.id == rental_id)
-        .options(joinedload(Rentals.item))
+        sql.select(models.Rentals)
+        .join(models.Inventory, models.Rentals.item_id == models.Inventory.id)
+        .filter(models.Rentals.id == rental_id)
+        .options(orm.joinedload(models.Rentals.item))
     )
     rental = (
-        await db.execute(ctx.team_filter(check_stmt, Inventory))
+        await db.execute(ctx.team_filter(check_stmt, models.Inventory))
     ).scalar_one_or_none()
 
     if not rental:
-        raise ObjectNotFoundError("Rental for this item")
+        raise exceptions.ObjectNotFoundError("Rental for this item")
 
     item = rental.item
-    async with acquire_lock(f"inventory_lock:{item.id}"):
+    async with redis_service.acquire_lock(f"inventory_lock:{item.id}"):
         await db.refresh(rental)
         await db.refresh(item)
 
@@ -131,7 +130,7 @@ async def return_rental(
         )
 
         if qty_to_return > rental.quantity:
-            raise InsufficientAmountError(
+            raise exceptions.InsufficientAmountError(
                 requested=qty_to_return, available=rental.quantity
             )
 
@@ -151,13 +150,13 @@ async def return_rental(
             return {"message": msg}
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Return failed for '{item.name}'") from e
+            raise exceptions.ValidationError(f"Return failed for '{item.name}'") from e
 
 
-@router.get("/rentals", response_model=List[RentalsResponse])
+@router.get("/rentals", response_model=List[inventory_schemas.RentalsResponse])
 async def get_rentals(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Get all rentals.
 
@@ -166,17 +165,19 @@ async def get_rentals(
     :return: List of all rentals.
     """
     ctx.require_user()
-    stmt = select(Rentals).join(Inventory, Rentals.item_id == Inventory.id)
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = sql.select(models.Rentals).join(
+        models.Inventory, models.Rentals.item_id == models.Inventory.id
+    )
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     return result.scalars().all()
 
 
-@router.get("/rentals/{rental_id}", response_model=RentalsResponse)
+@router.get("/rentals/{rental_id}", response_model=inventory_schemas.RentalsResponse)
 async def get_rental_by_id(
     rental_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Get specific rental by ID.
 
@@ -187,16 +188,16 @@ async def get_rental_by_id(
     """
     ctx.require_user()
     stmt = (
-        select(Rentals)
-        .join(Inventory, Rentals.item_id == Inventory.id)
-        .filter(Rentals.id == rental_id)
+        sql.select(models.Rentals)
+        .join(models.Inventory, models.Rentals.item_id == models.Inventory.id)
+        .filter(models.Rentals.id == rental_id)
     )
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     rental = result.scalar_one_or_none()
 
     if not rental:
-        raise ObjectNotFoundError("Rental for this item")
+        raise exceptions.ObjectNotFoundError("Rental for this item")
     return rental
 
 
@@ -204,7 +205,7 @@ async def get_rental_by_id(
 async def delete_rental(
     rental_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete rental history.
 
@@ -215,21 +216,23 @@ async def delete_rental(
     """
     ctx.require_user()
     stmt = (
-        select(Rentals)
-        .join(Inventory, Rentals.item_id == Inventory.id)
-        .filter(Rentals.id == rental_id)
-        .options(joinedload(Rentals.item))
+        sql.select(models.Rentals)
+        .join(models.Inventory, models.Rentals.item_id == models.Inventory.id)
+        .filter(models.Rentals.id == rental_id)
+        .options(orm.joinedload(models.Rentals.item))
     )
-    stmt = ctx.team_filter(stmt, Inventory)
+    stmt = ctx.team_filter(stmt, models.Inventory)
     result = await db.execute(stmt)
     rental = result.scalar_one_or_none()
 
     if not rental:
-        raise ObjectNotFoundError("Rental for this item")
+        raise exceptions.ObjectNotFoundError("Rental for this item")
 
-    async with acquire_lock(f"inventory_lock:{rental.item_id}"):
+    async with redis_service.acquire_lock(f"inventory_lock:{rental.item_id}"):
         try:
-            item_stmt = select(Inventory).filter(Inventory.id == rental.item_id)
+            item_stmt = sql.select(models.Inventory).filter(
+                models.Inventory.id == rental.item_id
+            )
             item_res = await db.execute(item_stmt)
             item = item_res.scalar_one_or_none()
 
@@ -241,4 +244,6 @@ async def delete_rental(
             await db.commit()
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
-            raise ValidationError(f"Could not delete rental for '{item.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not delete rental for '{item.name}'"
+            ) from e

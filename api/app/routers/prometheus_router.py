@@ -8,26 +8,16 @@ from urllib.parse import unquote
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, Query, Response, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
+from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from app.auth.auth_config import get_database_strategy
-from app.auth.dependencies import RequestContext
-from app.auth.manager import get_user_manager
-from app.core.exceptions import AccessDeniedError, ValidationError
-
-from ..database import get_async_db
-from ..db.models import Machines, Teams
-from ..db.schemas import PrometheusBase, PrometheusTarget
-from ..utils.prometheus_service import (
-    DEFAULT_QUERIES,
-    TargetSaveError,
-    add_prometheus_target,
-    fetch_prometheus_metrics,
-    remove_prometheus_target,
-)
-from ..utils.redis_service import get_cache, set_cache
+from app.auth import auth_config, dependencies, manager
+from app.core import exceptions
+from app.database import get_async_db
+from app.db import models
+from app.schemas import service_schemas
+from app.utils import prometheus_service, redis_service
 
 load_dotenv(".env/api.env")
 HOST_STATUS_INTERVAL = int(os.getenv("HOST_STATUS_INTERVAL"))
@@ -63,7 +53,7 @@ class WSConnectionManager:
         self.websocket = None
 
 
-manager = WSConnectionManager()
+manager_ws = WSConnectionManager()
 
 
 async def status_worker():
@@ -72,8 +62,10 @@ async def status_worker():
     :return: None.
     """
     while True:
-        status = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
-        await set_cache(PROMETEUS_CACHE_STATUS_KEY, json.dumps(status))
+        status = await prometheus_service.fetch_prometheus_metrics(
+            metrics=["status"], hosts=None
+        )
+        await redis_service.set_cache(PROMETEUS_CACHE_STATUS_KEY, json.dumps(status))
         await asyncio.sleep(HOST_STATUS_INTERVAL)
 
 
@@ -83,10 +75,10 @@ async def metrics_worker():
     :return: None.
     """
     while True:
-        metrics = await fetch_prometheus_metrics(
+        metrics = await prometheus_service.fetch_prometheus_metrics(
             metrics=["cpu_usage", "memory_usage", "disk_usage"], hosts=None
         )
-        await set_cache(PROMETEUS_CACHE_METRICS_KEY, json.dumps(metrics))
+        await redis_service.set_cache(PROMETEUS_CACHE_METRICS_KEY, json.dumps(metrics))
         await asyncio.sleep(OTHER_METRICS_INTERVAL)
 
 
@@ -95,8 +87,8 @@ async def websocket_endpoint(
     ws: WebSocket,
     instance: str = Query(None, description="Filter by instance"),
     db: AsyncSession = Depends(get_async_db),
-    user_manager=Depends(get_user_manager),
-    strategy=Depends(get_database_strategy),
+    user_manager=Depends(manager.get_user_manager),
+    strategy=Depends(auth_config.get_database_strategy),
 ):
     """WebSocket endpoint to push metrics data to front-end.
 
@@ -106,7 +98,7 @@ async def websocket_endpoint(
     :param instance: Optional instance filter
     :return: Fetch ws data
     """
-    manager.websocket = ws
+    manager_ws.websocket = ws
     await ws.accept()
 
     token = ws.query_params.get("token")
@@ -118,14 +110,14 @@ async def websocket_endpoint(
     user = await strategy.read_token(token, user_manager)
 
     try:
-        ctx = await RequestContext.for_websocket(user, db)
-        query = select(Machines.name)
-        query = ctx.team_filter(query, Machines)
+        ctx = await dependencies.RequestContext.for_websocket(user, db)
+        query = sql.select(models.Machines.name)
+        query = ctx.team_filter(query, models.Machines)
         result = await db.execute(query)
         allowed_hosts = {row[0] for row in result.all()}
         while True:
-            status_data = await get_cache(PROMETEUS_CACHE_STATUS_KEY)
-            metrics_data = await get_cache(PROMETEUS_CACHE_METRICS_KEY)
+            status_data = await redis_service.get_cache(PROMETEUS_CACHE_STATUS_KEY)
+            metrics_data = await redis_service.get_cache(PROMETEUS_CACHE_METRICS_KEY)
 
             status_parsed = json.loads(status_data) if status_data else {}
             metrics_parsed = json.loads(metrics_data) if metrics_data else {}
@@ -200,23 +192,25 @@ async def websocket_endpoint(
             await asyncio.sleep(WEBSOCKET_PUSH_INTERVAL)
 
     except WebSocketDisconnect:
-        manager.disconnect()
+        manager_ws.disconnect()
 
 
 @router.get("/prometheus/instances")
 async def get_prometheus_instances(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all unique host instances [HOST::PORT] from Prometheus.
 
     :return: List of unique hosts.
     """
     ctx.require_user()
-    payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
+    payload = await prometheus_service.fetch_prometheus_metrics(
+        metrics=["status"], hosts=None
+    )
 
-    query = select(Machines.name)
-    query = ctx.team_filter(query, Machines)
+    query = sql.select(models.Machines.name)
+    query = ctx.team_filter(query, models.Machines)
     result = await db.execute(query)
     allowed_hosts = {row[0] for row in result.all()}
 
@@ -233,7 +227,7 @@ async def get_prometheus_instances(
 @router.get("/prometheus/hosts")
 async def get_prometheus_hosts(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all unique hosts [ex.192.168.1.2, server1-example.com] from Prometheus.
 
@@ -241,9 +235,11 @@ async def get_prometheus_hosts(
     """
     ctx.require_user()
 
-    payload = await fetch_prometheus_metrics(metrics=["status"], hosts=None)
-    query = select(Machines.name)
-    query = ctx.team_filter(query, Machines)
+    payload = await prometheus_service.fetch_prometheus_metrics(
+        metrics=["status"], hosts=None
+    )
+    query = sql.select(models.Machines.name)
+    query = ctx.team_filter(query, models.Machines)
     result = await db.execute(query)
     allowed_hosts = {row[0] for row in result.all()}
 
@@ -264,7 +260,7 @@ async def get_prometheus_all_metrics(
         "(e.g. host1:9100,host2:9100)",
     ),
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch metrics for selected instances directly from Prometheus (bypasses cache).
 
@@ -275,18 +271,18 @@ async def get_prometheus_all_metrics(
     """
     ctx.require_user()
 
-    query = select(Machines.name)
-    query = ctx.team_filter(query, Machines)
+    query = sql.select(models.Machines.name)
+    query = ctx.team_filter(query, models.Machines)
     result = await db.execute(query)
     allowed_hosts = {row[0] for row in result.all()}
 
     if not instances:
         if ctx.is_admin:
-            return await fetch_prometheus_metrics(
-                list(DEFAULT_QUERIES.keys()), hosts=None
+            return await prometheus_service.fetch_prometheus_metrics(
+                list(prometheus_service.DEFAULT_QUERIES.keys()), hosts=None
             )
-        return await fetch_prometheus_metrics(
-            list(DEFAULT_QUERIES.keys()), hosts=list(allowed_hosts)
+        return await prometheus_service.fetch_prometheus_metrics(
+            list(prometheus_service.DEFAULT_QUERIES.keys()), hosts=list(allowed_hosts)
         )
 
     processed_instances = []
@@ -303,17 +299,18 @@ async def get_prometheus_all_metrics(
             final_instances.append(item)
 
     if not final_instances and not ctx.is_admin:
-        return {metric: [] for metric in DEFAULT_QUERIES.keys()}
+        return {metric: [] for metric in prometheus_service.DEFAULT_QUERIES.keys()}
 
-    metrics_data = await fetch_prometheus_metrics(
-        list(DEFAULT_QUERIES.keys()), hosts=processed_instances
+    metrics_data = await prometheus_service.fetch_prometheus_metrics(
+        list(prometheus_service.DEFAULT_QUERIES.keys()), hosts=processed_instances
     )
     return metrics_data
 
 
 @router.post("/prometheus/target")
 async def add_prometheus_new_target(
-    target: PrometheusTarget, ctx: RequestContext = Depends(RequestContext.create)
+    target: service_schemas.PrometheusTarget,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Add a new target to Prometheus targets file.
 
@@ -330,31 +327,39 @@ async def add_prometheus_new_target(
             if len(ctx.team_ids) == 1:
                 selected_team_id = ctx.team_ids[0]
             elif len(ctx.team_ids) > 1:
-                raise ValidationError("You are in multiple teams, please select one.")
+                raise exceptions.ValidationError(
+                    "You are in multiple teams, please select one."
+                )
             else:
                 if not ctx.is_admin:
-                    raise AccessDeniedError("You are not in any team.")
+                    raise exceptions.AccessDeniedError("You are not in any team.")
         if selected_team_id:
             await ctx.validate_team_access(selected_team_id)
 
-            stmt = select(Teams.name).where(Teams.id == selected_team_id)
+            stmt = sql.select(models.Teams.name).where(
+                models.Teams.id == selected_team_id
+            )
             res = await ctx.db.execute(stmt)
             team_name = res.scalar_one_or_none()
             target.labels["team"] = team_name or f"team_{selected_team_id}"
 
         if ":" not in target.instance or ":9090" in target.instance:
             target.instance = f"{target.instance}:9100"
-        entry = await add_prometheus_target(target.instance, target.labels)
-    except TargetSaveError as e:
-        raise ValidationError(f"Failed to save target '{target.instance}'") from e
+        entry = await prometheus_service.add_prometheus_target(
+            target.instance, target.labels
+        )
+    except exceptions.TargetSaveError as e:
+        raise exceptions.ValidationError(
+            f"Failed to save target '{target.instance}'"
+        ) from e
     return {"message": "Target added successfully", "target": entry}
 
 
 @router.delete("/prometheus/target", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_prometheus_target(
-    target: PrometheusBase,
+    target: service_schemas.PrometheusBase,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Add a new target to Prometheus targets file.
 
@@ -374,16 +379,18 @@ async def delete_prometheus_target(
     host_only = _extract_host_from_instance(target_to_remove)
 
     if not ctx.is_admin:
-        query = select(Machines.name).filter(Machines.name == host_only)
-        query = ctx.team_filter(query, Machines)
+        query = sql.select(models.Machines.name).filter(
+            models.Machines.name == host_only
+        )
+        query = ctx.team_filter(query, models.Machines)
         result = await db.execute(query)
         machine = result.scalar_one_or_none()
 
         if not machine:
-            raise AccessDeniedError(
+            raise exceptions.AccessDeniedError(
                 f"Access denied or machine '{host_only}' not found in your team."
             )
 
-        await remove_prometheus_target(target_to_remove)
+        await prometheus_service.remove_prometheus_target(target_to_remove)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

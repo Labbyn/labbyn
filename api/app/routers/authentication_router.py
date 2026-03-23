@@ -4,22 +4,22 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.auth_config import fastapi_users
-from app.core.exceptions import ObjectNotFoundError, ValidationError
+from app.auth import auth_config
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import User
-from app.db.schemas import FirstChangePasswordRequest
-from app.utils.security import hash_password
+from app.db import models
+from app.schemas import user_schemas
+from app.utils import security
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-current_user = fastapi_users.current_user(active=True)
+current_user = auth_config.fastapi_users.current_user(active=True)
 
 
 @router.post("/setup-password")
 async def setup_first_password(
-    data: FirstChangePasswordRequest,
-    user: User = Depends(current_user),
+    data: user_schemas.FirstChangePasswordRequest,
+    user: models.User = Depends(current_user),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Setup first password.
@@ -33,16 +33,18 @@ async def setup_first_password(
     :return: Success or error message
     """
     if not user.force_password_change:
-        raise ValidationError("Password change is not required for this account.")
+        raise exceptions.ValidationError(
+            "Password change is not required for this account."
+        )
 
-    stmt = select(User).where(User.id == user.id)
+    stmt = select(models.User).where(models.User.id == user.id)
     result = await db.execute(stmt)
     db_user = result.scalar_one_or_none()
 
     if not db_user:
-        raise ObjectNotFoundError("User", user.login)
+        raise exceptions.ObjectNotFoundError("User", user.login)
 
-    db_user.hashed_password = hash_password(data.new_password)
+    db_user.hashed_password = security.hash_password(data.new_password)
     db_user.force_password_change = False
     db.add(db_user)
     await db.commit()

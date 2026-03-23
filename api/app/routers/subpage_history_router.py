@@ -3,17 +3,14 @@
 from typing import Any, Dict, List, Tuple
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import (
-    ObjectNotFoundError,
-)
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import History, User
-from app.db.schemas import HistoryResponse
+from app.db import models
+from app.schemas import history_schemas
 from app.routers.database_history_router import resolve_entity_name
 
 router = APIRouter(prefix="/sub", tags=["History subpage dedicated router"])
@@ -31,7 +28,7 @@ INTERNAL_KEYS = {
     "timestamp",
     "metadata_id",
     "item_id",
-    "layout_id",
+    "map_id",
     "localization_id",
     "room_id",
     "rental_id",
@@ -76,11 +73,11 @@ def get_state_diff(
     return diff_before, diff_after
 
 
-@router.get("/history", response_model=List[HistoryResponse])
+@router.get("/history", response_model=List[history_schemas.HistoryResponse])
 async def get_blackboxed_history_logs(
     limit=200,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Retrieve "blackboxed" history list.
 
@@ -92,13 +89,13 @@ async def get_blackboxed_history_logs(
     ctx.require_user()
 
     stmt = (
-        select(History)
-        .join(User, History.user_id == User.id)
-        .options(joinedload(History.user))
+        sql.select(models.History)
+        .join(models.User, models.History.user_id == models.User.id)
+        .options(orm.joinedload(models.History.user))
     )
 
-    stmt = ctx.team_filter(stmt, User)
-    stmt = stmt.order_by(History.timestamp.desc()).limit(limit)
+    stmt = ctx.team_filter(stmt, models.User)
+    stmt = stmt.order_by(models.History.timestamp.desc()).limit(limit)
 
     result = await db.execute(stmt)
     logs = result.unique().scalars().all()
@@ -137,11 +134,11 @@ async def get_blackboxed_history_logs(
     return results
 
 
-@router.get("/history/{history_id}", response_model=HistoryResponse)
+@router.get("/history/{history_id}", response_model=history_schemas.HistoryResponse)
 async def get_blackboxed_history_item(
     history_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Retrieve "blackboxed" history information.
 
@@ -153,19 +150,19 @@ async def get_blackboxed_history_item(
     ctx.require_user()
 
     stmt = (
-        select(History)
-        .join(User, History.user_id == User.id)
-        .options(joinedload(History.user))
-        .filter(History.id == history_id)
+        sql.select(models.History)
+        .join(models.User, models.History.user_id == models.User.id)
+        .options(orm.joinedload(models.History.user))
+        .filter(models.History.id == history_id)
     )
 
-    stmt = ctx.team_filter(stmt, User)
+    stmt = ctx.team_filter(stmt, models.User)
 
     result = await db.execute(stmt)
     log_entry = result.unique().scalar_one_or_none()
 
     if not log_entry:
-        raise ObjectNotFoundError("History log")
+        raise exceptions.ObjectNotFoundError("History log")
 
     clean_before, clean_after = get_state_diff(
         log_entry.before_state, log_entry.after_state

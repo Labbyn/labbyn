@@ -3,20 +3,20 @@
 import asyncio
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import RequestContext
+from app.auth import dependencies
 from app.database import get_async_db
-from app.db.models import Documentation, Inventory, Machines, Rack, Rooms, Teams, User
-from app.db.schemas import GroupedSearchResponse
+from app.db import models
+from app.schemas import search_schemas
 
 router = APIRouter(tags=["Search"])
 
 
-@router.get("/db/search", response_model=GroupedSearchResponse)
+@router.get("/db/search", response_model=search_schemas.GroupedSearchResponse)
 async def get_search_data(
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
     db: AsyncSession = Depends(get_async_db),
 ):
     """Global search endpoint that aggregates data from multiple tables.
@@ -25,14 +25,14 @@ async def get_search_data(
     :param db: Current database session
     :return: List of search results with type, label, sublabel, and target URL
     """
-    users_stmt = select(User)
-    teams_stmt = select(Teams)
-    docs_stmt = select(Documentation)
+    users_stmt = sql.select(models.User)
+    teams_stmt = sql.select(models.Teams)
+    docs_stmt = sql.select(models.Documentation)
 
-    machines_stmt = ctx.team_filter(select(Machines), Machines)
-    racks_stmt = ctx.team_filter(select(Rack), Rack)
-    items_stmt = ctx.team_filter(select(Inventory), Inventory)
-    rooms_stmt = ctx.team_filter(select(Rooms), Rooms)
+    machines_stmt = ctx.team_filter(sql.select(models.Machines), models.Machines)
+    racks_stmt = ctx.team_filter(sql.select(models.Rack), models.Rack)
+    items_stmt = ctx.team_filter(sql.select(models.Inventory), models.Inventory)
+    rooms_stmt = ctx.team_filter(sql.select(models.Rooms), models.Rooms)
 
     (
         users_res,

@@ -3,30 +3,30 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import select
+from sqlalchemy import sql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import ObjectNotFoundError, ValidationError, ConflictError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Categories
-from app.db.schemas import CategoriesCreate, CategoriesResponse, CategoriesUpdate
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import category_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Categories"])
 
 
 @router.post(
     "/categories",
-    response_model=CategoriesResponse,
+    response_model=category_schemas.CategoriesResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Categories"],
 )
 async def create_category(
-    category_data: CategoriesCreate,
+    category_data: category_schemas.CategoriesCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create new category.
 
@@ -37,34 +37,36 @@ async def create_category(
     """
     ctx.require_admin()
 
-    obj = Categories(**category_data.model_dump())
+    obj = models.Categories(**category_data.model_dump())
 
     try:
         db.add(obj)
         await db.flush()
         await db.commit()
 
-        res = await db.execute(select(Categories).where(Categories.id == obj.id))
+        res = await db.execute(
+            sql.select(models.Categories).where(models.Categories.id == obj.id)
+        )
         return res.scalar_one()
 
     except IntegrityError:
         await db.rollback()
-        raise ConflictError(
+        raise exceptions.ConflictError(
             message=f"Category with name '{category_data.name}' already exists."
         )
     except Exception as e:
         await db.rollback()
-        if isinstance(e, ConflictError):
+        if isinstance(e, exceptions.ConflictError):
             raise e
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Could not create category: '{category_data.name}'"
         ) from e
 
 
-@router.get("/categories", response_model=List[CategoriesResponse])
+@router.get("/categories", response_model=List[category_schemas.CategoriesResponse])
 async def get_categories(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all categories.
 
@@ -74,15 +76,15 @@ async def get_categories(
     """
     ctx.require_user()
 
-    result = await db.execute(select(Categories))
+    result = await db.execute(sql.select(models.Categories))
     return result.scalars().all()
 
 
-@router.get("/categories/{cat_id}", response_model=CategoriesResponse)
+@router.get("/categories/{cat_id}", response_model=category_schemas.CategoriesResponse)
 async def get_category_by_id(
     cat_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific category by ID.
 
@@ -93,20 +95,24 @@ async def get_category_by_id(
     """
     ctx.require_user()
 
-    result = await db.execute(select(Categories).where(Categories.id == cat_id))
+    result = await db.execute(
+        sql.select(models.Categories).where(models.Categories.id == cat_id)
+    )
     cat = result.scalar_one_or_none()
 
     if not cat:
-        raise ObjectNotFoundError("Category")
+        raise exceptions.ObjectNotFoundError("Category")
     return cat
 
 
-@router.patch("/categories/{cat_id}", response_model=CategoriesResponse)
+@router.patch(
+    "/categories/{cat_id}", response_model=category_schemas.CategoriesResponse
+)
 async def update_category(
     cat_id: int,
-    cat_data: CategoriesUpdate,
+    cat_data: category_schemas.CategoriesUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update Category.
 
@@ -118,12 +124,14 @@ async def update_category(
     """
     ctx.require_admin()
 
-    async with acquire_lock(f"category_lock:{cat_id}"):
-        result = await db.execute(select(Categories).where(Categories.id == cat_id))
+    async with redis_service.acquire_lock(f"category_lock:{cat_id}"):
+        result = await db.execute(
+            sql.select(models.Categories).where(models.Categories.id == cat_id)
+        )
         cat = result.scalar_one_or_none()
 
         if not cat:
-            raise ObjectNotFoundError("Category")
+            raise exceptions.ObjectNotFoundError("Category")
 
         old_name = cat.name
 
@@ -135,20 +143,24 @@ async def update_category(
             await db.flush()
             await db.commit()
 
-            res = await db.execute(select(Categories).where(Categories.id == cat_id))
+            res = await db.execute(
+                sql.select(models.Categories).where(models.Categories.id == cat_id)
+            )
             return res.scalar_one()
 
         except IntegrityError:
             await db.rollback()
             new_name = update_data.get("name") or old_name
-            raise ConflictError(
+            raise exceptions.ConflictError(
                 message=f"Update failed. Category name '{new_name}' is already taken."
             )
         except Exception as e:
             await db.rollback()
-            if isinstance(e, ConflictError):
+            if isinstance(e, exceptions.ConflictError):
                 raise e
-            raise ValidationError(f"Failed to update category '{old_name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to update category '{old_name}'"
+            ) from e
 
 
 @router.delete(
@@ -158,7 +170,7 @@ async def update_category(
 async def delete_category(
     cat_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete category.
 
@@ -169,12 +181,14 @@ async def delete_category(
     """
     ctx.require_admin()
 
-    async with acquire_lock(f"category_lock:{cat_id}"):
-        result = await db.execute(select(Categories).where(Categories.id == cat_id))
+    async with redis_service.acquire_lock(f"category_lock:{cat_id}"):
+        result = await db.execute(
+            sql.select(models.Categories).where(models.Categories.id == cat_id)
+        )
         cat = result.scalar_one_or_none()
 
         if not cat:
-            raise ObjectNotFoundError("Category")
+            raise exceptions.ObjectNotFoundError("Category")
 
         try:
             await db.delete(cat)
@@ -182,4 +196,6 @@ async def delete_category(
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Could not delete category '{cat.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not delete category '{cat.name}'"
+            ) from e

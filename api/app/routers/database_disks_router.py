@@ -3,29 +3,28 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import AccessDeniedError, ObjectNotFoundError, ValidationError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Disks, Machines
-from app.db.schemas import DiskCreate, DiskResponse, DiskUpdate
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import disk_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Disks"])
 
 
 @router.post(
     "/disks/",
-    response_model=DiskResponse,
+    response_model=disk_schemas.DiskResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_disk(
-    disk_data: DiskCreate,
+    disk_data: disk_schemas.DiskCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create new Disk.
 
@@ -38,35 +37,35 @@ async def create_disk(
 
     if not ctx.is_admin:
         if not getattr(disk_data, "machine_id", None):
-            raise AccessDeniedError(
+            raise exceptions.AccessDeniedError(
                 "Non-admin users must attach disks to a specific machine."
             )
 
-    stmt = select(Machines).where(Machines.id == disk_data.machine_id)
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = sql.select(models.Machines).where(models.Machines.id == disk_data.machine_id)
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     machine = result.scalar_one_or_none()
 
     if not machine:
-        raise ObjectNotFoundError("Machine for this disk")
+        raise exceptions.ObjectNotFoundError("Machine for this disk")
 
     try:
-        obj = Disks(**disk_data.model_dump())
+        obj = models.Disks(**disk_data.model_dump())
         db.add(obj)
         await db.commit()
         await db.refresh(obj)
         return obj
     except Exception as e:
         await db.rollback()
-        raise ValidationError(
+        raise exceptions.ValidationError(
             f"Failed to add disk '{disk_data.name}' to machine '{machine.name}'"
         ) from e
 
 
-@router.get("/disks/", response_model=List[DiskResponse])
+@router.get("/disks/", response_model=List[disk_schemas.DiskResponse])
 async def get_disks(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all Disks.
 
@@ -75,17 +74,17 @@ async def get_disks(
     :return: List of all Disks.
     """
     ctx.require_user()
-    stmt = select(Disks).join(Machines)
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = sql.select(models.Disks).join(models.Machines)
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     return result.scalars().all()
 
 
-@router.get("/disks/{disk_id}", response_model=DiskResponse)
+@router.get("/disks/{disk_id}", response_model=disk_schemas.DiskResponse)
 async def get_disk_by_id(
     disk_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific disk by ID.
 
@@ -95,22 +94,26 @@ async def get_disk_by_id(
     :return: Disk object.
     """
     ctx.require_user()
-    stmt = select(Disks).join(Machines).filter(Disks.id == disk_id)
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = (
+        sql.select(models.Disks)
+        .join(models.Machines)
+        .filter(models.Disks.id == disk_id)
+    )
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     disk = result.scalar_one_or_none()
 
     if not disk:
-        raise ObjectNotFoundError("Disk")
+        raise exceptions.ObjectNotFoundError("Disk")
     return disk
 
 
-@router.patch("/disks/{disk_id}", response_model=DiskResponse)
+@router.patch("/disks/{disk_id}", response_model=disk_schemas.DiskResponse)
 async def update_disk(
     disk_id: int,
-    disk_data: DiskUpdate,
+    disk_data: disk_schemas.DiskUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update disk.
 
@@ -121,19 +124,19 @@ async def update_disk(
     :return: Updated disk.
     """
     ctx.require_user()
-    async with acquire_lock(f"disk_lock:{disk_id}"):
+    async with redis_service.acquire_lock(f"disk_lock:{disk_id}"):
         stmt = (
-            select(Disks)
-            .options(selectinload(Disks.machine))
-            .join(Machines)
-            .filter(Disks.id == disk_id)
+            sql.select(models.Disks)
+            .options(orm.selectinload(models.Disks.machine))
+            .join(models.Machines)
+            .filter(models.Disks.id == disk_id)
         )
-        stmt = ctx.team_filter(stmt, Machines)
+        stmt = ctx.team_filter(stmt, models.Machines)
         result = await db.execute(stmt)
         disk = result.scalar_one_or_none()
 
         if not disk:
-            raise ObjectNotFoundError("Disk")
+            raise exceptions.ObjectNotFoundError("Disk")
 
         try:
             for k, v in disk_data.model_dump(exclude_unset=True).items():
@@ -143,7 +146,7 @@ async def update_disk(
             return disk
         except Exception as e:
             await db.rollback()
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 f"Update failed for disk '{disk.name}' on {disk.machine.name}"
             ) from e
 
@@ -155,7 +158,7 @@ async def update_disk(
 async def delete_disk(
     disk_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete disk.
 
@@ -165,19 +168,19 @@ async def delete_disk(
     :return: 204 No Content as success
     """
     ctx.require_user()
-    async with acquire_lock(f"disk_lock:{disk_id}"):
+    async with redis_service.acquire_lock(f"disk_lock:{disk_id}"):
         stmt = (
-            select(Disks)
-            .options(selectinload(Disks.machine))
-            .join(Machines)
-            .filter(Disks.id == disk_id)
+            sql.select(models.Disks)
+            .options(orm.selectinload(models.Disks.machine))
+            .join(models.Machines)
+            .filter(models.Disks.id == disk_id)
         )
-        stmt = ctx.team_filter(stmt, Machines)
+        stmt = ctx.team_filter(stmt, models.Machines)
         result = await db.execute(stmt)
         disk = result.scalar_one_or_none()
 
         if not disk:
-            raise ObjectNotFoundError("Disk")
+            raise exceptions.ObjectNotFoundError("Disk")
 
         try:
             await db.delete(disk)
@@ -185,6 +188,6 @@ async def delete_disk(
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 f"Could not delete disk '{disk.name}' from {disk.machine.name}"
             ) from e

@@ -3,32 +3,28 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import (
-    ObjectNotFoundError,
-    ValidationError,
-)
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Machines, Metadata
-from app.db.schemas import MetadataCreate, MetadataResponse, MetadataUpdate
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import metadata_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Machines Metadata"])
 
 
 @router.post(
     "/metadata",
-    response_model=MetadataResponse,
+    response_model=metadata_schemas.MetadataResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_metadata(
-    meta_data: MetadataCreate,
+    meta_data: metadata_schemas.MetadataCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create new metadata.
 
@@ -39,20 +35,20 @@ async def create_metadata(
     """
     ctx.require_user()
     try:
-        obj = Metadata(**meta_data.model_dump())
+        obj = models.Metadata(**meta_data.model_dump())
         db.add(obj)
         await db.commit()
         await db.refresh(obj)
         return obj
     except Exception as e:
         await db.rollback()
-        raise ValidationError("Failed to create metadata record") from e
+        raise exceptions.ValidationError("Failed to create metadata record") from e
 
 
-@router.get("/metadata", response_model=List[MetadataResponse])
+@router.get("/metadata", response_model=List[metadata_schemas.MetadataResponse])
 async def get_all_metadata(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all metadata records.
 
@@ -61,17 +57,17 @@ async def get_all_metadata(
     :return: List of Metadata.
     """
     ctx.require_user()
-    stmt = select(Metadata).join(Machines)
-    result = await db.execute(ctx.team_filter(stmt, Machines))
+    stmt = sql.select(models.Metadata).join(models.Machines)
+    result = await db.execute(ctx.team_filter(stmt, models.Machines))
 
     return result.scalars().all()
 
 
-@router.get("/metadata/{meta_id}", response_model=MetadataResponse)
+@router.get("/metadata/{meta_id}", response_model=metadata_schemas.MetadataResponse)
 async def get_metadata(
     meta_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch metadata by ID.
 
@@ -81,20 +77,26 @@ async def get_metadata(
     :return: Metadata object.
     """
     ctx.require_user()
-    stmt = select(Metadata).filter(Metadata.id == meta_id).join(Machines)
-    obj = (await db.execute(ctx.team_filter(stmt, Machines))).scalar_one_or_none()
+    stmt = (
+        sql.select(models.Metadata)
+        .filter(models.Metadata.id == meta_id)
+        .join(models.Machines)
+    )
+    obj = (
+        await db.execute(ctx.team_filter(stmt, models.Machines))
+    ).scalar_one_or_none()
 
     if not obj:
-        raise ObjectNotFoundError("Metadata")
+        raise exceptions.ObjectNotFoundError("Metadata")
     return obj
 
 
-@router.patch("/metadata/{meta_id}", response_model=MetadataResponse)
+@router.patch("/metadata/{meta_id}", response_model=metadata_schemas.MetadataResponse)
 async def update_metadata(
     meta_id: int,
-    data: MetadataUpdate,
+    data: metadata_schemas.MetadataUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update Metadata.
 
@@ -105,16 +107,18 @@ async def update_metadata(
     :return: Updated Metadata.
     """
     ctx.require_user()
-    async with acquire_lock(f"meta_lock:{meta_id}"):
+    async with redis_service.acquire_lock(f"meta_lock:{meta_id}"):
         stmt = (
-            select(Metadata)
-            .filter(Metadata.id == meta_id)
-            .join(Machines)
-            .options(selectinload(Metadata.machines))
+            sql.select(models.Metadata)
+            .filter(models.Metadata.id == meta_id)
+            .join(models.Machines)
+            .options(orm.selectinload(models.Metadata.machines))
         )
-        obj = (await db.execute(ctx.team_filter(stmt, Machines))).scalar_one_or_none()
+        obj = (
+            await db.execute(ctx.team_filter(stmt, models.Machines))
+        ).scalar_one_or_none()
         if not obj:
-            raise ObjectNotFoundError("Metadata")
+            raise exceptions.ObjectNotFoundError("Metadata")
 
         m_name = obj.machines[0].name if obj.machines else f"ID {meta_id}"
 
@@ -126,7 +130,7 @@ async def update_metadata(
             return obj
         except Exception as e:
             await db.rollback()
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 f"Failed to update metadata for machine '{m_name}'"
             ) from e
 
@@ -135,7 +139,7 @@ async def update_metadata(
 async def delete_metadata(
     meta_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete Metadata.
 
@@ -145,18 +149,20 @@ async def delete_metadata(
     :return: None.
     """
     ctx.require_user()
-    async with acquire_lock(f"meta_lock:{meta_id}"):
+    async with redis_service.acquire_lock(f"meta_lock:{meta_id}"):
         stmt = (
-            select(Metadata)
-            .filter(Metadata.id == meta_id)
-            .join(Machines)
-            .options(selectinload(Metadata.machines))
+            sql.select(models.Metadata)
+            .filter(models.Metadata.id == meta_id)
+            .join(models.Machines)
+            .options(orm.selectinload(models.Metadata.machines))
         )
 
-        obj = (await db.execute(ctx.team_filter(stmt, Machines))).scalar_one_or_none()
+        obj = (
+            await db.execute(ctx.team_filter(stmt, models.Machines))
+        ).scalar_one_or_none()
 
         if not obj:
-            raise ObjectNotFoundError("Metadata")
+            raise exceptions.ObjectNotFoundError("Metadata")
 
         m_name = obj.machines[0].name if obj.machines else f"ID {meta_id}"
 
@@ -166,6 +172,6 @@ async def delete_metadata(
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 f"Could not delete metadata for machine '{m_name}'"
             ) from e

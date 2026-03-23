@@ -3,36 +3,29 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from sqlalchemy import sql, orm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload, selectinload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import ObjectNotFoundError, ValidationError, ConflictError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import Rack, Rooms, Shelf, Tags
-from app.db.schemas import (
-    RoomDashboardResponse,
-    RoomDetailsResponse,
-    RoomsCreate,
-    RoomsResponse,
-    RoomsUpdate,
-)
-from app.utils.redis_service import acquire_lock
+from app.db import models
+from app.schemas import room_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Rooms"])
 
 
 @router.post(
     "/rooms",
-    response_model=RoomsResponse,
+    response_model=room_schemas.RoomsResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_room(
-    room_data: RoomsCreate,
+    room_data: room_schemas.RoomsCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create new room.
 
@@ -47,18 +40,18 @@ async def create_room(
         ctx.team_ids[0] if len(ctx.team_ids) == 1 else None
     )
     if not target_team_id:
-        raise ValidationError("Target team ID is required to create a room")
+        raise exceptions.ValidationError("Target team ID is required to create a room")
 
     await ctx.validate_team_access(target_team_id)
 
     try:
-        obj = Rooms(
+        obj = models.Rooms(
             name=room_data.name, room_type=room_data.room_type, team_id=target_team_id
         )
 
         if room_data.tag_ids:
             tag_res = await db.execute(
-                select(Tags).where(Tags.id.in_(room_data.tag_ids))
+                sql.select(models.Tags).where(models.Tags.id.in_(room_data.tag_ids))
             )
             obj.tags = list(tag_res.scalars().all())
 
@@ -66,25 +59,29 @@ async def create_room(
         await db.commit()
 
         stmt = (
-            select(Rooms)
-            .where(Rooms.id == obj.id)
-            .options(selectinload(Rooms.tags), selectinload(Rooms.team))
+            sql.select(models.Rooms)
+            .where(models.Rooms.id == obj.id)
+            .options(
+                orm.selectinload(models.Rooms.tags), orm.selectinload(models.Rooms.team)
+            )
         )
         return (await db.execute(stmt)).scalar_one()
     except IntegrityError:
         await db.rollback()
-        raise ConflictError(
+        raise exceptions.ConflictError(
             message=f"Room with name '{room_data.name}' already exists for this team."
         )
     except Exception as e:
         await db.rollback()
-        raise ValidationError(f"Failed to create room '{room_data.name}'") from e
+        raise exceptions.ValidationError(
+            f"Failed to create room '{room_data.name}'"
+        ) from e
 
 
-@router.get("/rooms", response_model=List[RoomsResponse])
+@router.get("/rooms", response_model=List[room_schemas.RoomsResponse])
 async def get_rooms(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all rooms.
 
@@ -93,17 +90,17 @@ async def get_rooms(
     :return: List of all rooms.
     """
     ctx.require_user()
-    stmt = select(Rooms).options(joinedload(Rooms.tags))
-    stmt = ctx.team_filter(stmt, Rooms)
+    stmt = sql.select(models.Rooms).options(orm.joinedload(models.Rooms.tags))
+    stmt = ctx.team_filter(stmt, models.Rooms)
 
     result = await db.execute(stmt)
     return result.unique().scalars().all()
 
 
-@router.get("/rooms/dashboard", response_model=List[RoomDashboardResponse])
+@router.get("/rooms/dashboard", response_model=List[room_schemas.RoomDashboardResponse])
 async def get_rooms_dashboard(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all rooms with rack count and map link for dashboard.
 
@@ -112,10 +109,12 @@ async def get_rooms_dashboard(
     :return: Room object.
     """
     ctx.require_user()
-    stmt = select(Rooms).options(
-        joinedload(Rooms.racks), joinedload(Rooms.layouts), joinedload(Rooms.team)
+    stmt = sql.select(models.Rooms).options(
+        orm.joinedload(models.Rooms.racks),
+        orm.joinedload(models.Rooms.map),
+        orm.joinedload(models.Rooms.team),
     )
-    stmt = ctx.team_filter(stmt, Rooms)
+    stmt = ctx.team_filter(stmt, models.Rooms)
 
     result = await db.execute(stmt)
     rooms = result.unique().scalars().all()
@@ -134,11 +133,11 @@ async def get_rooms_dashboard(
     return results
 
 
-@router.get("/rooms/{room_id}/details", response_model=RoomDetailsResponse)
+@router.get("/rooms/{room_id}/details", response_model=room_schemas.RoomDetailsResponse)
 async def get_room_details(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific room by ID with nested racks, shelves and machines.
 
@@ -151,17 +150,19 @@ async def get_room_details(
     """
     ctx.require_user()
     stmt = (
-        select(Rooms)
+        sql.select(models.Rooms)
         .options(
-            joinedload(Rooms.tags),
-            joinedload(Rooms.layouts),
-            joinedload(Rooms.racks).joinedload(Rack.tags),
-            joinedload(Rooms.racks).joinedload(Rack.shelves).joinedload(Shelf.machines),
+            orm.joinedload(models.Rooms.tags),
+            orm.joinedload(models.Rooms.map),
+            orm.joinedload(models.Rooms.racks).joinedload(models.Rack.tags),
+            orm.joinedload(models.Rooms.racks)
+            .joinedload(models.Rack.shelves)
+            .joinedload(models.Shelf.machines),
         )
-        .filter(Rooms.id == room_id)
+        .filter(models.Rooms.id == room_id)
     )
 
-    stmt = ctx.team_filter(stmt, Rooms)
+    stmt = ctx.team_filter(stmt, models.Rooms)
     result = await db.execute(stmt)
     room = result.unique().scalar_one_or_none()
 
@@ -206,11 +207,11 @@ async def get_room_details(
     }
 
 
-@router.get("/rooms/{room_id}", response_model=RoomsResponse)
+@router.get("/rooms/{room_id}", response_model=room_schemas.RoomsResponse)
 async def get_room_by_id(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific room by ID.
 
@@ -220,23 +221,23 @@ async def get_room_by_id(
     :return: Room object.
     """
     ctx.require_user()
-    stmt = select(Rooms).filter(Rooms.id == room_id)
-    stmt = ctx.team_filter(stmt, Rooms)
+    stmt = sql.select(models.Rooms).filter(models.Rooms.id == room_id)
+    stmt = ctx.team_filter(stmt, models.Rooms)
 
     result = await db.execute(stmt)
     room = result.scalar_one_or_none()
 
     if not room:
-        raise ObjectNotFoundError("Room")
+        raise exceptions.ObjectNotFoundError("Room")
     return room
 
 
-@router.patch("/rooms/{room_id}", response_model=RoomsResponse)
+@router.patch("/rooms/{room_id}", response_model=room_schemas.RoomsResponse)
 async def update_room(
     room_id: int,
-    room_data: RoomsUpdate,
+    room_data: room_schemas.RoomsUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update room.
 
@@ -248,22 +249,24 @@ async def update_room(
     """
     ctx.require_group_admin()
 
-    async with acquire_lock(f"room_lock:{room_id}"):
-        stmt = select(Rooms).filter(Rooms.id == room_id)
-        stmt = ctx.team_filter(stmt, Rooms)
+    async with redis_service.acquire_lock(f"room_lock:{room_id}"):
+        stmt = sql.select(models.Rooms).filter(models.Rooms.id == room_id)
+        stmt = ctx.team_filter(stmt, models.Rooms)
 
         result = await db.execute(stmt)
         room = result.scalar_one_or_none()
 
         if not room:
-            raise ObjectNotFoundError("Room", id=room_id)
+            raise exceptions.ObjectNotFoundError("Room", id=room_id)
 
         update_data = room_data.model_dump(exclude_unset=True)
         try:
             if "tag_ids" in update_data:
                 tag_ids = update_data.pop("tag_ids")
                 if tag_ids is not None:
-                    tag_stmt = select(Tags).where(Tags.id.in_(tag_ids))
+                    tag_stmt = sql.select(models.Tags).where(
+                        models.Tags.id.in_(tag_ids)
+                    )
                     tag_res = await db.execute(tag_stmt)
                     room.tags = tag_res.scalars().all()
 
@@ -278,18 +281,20 @@ async def update_room(
             return room
         except IntegrityError:
             await db.rollback()
-            raise ConflictError(
+            raise exceptions.ConflictError(
                 message=f"Conflict: Room name '{room.name}' is already taken in this team."
             )
         except Exception as e:
-            raise ValidationError(f"Failed to update room '{room.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to update room '{room.name}'"
+            ) from e
 
 
 @router.delete("/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_room(
     room_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete Room.
 
@@ -300,15 +305,15 @@ async def delete_room(
     """
     ctx.require_group_admin()
 
-    async with acquire_lock(f"room_lock:{room_id}"):
-        stmt = select(Rooms).filter(Rooms.id == room_id)
-        stmt = ctx.team_filter(stmt, Rooms)
+    async with redis_service.acquire_lock(f"room_lock:{room_id}"):
+        stmt = sql.select(models.Rooms).filter(models.Rooms.id == room_id)
+        stmt = ctx.team_filter(stmt, models.Rooms)
 
         result = await db.execute(stmt)
         room = result.scalar_one_or_none()
 
         if not room:
-            raise ObjectNotFoundError("Room")
+            raise exceptions.ObjectNotFoundError("Room")
 
         try:
             await db.delete(room)
@@ -316,4 +321,6 @@ async def delete_room(
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Could not delete room '{room.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not delete room '{room.name}'"
+            ) from e

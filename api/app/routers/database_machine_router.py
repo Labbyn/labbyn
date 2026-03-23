@@ -1,25 +1,20 @@
 """Router for Machine Database API CRUD."""
 
-import json, os
+import json
+import os
 from typing import List
 
 from fastapi import APIRouter, Depends, Response, status
-from sqlalchemy import delete, select, update
+from sqlalchemy import sql, orm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
 
-from app.auth.dependencies import RequestContext
-from app.core.exceptions import ObjectNotFoundError, ValidationError, ConflictError
+from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
-from app.db.models import CPUs, Disks, Machines, Metadata, Shelf
-from app.db.schemas import (
-    MachineFullDetailResponse,
-    MachinesCreate,
-    MachinesResponse,
-    MachinesUpdate,
-)
-from app.utils.redis_service import acquire_lock, get_cache
+from app.db import models
+from app.schemas import machine_schemas
+from app.utils import redis_service
 
 router = APIRouter(prefix="/db", tags=["Machines"])
 
@@ -31,13 +26,13 @@ else:
 
 @router.post(
     "/machines/",
-    response_model=MachinesResponse,
+    response_model=machine_schemas.MachinesResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_machine(
-    machine_data: MachinesCreate,
+    machine_data: machine_schemas.MachinesCreate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create and add new machine to database.
 
@@ -53,14 +48,14 @@ async def create_machine(
     await ctx.validate_team_access(data["team_id"])
     try:
         if not data.get("metadata_id"):
-            new_metadata = Metadata()
+            new_metadata = models.Metadata()
             db.add(new_metadata)
             await db.flush()
             data["metadata_id"] = new_metadata.id
 
-        obj = Machines(**data)
-        obj.cpus = [CPUs(name=item.name) for item in cpus]
-        obj.disks = [Disks(name=item.name) for item in disks]
+        obj = models.Machines(**data)
+        obj.cpus = [models.CPUs(name=item.name) for item in cpus]
+        obj.disks = [models.Disks(name=item.name) for item in disks]
 
         db.add(obj)
         await db.commit()
@@ -78,18 +73,20 @@ async def create_machine(
         return obj
     except IntegrityError:
         await db.rollback()
-        raise ConflictError(
+        raise exceptions.ConflictError(
             message=f"Machine with name '{machine_data.name}' already exists in this room."
         )
     except Exception as e:
         await db.rollback()
-        raise ValidationError(f"Failed to create machine '{machine_data.name}'") from e
+        raise exceptions.ValidationError(
+            f"Failed to create machine '{machine_data.name}'"
+        ) from e
 
 
-@router.get("/machines/", response_model=List[MachinesResponse])
+@router.get("/machines/", response_model=List[machine_schemas.MachinesResponse])
 async def get_machines(
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all machines.
 
@@ -98,22 +95,22 @@ async def get_machines(
     :return: List of machines.
     """
     ctx.require_user()
-    stmt = select(Machines).options(
-        joinedload(Machines.cpus),
-        joinedload(Machines.disks),
-        joinedload(Machines.team),
-        joinedload(Machines.machine_metadata),
+    stmt = sql.select(models.Machines).options(
+        orm.joinedload(models.Machines.cpus),
+        orm.joinedload(models.Machines.disks),
+        orm.joinedload(models.Machines.team),
+        orm.joinedload(models.Machines.machine_metadata),
     )
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     return result.unique().scalars().all()
 
 
-@router.get("/machines/{machine_id}", response_model=MachinesResponse)
+@router.get("/machines/{machine_id}", response_model=machine_schemas.MachinesResponse)
 async def get_machine_by_id(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific machine by ID.
 
@@ -124,32 +121,32 @@ async def get_machine_by_id(
     """
     ctx.require_user()
     stmt = (
-        select(Machines)
+        sql.select(models.Machines)
         .options(
-            joinedload(Machines.cpus),
-            joinedload(Machines.disks),
-            joinedload(Machines.team),
-            joinedload(Machines.machine_metadata),
+            orm.joinedload(models.Machines.cpus),
+            orm.joinedload(models.Machines.disks),
+            orm.joinedload(models.Machines.team),
+            orm.joinedload(models.Machines.machine_metadata),
         )
-        .filter(Machines.id == machine_id)
+        .filter(models.Machines.id == machine_id)
     )
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     machine = result.unique().scalar_one_or_none()
 
     if not machine:
-        raise ObjectNotFoundError("Machine")
+        raise exceptions.ObjectNotFoundError("Machine")
     return machine
 
 
 @router.get(
     "/machines/{machine_id}/full",
-    response_model=MachineFullDetailResponse,
+    response_model=machine_schemas.MachineFullDetailResponse,
 )
 async def get_machine_full_detail(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch specific machine by ID.
 
@@ -159,27 +156,27 @@ async def get_machine_full_detail(
     :return: Machine object.
     """
     ctx.require_user()
-    stmt = select(Machines).filter(Machines.id == machine_id)
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
+    stmt = ctx.team_filter(stmt, models.Machines)
 
     stmt = stmt.options(
-        joinedload(Machines.team),
-        joinedload(Machines.room),
-        joinedload(Machines.machine_metadata),
-        joinedload(Machines.tags),
-        joinedload(Machines.cpus),
-        joinedload(Machines.disks),
-        joinedload(Machines.shelf).joinedload(Shelf.rack),
+        orm.joinedload(models.Machines.team),
+        orm.joinedload(models.Machines.room),
+        orm.joinedload(models.Machines.machine_metadata),
+        orm.joinedload(models.Machines.tags),
+        orm.joinedload(models.Machines.cpus),
+        orm.joinedload(models.Machines.disks),
+        orm.joinedload(models.Machines.shelf).joinedload(models.Shelf.rack),
     )
 
     result = await db.execute(stmt)
     machine = result.unique().scalar_one_or_none()
 
     if not machine:
-        raise ObjectNotFoundError("Machine")
+        raise exceptions.ObjectNotFoundError("Machine")
 
-    status_data = await get_cache("prometheus_metrics_cache")
-    metrics_data = await get_cache("prometheus_other_metrics_cache")
+    status_data = await redis_service.get_cache("prometheus_metrics_cache")
+    metrics_data = await redis_service.get_cache("prometheus_other_metrics_cache")
 
     status_parsed = json.loads(status_data) if status_data else {}
     metrics_parsed = json.loads(metrics_data) if metrics_data else {}
@@ -222,7 +219,6 @@ async def get_machine_full_detail(
         ]
         live_payload["disks"] = disks_stats
 
-    # Hardcoded UUID in Grafana dashboard config allows to link to the dashboard without dynamic parameters
     grafana_link = f"{GRAFANA_URL}/d/ARCDarkvk/?orgId=1&var-host={target_ip}"
     rack_link = f"/racks/{machine.shelf.rack_id}" if machine.shelf else "#"
     map_link = "/map/view"
@@ -265,12 +261,12 @@ async def get_machine_full_detail(
     }
 
 
-@router.patch("/machines/{machine_id}", response_model=MachinesResponse)
+@router.patch("/machines/{machine_id}", response_model=machine_schemas.MachinesResponse)
 async def update_machine(
     machine_id: int,
-    machine_data: MachinesUpdate,
+    machine_data: machine_schemas.MachinesUpdate,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update machine data.
 
@@ -281,14 +277,14 @@ async def update_machine(
     :return: Updated Machine.
     """
     ctx.require_user()
-    async with acquire_lock(f"machine_lock:{machine_id}"):
-        stmt = select(Machines).filter(Machines.id == machine_id)
-        stmt = ctx.team_filter(stmt, Machines)
+    async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
+        stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
+        stmt = ctx.team_filter(stmt, models.Machines)
         result = await db.execute(stmt)
         machine = result.scalar_one_or_none()
 
         if not machine:
-            raise ObjectNotFoundError("Machine")
+            raise exceptions.ObjectNotFoundError("Machine")
 
         update_data = machine_data.model_dump(exclude_unset=True)
         if "shelf_id" in update_data and (
@@ -302,18 +298,20 @@ async def update_machine(
             updated_cpus = update_data.pop("cpus")
             updated_cpus_ids = [c.get("id") for c in updated_cpus if c.get("id")]
 
-            del_stmt = delete(CPUs).where(CPUs.machine_id == machine_id)
+            del_stmt = sql.delete(models.CPUs).where(
+                models.CPUs.machine_id == machine_id
+            )
             if updated_cpus_ids:
-                del_stmt = del_stmt.where(CPUs.id.not_in(updated_cpus_ids))
+                del_stmt = del_stmt.where(models.CPUs.id.not_in(updated_cpus_ids))
             await db.execute(del_stmt)
 
             for cpu_item in updated_cpus:
                 if not cpu_item.get("id"):
-                    db.add(CPUs(name=cpu_item["name"], machine_id=machine_id))
+                    db.add(models.CPUs(name=cpu_item["name"], machine_id=machine_id))
                 else:
                     await db.execute(
-                        update(CPUs)
-                        .where(CPUs.id == cpu_item["id"])
+                        sql.update(models.CPUs)
+                        .where(models.CPUs.id == cpu_item["id"])
                         .values(name=cpu_item["name"])
                     )
 
@@ -321,15 +319,19 @@ async def update_machine(
             updated_disks = update_data.pop("disks")
             updated_disks_ids = [d.get("id") for d in updated_disks if d.get("id")]
 
-            del_disk_stmt = delete(Disks).where(Disks.machine_id == machine_id)
+            del_disk_stmt = sql.delete(models.Disks).where(
+                models.Disks.machine_id == machine_id
+            )
             if updated_disks_ids:
-                del_disk_stmt = del_disk_stmt.where(Disks.id.not_in(updated_disks_ids))
+                del_disk_stmt = del_disk_stmt.where(
+                    models.Disks.id.not_in(updated_disks_ids)
+                )
             await db.execute(del_disk_stmt)
 
             for disk_item in updated_disks:
                 if not disk_item.get("id"):
                     db.add(
-                        Disks(
+                        models.Disks(
                             name=disk_item["name"],
                             capacity=disk_item["capacity"],
                             machine_id=machine_id,
@@ -337,8 +339,8 @@ async def update_machine(
                     )
                 else:
                     await db.execute(
-                        update(Disks)
-                        .where(Disks.id == disk_item["id"])
+                        sql.update(models.Disks)
+                        .where(models.Disks.id == disk_item["id"])
                         .values(name=disk_item["name"], capacity=disk_item["capacity"])
                     )
 
@@ -350,13 +352,15 @@ async def update_machine(
 
         except IntegrityError:
             await db.rollback()
-            raise ConflictError(
+            raise exceptions.ConflictError(
                 message=f"Conflict: Machine name '{machine.name}' is already taken in the target room."
             )
 
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Failed to update machine '{machine.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to update machine '{machine.name}'"
+            ) from e
 
         await db.refresh(
             machine,
@@ -372,7 +376,7 @@ async def update_machine(
 async def delete_machine(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete Machine.
 
@@ -382,21 +386,23 @@ async def delete_machine(
     :return: None.
     """
     ctx.require_user()
-    async with acquire_lock(f"machine_lock:{machine_id}"):
-        stmt = select(Machines).filter(Machines.id == machine_id)
-        stmt = ctx.team_filter(stmt, Machines)
+    async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
+        stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
+        stmt = ctx.team_filter(stmt, models.Machines)
         result = await db.execute(stmt)
         machine = result.scalar_one_or_none()
 
         if not machine:
-            raise ObjectNotFoundError("Machine")
+            raise exceptions.ObjectNotFoundError("Machine")
         try:
             await db.delete(machine)
             await db.commit()
             return Response(status_code=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             await db.rollback()
-            raise ValidationError(f"Could not delete machine '{machine.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not delete machine '{machine.name}'"
+            ) from e
 
 
 @router.post("/machines/{machine_id}/mount/{shelf_id}", status_code=status.HTTP_200_OK)
@@ -404,7 +410,7 @@ async def mount_machine(
     machine_id: int,
     shelf_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Mounts a machine onto a specific shelf.
 
@@ -415,23 +421,27 @@ async def mount_machine(
     :return: Status message.
     """
     ctx.require_user()
-    async with acquire_lock(f"machine_lock:{machine_id}"):
-        machine_stmt = select(Machines).filter(Machines.id == machine_id)
-        machine_stmt = ctx.team_filter(machine_stmt, Machines)
+    async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
+        machine_stmt = sql.select(models.Machines).filter(
+            models.Machines.id == machine_id
+        )
+        machine_stmt = ctx.team_filter(machine_stmt, models.Machines)
         machine_res = await db.execute(machine_stmt)
         machine = machine_res.scalar_one_or_none()
 
         if not machine:
-            raise ObjectNotFoundError("Machine")
+            raise exceptions.ObjectNotFoundError("Machine")
 
         shelf_stmt = (
-            select(Shelf).filter(Shelf.id == shelf_id).options(joinedload(Shelf.rack))
+            sql.select(models.Shelf)
+            .filter(models.Shelf.id == shelf_id)
+            .options(orm.joinedload(models.Shelf.rack))
         )
         shelf_res = await db.execute(shelf_stmt)
         shelf = shelf_res.scalar_one_or_none()
 
         if not shelf:
-            raise ObjectNotFoundError("Target shelf")
+            raise exceptions.ObjectNotFoundError("Target shelf")
 
         await ctx.validate_team_access(shelf.rack.team_id)
 
@@ -452,7 +462,7 @@ async def mount_machine(
             }
         except Exception as e:
             await db.rollback()
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 f"Failed to mount machine '{machine.name} on "
                 f"shelf {s_name} (Rack: {r_name})'"
             ) from e
@@ -462,7 +472,7 @@ async def mount_machine(
 async def unmount_machine(
     machine_id: int,
     db: AsyncSession = Depends(get_async_db),
-    ctx: RequestContext = Depends(RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Removes a machine from its current shelf (sets shelf_id to NULL).
 
@@ -474,16 +484,16 @@ async def unmount_machine(
     ctx.require_user()
 
     stmt = (
-        select(Machines)
-        .filter(Machines.id == machine_id)
-        .options(joinedload(Machines.shelf).joinedload(Shelf.rack))
+        sql.select(models.Machines)
+        .filter(models.Machines.id == machine_id)
+        .options(orm.joinedload(models.Machines.shelf).joinedload(models.Shelf.rack))
     )
-    stmt = ctx.team_filter(stmt, Machines)
+    stmt = ctx.team_filter(stmt, models.Machines)
     result = await db.execute(stmt)
     machine = result.scalar_one_or_none()
 
     if not machine:
-        raise ObjectNotFoundError("Machine")
+        raise exceptions.ObjectNotFoundError("Machine")
 
     try:
         info = (
@@ -500,4 +510,6 @@ async def unmount_machine(
 
     except Exception as e:
         await db.rollback()
-        raise ValidationError(f"Failed to unmount machine '{machine.name}'") from e
+        raise exceptions.ValidationError(
+            f"Failed to unmount machine '{machine.name}'"
+        ) from e
