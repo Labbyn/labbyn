@@ -10,6 +10,7 @@ from .service import DashboardService
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
+
 @router.get(
     "",
     response_model=dashboard_schemas.DashboardResponse,

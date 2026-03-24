@@ -19,7 +19,9 @@ class AuthRepository:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def update_user_password(db: AsyncSession, db_user: models.User, hashed_password: str):
+    async def update_user_password(
+        db: AsyncSession, db_user: models.User, hashed_password: str
+    ):
         """Update a user's password and clear the mandatory change flag.
 
         This method updates the hashed_password field and sets force_password_change

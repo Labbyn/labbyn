@@ -11,6 +11,7 @@ from .service import DocumentationService
 
 router = APIRouter(prefix="/db/documentation", tags=["Documentation"])
 
+
 @router.get("", response_model=List[doc_schemas.DocumentationResponse])
 async def get_documentation(
     db: AsyncSession = Depends(get_async_db),
@@ -24,7 +25,12 @@ async def get_documentation(
     """
     return await DocumentationService(db, ctx).repo.get_all(db)
 
-@router.post("", response_model=doc_schemas.DocumentationResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "",
+    response_model=doc_schemas.DocumentationResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_documentation(
     documentation_data: doc_schemas.DocumentationCreate,
     db: AsyncSession = Depends(get_async_db),
@@ -38,6 +44,7 @@ async def create_documentation(
     :return: List of all documents.
     """
     return await DocumentationService(db, ctx).create_document(documentation_data)
+
 
 @router.get("/{documentation_id}", response_model=doc_schemas.DocumentationResponse)
 async def get_documentation_by_id(
@@ -54,6 +61,7 @@ async def get_documentation_by_id(
     """
     return await DocumentationService(db, ctx).get_doc_or_404(documentation_id)
 
+
 @router.patch("/{documentation_id}", response_model=doc_schemas.DocumentationResponse)
 async def update_documentation(
     documentation_id: int,
@@ -69,7 +77,10 @@ async def update_documentation(
     :param ctx: Request context for user and team info
     :return: Updated Document.
     """
-    return await DocumentationService(db, ctx).update_document(documentation_id, documentation_data)
+    return await DocumentationService(db, ctx).update_document(
+        documentation_id, documentation_data
+    )
+
 
 @router.delete("/{documentation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(

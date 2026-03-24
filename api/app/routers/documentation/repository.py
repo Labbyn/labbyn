@@ -19,12 +19,16 @@ class DocumentationRepository:
         :param db: Active asynchronous database session.
         :return: List of all documentation model instances.
         """
-        stmt = select(models.Documentation).options(joinedload(models.Documentation.tags))
+        stmt = select(models.Documentation).options(
+            joinedload(models.Documentation.tags)
+        )
         result = await db.execute(stmt)
         return result.unique().scalars().all()
 
     @staticmethod
-    async def get_by_id(db: AsyncSession, documentation_id: int) -> models.Documentation:
+    async def get_by_id(
+        db: AsyncSession, documentation_id: int
+    ) -> models.Documentation:
         """Fetch a specific document by its unique ID.
 
         :param db: Active asynchronous database session.
@@ -40,7 +44,9 @@ class DocumentationRepository:
         return result.unique().scalar_one_or_none()
 
     @staticmethod
-    async def get_tags_by_ids(db: AsyncSession, tag_ids: List[int]) -> List[models.Tags]:
+    async def get_tags_by_ids(
+        db: AsyncSession, tag_ids: List[int]
+    ) -> List[models.Tags]:
         """Retrieve tag objects based on a list of IDs.
 
         :param db: Active asynchronous database session.

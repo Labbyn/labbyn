@@ -1,8 +1,8 @@
 from .prometheus_router import router as prometheus
 from api.app.routers.category.router import router as category
-from .database_inventory_router import router as inventory
+from api.app.routers.inventory.router import router as inventory
 from .database_maps_router import router as maps
-from .database_machine_router import router as machine
+from api.app.routers.machine.router import router as machine
 from .database_metadata_router import router as metadata
 from .database_rental_router import router as rental
 from .database_room_router import router as room

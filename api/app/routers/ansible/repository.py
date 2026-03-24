@@ -2,10 +2,11 @@ from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import models
 
+
 class AnsibleRepository:
     """Repository for handling database operations related to Ansible discovery and machines.
-    
-    This class provides static methods to interact with Machines, Rooms, Metadata, 
+
+    This class provides static methods to interact with Machines, Rooms, Metadata,
     and hardware components (CPUs, Disks) using SQLAlchemy.
     """
 
@@ -20,8 +21,7 @@ class AnsibleRepository:
         """
         res = await db.execute(
             sql.select(models.Rooms).filter(
-                models.Rooms.name == name,
-                models.Rooms.team_id == team_id
+                models.Rooms.name == name, models.Rooms.team_id == team_id
             )
         )
         return res.scalar_one_or_none()
@@ -69,9 +69,9 @@ class AnsibleRepository:
     @staticmethod
     async def sync_hardware(db: AsyncSession, machine_id: int, specs: dict):
         """Synchronize CPUs and Disks for a machine.
-        
-        This method performs a 'delete-and-insert' strategy: it removes all existing 
-        CPU and Disk records for the given machine_id and replaces them with new 
+
+        This method performs a 'delete-and-insert' strategy: it removes all existing
+        CPU and Disk records for the given machine_id and replaces them with new
         data from the provided specs dictionary.
 
         :param db: Active asynchronous database session.

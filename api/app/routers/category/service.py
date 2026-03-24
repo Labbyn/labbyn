@@ -7,6 +7,7 @@ from app.db import models
 from app.utils import redis_service
 from .repository import CategoryRepository
 
+
 class CategoryService:
     """Service for managing Category business logic."""
 
@@ -33,7 +34,6 @@ class CategoryService:
             raise exceptions.ObjectNotFoundError("Category")
         return cat
 
-
     async def create_category(self, category_data):
         """Create a new category with admin requirement.
 
@@ -56,7 +56,9 @@ class CategoryService:
             )
         except Exception as e:
             await self.db.rollback()
-            raise exceptions.ValidationError(f"Could not create category: '{category_data.name}'") from e
+            raise exceptions.ValidationError(
+                f"Could not create category: '{category_data.name}'"
+            ) from e
 
     async def get_categories(self):
         """Fetch all categories for authorized users."""
@@ -96,7 +98,9 @@ class CategoryService:
                 )
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Failed to update category '{old_name}'") from e
+                raise exceptions.ValidationError(
+                    f"Failed to update category '{old_name}'"
+                ) from e
 
     async def delete_category(self, cat_id: int):
         """Delete a category with locking mechanism.
@@ -115,4 +119,6 @@ class CategoryService:
                 await self.db.commit()
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete category '{cat.name}'") from e
+                raise exceptions.ValidationError(
+                    f"Could not delete category '{cat.name}'"
+                ) from e

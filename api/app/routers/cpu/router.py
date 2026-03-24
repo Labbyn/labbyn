@@ -11,7 +11,10 @@ from .service import CPUService
 
 router = APIRouter(prefix="/db/cpus", tags=["CPUs"])
 
-@router.post("", response_model=cpu_schemas.CPUResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=cpu_schemas.CPUResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_cpu(
     cpu_data: cpu_schemas.CPUCreate,
     db: AsyncSession = Depends(get_async_db),
@@ -26,6 +29,7 @@ async def create_cpu(
     """
     return await CPUService(db, ctx).create_cpu(cpu_data)
 
+
 @router.get("", response_model=List[cpu_schemas.CPUResponse])
 async def get_cpus(
     db: AsyncSession = Depends(get_async_db),
@@ -38,6 +42,7 @@ async def get_cpus(
     :return: List of all CPUs.
     """
     return await CPUService(db, ctx).repo.get_all(db, ctx)
+
 
 @router.get("/{cpu_id}", response_model=cpu_schemas.CPUResponse)
 async def get_cpu_by_id(
@@ -55,6 +60,7 @@ async def get_cpu_by_id(
 
     return await CPUService(db, ctx).get_cpu_or_404(cpu_id)
 
+
 @router.patch("/{cpu_id}", response_model=cpu_schemas.CPUResponse)
 async def update_cpu(
     cpu_id: int,
@@ -71,6 +77,7 @@ async def update_cpu(
     :return: Updated CPU.
     """
     return await CPUService(db, ctx).update_cpu(cpu_id, cpu_data)
+
 
 @router.delete("/{cpu_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_cpu(

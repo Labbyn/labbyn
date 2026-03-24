@@ -1,4 +1,5 @@
 """Ansible playbook execution module."""
+
 import asyncio
 import json
 import os
@@ -54,9 +55,7 @@ class AnsibleExecutor:
             #  need to change discovery command or test it with platform with 2 CPUs,
             #  for now i leave it hardcoded
             cpu_info = info.get("cpu", {})
-            cpu_str = (
-                f"{cpu_info.get('name', 'Unknown')} ({cpu_info.get('cores', '?')} cores)"
-            )
+            cpu_str = f"{cpu_info.get('name', 'Unknown')} ({cpu_info.get('cores', '?')} cores)"
             cpu_list = [{"name": cpu_str}]
 
             ram_info = info.get("ram_memory", {})
@@ -98,7 +97,9 @@ class AnsibleExecutor:
             ) from e
 
     @classmethod
-    async def run_playbook_task(cls, playbook_enum, host: str | list, extra_vars: dict) -> dict:
+    async def run_playbook_task(
+        cls, playbook_enum, host: str | list, extra_vars: dict
+    ) -> dict:
         """Helper function to run an Ansible playbook dynamically.
 
         Runs the specified playbook using ansible_runner in a separate thread.

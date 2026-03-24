@@ -13,6 +13,7 @@ from .service import AnsibleService
 
 router = APIRouter(prefix="/ansible", tags=["Ansible"])
 
+
 @router.post("/create_user")
 async def create_ansible_user(
     request: service_schemas.HostRequest,
@@ -28,10 +29,15 @@ async def create_ansible_user(
     try:
         service = AnsibleService(db, ctx)
         return await service.executor.run_playbook_task(
-            service_schemas.AnsiblePlaybook.create_user, request.host, request.extra_vars
+            service_schemas.AnsiblePlaybook.create_user,
+            request.host,
+            request.extra_vars,
         )
     except Exception as e:
-        raise exceptions.ExternalServiceError(f"Ansible (User Creation: {request.host}) failed", str(e))
+        raise exceptions.ExternalServiceError(
+            f"Ansible (User Creation: {request.host}) failed", str(e)
+        )
+
 
 @router.post("/discovery")
 async def discover_hosts(
@@ -41,12 +47,13 @@ async def discover_hosts(
 ):
     """Discover hosts not connected to database.
 
-     :param request: DiscoveryRequest containing the host IP or hostname
-     :param db: Active database session
-     :param ctx: Request context for user and team info
-     :return: Success or error message.
-     """
+    :param request: DiscoveryRequest containing the host IP or hostname
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Success or error message.
+    """
     return await AnsibleService(db, ctx).discover_hosts_workflow(request)
+
 
 @router.post("/machine/{machine_id}/refresh")
 async def refresh_machine_hardware(
@@ -65,6 +72,7 @@ async def refresh_machine_hardware(
     """
     return await AnsibleService(db, ctx).refresh_machine(machine_id, request)
 
+
 @router.post("/machine/{machine_id}/cleanup")
 async def cleanup_machine(
     machine_id: int,
@@ -74,10 +82,10 @@ async def cleanup_machine(
 ):
     """Delete Ansible/Node exporters from machine.
 
-       :param machine_id: Machine ID
-       :param request: DiscoveryRequest containing the host IP or hostname
-       :param db: Active database session
-       :param ctx: Request context for user and team info
-       :return: Success or error message.
-       """
+    :param machine_id: Machine ID
+    :param request: DiscoveryRequest containing the host IP or hostname
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Success or error message.
+    """
     return await AnsibleService(db, ctx).cleanup_machine(machine_id, request)

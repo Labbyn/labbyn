@@ -44,7 +44,9 @@ class DashboardService:
                 "type": "Room",
                 "id": r.name,
                 "location": f"/labs/{r.id}",
-                "tags": [f"Room type: {r.room_type}"] if r.room_type is not None else [],
+                "tags": (
+                    [f"Room type: {r.room_type}"] if r.room_type is not None else []
+                ),
             }
             for r in data["rooms"]
         ]
@@ -54,8 +56,11 @@ class DashboardService:
                 "type": "Inventory",
                 "id": i.name,
                 "location": f"/inventory/{i.id}",
-                "tags": [f"Category: {i.category_id}", f"Quantity: {i.quantity}"]
-                if i.category_id is not None and i.quantity is not None else [],
+                "tags": (
+                    [f"Category: {i.category_id}", f"Quantity: {i.quantity}"]
+                    if i.category_id is not None and i.quantity is not None
+                    else []
+                ),
             }
             for i in data["inventories"]
         ]
@@ -75,8 +80,11 @@ class DashboardService:
                 "type": "History",
                 "id": h.action,
                 "location": f"/history/{h.id}",
-                "tags": [f"Entity type: {h.entity_type}", f"Can rollback: {h.can_rollback}"]
-                if h.entity_type is not None else [],
+                "tags": (
+                    [f"Entity type: {h.entity_type}", f"Can rollback: {h.can_rollback}"]
+                    if h.entity_type is not None
+                    else []
+                ),
             }
             for h in data["histories"]
         ]

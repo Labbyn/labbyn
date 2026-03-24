@@ -5,6 +5,7 @@ from app.db import models
 from app.utils import redis_service
 from .repository import DiskRepository
 
+
 class DiskService:
     """Service for managing Disk storage units and their machine assignments."""
 
@@ -42,9 +43,13 @@ class DiskService:
         self.ctx.require_user()
 
         if not self.ctx.is_admin and not getattr(disk_data, "machine_id", None):
-            raise exceptions.AccessDeniedError("Non-admin users must attach disks to a specific machine.")
+            raise exceptions.AccessDeniedError(
+                "Non-admin users must attach disks to a specific machine."
+            )
 
-        machine = await self.repo.get_machine_for_disk(self.db, disk_data.machine_id, self.ctx)
+        machine = await self.repo.get_machine_for_disk(
+            self.db, disk_data.machine_id, self.ctx
+        )
         if not machine:
             raise exceptions.ObjectNotFoundError("Machine for this disk")
 
@@ -56,7 +61,9 @@ class DiskService:
             return obj
         except Exception as e:
             await self.db.rollback()
-            raise exceptions.ValidationError(f"Failed to add disk '{disk_data.name}' to machine '{machine.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to add disk '{disk_data.name}' to machine '{machine.name}'"
+            ) from e
 
     async def update_disk(self, disk_id: int, disk_data):
         """Update disk data with record locking.
@@ -76,7 +83,9 @@ class DiskService:
                 return disk
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Update failed for disk '{disk.name}'") from e
+                raise exceptions.ValidationError(
+                    f"Update failed for disk '{disk.name}'"
+                ) from e
 
     async def delete_disk(self, disk_id: int):
         """Delete disk unit from a machine.
@@ -91,4 +100,6 @@ class DiskService:
                 await self.db.commit()
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete disk '{disk.name}'") from e
+                raise exceptions.ValidationError(
+                    f"Could not delete disk '{disk.name}'"
+                ) from e

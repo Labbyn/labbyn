@@ -28,8 +28,10 @@ class HistoryService:
         """
         state = log.after_state or log.before_state
         if state:
-            if "name" in state: return state["name"]
-            if "login" in state: return state["login"]
+            if "name" in state:
+                return state["name"]
+            if "login" in state:
+                return state["login"]
 
         model_class = self.repo.get_model_class(log.entity_type)
         if model_class:
@@ -37,7 +39,9 @@ class HistoryService:
             result = await self.db.execute(stmt)
             entity = result.scalar_one_or_none()
             if entity:
-                return getattr(entity, "name", getattr(entity, "login", f"ID: {log.entity_id}"))
+                return getattr(
+                    entity, "name", getattr(entity, "login", f"ID: {log.entity_id}")
+                )
 
         return f"{log.entity_type.value} (ID: {log.entity_id})"
 
@@ -64,12 +68,22 @@ class HistoryService:
         results = []
         for log in logs:
             readable_name = await self._resolve_entity_name(log)
-            results.append({
-                **log.__dict__,
-                "entity_name": readable_name,
-                "action": log.action.value if hasattr(log.action, "value") else str(log.action),
-                "entity_type": log.entity_type.value if hasattr(log.entity_type, "value") else str(log.entity_type),
-            })
+            results.append(
+                {
+                    **log.__dict__,
+                    "entity_name": readable_name,
+                    "action": (
+                        log.action.value
+                        if hasattr(log.action, "value")
+                        else str(log.action)
+                    ),
+                    "entity_type": (
+                        log.entity_type.value
+                        if hasattr(log.entity_type, "value")
+                        else str(log.entity_type)
+                    ),
+                }
+            )
         return results
 
     async def rollback_entry(self, history_id: int):

@@ -7,6 +7,7 @@ from app.db import models
 from app.utils import redis_service
 from .repository import DocumentationRepository
 
+
 class DocumentationService:
     """Service for managing Documentation articles and their tag associations."""
 
@@ -45,7 +46,7 @@ class DocumentationService:
         try:
             obj = models.Documentation(
                 **doc_data.model_dump(exclude={"tag_ids"}),
-                author=self.ctx.current_user.login
+                author=self.ctx.current_user.login,
             )
 
             if tag_ids:
@@ -58,10 +59,14 @@ class DocumentationService:
 
         except IntegrityError:
             await self.db.rollback()
-            raise exceptions.ConflictError(message=f"Document with title '{doc_data.title}' exists.")
+            raise exceptions.ConflictError(
+                message=f"Document with title '{doc_data.title}' exists."
+            )
         except Exception as e:
             await self.db.rollback()
-            raise exceptions.ValidationError(f"Could not create document: {doc_data.title}") from e
+            raise exceptions.ValidationError(
+                f"Could not create document: {doc_data.title}"
+            ) from e
 
     async def update_document(self, documentation_id: int, doc_data):
         """Update an existing document and its tags with locking.
@@ -91,10 +96,14 @@ class DocumentationService:
 
             except IntegrityError:
                 await self.db.rollback()
-                raise exceptions.ConflictError(message=f"Title '{doc_data.title or old_title}' is taken.")
+                raise exceptions.ConflictError(
+                    message=f"Title '{doc_data.title or old_title}' is taken."
+                )
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Failed to update document: {old_title}") from e
+                raise exceptions.ValidationError(
+                    f"Failed to update document: {old_title}"
+                ) from e
 
     async def delete_document(self, documentation_id: int):
         """Delete a document with locking.
@@ -109,4 +118,6 @@ class DocumentationService:
                 await self.db.commit()
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete: {doc.title}") from e
+                raise exceptions.ValidationError(
+                    f"Could not delete: {doc.title}"
+                ) from e

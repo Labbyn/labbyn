@@ -40,7 +40,9 @@ class CPURepository:
         return result.scalar_one_or_none()
 
     @staticmethod
-    async def get_machine_for_cpu(db: AsyncSession, machine_id: int, ctx) -> models.Machines:
+    async def get_machine_for_cpu(
+        db: AsyncSession, machine_id: int, ctx
+    ) -> models.Machines:
         """Verify if the target machine exists and is accessible to the user.
 
         :param db: Active asynchronous database session.

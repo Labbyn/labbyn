@@ -9,7 +9,10 @@ from .service import DiskService
 
 router = APIRouter(prefix="/db/disks", tags=["Disks"])
 
-@router.post("", response_model=disk_schemas.DiskResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "", response_model=disk_schemas.DiskResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_disk(
     disk_data: disk_schemas.DiskCreate,
     db: AsyncSession = Depends(get_async_db),
@@ -24,6 +27,7 @@ async def create_disk(
     """
     return await DiskService(db, ctx).create_disk(disk_data)
 
+
 @router.get("", response_model=List[disk_schemas.DiskResponse])
 async def get_disks(
     db: AsyncSession = Depends(get_async_db),
@@ -36,6 +40,7 @@ async def get_disks(
     :return: List of all Disks.
     """
     return await DiskService(db, ctx).repo.get_all(db, ctx)
+
 
 @router.get("/{disk_id}", response_model=disk_schemas.DiskResponse)
 async def get_disk_by_id(
@@ -51,6 +56,7 @@ async def get_disk_by_id(
     :return: Disk object.
     """
     return await DiskService(db, ctx).get_disk_or_404(disk_id)
+
 
 @router.patch("/{disk_id}", response_model=disk_schemas.DiskResponse)
 async def update_disk(
@@ -68,6 +74,7 @@ async def update_disk(
     :return: Updated disk.
     """
     return await DiskService(db, ctx).update_disk(disk_id, disk_data)
+
 
 @router.delete("/{disk_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_disk(

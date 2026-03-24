@@ -1,7 +1,9 @@
 """Authentication Service Module."""
+
 from app.core import exceptions
 from app.utils import security
 from .repository import AuthRepository
+
 
 class AuthService:
     def __init__(self, db, user):

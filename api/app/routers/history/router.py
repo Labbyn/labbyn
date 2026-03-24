@@ -10,6 +10,7 @@ from .service import HistoryService
 
 router = APIRouter(prefix="/db/history", tags=["History"])
 
+
 @router.get("", response_model=List[history_schemas.HistoryEnhancedResponse])
 async def get_history_logs(
     limit: int = 200,
@@ -25,6 +26,7 @@ async def get_history_logs(
     """
     return await HistoryService(db, ctx).get_enhanced_logs(limit)
 
+
 @router.get("/{history_id}", response_model=history_schemas.HistoryEnhancedResponse)
 async def get_history_by_id(
     history_id: int,
@@ -39,6 +41,7 @@ async def get_history_by_id(
     """
 
     return await HistoryService(db, ctx).get_log_or_404(history_id)
+
 
 @router.post("/{history_id}/rollback")
 async def rollback_history(

@@ -44,9 +44,13 @@ class CPUService:
         self.ctx.require_user()
 
         if not self.ctx.is_admin and not getattr(cpu_data, "machine_id", None):
-            raise exceptions.AccessDeniedError("Non-admin users must attach CPUs to a specific machine.")
+            raise exceptions.AccessDeniedError(
+                "Non-admin users must attach CPUs to a specific machine."
+            )
 
-        machine = await self.repo.get_machine_for_cpu(self.db, cpu_data.machine_id, self.ctx)
+        machine = await self.repo.get_machine_for_cpu(
+            self.db, cpu_data.machine_id, self.ctx
+        )
         if not machine:
             raise exceptions.ObjectNotFoundError("Machine for this CPU")
 
@@ -58,7 +62,9 @@ class CPUService:
             return obj
         except Exception as e:
             await self.db.rollback()
-            raise exceptions.ValidationError(f"Failed to add CPU '{cpu_data.name}' to machine '{machine.name}'") from e
+            raise exceptions.ValidationError(
+                f"Failed to add CPU '{cpu_data.name}' to machine '{machine.name}'"
+            ) from e
 
     async def update_cpu(self, cpu_id: int, cpu_data):
         """Update CPU data with record locking.
@@ -77,7 +83,9 @@ class CPUService:
                 return cpu
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Update failed for CPU '{cpu.name}'") from e
+                raise exceptions.ValidationError(
+                    f"Update failed for CPU '{cpu.name}'"
+                ) from e
 
     async def delete_cpu(self, cpu_id: int):
         """Delete CPU unit from a machine.
@@ -92,4 +100,6 @@ class CPUService:
                 await self.db.commit()
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete CPU '{cpu.name}'") from e
+                raise exceptions.ValidationError(
+                    f"Could not delete CPU '{cpu.name}'"
+                ) from e

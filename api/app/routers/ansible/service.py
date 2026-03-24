@@ -1,4 +1,5 @@
 """Ansible Discovery Service."""
+
 from datetime import datetime
 from app.db import models
 from app.core import exceptions
@@ -6,6 +7,7 @@ from app.utils import redis_service
 from app.schemas import service_schemas
 from .executor import AnsibleExecutor
 from .repository import AnsibleRepository
+
 
 class AnsibleService:
     """Ansible Discovery Service class.
@@ -51,7 +53,9 @@ class AnsibleService:
 
         try:
             await self.executor.run_playbook_task(
-                service_schemas.AnsiblePlaybook.scan_platform, request.hosts, request.extra_vars
+                service_schemas.AnsiblePlaybook.scan_platform,
+                request.hosts,
+                request.extra_vars,
             )
         except Exception as e:
             hosts_str = ", ".join(request.hosts)
@@ -60,10 +64,14 @@ class AnsibleService:
             ) from e
 
         results = []
-        default_room = await self.repo.get_room_by_name_and_team(self.db, "virtual", target_team_id)
+        default_room = await self.repo.get_room_by_name_and_team(
+            self.db, "virtual", target_team_id
+        )
 
         if not default_room:
-            default_room = models.Rooms(name="virtual", room_type="virtual", team_id=target_team_id)
+            default_room = models.Rooms(
+                name="virtual", room_type="virtual", team_id=target_team_id
+            )
             self.db.add(default_room)
             await self.db.commit()
             await self.db.refresh(default_room)
@@ -79,7 +87,9 @@ class AnsibleService:
 
                     await self.repo.sync_hardware(self.db, machine.id, specs)
 
-                    meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
+                    meta = await self.repo.get_metadata_by_id(
+                        self.db, machine.metadata_id
+                    )
                     if meta:
                         meta.ansible_access = True
                         meta.agent_prometheus = specs["agent_prometheus"]
@@ -118,7 +128,9 @@ class AnsibleService:
         await self.db.commit()
         return {"summary": results}
 
-    async def refresh_machine(self, machine_id: int, request: service_schemas.HostRequest):
+    async def refresh_machine(
+        self, machine_id: int, request: service_schemas.HostRequest
+    ):
         """Refresh hardware information for a specific machine.
 
         Triggers an Ansible scan for a single host and updates its hardware specs in DB.
@@ -129,11 +141,13 @@ class AnsibleService:
         """
         machine = await self.repo.get_machine_by_id(self.db, machine_id, self.ctx)
         if not machine:
-             raise exceptions.ObjectNotFoundError("Machine")
+            raise exceptions.ObjectNotFoundError("Machine")
 
         try:
             await self.executor.run_playbook_task(
-                service_schemas.AnsiblePlaybook.scan_platform, [machine.name], request.extra_vars
+                service_schemas.AnsiblePlaybook.scan_platform,
+                [machine.name],
+                request.extra_vars,
             )
             specs = self.executor.parse_platform_report(machine.name)
             for field in ["os", "ram", "mac_address", "ip_address", "name"]:
@@ -148,12 +162,19 @@ class AnsibleService:
                 meta.last_update = datetime.now()
 
             await self.db.commit()
-            return {"message": f"Hardware for {machine.name} refreshed successfully", "data": specs}
+            return {
+                "message": f"Hardware for {machine.name} refreshed successfully",
+                "data": specs,
+            }
         except Exception as e:
             await self.db.rollback()
-            raise exceptions.ExternalServiceError(f"Hardware Refresh for {machine.name} failed", str(e))
+            raise exceptions.ExternalServiceError(
+                f"Hardware Refresh for {machine.name} failed", str(e)
+            )
 
-    async def cleanup_machine(self, machine_id: int, request: service_schemas.HostRequest):
+    async def cleanup_machine(
+        self, machine_id: int, request: service_schemas.HostRequest
+    ):
         """Remove Ansible user and Prometheus agent from a machine.
 
         Uses Redis lock to prevent concurrent cleanup operations on the same host.
@@ -165,13 +186,17 @@ class AnsibleService:
         async with redis_service.acquire_lock(f"machine_lock:{machine_id}"):
             machine = await self.repo.get_machine_by_id(self.db, machine_id, self.ctx)
             if not machine:
-                 raise exceptions.ObjectNotFoundError("Machine")
+                raise exceptions.ObjectNotFoundError("Machine")
             try:
                 agent_res = await self.executor.run_playbook_task(
-                    service_schemas.AnsiblePlaybook.delete_agent, machine.name, request.extra_vars
+                    service_schemas.AnsiblePlaybook.delete_agent,
+                    machine.name,
+                    request.extra_vars,
                 )
                 ansible_res = await self.executor.run_playbook_task(
-                    service_schemas.AnsiblePlaybook.delete_ansible, machine.name, request.extra_vars
+                    service_schemas.AnsiblePlaybook.delete_ansible,
+                    machine.name,
+                    request.extra_vars,
                 )
 
                 meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
@@ -182,7 +207,13 @@ class AnsibleService:
                     meta.last_update = datetime.now()
 
                 await self.db.commit()
-                return {"message": f"Cleanup for {machine.name} completed", "agent": agent_res, "ansible": ansible_res}
+                return {
+                    "message": f"Cleanup for {machine.name} completed",
+                    "agent": agent_res,
+                    "ansible": ansible_res,
+                }
             except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ExternalServiceError(f"Ansible Cleanup for {machine.name} failed", str(e))
+                raise exceptions.ExternalServiceError(
+                    f"Ansible Cleanup for {machine.name} failed", str(e)
+                )

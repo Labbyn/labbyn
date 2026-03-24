@@ -11,6 +11,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 current_user = auth_config.fastapi_users.current_user(active=True)
 
+
 @router.post("/setup-password")
 async def setup_first_password(
     data: user_schemas.FirstChangePasswordRequest,
