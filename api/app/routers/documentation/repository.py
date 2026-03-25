@@ -3,7 +3,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import models
-from app.core import exceptions
 
 
 class DocumentationRepository:

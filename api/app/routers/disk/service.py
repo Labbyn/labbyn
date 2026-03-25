@@ -27,6 +27,7 @@ class DiskService:
         :return: Disk model instance.
         :raises ObjectNotFoundError: If disk is not found or access is denied.
         """
+        self.ctx.require_user()
         disk = await self.repo.get_by_id(self.db, disk_id, self.ctx)
         if not disk:
             raise exceptions.ObjectNotFoundError("Disk")

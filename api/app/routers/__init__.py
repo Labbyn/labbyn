@@ -1,25 +1,30 @@
-from .prometheus_router import router as prometheus
-from api.app.routers.category.router import router as category
-from api.app.routers.inventory.router import router as inventory
-from .database_maps_router import router as maps
-from api.app.routers.machine.router import router as machine
-from .database_metadata_router import router as metadata
-from .database_rental_router import router as rental
-from .database_room_router import router as room
-from .database_team_router import router as team
-from .database_user_router import router as user
-from api.app.routers.history.router import router as history
-from api.app.routers.ansible.router import router as ansible
-from api.app.routers.dashboard.router import router as dashboard
-from api.app.routers.authentication.router import router as auth
-from api.app.routers.documentation.router import router as documentation
-from .database_tags_router import router as tags
-from .subpage_history_router import router as history_sub
-from .database_rack_router import router as rack
-from .database_shelf_router import router as shelf
-from api.app.routers.cpu.router import router as cpus
-from api.app.routers.disk.router import router as disks
-from .database_search_router import router as search
+# api/app/routers/__init__.py
+
+from .prometheus.router import router as prometheus
+from .category.router import router as category
+from .inventory.router import router as inventory
+from .map.router import router as maps
+from .machine.router import router as machine
+from .metadata.router import router as metadata
+from .rental.router import router as rental
+from .room.router import router as room
+from .team.router import router as team
+from .user.router import router as user
+from .history.router import router as history
+from .history.sub_router import router as history_sub
+from .ansible.router import router as ansible
+from .dashboard.router import router as dashboard
+from .authentication.router import router as auth
+from .documentation.router import router as documentation
+from .tags.router import router as tags
+from .rack.router import router as rack
+from .shelf.router import router as shelf
+from .cpu.router import router as cpus
+from .disk.router import router as disks
+from .search.router import router as search
+
+# Eksportujemy też prometheus_router dla workera w lifespan
+prometheus_router = prometheus
 
 __all__ = [
     "prometheus",
@@ -33,15 +38,16 @@ __all__ = [
     "team",
     "user",
     "history",
+    "history_sub",
     "ansible",
     "dashboard",
     "auth",
     "documentation",
     "tags",
-    "history_sub",
     "rack",
     "shelf",
     "cpus",
     "disks",
     "search",
+    "prometheus_router",
 ]

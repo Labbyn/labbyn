@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict, Any
+from typing import Dict, Any
 from sqlalchemy import sql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +33,7 @@ class MachineService:
         :return: Machine model object.
         :raises ObjectNotFoundError: If the machine does not exist or access is denied.
         """
+        self.ctx.require_user()
         machine = await self.repo.get_by_id(
             self.db, machine_id, self.ctx, full_detail=full_detail
         )

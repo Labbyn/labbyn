@@ -1,6 +1,5 @@
 """Router for Inventory Database API CRUD."""
 
-from datetime import datetime
 from typing import List
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -30,6 +30,7 @@ class InventoryService:
         :return: Inventory item.
         :raises ObjectNotFoundError: If not found.
         """
+        self.ctx.require_user()
         item = await self.repo.get_by_id(self.db, item_id, self.ctx, detailed=detailed)
         if not item:
             raise exceptions.ObjectNotFoundError("Inventory item")

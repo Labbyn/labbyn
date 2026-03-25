@@ -27,6 +27,7 @@ class DocumentationService:
 
         :return: The fetched document.
         """
+        self.ctx.require_user()
         doc = await self.repo.get_by_id(self.db, documentation_id)
         if not doc:
             raise exceptions.ObjectNotFoundError("Document")

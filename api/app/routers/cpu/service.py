@@ -30,6 +30,7 @@ class CPUService:
         :param cpu_id: Unique ID of the CPU to find.
         :return: CPU model instance.
         """
+        self.ctx.require_user()
         cpu = await self.repo.get_by_id(self.db, cpu_id, self.ctx)
         if not cpu:
             raise exceptions.ObjectNotFoundError("CPU")

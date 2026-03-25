@@ -29,6 +29,7 @@ class CategoryService:
         :return: Disk model instance.
         :raises ObjectNotFoundError: If disk is not found or access is denied.
         """
+        self.ctx.require_admin()
         cat = await self.repo.get_by_id(self.db, cat_id)
         if not cat:
             raise exceptions.ObjectNotFoundError("Category")
