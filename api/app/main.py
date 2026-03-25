@@ -7,25 +7,21 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routers import database_user_router
 
-# pylint: disable=unused-import
-import app.db.listeners
 from app import routers
 from app.core import handlers
 from app.auth import auth_config
 from app.database import AsyncSessionLocal
 from app.schemas import user_schemas
 from app.utils import database_service
+from app.routers.prometheus.executor import PrometheusExecutor
 
 
 @asynccontextmanager
-async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
+async def lifespan(fast_api_app: FastAPI):
     """Application lifespan context manager.
 
-    Starts background tasks for fetching Prometheus metrics.
-    :param app: FastAPI application instance
-    :return: None
+    Starts background tasks for fetching Prometheus metrics and initializes DB.
     """
     db = AsyncSessionLocal()
     try:
@@ -34,12 +30,13 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
         await database_service.init_document(db)
     finally:
         await db.close()
-    status_task = asyncio.create_task(routers.prometheus_router.status_worker())
-    metrics_task = asyncio.create_task(routers.prometheus_router.metrics_worker())
+
+    status_task = asyncio.create_task(PrometheusExecutor.status_worker())
+    metrics_task = asyncio.create_task(PrometheusExecutor.metrics_worker())
+
     try:
         yield
     finally:
-        await db.close()
         status_task.cancel()
         metrics_task.cancel()
         await asyncio.gather(status_task, metrics_task, return_exceptions=True)
@@ -48,16 +45,16 @@ async def lifespan(fast_api_app: FastAPI):  # pylint: disable=unused-argument
 app = FastAPI(title="Labbyn API", lifespan=lifespan)
 handlers.setup_exception_handlers(app)
 
-# Mount static files for user avatars
-if not os.path.exists(database_user_router.AVATAR_DIR):
-    os.makedirs(database_user_router.AVATAR_DIR, exist_ok=True)
+avatar_path = getattr(routers.user, "AVATAR_DIR", "static/avatars")
+if not os.path.exists(avatar_path):
+    os.makedirs(avatar_path, exist_ok=True)
+
 app.mount(
     "/static/avatars",
-    StaticFiles(directory=routers.database_user_router.AVATAR_DIR),
+    StaticFiles(directory=avatar_path),
     name="avatars",
 )
 
-# Configure CORS middleware temporarily for local development
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -71,7 +68,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# FastAPI Users routers
 app.include_router(
     auth_config.fastapi_users.get_auth_router(auth_config.auth_backend),
     prefix="/auth",
@@ -85,8 +81,7 @@ app.include_router(
     tags=["users"],
 )
 
-# Custom application routers
-all_routers = [
+all_app_routers = [
     routers.auth,
     routers.user,
     routers.team,
@@ -111,5 +106,5 @@ all_routers = [
     routers.search,
 ]
 
-for r in all_routers:
+for r in all_app_routers:
     app.include_router(r)
