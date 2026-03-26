@@ -15,7 +15,8 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
-    func, Double,
+    func,
+    Double,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
@@ -52,6 +53,7 @@ class ActionType(PyEnum):
     UPDATE = "update"
     DELETE = "delete"
 
+
 class Rack(Base):
     """Rack model representing racks in the system."""
 
@@ -69,7 +71,10 @@ class Rack(Base):
     room = relationship("Rooms", back_populates="racks")
     shelves = relationship("Shelf", back_populates="rack", cascade="all, delete-orphan")
     tags = relationship("Tags", secondary="tags_racks", back_populates="racks")
-    equipment = relationship("Equipment", back_populates="rack", cascade="all, delete-orphan")
+    equipment = relationship(
+        "Equipment", back_populates="rack", cascade="all, delete-orphan"
+    )
+
 
 class Shelf(Base):
     """Shelf model representing shelves in the system."""
@@ -108,7 +113,10 @@ class Rooms(Base):
     team = relationship("Teams", back_populates="rooms")
     racks = relationship("Rack", back_populates="room")
     tags = relationship("Tags", secondary="tags_rooms", back_populates="rooms")
-    map = relationship("Map", back_populates="room", uselist=False, cascade="all, delete-orphan")
+    map = relationship(
+        "Map", back_populates="room", uselist=False, cascade="all, delete-orphan"
+    )
+
 
 class CPUs(Base):
     """CPUs model representing CPUs models attached to machine."""
@@ -400,21 +408,33 @@ class Documentation(Base):
         "Tags", secondary="tags_documentation", back_populates="documentation"
     )
 
+
 class Map(Base):
     """Map model representing maps in the system."""
+
     __tablename__ = "maps"
 
     id = Column(Integer, primary_key=True)
     room_id = Column(Integer, ForeignKey("rooms.id"), unique=True)
 
     room = relationship("Rooms", back_populates="map")
-    nodes = relationship("WallNodes", back_populates="map", cascade="all, delete-orphan")
-    equipment = relationship("Equipment", back_populates="map", cascade="all, delete-orphan")
-    segments = relationship("WallSegments", back_populates="map", cascade="all, delete-orphan")
-    labels = relationship("MapLabels", back_populates="map", cascade="all, delete-orphan")
+    nodes = relationship(
+        "WallNodes", back_populates="map", cascade="all, delete-orphan"
+    )
+    equipment = relationship(
+        "Equipment", back_populates="map", cascade="all, delete-orphan"
+    )
+    segments = relationship(
+        "WallSegments", back_populates="map", cascade="all, delete-orphan"
+    )
+    labels = relationship(
+        "MapLabels", back_populates="map", cascade="all, delete-orphan"
+    )
+
 
 class Equipment(Base):
     """Equipment model representing any physical object on the map in the system."""
+
     __tablename__ = "equipment"
 
     id = Column(Integer, primary_key=True)
@@ -431,8 +451,10 @@ class Equipment(Base):
     rack = relationship("Rack", back_populates="equipment")
     map = relationship("Map", back_populates="equipment")
 
+
 class MapLabels(Base):
     """MapLabels model representing maps in the system."""
+
     __tablename__ = "map_labels"
     id = Column(Integer, primary_key=True)
     map_id = Column(Integer, ForeignKey("maps.id"), nullable=False)
@@ -443,8 +465,10 @@ class MapLabels(Base):
 
     map = relationship("Map", back_populates="labels")
 
+
 class WallNodes(Base):
     """WallNodes model representing nodes between walls in the system."""
+
     __tablename__ = "walls_nodes"
 
     id = Column(Integer, primary_key=True)
@@ -453,21 +477,24 @@ class WallNodes(Base):
     x = Column(Double, nullable=False)
     y = Column(Double, nullable=False)
 
-    map =relationship("Map", back_populates="nodes")
+    map = relationship("Map", back_populates="nodes")
+
 
 class WallSegments(Base):
     """WallSegments model representing lines connecting two nodes to form walls."""
+
     __tablename__ = "wall_segments"
 
     id = Column(Integer, primary_key=True)
     map_id = Column(Integer, ForeignKey("maps.id"), nullable=False)
     name = Column(String(50), nullable=True)
-    node1_id=Column(Integer, ForeignKey("walls_nodes.id"))
-    node2_id=Column(Integer, ForeignKey("walls_nodes.id"))
+    node1_id = Column(Integer, ForeignKey("walls_nodes.id"))
+    node2_id = Column(Integer, ForeignKey("walls_nodes.id"))
     node1_name = Column(String(100), nullable=True)
     node2_name = Column(String(100), nullable=True)
 
     map = relationship("Map", back_populates="segments")
+
 
 class TagsRooms(Base):
     """TagsRacks model representing association between rooms and tags."""

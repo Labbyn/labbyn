@@ -1,7 +1,14 @@
 from typing import List, Optional
 
-from fastapi import (APIRouter, Depends, Query, Response, WebSocket,
-                     WebSocketDisconnect, status)
+from fastapi import (
+    APIRouter,
+    Depends,
+    Query,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import auth_config, dependencies, manager

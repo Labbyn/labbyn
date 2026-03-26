@@ -56,6 +56,7 @@ async def discover_hosts(
     """
     return await AnsibleService(db, ctx).discover_hosts_workflow(request)
 
+
 @router.post("/setup_agent")
 async def setup_agent(
     request: service_schemas.HostRequest,
@@ -69,6 +70,7 @@ async def setup_agent(
     :return: Combined results of both steps.
     """
     return await AnsibleService(db, ctx).setup_agent_workflow(request)
+
 
 @router.post("/machine/{machine_id}/refresh")
 async def refresh_machine_hardware(

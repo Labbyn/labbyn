@@ -64,6 +64,7 @@ class RackBase(BaseModel):
 
 class RackCreate(RackBase):
     """Schema for creating a new Rack."""
+
     tag_ids: Optional[List[int]] = Field(
         default=[], description="List of existing Tag IDs to associate with this rack"
     )
