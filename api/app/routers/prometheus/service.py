@@ -233,26 +233,49 @@ class PrometheusService:
         :return: The newly created target entry as saved in the configuration.
         """
         self.ctx.require_user()
+        # 1. Automatyczna obsługa team_id
         team_id = target_data.team_id
+
         if not team_id:
-            if len(self.ctx.team_ids) == 1:
-                team_id = self.ctx.team_ids[0]
+            # Pobieramy listę ID zespołów, do których należy użytkownik
+            user_teams = self.ctx.team_ids  # Zakładam, że ctx ma listę IDs
+
+            if not user_teams:
+                raise exceptions.ValidationError(
+                    "Użytkownik nie jest przypisany do żadnego zespołu. Nie można dodać hosta."
+                )
+
+            if len(user_teams) == 1:
+                team_id = user_teams[0]
             elif not self.ctx.is_admin:
                 raise exceptions.ValidationError(
-                    "User belongs to multiple teams. Please select one."
+                    "You need specify team to assign machine."
                 )
 
         if team_id:
             await self.ctx.validate_team_access(team_id)
-            name = await repo.get_team_name(self.db, team_id)
-            target_data.labels["team"] = name or f"team_{team_id}"
+            team_name = await repo.get_team_name(self.db, team_id)
+
+            if not team_name:
+                raise exceptions.ObjectNotFoundError("Team", team_id)
+
+            if target_data.labels is None:
+                target_data.labels = {}
+            target_data.labels["team"] = team_name
 
         instance = target_data.instance
-        if ":" not in instance or ":9090" in instance:
+        if ":" not in instance:
             instance = f"{instance}:9100"
+        elif ":9090" in instance:
+            instance = instance.replace(":9090", ":9100")
 
         async with exec._targets_lock:
             targets = await exec.load_targets()
+
+            for t in targets:
+                if instance in t.get("targets", []):
+                    return t
+
             entry = {"targets": [instance], "labels": target_data.labels}
             targets.append(entry)
             await exec.save_targets(targets)

@@ -219,3 +219,33 @@ class AnsibleService:
                 raise exceptions.ExternalServiceError(
                     f"Ansible Cleanup for {machine.name} failed", str(e)
                 )
+
+    async def setup_agent_workflow(self, request: service_schemas.HostRequest):
+        """Create Ansible User -> Deploy Node Exporter."
+
+        :param request: HostRequest containing extra variables for Ansible.
+        """
+        self.ctx.require_user()
+
+        try:
+            user_result = await self.executor.run_playbook_task(
+                service_schemas.AnsiblePlaybook.create_user,
+                request.host,
+                request.extra_vars,
+            )
+
+            deploy_result = await self.executor.run_playbook_task(
+                service_schemas.AnsiblePlaybook.deploy_agent,
+                request.host,
+                request.extra_vars,
+            )
+
+            return {
+                "message": f"Agent setup completed for {request.host}",
+                "user_creation": user_result,
+                "node_exporter_deployment": deploy_result,
+            }
+        except Exception as e:
+            raise exceptions.ExternalServiceError(
+                f"Full Agent Setup for host {request.host} failed", str(e)
+            )

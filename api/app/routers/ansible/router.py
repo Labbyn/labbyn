@@ -56,6 +56,19 @@ async def discover_hosts(
     """
     return await AnsibleService(db, ctx).discover_hosts_workflow(request)
 
+@router.post("/setup_agent")
+async def setup_agent(
+    request: service_schemas.HostRequest,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Create Ansible user and deploy Node Exporter in one workflow.
+
+    :param request: HostRequest containing the host IP or hostname
+    :param ctx: Request context for user and team info
+    :return: Combined results of both steps.
+    """
+    return await AnsibleService(db, ctx).setup_agent_workflow(request)
 
 @router.post("/machine/{machine_id}/refresh")
 async def refresh_machine_hardware(
