@@ -64,7 +64,6 @@ class RackBase(BaseModel):
 
 class RackCreate(RackBase):
     """Schema for creating a new Rack."""
-
     tag_ids: Optional[List[int]] = Field(
         default=[], description="List of existing Tag IDs to associate with this rack"
     )
@@ -97,8 +96,8 @@ class RackResponse(RackBase):
     """
 
     id: int = Field(..., description="Unique identifier of the rack")
-    room_name: Optional[str]
-    team_name: Optional[str]
+    room_name: Optional[str] = None
+    team_name: Optional[str] = None
     tags: List[tag_schemas.TagsResponse] = []
     shelves: List[ShelfResponse] = []
     model_config = ConfigDict(from_attributes=True)

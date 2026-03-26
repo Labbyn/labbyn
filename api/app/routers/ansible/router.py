@@ -5,10 +5,12 @@ Creating Ansible user, gathering platform information and deploying Node Exporte
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
+from app.core import exceptions
 from app.database import get_async_db
 from app.schemas import service_schemas
-from app.core import exceptions
+
 from .service import AnsibleService
 
 router = APIRouter(prefix="/ansible", tags=["Ansible"])

@@ -1,7 +1,8 @@
-import os
 import glob
-import aiofiles
+import os
 from typing import Union
+
+import aiofiles
 from sqlalchemy import sql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +12,7 @@ from app.core import exceptions
 from app.db import models
 from app.schemas import user_schemas
 from app.utils import redis_service, security
+
 from .repository import UserRepository
 
 AVATAR_DIR = "/home/labbyn/avatars"
@@ -253,3 +255,41 @@ class UserService:
             except Exception:
                 await self.db.rollback()
                 raise exceptions.ValidationError(f"Could not delete user '{login}'")
+
+    async def promote_user(self, user_id: int, promote_data):
+        """Promote a user to Group Admin within a specific team.
+
+        :param user_id: ID of the user to promote.
+        :param promote_data: PromoteData object.
+        """
+        self.ctx.require_admin()
+
+        async with redis_service.acquire_lock(f"user_lock:{user_id}"):
+            user = await self.repo.get_by_id(self.db, user_id)
+            if not user:
+                raise exceptions.ObjectNotFoundError("User")
+
+            membership = await self.repo.get_membership(
+                self.db, user_id, promote_data.team_id
+            )
+
+            if not membership:
+                membership = models.UsersTeams(
+                    user_id=user_id,
+                    team_id=promote_data.team_id,
+                    is_group_admin=promote_data.is_group_admin,
+                )
+                self.db.add(membership)
+            else:
+                membership.is_group_admin = promote_data.is_group_admin
+
+            if promote_data.is_group_admin and user.user_type == models.UserType.USER:
+                user.user_type = models.UserType.GROUP_ADMIN
+
+            try:
+                await self.db.commit()
+                refreshed = await self.repo.get_by_id(self.db, user_id, detailed=True)
+                return self.get_masked_user_model(refreshed, detailed=True)
+            except Exception as e:
+                await self.db.rollback()
+                raise exceptions.ValidationError(f"Failed to promote user: {str(e)}")

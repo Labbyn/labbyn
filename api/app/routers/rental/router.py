@@ -1,10 +1,12 @@
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import inventory_schemas
+
 from .service import RentalService
 
 router = APIRouter(prefix="/db/rentals", tags=["Inventory-Rentals"])

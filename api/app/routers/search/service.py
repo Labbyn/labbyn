@@ -1,6 +1,9 @@
 import asyncio
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
+
 from .repository import SearchRepository
 
 

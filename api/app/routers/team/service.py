@@ -1,10 +1,13 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.core import exceptions
 from app.db import models
 from app.utils import redis_service
+
 from .repository import TeamRepository
 
 

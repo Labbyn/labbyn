@@ -1,11 +1,13 @@
-from typing import Any, Dict, List, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from sqlalchemy import sql
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
 from app.core import exceptions
 from app.db import models
+
 from .repository import HistoryRepository
 
 
@@ -18,7 +20,6 @@ class HistoryService:
     database states (Rollback) for supported entities.
     """
 
-    # Keys that should not be exposed in the history view (technical or sensitive data)
     INTERNAL_KEYS = {
         "id",
         "version_id",
@@ -159,7 +160,7 @@ class HistoryService:
         :raises exceptions.ObjectNotFoundError: If the log entry is not found or user lacks access.
         """
         self.ctx.require_user()
-        log = await self.repo.get_by_id(self.db, history_id, self.ctx)
+        log = await self.get_log_or_404(history_id)
         if not log:
             raise exceptions.ObjectNotFoundError("History log")
 
@@ -187,6 +188,21 @@ class HistoryService:
             "after_state": clean_after or None,
             "can_rollback": log.can_rollback,
         }
+
+    async def get_log_or_404(self, history_id: int) -> models.History:
+        """Fetch a history log entry by ID or raise a 404 error.
+
+        This centralizes authorization and existence checks for single log items.
+
+        :param history_id: The ID of the log entry.
+        :return: The history log model instance.
+        :raises exceptions.ObjectNotFoundError: If the log is not found or user lacks access.
+        """
+        self.ctx.require_user()
+        log = await self.repo.get_by_id(self.db, history_id, self.ctx)
+        if not log:
+            raise exceptions.ObjectNotFoundError("History log")
+        return log
 
     async def get_blackboxed_logs(self, limit: int = 200) -> List[Dict[str, Any]]:
         """Prepare blackboxed log entries.

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import search_schemas
+
 from .service import SearchService
 
 router = APIRouter(prefix="/db/search", tags=["Search"])

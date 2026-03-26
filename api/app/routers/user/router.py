@@ -1,12 +1,14 @@
 """Router for User Database API CRUD."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import user_schemas
+
 from .service import UserService
 
 router = APIRouter(prefix="/db/users", tags=["Users"])
@@ -116,3 +118,14 @@ async def upload_avatar(
     :return: None.
     """
     return await UserService(db, ctx).upload_avatar(file)
+
+
+@router.patch("/{user_id}/promote", response_model=user_schemas.UserInfoExtended)
+async def promote_user(
+    user_id: int,
+    promote_data: user_schemas.UserTeamRoleUpdate,
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Update user's group admin role within a specific team."""
+    return await UserService(db, ctx).promote_user(user_id, promote_data)

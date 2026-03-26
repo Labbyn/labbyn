@@ -1,9 +1,12 @@
 from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import history_schemas
+
 from .service import HistoryService
 
 router = APIRouter(prefix="/sub", tags=["History subpage dedicated router"])

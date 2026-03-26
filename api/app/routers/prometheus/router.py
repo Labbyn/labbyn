@@ -1,22 +1,19 @@
-from fastapi import (
-    APIRouter,
-    Depends,
-    Query,
-    Response,
-    WebSocket,
-    WebSocketDisconnect,
-    status,
-)
-from app.database import get_async_db
-from app.auth import dependencies, manager, auth_config
-from .service import PrometheusService
-from app.schemas import service_schemas
+from typing import List, Optional
+
+from fastapi import (APIRouter, Depends, Query, Response, WebSocket,
+                     WebSocketDisconnect, status)
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth import auth_config, dependencies, manager
+from app.database import get_async_db
+from app.schemas import service_schemas
+
+from .service import PrometheusService
 
 router = APIRouter(tags=["Prometheus"])
 
 
-@router.websocket("/ws/metrics")
+@router.websocket("/prometheus/metrics")
 async def websocket_endpoint(
     ws: WebSocket,
     instance: str = Query(None, description="Filter by instance"),
@@ -50,11 +47,55 @@ async def websocket_endpoint(
         pass
 
 
+@router.get("/prometheus/hosts")
+async def get_hosts(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch all unique hosts [ex.192.168.1.2, server1-example.com] from Prometheus.
+
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: List of unique hostnames/IPs.
+    """
+    return await PrometheusService(db, ctx).get_hosts()
+
+
+@router.get("/prometheus/metrics")
+async def get_all_metrics(
+    instances: Optional[List[str]] = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch metrics for selected instances directly from Prometheus (bypasses cache).
+
+    :param instances: List of instances as comma separated string
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Metrics data for selected instances, or all if none specified.
+    """
+    return await PrometheusService(db, ctx).get_all_metrics(instances)
+
+
+@router.get("/prometheus/instances")
+async def get_instances(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch all unique host instances [HOST::PORT] from Prometheus.
+
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: List of unique hosts.
+    """
+    return await PrometheusService(db, ctx).get_instances()
+
+
 @router.post("/prometheus/target")
 async def add_target(
     target: service_schemas.PrometheusTarget,
     db: AsyncSession = Depends(get_async_db),
-    ctx=Depends(dependencies.RequestContext.create),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Add a new target to Prometheus targets file.
 

@@ -1,12 +1,14 @@
 """Router for Room Database API CRUD."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import room_schemas
+
 from .service import RoomService
 
 router = APIRouter(prefix="/db/rooms", tags=["Rooms"])

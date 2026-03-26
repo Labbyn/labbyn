@@ -1,10 +1,13 @@
 import asyncio
 import json
-from typing import Optional, Dict, Any, Set
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import unquote
+
 from fastapi import WebSocket
-from app.utils import redis_service
+
 from app.core import exceptions
+from app.utils import redis_service
+
 from .executor import PrometheusExecutor as exec
 from .repository import PrometheusRepository as repo
 
@@ -32,6 +35,80 @@ class PrometheusService:
         if not instance:
             return instance
         return instance.rsplit(":", maxsplit=1)[0] if ":" in instance else instance
+
+    async def get_instances(self) -> Dict[str, list]:
+        """Get the list of all Prometheus instances.
+
+        :return: A dictionary containing all Prometheus instances.
+        """
+        self.ctx.require_user()
+        allowed_hosts = await repo.get_allowed_hosts(self.db, self.ctx)
+        status_raw = await redis_service.get_cache(exec.CACHE_STATUS_KEY)
+        s_parsed = json.loads(status_raw) if status_raw else {}
+
+        all_instances = set()
+        for item in s_parsed.get("status", []):
+            instance = item.get("instance")
+            if instance:
+                host_only = self._extract_host(instance)
+                if self.ctx.is_admin or host_only in allowed_hosts:
+                    all_instances.add(instance)
+        return {"instances": list(all_instances)}
+
+    async def get_hosts(self) -> Dict[str, list]:
+        """Get the list of all Prometheus hosts.
+
+        :return: A dictionary containing all Prometheus hosts.
+        """
+        self.ctx.require_user()
+        allowed_hosts = await repo.get_allowed_hosts(self.db, self.ctx)
+        status_raw = await redis_service.get_cache(exec.CACHE_STATUS_KEY)
+        s_parsed = json.loads(status_raw) if status_raw else {}
+
+        all_hosts = set()
+        for item in s_parsed.get("status", []):
+            instance = item.get("instance")
+            if instance:
+                host = self._extract_host(instance)
+                if self.ctx.is_admin or host in allowed_hosts:
+                    all_hosts.add(host)
+        return {"hosts": list(all_hosts)}
+
+    async def get_all_metrics(
+        self, instances: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        """Get the list of all Prometheus metrics available.
+
+        :param instances: List of Prometheus instances to fetch.
+        :return: A dictionary containing all Prometheus metrics available.
+        """
+        self.ctx.require_user()
+        allowed_hosts = await repo.get_allowed_hosts(self.db, self.ctx)
+
+        if not instances:
+            return await exec.fetch_prometheus_metrics(
+                metrics=list(exec.QUERIES.keys())
+            )
+
+        processed = []
+        for item in instances:
+            parts = (
+                [unquote(i.strip()) for i in item.split(",")]
+                if "," in item
+                else [unquote(item.strip())]
+            )
+            processed.extend(parts)
+
+        final_instances = [
+            inst
+            for inst in processed
+            if self.ctx.is_admin or self._extract_host(inst) in allowed_hosts
+        ]
+
+        if not final_instances and not self.ctx.is_admin:
+            return {metric: [] for metric in exec.QUERIES.keys()}
+
+        return await exec.fetch_prometheus_metrics(metrics=list(exec.QUERIES.keys()))
 
     async def stream_metrics(
         self, ws: WebSocket, instance_filter: Optional[str] = None

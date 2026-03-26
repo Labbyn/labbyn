@@ -1,13 +1,16 @@
 import json
-from typing import Dict, Any
+from typing import Any, Dict
+
 from sqlalchemy import sql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.core import exceptions
 from app.db import models
 from app.utils import redis_service
-from .repository import MachineRepository, GRAFANA_URL
+
+from .repository import GRAFANA_URL, MachineRepository
 
 
 class MachineService:

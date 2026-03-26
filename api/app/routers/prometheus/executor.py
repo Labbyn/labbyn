@@ -1,10 +1,12 @@
 import asyncio
 import json
 import os
-import httpx
+from typing import Any, Dict, List
+
 import aiofiles
-from typing import List, Dict, Any
+import httpx
 from dotenv import load_dotenv
+
 from app.core import exceptions
 from app.utils import redis_service
 
@@ -56,7 +58,7 @@ class PrometheusExecutor:
         )
 
     @classmethod
-    async def fetch_prometheus_data(cls, metrics: List[str]) -> Dict[str, Any]:
+    async def fetch_prometheus_metrics(cls, metrics: List[str]) -> Dict[str, Any]:
         """Fetch multiple metrics from Prometheus and format them into a unified structure.
 
         Iterates over the requested metric keys, executes the corresponding PromQL

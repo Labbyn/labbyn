@@ -1,6 +1,8 @@
-from typing import Optional, Type, Any, Sequence
-from sqlalchemy import sql, orm
+from typing import Any, Optional, Sequence, Type
+
+from sqlalchemy import orm, sql
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import models
 
 

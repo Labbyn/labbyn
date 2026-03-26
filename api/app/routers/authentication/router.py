@@ -5,6 +5,7 @@ from app.auth import auth_config
 from app.database import get_async_db
 from app.db import models
 from app.schemas import user_schemas
+
 from .service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Auth"])

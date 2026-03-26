@@ -1,7 +1,9 @@
-from typing import List, Any, Sequence
+from typing import Any, List, Sequence
+
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
 from app.db import models
 
 

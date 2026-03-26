@@ -1,6 +1,8 @@
 from typing import List
+
 from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import models
 
 

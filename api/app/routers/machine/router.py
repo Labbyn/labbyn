@@ -1,11 +1,14 @@
 """Router for Machine Database API CRUD."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import machine_schemas
+
 from .service import MachineService
 
 router = APIRouter(prefix="/db/machines", tags=["Machines"])

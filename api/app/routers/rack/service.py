@@ -1,10 +1,13 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import sql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.core import exceptions
 from app.db import models
+
 from .repository import RackRepository
 
 
@@ -114,7 +117,6 @@ class RackService:
             db_rack = models.Rack(
                 name=rack_data.name,
                 room_id=rack_data.room_id,
-                layout_id=rack_data.layout_id,
                 team_id=target_team_id,
             )
             if rack_data.tag_ids:

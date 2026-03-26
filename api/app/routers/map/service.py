@@ -1,10 +1,12 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import sql
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.core import exceptions
 from app.db import models
 from app.schemas import map_schemas
 from app.utils import redis_service
+
 from .repository import MapRepository
 
 

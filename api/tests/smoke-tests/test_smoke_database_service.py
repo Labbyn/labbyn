@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm.exc import StaleDataError
+
 import app.db.listeners
 from app.database import AsyncSessionLocal
 from app.db import models

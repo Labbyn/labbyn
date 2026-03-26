@@ -1,6 +1,7 @@
 """Test prometheus logic."""
 
 from unittest import mock
+
 import pytest
 
 pytestmark = pytest.mark.skip(reason="Logic redundantly covered by smoke tests")

@@ -1,7 +1,9 @@
 import os
 from typing import List
-from sqlalchemy import sql, orm
+
+from sqlalchemy import orm, sql
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import models
 
 GRAFANA_URL = (

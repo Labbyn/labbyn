@@ -1,11 +1,14 @@
 """Router for History Database API CRUD."""
 
 from typing import List
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import history_schemas
+
 from .service import HistoryService
 
 router = APIRouter(prefix="/db/history", tags=["History"])

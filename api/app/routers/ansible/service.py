@@ -1,10 +1,12 @@
 """Ansible Discovery Service."""
 
 from datetime import datetime
-from app.db import models
+
 from app.core import exceptions
-from app.utils import redis_service
+from app.db import models
 from app.schemas import service_schemas
+from app.utils import redis_service
+
 from .executor import AnsibleExecutor
 from .repository import AnsibleRepository
 

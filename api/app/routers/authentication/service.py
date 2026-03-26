@@ -2,6 +2,7 @@
 
 from app.core import exceptions
 from app.utils import security
+
 from .repository import AuthRepository
 
 

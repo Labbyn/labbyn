@@ -1,6 +1,8 @@
-from typing import List, Optional, Any, Sequence
-from sqlalchemy import sql, orm
+from typing import Any, List, Optional, Sequence
+
+from sqlalchemy import orm, sql
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.db import models
 
 
@@ -33,6 +35,7 @@ class RoomRepository:
         :return: Room object or None.
         """
         stmt = sql.select(models.Rooms).filter(models.Rooms.id == room_id)
+        stmt = stmt.options(orm.joinedload(models.Rooms.tags))
 
         if detailed:
             stmt = stmt.options(
@@ -60,6 +63,7 @@ class RoomRepository:
             orm.joinedload(models.Rooms.racks),
             orm.joinedload(models.Rooms.map),
             orm.joinedload(models.Rooms.team),
+            orm.joinedload(models.Rooms.tags),
         )
         stmt = ctx.team_filter(stmt, models.Rooms)
         result = await db.execute(stmt)

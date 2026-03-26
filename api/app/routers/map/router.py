@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import map_schemas
+
 from .service import MapService
 
 router = APIRouter(prefix="/rooms", tags=["Maps"])

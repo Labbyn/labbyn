@@ -1,7 +1,9 @@
 from typing import Optional
-from sqlalchemy import select, delete
-from sqlalchemy.orm import joinedload
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
 from app.db import models
 
 

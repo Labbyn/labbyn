@@ -1,4 +1,5 @@
 from sqlalchemy import sql
+
 from app.db import models
 
 

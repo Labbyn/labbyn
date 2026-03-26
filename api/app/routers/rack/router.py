@@ -1,11 +1,14 @@
 """Router for Rack Database API CRUD."""
 
 from typing import List, Optional
+
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import dependencies
 from app.database import get_async_db
 from app.schemas import rack_schemas
+
 from .service import RackService
 
 router = APIRouter(prefix="/db/racks", tags=["Racks"])
