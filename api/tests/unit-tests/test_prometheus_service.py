@@ -5,8 +5,7 @@ from unittest import mock
 import httpx
 import pytest
 
-from app.utils.prometheus_service import (add_prometheus_target,
-                                          fetch_prometheus_metrics)
+from app.utils.prometheus_service import add_prometheus_target, fetch_prometheus_metrics
 
 pytestmark = [pytest.mark.unit, pytest.mark.asyncio]
 
