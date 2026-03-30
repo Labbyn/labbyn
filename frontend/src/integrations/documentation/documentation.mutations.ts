@@ -26,7 +26,10 @@ export const useCreateDocumentMutation = () => {
     onSuccess: (newDoc) => {
       toast.success('Document created')
       queryClient.invalidateQueries({ queryKey: ['documentation'] })
-      navigate({ to: '/documentation/$docId', params: { docId: String(newDoc.id) } })
+      navigate({
+        to: '/documentation/$docId',
+        params: { docId: String(newDoc.id) },
+      })
     },
     onError: () => toast.error('Failed to create document'),
   })

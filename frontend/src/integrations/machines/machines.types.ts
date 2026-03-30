@@ -128,6 +128,12 @@ export interface AutoDiscoverPayload {
   }
 }
 
+export interface AgentDialogPayload {
+  host: string
+  username: string
+  password: string
+}
+
 export type ApiMachineItem = MachinesResponse
 export type ApiMachineInfoResponse = Array<ApiMachineInfo>
 export type ApiMachineResponse = Array<MachinesResponse>
