@@ -52,6 +52,7 @@ import {
   CollapsibleTrigger,
 } from './ui/collapsible'
 import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -69,7 +70,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { useAuth } from '@/routes/auth'
-import { Button } from './ui/button'
 
 const QUICK_ACTIONS = [
   {
@@ -207,7 +207,12 @@ export function AppSidebar() {
             <div className="sr-only">
               {QUICK_ACTIONS.map((action) => (
                 <action.Component key={`hidden-dialog-${action.id}`}>
-                  <button id={`trigger-${action.id}`} type="button" aria-hidden="true" tabIndex={-1} />
+                  <button
+                    id={`trigger-${action.id}`}
+                    type="button"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
                 </action.Component>
               ))}
             </div>
@@ -241,17 +246,25 @@ export function AppSidebar() {
                 <div className="grid grid-cols-2 gap-3">
                   {QUICK_ACTIONS.map((action) => (
                     <div key={action.id} className="relative">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => document.getElementById(`trigger-${action.id}`)?.click()}
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          document
+                            .getElementById(`trigger-${action.id}`)
+                            ?.click()
+                        }
                         className="flex items-start justify-start gap-3 p-3 w-full h-full text-left whitespace-normal hover:bg-primary/10 border border-transparent hover:border-border/50"
                       >
                         <div className="mt-0.5 bg-muted/50 p-1.5 rounded-md shadow-sm border border-border/50 shrink-0">
                           <action.icon className="size-4 text-primary" />
                         </div>
                         <div className="flex flex-col space-y-1">
-                          <span className="text-sm font-medium leading-none">{action.label}</span>
-                          <span className="text-xs text-muted-foreground">{action.desc}</span>
+                          <span className="text-sm font-medium leading-none">
+                            {action.label}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {action.desc}
+                          </span>
                         </div>
                       </Button>
                     </div>
@@ -262,7 +275,6 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-
 
       <SidebarContent>
         <SidebarGroup>
