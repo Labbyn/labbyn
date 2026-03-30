@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2, Plus, Server } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import {
@@ -54,7 +54,7 @@ const schemas = {
   team_id: z.number().positive(),
 }
 
-export function AddRoomsDialog() {
+export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
@@ -89,16 +89,18 @@ export function AddRoomsDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <Server />
-          <span>Add Room</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <Server />
+            <span>Add Room</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add new room</DialogTitle>
-          <DialogDescription>Create new room</DialogDescription>
+          <DialogTitle>Add Room</DialogTitle>
+          <DialogDescription>Create a new room in your lab</DialogDescription>
         </DialogHeader>
 
         <form

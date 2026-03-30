@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react' // Make sure React is imported for ReactNode
 import { AlertCircle, Cpu, Loader2, Plus, Server, Trash2 } from 'lucide-react'
 import { useForm, useStore } from '@tanstack/react-form'
 import {
@@ -60,7 +60,11 @@ const schemas = {
     .or(z.literal('')),
 }
 
-export function AddPlatformDialog() {
+interface AddPlatformDialogProps {
+  children?: React.ReactNode
+}
+
+export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
   const [open, setOpen] = useState(false)
   const [selectedRack, setSelectedRack] = useState<number | undefined>(
     undefined,
@@ -146,10 +150,12 @@ export function AddPlatformDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <Cpu className="size-4" />
-          <span>Add Platform</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <Cpu className="size-4" />
+            <span>Add Platform</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-xl flex flex-col p-0 gap-0 h-[85vh] overflow-hidden">
