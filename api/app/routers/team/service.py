@@ -30,7 +30,8 @@ class TeamService:
         :param team: Team model instance with users relationship loaded.
         :return: Formatted dictionary with admin and member details.
         """
-        group_admins = [m.user for m in team.users if m.is_group_admin]
+        group_admins = [m.user for m in team.users if m.is_group_admin and m.user]
+
         return {
             "id": team.id,
             "name": team.name,
@@ -58,6 +59,7 @@ class TeamService:
                     "user_link": f"/users/{m.user.id}",
                 }
                 for m in team.users
+                if m.user
             ],
         }
 

@@ -137,7 +137,7 @@ class InventoryService:
         :return: Item details
         """
         self.ctx.require_user()
-        item = await self.get_item_or_404(item_id, detailed=True)
+        item = await self.get_inventory_or_404(item_id, detailed=True)
         today = datetime.now().date()
 
         active_rentals_list = [
@@ -183,7 +183,7 @@ class InventoryService:
         """
         self.ctx.require_user()
         async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
-            item = await self.get_item_or_404(item_id)
+            item = await self.get_inventory_or_404(item_id)
             data = item_data.model_dump(exclude_unset=True)
 
             if "team_id" in data and not self.ctx.is_admin:
@@ -209,7 +209,7 @@ class InventoryService:
         """
         self.ctx.require_user()
         async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
-            item = await self.get_item_or_404(item_id)
+            item = await self.get_inventory_or_404(item_id)
             try:
                 await self.db.delete(item)
                 await self.db.commit()

@@ -40,10 +40,10 @@ class InventoryRepository:
             orm.joinedload(models.Inventory.room),
             orm.joinedload(models.Inventory.machine),
             orm.joinedload(models.Inventory.category),
-            orm.joinedload(models.Inventory.rental_history),
-            orm.joinedload(models.Rentals.user),
-            orm.joinedload(models.User.teams),
-            orm.joinedload(models.UsersTeams.team),
+            orm.joinedload(models.Inventory.rental_history)
+            .joinedload(models.Rentals.user)
+            .joinedload(models.User.teams)
+            .joinedload(models.UsersTeams.team),
         )
 
         stmt = ctx.team_filter(stmt, models.Inventory)
