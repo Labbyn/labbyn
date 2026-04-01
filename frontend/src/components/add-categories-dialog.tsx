@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2, Plus, ToolCase } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -24,7 +24,11 @@ const schemas = {
   name: z.string().min(1, 'Name is required'),
 }
 
-export function AddCategoriesDialog() {
+export function AddCategoriesDialog({
+  children,
+}: {
+  children?: React.ReactNode
+}) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
 
@@ -54,16 +58,18 @@ export function AddCategoriesDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <ToolCase />
-          <span>Add Category</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <ToolCase />
+            <span>Add Category</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add new category</DialogTitle>
-          <DialogDescription>Create new inventory category</DialogDescription>
+          <DialogTitle>Add Category</DialogTitle>
+          <DialogDescription>Create a new inventory category</DialogDescription>
         </DialogHeader>
 
         <form

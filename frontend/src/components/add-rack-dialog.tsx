@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Brackets, Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import {
@@ -55,7 +55,7 @@ const schemas = {
   team_id: z.number().positive(),
 }
 
-export function AddRackDialog() {
+export function AddRackDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: labs } = useSuspenseQuery(labsQueryOptions)
@@ -91,17 +91,19 @@ export function AddRackDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <Brackets />
-          <span>Add Rack</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <Brackets />
+            <span>Add Rack</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add new rack</DialogTitle>
           <DialogDescription>
-            Create new rack for your platforms
+            Create a new rack for your platforms
           </DialogDescription>
         </DialogHeader>
 
