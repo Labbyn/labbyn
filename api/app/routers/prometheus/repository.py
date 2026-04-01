@@ -17,10 +17,10 @@ class PrometheusRepository:
         :param ctx: The RequestContext object containing user identity and team filters.
         :return: A set of unique hostnames (machine names) as strings.
         """
-        query = sql.select(models.Machines.name)
+        query = sql.select(models.Machines.ip_address)
         query = ctx.team_filter(query, models.Machines)
         result = await db.execute(query)
-        return {row[0] for row in result.all()}
+        return {row[0] for row in result.all() if row[0]}
 
     @staticmethod
     async def get_team_name(db: AsyncSession, team_id: int) -> Optional[str]:

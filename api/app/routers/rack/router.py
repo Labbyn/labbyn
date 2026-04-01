@@ -121,7 +121,7 @@ async def delete_rack(
 
 
 @router.get(
-    "/info/{rack_id}", response_model=rack_schemas.RackWithOrderedMachinesResponse
+    "/rack_info/{rack_id}", response_model=rack_schemas.RackWithOrderedMachinesResponse
 )
 async def get_rack_info_by_id(
     rack_id: int,

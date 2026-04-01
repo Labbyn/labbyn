@@ -43,7 +43,6 @@ class RackService:
             "id": rack.id,
             "name": rack.name,
             "team_id": rack.team_id,
-            "layout_id": rack.layout_id,
             "team_name": team_name,
             "room_id": rack.room_id,
             "tags": rack.tags or [],
@@ -128,7 +127,6 @@ class RackService:
             self.db.add(db_rack)
             await self.db.commit()
 
-            # Reload to get names
             return await self.get_rack_or_404(db_rack.id, detailed=True)
         except IntegrityError:
             await self.db.rollback()

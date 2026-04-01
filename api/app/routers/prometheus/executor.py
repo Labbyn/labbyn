@@ -138,7 +138,7 @@ class PrometheusExecutor:
         """Background worker for host status."""
         while True:
             try:
-                data = await cls.fetch_prometheus_data(metrics=["status"])
+                data = await cls.fetch_prometheus_metrics(metrics=["status"])
                 await redis_service.set_cache(cls.CACHE_STATUS_KEY, json.dumps(data))
             except Exception:
                 pass
@@ -149,7 +149,7 @@ class PrometheusExecutor:
         """Background worker for CPU/RAM/Disk metrics."""
         while True:
             try:
-                data = await cls.fetch_prometheus_data(
+                data = await cls.fetch_prometheus_metrics(
                     metrics=["cpu_usage", "memory_usage", "disk_usage"]
                 )
                 await redis_service.set_cache(cls.CACHE_METRICS_KEY, json.dumps(data))

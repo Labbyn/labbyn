@@ -20,7 +20,7 @@ from .service import PrometheusService
 router = APIRouter(tags=["Prometheus"])
 
 
-@router.websocket("/prometheus/metrics")
+@router.websocket("/ws/metrics")
 async def websocket_endpoint(
     ws: WebSocket,
     instance: str = Query(None, description="Filter by instance"),
