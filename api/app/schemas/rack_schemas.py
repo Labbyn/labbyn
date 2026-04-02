@@ -69,11 +69,9 @@ class RackCreate(RackBase):
         default=[], description="List of existing Tag IDs to associate with this rack"
     )
     size: Optional[int] = Field(
-        None,
-        ge=0,
-        le=100,
-        description="Number of shelves to auto-generate (max 100)"
+        None, ge=0, le=100, description="Number of shelves to auto-generate (max 100)"
     )
+
 
 class RackUpdate(BaseModel):
     """Schema for updating an existing Rack.

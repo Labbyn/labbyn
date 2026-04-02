@@ -104,7 +104,7 @@ all_app_routers = [
     routers.history,
     routers.history_sub,
     routers.search,
-    routers.import_csv
+    routers.import_csv,
 ]
 
 for r in all_app_routers:
