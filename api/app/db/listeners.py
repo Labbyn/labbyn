@@ -5,11 +5,9 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any, Optional
 
-from sqlalchemy import event, inspect
-from sqlalchemy.exc import NoInspectionAvailable
-from sqlalchemy.orm import Session, UOWTransaction
+from sqlalchemy import event, inspect, orm, exc
 
-from app.db.models import ActionType, EntityType, History
+from app.db import models
 
 
 def json_serializer(obj: Any):
@@ -48,7 +46,7 @@ def get_entity_state(obj: Any):
         mapper = inspect(obj).mapper
         for col in mapper.column_attrs:
             state[col.key] = getattr(obj, col.key)
-    except NoInspectionAvailable:
+    except exc.NoInspectionAvailable:
         pass
     return json.loads(json.dumps(state, default=json_serializer))
 
@@ -61,18 +59,18 @@ def identify_entity_type(obj: Any):
     """
     try:
         table_name = inspect(obj).mapper.persist_selectable.name
-    except NoInspectionAvailable:
+    except exc.NoInspectionAvailable:
         table_name = getattr(obj, "__tablename__", None)
 
     if not table_name:
         return None
 
     mapping = {
-        "machines": EntityType.MACHINES,
-        "inventory": EntityType.INVENTORY,
-        "rooms": EntityType.ROOM,
-        "user": EntityType.USER,
-        "categories": EntityType.CATEGORIES,
+        "machines": models.EntityType.MACHINES,
+        "inventory": models.EntityType.INVENTORY,
+        "rooms": models.EntityType.ROOM,
+        "user": models.EntityType.USER,
+        "categories": models.EntityType.CATEGORIES,
     }
 
     result = mapping.get(table_name)
@@ -81,9 +79,9 @@ def identify_entity_type(obj: Any):
 
 
 # pylint: disable=unused-argument
-@event.listens_for(Session, "before_flush")
+@event.listens_for(orm.Session, "before_flush")
 def receive_before_flush(
-    session: Session, flush_context: UOWTransaction, instances: Optional[Any]
+    session: orm.Session, flush_context: orm.UOWTransaction, instances: Optional[Any]
 ):
     """SQLAlchemy session listener triggered before data is flushed to database.
 
@@ -105,13 +103,13 @@ def receive_before_flush(
     user_id = session.info.get("user_id", 1)
     objects_to_create = session.info.setdefault("objects_to_create_history", [])
     for obj in session.new:
-        if isinstance(obj, History):
+        if isinstance(obj, models.History):
             continue
         if identify_entity_type(obj):
             objects_to_create.append(obj)
 
     for obj in session.dirty:
-        if isinstance(obj, History):
+        if isinstance(obj, models.History):
             continue
         entity_type = identify_entity_type(obj)
         if not entity_type:
@@ -165,9 +163,9 @@ def receive_before_flush(
             extra_json = json.loads(json.dumps(changes, default=json_serializer))
 
             session.add(
-                History(
+                models.History(
                     entity_type=entity_type,
-                    action=ActionType.UPDATE,
+                    action=models.ActionType.UPDATE,
                     entity_id=obj.id,
                     before_state=before_json,
                     after_state=after_json,
@@ -178,16 +176,16 @@ def receive_before_flush(
             )
 
     for obj in session.deleted:
-        if isinstance(obj, History):
+        if isinstance(obj, models.History):
             continue
         entity_type = identify_entity_type(obj)
         if not entity_type:
             continue
 
         session.add(
-            History(
+            models.History(
                 entity_type=entity_type,
-                action=ActionType.DELETE,
+                action=models.ActionType.DELETE,
                 entity_id=obj.id,
                 user_id=user_id,
                 before_state=get_entity_state(obj),
@@ -197,8 +195,8 @@ def receive_before_flush(
 
 
 # pylint: disable=unused-argument
-@event.listens_for(Session, "after_flush")
-def receive_after_flush(session: Session, flush_context: UOWTransaction):
+@event.listens_for(orm.Session, "after_flush")
+def receive_after_flush(session: orm.Session, flush_context: orm.UOWTransaction):
     """SQLAlchemy session listener triggered after data is flushed to database.
 
     This function is primarily used to handle logging for **CREATE** actions,
@@ -221,9 +219,9 @@ def receive_after_flush(session: Session, flush_context: UOWTransaction):
         entity_type = identify_entity_type(obj)
         if entity_type:
             session.add(
-                History(
+                models.History(
                     entity_type=entity_type,
-                    action=ActionType.CREATE,
+                    action=models.ActionType.CREATE,
                     entity_id=obj.id,
                     user_id=user_id,
                     after_state=get_entity_state(obj),

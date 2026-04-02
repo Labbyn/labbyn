@@ -5,16 +5,16 @@ import os
 from dotenv import load_dotenv
 from fastapi.params import Depends
 from fastapi_users import BaseUserManager, IntegerIDMixin, exceptions
-from sqlalchemy import select
+from sqlalchemy import sql
 
 from app.database import get_user_db
-from app.db.models import User
+from app.db import models
 
 load_dotenv(".env/api.env")
 AUTH_SECRET = os.getenv("AUTH_SECRET")
 
 
-class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
+class UserManager(IntegerIDMixin, BaseUserManager[models.User, int]):
     """Custom user manager for handling user authentication and management."""
 
     reset_password_token_secret = AUTH_SECRET
@@ -26,7 +26,7 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         :param login: The login of the user to retrieve.
         :return: The User instance if found.
         """
-        query = select(User).where(User.login == login)
+        query = sql.select(models.User).where(models.User.login == login)
         result = await self.user_db.session.execute(query)
         user = result.scalar_one_or_none()
         if user is None:

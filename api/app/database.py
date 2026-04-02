@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # pylint: disable=unused-import
 import app.db.listeners
-from app.db.models import AccessToken, User
+from app.db import models
 
 load_dotenv(".env/api.env")
 DB_USER = os.getenv("DB_USER", "user")
@@ -53,7 +53,7 @@ async def get_user_db(session=Depends(get_async_db)):
     :param session: Active database session
     :return: SQLAlchemyUserDatabase instance
     """
-    yield SQLAlchemyUserDatabase(session, User)
+    yield SQLAlchemyUserDatabase(session, models.User)
 
 
 async def get_access_token_db(session=Depends(get_async_db)):
@@ -63,4 +63,4 @@ async def get_access_token_db(session=Depends(get_async_db)):
     :param session: Active database session
     :return: SQLAlchemyAccessTokenDatabase instance
     """
-    yield SQLAlchemyAccessTokenDatabase(session, AccessToken)
+    yield SQLAlchemyAccessTokenDatabase(session, models.AccessToken)

@@ -3,7 +3,7 @@ import type { ApiShelvesResponse } from './shelves.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  SINGLE: (id: string) => `/db/rack/${id}/all`,
+  SINGLE: (id: string) => `/db/shelf/rack/${id}/all`,
 }
 
 // Fetch single shelf in rack

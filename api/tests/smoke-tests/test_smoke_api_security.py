@@ -1,10 +1,10 @@
 import pytest
 from fastapi.dependencies.utils import get_typed_signature
 from fastapi.routing import APIRoute, APIWebSocketRoute
-from tests.conftest import rbac_data_suite
 
 from app.auth.dependencies import RequestContext
 from app.main import app
+from tests.conftest import rbac_data_suite
 
 pytestmark = [pytest.mark.security, pytest.mark.api]
 
