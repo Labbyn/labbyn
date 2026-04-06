@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TagItem } from '@/integrations/tags/tags.types'
@@ -9,6 +9,8 @@ import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { TagList } from '@/components/tag-list'
 import { SubPageTemplate } from '@/components/subpage-template'
+import { useDeleteLabMutation } from '@/integrations/labs/labs.mutation'
+import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/labs/$labId')({
   component: RouteComponent,
@@ -53,14 +55,27 @@ export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
 ]
 
 function RouteComponent() {
+  const router = useRouter()
   const navigate = Route.useNavigate()
   const { labId } = Route.useParams()
   const { data: lab } = useSuspenseQuery(labQueryOptions(labId))
-
+  const deleteLab = useDeleteLabMutation(Number(labId))
   return (
     <SubPageTemplate
       headerProps={{
         title: lab.name,
+        type: "deletable",
+        onDelete: () => {
+          deleteLab.mutate(undefined, {
+            onSuccess: () => {
+              toast.success('Lab deleted successfully')
+              router.history.back()
+            },
+            onError: (error: Error) => {
+              toast.error('Operation failed', { description: error.message })
+            },
+          })
+        },
       }}
       content={
         <>

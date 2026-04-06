@@ -31,7 +31,7 @@ export function SubpageHeader({
   const router = useRouter()
 
   const isEditableType = type === 'editable'
-
+  const isDeletableType = type === 'deletable'
   return (
     <div className="flex items-center gap-4 px-6 py-4 z-10">
       <Button onClick={() => router.history.back()} variant="ghost" size="icon">
@@ -72,6 +72,16 @@ export function SubpageHeader({
           )}
         </div>
       )}
+      {isDeletableType && title !== 'virtual' ? (
+        <div className="flex gap-2">
+              {onDelete && <DeleteAlertDialog onDelete={onDelete} />}
+            
+        </div>
+          ) : ( 
+            <div className="flex gap-2">
+              Cannot delete virtual lab
+              </div>
+          )}
     </div>
   )
 }

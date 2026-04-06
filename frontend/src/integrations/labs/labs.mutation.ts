@@ -1,4 +1,5 @@
 import api from '@/lib/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 const PATHS = {
   BASE: '/db/rooms',
@@ -13,4 +14,16 @@ export async function useCreateLabMutation(labData: {
 }) {
   const { data } = await api.post(PATHS.BASE, labData)
   return data
+}
+
+export const useDeleteLabMutation = (labId: number) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ['delete-lab'],
+    mutationFn: () => api.delete(PATHS.DETAIL(labId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['labs'] })
+    },
+  })
 }
