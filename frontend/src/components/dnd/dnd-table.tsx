@@ -14,18 +14,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { SortableItem } from './sortable-item'
-import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
 import type { DragEndEvent } from '@dnd-kit/core'
-import type { ApiShelfItem } from '@/integrations/shelfs/shelfs.types'
+import type { ApiShelfItem } from '@/integrations/shelves/shelves.types'
 
 interface DndTableProps {
   shelves: Array<ApiShelfItem>
   onReorder: (newShelves: Array<any>) => void
 }
 
-export function DndTable({ shelves: initialShelves, onReorder }: DndTableProps) {
-  const [shelves, setShelves] = useState(initialShelves || [])
-  
+export function DndTable({
+  shelves: initialShelves,
+  onReorder,
+}: DndTableProps) {
+  const [shelves, setShelves] = useState(initialShelves)
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -58,14 +60,12 @@ export function DndTable({ shelves: initialShelves, onReorder }: DndTableProps) 
     const oldIndex = shelves.findIndex((shelf) => shelf.id === active.id)
     const newIndex = shelves.findIndex((shelf) => shelf.id === over.id)
 
-
     const reorderedShelves = arrayMove(shelves, oldIndex, newIndex)
     const updatedShelves = reorderedShelves.map((shelf, index) => ({
       ...shelf,
-      order: index + 1 
+      order: index + 1,
     }))
     setShelves(updatedShelves)
     onReorder(updatedShelves)
-
   }
 }

@@ -72,16 +72,17 @@ export function SubpageHeader({
           )}
         </div>
       )}
-      {isDeletableType && title !== 'virtual' ? (
-        <div className="flex gap-2">
-              {onDelete && <DeleteAlertDialog onDelete={onDelete} />}
-            
-        </div>
-          ) : ( 
-            <div className="flex gap-2">
+      {isDeletableType && (
+        <div className="flex gap-2 items-center">
+          {title === 'virtual' ? (
+            <span className="text-sm text-muted-foreground">
               Cannot delete virtual lab
-              </div>
+            </span>
+          ) : (
+            onDelete && <DeleteAlertDialog onDelete={onDelete} />
           )}
+        </div>
+      )}
     </div>
   )
 }

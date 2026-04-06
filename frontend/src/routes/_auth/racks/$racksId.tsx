@@ -5,7 +5,6 @@ import { Box, Cpu, Info, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
 import type { TagItem } from '@/integrations/tags/tags.types'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
 import { DataTable } from '@/components/ui/data-table'
@@ -65,7 +64,7 @@ function RacksDetailsPage() {
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For table we don't need nested structure
-  const flatMachines = rack.shelves.flatMap(shelf => shelf.machines)
+  const flatMachines = rack.shelves.flatMap((shelf) => shelf.machines)
 
   const columnsMachines: Array<ColumnDef<any>> = [
     {
@@ -209,10 +208,9 @@ function RacksDetailsPage() {
                     children={(field) => (
                       <DndTable
                         shelves={field.state.value}
-                        onReorder={
-                          (newShelves)=> {
-                          field.handleChange(newShelves)}
-                        }
+                        onReorder={(newShelves) => {
+                          field.handleChange(newShelves)
+                        }}
                       />
                     )}
                   />

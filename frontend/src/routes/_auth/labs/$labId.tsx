@@ -1,5 +1,6 @@
-import { createFileRoute, useRouter, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TagItem } from '@/integrations/tags/tags.types'
 import type { ApiLabsDetailRack } from '@/integrations/labs/labs.types'
@@ -10,7 +11,6 @@ import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { TagList } from '@/components/tag-list'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { useDeleteLabMutation } from '@/integrations/labs/labs.mutation'
-import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_auth/labs/$labId')({
   component: RouteComponent,
@@ -64,7 +64,7 @@ function RouteComponent() {
     <SubPageTemplate
       headerProps={{
         title: lab.name,
-        type: "deletable",
+        type: 'deletable',
         onDelete: () => {
           deleteLab.mutate(undefined, {
             onSuccess: () => {
