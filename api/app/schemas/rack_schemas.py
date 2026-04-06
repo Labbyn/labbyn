@@ -88,6 +88,10 @@ class RackUpdate(BaseModel):
         default=[],
         description="List of existing machines with associated shelf orders to place in the rack",
     )
+    shelves: Optional[List[Any]] = Field(
+        default=[],
+        description="List of existing shelfs in the rack",
+    )
 
 
 class RackResponse(RackBase):

@@ -149,7 +149,7 @@ class RackService:
         db_rack = await self.get_rack_or_404(rack_id)
         update_dict = rack_data.model_dump(exclude_unset=True)
         update_dict.pop("machines", None)  # TO DO: Handle ordering of machines
-
+        shelves_data = update_dict.pop("shelves", None)
         try:
             if "tag_ids" in update_dict:
                 tag_ids = update_dict.pop("tag_ids")
@@ -176,6 +176,12 @@ class RackService:
                     raise exceptions.AccessDeniedError(
                         f"Room '{room.name}' is owned by another team"
                     )
+
+            if shelves_data is not None:
+                for shelf in shelves_data:
+                    await self.db.execute(sql.update(models.Shelf)
+                        .where(models.Shelf.id == shelf["id"])
+                        .values(order=shelf["order"]))
 
             for key, value in update_dict.items():
                 setattr(db_rack, key, value)

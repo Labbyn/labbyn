@@ -47,7 +47,7 @@ function RacksDetailsPage() {
       team_id: rack.team_id,
       room_id: rack.room_id,
       tags: rack.tags,
-      machines: rack.machines,
+      shelves: rack.shelves,
     },
     onSubmit: ({ value }) => {
       updateRack.mutate(value, {
@@ -65,7 +65,7 @@ function RacksDetailsPage() {
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For table we don't need nested structure
-  const flatMachines = rack.machines.flat()
+  const flatMachines = rack.shelves.flatMap(shelf => shelf.machines)
 
   const columnsMachines: Array<ColumnDef<any>> = [
     {
@@ -205,15 +205,14 @@ function RacksDetailsPage() {
               <>
                 {isEditing ? (
                   <form.Field
-                    name="machines"
+                    name="shelves"
                     children={(field) => (
                       <DndTable
-                        dbItems={rack.machines}
-                        onReorder={(
-                          newMachines: Array<Array<ApiRackDetailMachineItem>>,
-                        ) => {
-                          field.handleChange(newMachines)
-                        }}
+                        shelves={field.state.value}
+                        onReorder={
+                          (newShelves)=> {
+                          field.handleChange(newShelves)}
+                        }
                       />
                     )}
                   />
