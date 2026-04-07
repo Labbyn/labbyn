@@ -9,10 +9,11 @@ from .service import ExportService
 
 router = APIRouter(prefix="/db/export", tags=["Export"])
 
+
 @router.get("/all/bulk")
 async def export_bulk_data(
     db=Depends(get_async_db),
-    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create)
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     service = ExportService(db, ctx)
     bundle = await service.export_bulk()
@@ -21,19 +22,20 @@ async def export_bulk_data(
 
     return JSONResponse(
         content=bundle,
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
 
 @router.get("/{entity_type}")
 async def export_data(
     entity_type: str,
     format: str = Query("json", regex="^(json|csv)$"),
     db=Depends(get_async_db),
-    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create)
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     service = ExportService(db, ctx)
     now = datetime.now()
-    timestamp = now.strftime('%Y%m%d_%H%M')
+    timestamp = now.strftime("%Y%m%d_%H%M")
 
     try:
         content = await service.export_data(entity_type, format)
@@ -47,7 +49,7 @@ async def export_data(
         return StreamingResponse(
             file_out,
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
         )
 
     json_bundle = {
@@ -55,12 +57,12 @@ async def export_data(
             "system": "labbyn",
             "entity": entity_type,
             "exported_at": now.isoformat(),
-            "exported_by": ctx.user.login
+            "exported_by": ctx.user.login,
         },
-        "data": content
+        "data": content,
     }
 
     return JSONResponse(
         content=json_bundle,
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
