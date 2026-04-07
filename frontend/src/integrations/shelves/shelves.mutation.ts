@@ -26,3 +26,22 @@ export function useCreateShelfMutation() {
     },
   })
 }
+
+
+export function useDeleteShelfMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ['delete-shelf'],
+    mutationFn: ({
+      shelfId
+    }: {
+      shelfId: number
+    }) => api.delete(PATHS.DETAIL(shelfId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['shelf'] })
+      queryClient.invalidateQueries({ queryKey: ['racks', 'list', 'base'] })
+    },
+  })
+}

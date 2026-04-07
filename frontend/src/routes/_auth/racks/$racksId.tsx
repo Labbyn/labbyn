@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { Box, Cpu, Info, Users } from 'lucide-react'
+import { Box, Cpu, Info, Users, Layers } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { useCreateShelfMutation } from '@/integrations/shelves/shelves.mutation'
+import { useCreateShelfMutation, useDeleteShelfMutation } from '@/integrations/shelves/shelves.mutation'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -38,11 +38,12 @@ function RacksDetailsPage() {
   const deleteRack = useDeletRackMutation(Number(racksId))
   const updateRack = useUpdateRackMutation(Number(racksId))
   const createShelf = useCreateShelfMutation()
+  const deleteShelf = useDeleteShelfMutation()
   const { data: rack } = useSuspenseQuery(singleRackQueryOptions(racksId))
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
   const navigate = useNavigate()
-
+  
   const form = useForm({
     defaultValues: {
       name: rack.name,
@@ -88,6 +89,39 @@ function RacksDetailsPage() {
         <DataTableColumnHeader column={column} title="MAC address" />
       ),
     },
+  ]
+
+    const columnsShelves: Array<ColumnDef<any>> = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Shelf Name" />
+      ),
+    },
+    {
+      accessorKey: 'machines',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Machines" />
+      ),
+      cell: ({ row }) => {
+      const machines = row.getValue('machines') as { name: string }[]
+
+      if (machines.length === 0) return <span className="text-muted-foreground text-sm">No machines</span>
+
+      return (
+        <div className="flex flex-wrap gap-1">
+          {machines.map((machine, index) => (
+            <span 
+              key={index} 
+              className="text-sm font-semibold truncate flex items-center ml-2 bg-card text-card-foreground border rounded-sm px-3 py-1.5 min-w-[120px]"
+            >
+              {machine.name}
+            </span>
+          ))}
+        </div>
+      )
+    },
+    }
   ]
 
   return (
@@ -205,6 +239,27 @@ function RacksDetailsPage() {
             Icon={Cpu}
             content={
               <>
+                  <DataTable
+                    columns={columnsMachines}
+                    data={flatMachines}
+                    onRowClick={(row) => {
+                      navigate({
+                        to: '/machines/$machineId',
+                        params: { machineId: String(row.id) },
+                      })
+                    }}
+                  />
+              </>
+            }
+          />
+          {/* Shelves Section */}
+          <SubpageCard
+            title={'Shelves'}
+            description={'Shelves with associated machines'}
+            type="table"
+            Icon={Layers}
+            content={
+              <>
                 {isEditing ? (
                   <>
                     <Button
@@ -244,27 +299,38 @@ function RacksDetailsPage() {
                           onReorder={(newShelves) => {
                             field.handleChange(newShelves)
                           }}
+                          onDelete={(shelfId) => {
+                            deleteShelf.mutate({shelfId},
+                              {
+                                onSuccess: () => {
+                                  const currentShelves = form.getFieldValue('shelves')             
+  form.setFieldValue('shelves', currentShelves.filter((shelf) => shelf.id !== shelfId))
+  toast.success(`Shelf deleted!`)
+                              }
+                            }
+                            )
+                          }
+                        }
                         />
                       )}
                     />
                   </>
                 ) : (
                   <DataTable
-                    columns={columnsMachines}
-                    data={flatMachines}
-                    onRowClick={(row) => {
-                      navigate({
-                        to: '/machines/$machineId',
-                        params: { machineId: String(row.id) },
-                      })
-                    }}
+                    columns={columnsShelves}
+                    data={rack.shelves.map(shelf => ({
+                        name: shelf.name,
+                        machines: shelf.machines
+                    })
+                  )}
                   />
+                  
                 )}
               </>
             }
           />
         </>
       }
-    />
+    />    
   )
 }

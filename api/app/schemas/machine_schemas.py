@@ -92,6 +92,7 @@ class MachineInRackResponse(BaseModel):
     Includes shelf information.
     """
 
+    id: int
     name: str
     ip_address: Optional[str]
     mac_address: Optional[str]
@@ -127,6 +128,7 @@ class MachineFullDetailResponse(BaseModel):
     room_id: int
     shelf_number: int
     shelf_id: int
+    shelf_name: str
 
     last_update: Optional[date]
     monitoring: bool
