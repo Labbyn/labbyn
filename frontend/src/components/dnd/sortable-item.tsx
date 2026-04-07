@@ -19,7 +19,7 @@ export function SortableItem<T extends SortableItemData>({
   items,
   id,
   shelfName,
-  onDelete
+  onDelete,
 }: sortableItemProps<T>) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: id })
@@ -28,7 +28,7 @@ export function SortableItem<T extends SortableItemData>({
     transform: CSS.Transform.toString(transform),
     transition,
   }
-  
+
   // Display all machines on shelf in one row
   return (
     <div
@@ -46,13 +46,13 @@ export function SortableItem<T extends SortableItemData>({
           <div className="w-px h-8 bg-border/50 shrink-0" />
           <div className="flex w-full items-center">
             {items.map((item) => (
-              <div 
-                  key={item.id} 
-                  className="flex items-center ml-2 bg-card text-card-foreground border rounded-sm px-3 py-1.5 min-w-[120px]"
-                >
-              <span className="text-sm font-semibold truncate">
-                {item.name}
-              </span>
+              <div
+                key={item.id}
+                className="flex items-center ml-2 bg-card text-card-foreground border rounded-sm px-3 py-1.5 min-w-[120px]"
+              >
+                <span className="text-sm font-semibold truncate">
+                  {item.name}
+                </span>
               </div>
             ))}
           </div>
@@ -66,9 +66,9 @@ export function SortableItem<T extends SortableItemData>({
               e.stopPropagation()
               onDelete(Number(id))
             }}
-            >
+          >
             <Trash2 className="h-4 w-4" />
-            </Button>
+          </Button>
         </div>
       </div>
     </div>

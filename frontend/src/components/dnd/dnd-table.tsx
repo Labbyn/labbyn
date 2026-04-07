@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -26,14 +26,13 @@ interface DndTableProps {
 export function DndTable({
   shelves: initialShelves,
   onReorder,
-  onDelete
+  onDelete,
 }: DndTableProps) {
   const [shelves, setShelves] = useState(initialShelves)
   useEffect(() => {
-    setShelves(initialShelves || [])
+    setShelves(initialShelves)
   }, [initialShelves])
-  console.log(shelves);
-  
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -51,7 +50,13 @@ export function DndTable({
         strategy={verticalListSortingStrategy}
       >
         {shelves.map((shelf) => (
-          <SortableItem items={shelf.machines} shelfName={shelf.name} id={shelf.id} key={shelf.id} onDelete={onDelete}/>
+          <SortableItem
+            items={shelf.machines}
+            shelfName={shelf.name}
+            id={shelf.id}
+            key={shelf.id}
+            onDelete={onDelete}
+          />
         ))}
       </SortableContext>
     </DndContext>

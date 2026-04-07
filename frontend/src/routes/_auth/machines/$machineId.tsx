@@ -68,8 +68,7 @@ function MachineDetailsPage() {
 
   const updateMachine = useUpdateMachineMutation(machineId)
   const deleteMachine = useDeleteMachineMutation(machineId)
-  console.log(machine);
-  
+
   const { mutate: createShelf } = useCreateShelfMutation()
   // TO DO: make shelf creation auto select the created shelf for the machine
   const handleShelfCreation = (rackId: number) => {
@@ -91,7 +90,6 @@ function MachineDetailsPage() {
   }
   const [isEditing, setIsEditing] = useState(false)
 
-  
   const form = useForm({
     defaultValues: { ...machine },
     onSubmit: ({ value }) => {
@@ -629,9 +627,7 @@ function MachineDetailsPage() {
                               {isLoadingShelves && field.state.value && (
                                 <SelectItem
                                   value={field.state.value.toString()}
-                                >
-                                  {shelf.name}
-                                </SelectItem>
+                                ></SelectItem>
                               )}
                               {shelves
                                 ?.sort((a, b) => a.order - b.order)
