@@ -57,7 +57,7 @@ async def export_data(
             "system": "labbyn",
             "entity": entity_type,
             "exported_at": now.isoformat(),
-            "exported_by": ctx.user.login,
+            "exported_by": ctx.current_user.login,
         },
         "data": content,
     }
