@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -27,6 +27,9 @@ export function DndTable({
   onReorder,
 }: DndTableProps) {
   const [shelves, setShelves] = useState(initialShelves)
+  useEffect(() => {
+    setShelves(initialShelves || [])
+  }, [initialShelves])
 
   const sensors = useSensors(
     useSensor(PointerSensor),

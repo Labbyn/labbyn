@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { useCreateShelfMutation } from '@/integrations/shelves/shelves.mutation'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -35,6 +37,7 @@ function RacksDetailsPage() {
   const router = useRouter()
   const deleteRack = useDeletRackMutation(Number(racksId))
   const updateRack = useUpdateRackMutation(Number(racksId))
+  const createShelf = useCreateShelfMutation()
   const { data: rack } = useSuspenseQuery(singleRackQueryOptions(racksId))
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
@@ -203,17 +206,48 @@ function RacksDetailsPage() {
             content={
               <>
                 {isEditing ? (
-                  <form.Field
-                    name="shelves"
-                    children={(field) => (
-                      <DndTable
-                        shelves={field.state.value}
-                        onReorder={(newShelves) => {
-                          field.handleChange(newShelves)
-                        }}
-                      />
-                    )}
-                  />
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentShelves = form.getFieldValue('shelves')
+                        const highestOrder =
+                          currentShelves.length > 0
+                            ? Math.max(
+                                ...currentShelves.map((shelf) => shelf.order),
+                              )
+                            : 0
+                        const nextOrder = highestOrder + 1
+                        createShelf.mutate({
+                          rackId: Number(racksId),
+                          shelfData: {
+                            name: `Shelf ${nextOrder}`,
+                            order: nextOrder,
+                          }
+                        },
+                        {
+                        onSuccess: (newShelf) => {                      
+  form.setFieldValue('shelves', [...currentShelves, newShelf.data])
+  toast.success(`Shelf ${nextOrder} added!`)
+                        }
+                      }
+                      )
+                      }}
+                    >
+                      Add new shelf
+                    </Button>
+                    <form.Field
+                      name="shelves"
+                      children={(field) => (
+                        <DndTable
+                          shelves={field.state.value}
+                          onReorder={(newShelves) => {
+                            field.handleChange(newShelves)
+                          }}
+                        />
+                      )}
+                    />
+                  </>
                 ) : (
                   <DataTable
                     columns={columnsMachines}
