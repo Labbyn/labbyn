@@ -22,8 +22,9 @@ from .shelf.router import router as shelf
 from .tags.router import router as tags
 from .team.router import router as team
 from .user.router import router as user
+from .import_csv.router import router as import_csv
+from .export_csv.router import router as export_csv
 
-# Eksportujemy też prometheus_router dla workera w lifespan
 prometheus_router = prometheus
 
 __all__ = [
@@ -50,4 +51,5 @@ __all__ = [
     "disks",
     "search",
     "prometheus_router",
+    "import_csv",
 ]
