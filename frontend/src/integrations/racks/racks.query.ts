@@ -9,7 +9,7 @@ import api from '@/lib/api'
 const PATHS = {
   BASE: '/db/racks',
   LIST: `/db/racks-list`,
-  SINGLE: (id: string) => `/db/racks/rack_info/${id}`,
+  SINGLE: (id: string) => `/db/racks/${id}`,
 }
 
 // Fetch rack base list

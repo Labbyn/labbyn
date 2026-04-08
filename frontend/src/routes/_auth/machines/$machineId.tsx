@@ -627,9 +627,7 @@ function MachineDetailsPage() {
                               {isLoadingShelves && field.state.value && (
                                 <SelectItem
                                   value={field.state.value.toString()}
-                                >
-                                  Shelf #{machine.shelf_number}
-                                </SelectItem>
+                                ></SelectItem>
                               )}
                               {shelves
                                 ?.sort((a, b) => a.order - b.order)
@@ -638,7 +636,7 @@ function MachineDetailsPage() {
                                     key={shelf.id}
                                     value={shelf.id.toString()}
                                   >
-                                    Shelf #{shelf.order}
+                                    {shelf.name}
                                   </SelectItem>
                                 ))}
                               <SelectItem value="new">
@@ -659,7 +657,7 @@ function MachineDetailsPage() {
                       { label: 'Team', value: machine.team_name },
                       { label: 'Room name', value: machine.room_name },
                       { label: 'Rack name', value: machine.rack_name },
-                      { label: 'Shelf number', value: machine.shelf_number },
+                      { label: 'Shelf name', value: machine.shelf_name },
                     ].map((item, index, array) => (
                       <div
                         key={item.label}
