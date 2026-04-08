@@ -4,12 +4,12 @@ import api from '@/lib/api'
 
 const PATHS = {
   LIST: `/db/categories`,
-  SINGLE: (id: string) => `/db/racks/rack_info/${id}`,
+  SINGLE: (id: string) => `/db/categories/${id}`,
 }
 
 // Fetch category list
 export const categoryListQueryOptions = queryOptions({
-  queryKey: ['categoriers', 'list'],
+  queryKey: ['categories', 'list'],
   queryFn: async () => {
     const { data } = await api.get<ApiCategoryResponse>(PATHS.LIST)
     return data
@@ -19,7 +19,7 @@ export const categoryListQueryOptions = queryOptions({
 // Fetch single category by ID
 export const singleCategoryQueryOptions = (categoryId: string) =>
   queryOptions({
-    queryKey: ['categoriers', categoryId],
+    queryKey: ['categories', categoryId],
     queryFn: async () => {
       const { data } = await api.get<ApiCategoryItem>(PATHS.SINGLE(categoryId))
       return data

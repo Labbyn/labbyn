@@ -94,7 +94,7 @@ const QUICK_ACTIONS = [
     Component: AddRackDialog,
   },
   {
-    id: 'categories',
+    id: 'category',
     label: 'New Category',
     desc: 'Group your inventory logically',
     icon: LayoutGrid,

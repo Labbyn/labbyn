@@ -81,6 +81,10 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       toast.success('Platform added successfully')
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['shelf'] })
+      queryClient.invalidateQueries({ queryKey: ['rack'] })
+
+
       setOpen(false)
       form.reset()
     },

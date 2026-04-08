@@ -3,7 +3,7 @@ export type EntityType =
   | 'inventory'
   | 'room'
   | 'user'
-  | 'categories'
+  | 'category'
 export type ActionType = 'create' | 'update' | 'delete'
 
 export interface ApiHistoryItem {
