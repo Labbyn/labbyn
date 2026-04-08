@@ -10,7 +10,6 @@ from app.db import models
 from app.utils import redis_service
 
 from .repository import RoomRepository
-from .. import room
 
 
 class RoomService:
