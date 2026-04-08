@@ -7,6 +7,7 @@ import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import type { AuthState } from './auth'
 import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -15,7 +16,7 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
-    <>
+    <TooltipProvider delayDuration={0}>
       <Outlet />
       <Toaster richColors position="top-right" />
       <TanStackDevtools
@@ -32,6 +33,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           TanStackQueryDevtools,
         ]}
       />
-    </>
+    </TooltipProvider>
   ),
 })
