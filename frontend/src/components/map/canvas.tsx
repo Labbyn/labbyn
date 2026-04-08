@@ -1656,12 +1656,12 @@ export function CanvasComponent3D({
             onValueChange={onRoomChange}
             disabled={isLoadingRooms}
           >
-            <SelectTrigger className="w-auto min-w-35 bg-card/90 backdrop-blur-md border border-border/50 shadow-lg rounded-xl font-semibold">
+            <SelectTrigger className="bg-card/90 backdrop-blur-md border border-border/50 shadow-lg rounded-xl">
               <SelectValue
                 placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
               />
             </SelectTrigger>
-            <SelectContent side="right" align="start">
+            <SelectContent position="popper" align="start" className="w-fit">
               {rooms.map((room: any) => (
                 <SelectItem key={room.id} value={room.id.toString()}>
                   {room.name || `Room ${room.id}`}
