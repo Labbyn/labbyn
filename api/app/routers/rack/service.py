@@ -87,8 +87,6 @@ class RackService:
 
         :param rack_data: Creation schema.
         :return: Created rack.
-        :raises ValidationError: If team or room issues occur.
-        :raises ConflictError: On name collision.
         """
         self.ctx.require_user()
         target_team_id = rack_data.team_id or (
@@ -125,6 +123,13 @@ class RackService:
                 db_rack.tags = list(tag_res.scalars().all())
 
             self.db.add(db_rack)
+            await self.db.flush()
+            size = getattr(rack_data, "size", None)
+            if size and size > 0:
+                for i in range(1, size + 1):
+                    new_shelf = models.Shelf(name=f"U{i}", rack_id=db_rack.id, order=i)
+                    self.db.add(new_shelf)
+
             await self.db.commit()
 
             return await self.get_rack_or_404(db_rack.id, detailed=True)
