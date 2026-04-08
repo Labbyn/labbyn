@@ -1,9 +1,4 @@
-export type EntityType =
-  | 'machines'
-  | 'inventory'
-  | 'room'
-  | 'user'
-  | 'category'
+export type EntityType = 'machines' | 'inventory' | 'room' | 'user' | 'category'
 export type ActionType = 'create' | 'update' | 'delete'
 
 export interface ApiHistoryItem {

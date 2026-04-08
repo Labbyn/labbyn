@@ -3,15 +3,15 @@ import {
   Activity,
   CheckCircle2,
   Cpu,
+  Edit2,
   Layers,
+  Loader2,
+  Save,
   Server,
   Thermometer,
   Wind,
   X,
   Zap,
-  Edit2,
-  Save,
-  Loader2,
 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -29,8 +29,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { DndTable } from '@/components/dnd/dnd-table'
 import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 import {
-  useUpdateShelvesOrderMutation,
   useDeleteShelfMutation,
+  useUpdateShelvesOrderMutation,
 } from '@/integrations/shelves/shelves.mutation'
 
 export function RackInfoPanel({
@@ -54,7 +54,7 @@ export function RackInfoPanel({
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [shelvesData, setShelvesData] = useState<Array<ApiShelfItem>>([])
-  const [deletedIds, setDeletedIds] = useState<number[]>([])
+  const [deletedIds, setDeletedIds] = useState<Array<number>>([])
 
   useEffect(() => {
     if (fetchedShelves && !isEditing) {
@@ -174,7 +174,7 @@ export function RackInfoPanel({
           <Separator className="opacity-50" />
 
           {/* Shelves Section */}
-          {/*@TODO refactor shelfs */}
+          {/* @TODO refactor shelfs */}
           <section className="space-y-3 w-full overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -238,7 +238,8 @@ export function RackInfoPanel({
                 </div>
               ) : isEditing ? (
                 /* Interactive Drag and Drop Table */
-                <div className="
+                <div
+                  className="
                   w-full
                   [&_.group>div.flex-1]:overflow-x-auto 
                   [&_.group>div.flex-1]:overflow-y-hidden 
@@ -248,7 +249,8 @@ export function RackInfoPanel({
                   [&_.group>div.flex-1>span]:shrink-0 
                   [&_.group>div.flex-1>span]:max-w-35 
                   [&_.group>div.flex-1>span]:inline-block
-                ">
+                "
+                >
                   <DndTable
                     shelves={shelvesData}
                     onReorder={handleReorder}
@@ -258,13 +260,15 @@ export function RackInfoPanel({
               ) : (
                 <div className="w-full">
                   {shelvesData.map((shelf) => (
-                    <div key={shelf.id} className="flex flex-col space-y-3 w-full px-4 py-2">
+                    <div
+                      key={shelf.id}
+                      className="flex flex-col space-y-3 w-full px-4 py-2"
+                    >
                       <div className="group relative flex flex-row items-center justify-between w-full h-12 p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-all overflow-hidden">
-                        
                         <div className="font-bold text-sm min-w-16 max-w-20 truncate text-foreground shrink-0 mr-4">
                           {shelf.name}
                         </div>
-                        
+
                         <div className="flex flex-1 items-center justify-start gap-3 overflow-x-auto scrollbar-width-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                           {shelf.machines.map((item) => (
                             <span
@@ -275,10 +279,11 @@ export function RackInfoPanel({
                             </span>
                           ))}
                           {shelf.machines.length === 0 && (
-                             <span className="text-xs italic opacity-40 shrink-0">Empty Shelf</span>
+                            <span className="text-xs italic opacity-40 shrink-0">
+                              Empty Shelf
+                            </span>
                           )}
                         </div>
-                        
                       </div>
                     </div>
                   ))}
