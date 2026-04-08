@@ -88,6 +88,11 @@ class ImportService:
                 )
 
         await self.db.commit()
+        if len(data) > 0 and results["summary"]["success"] == 0:
+            raise exceptions.ValidationError(
+                message="Every import failed.",
+            )
+
         return results
 
     async def _process_inventory(self, row: Dict[str, Any], t_id: int) -> str:
