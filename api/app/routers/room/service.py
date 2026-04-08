@@ -10,6 +10,7 @@ from app.db import models
 from app.utils import redis_service
 
 from .repository import RoomRepository
+from .. import room
 
 
 class RoomService:
@@ -72,10 +73,14 @@ class RoomService:
                     sql.select(models.Tags).where(models.Tags.id.in_(room_data.tag_ids))
                 )
                 obj.tags = list(tag_res.scalars().all())
+            if room_data.name != "virtual":
+                obj.map = models.Map()
 
             self.db.add(obj)
             await self.db.commit()
-            return await self.get_room_or_404(obj.id)
+            room = await self.get_room_or_404(obj.id)
+            room.map_link = f"/map/room/{room.id}"
+            return room
         except IntegrityError:
             await self.db.rollback()
             raise exceptions.ConflictError(
