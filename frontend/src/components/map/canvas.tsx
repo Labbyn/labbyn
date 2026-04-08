@@ -1661,7 +1661,7 @@ export function CanvasComponent3D({
                 placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
               />
             </SelectTrigger>
-            <SelectContent position="popper" align="start" className="w-fit">
+            <SelectContent position='popper' align='start'>
               {rooms.map((room: any) => (
                 <SelectItem key={room.id} value={room.id.toString()}>
                   {room.name || `Room ${room.id}`}
