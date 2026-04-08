@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   DndContext,
   KeyboardSensor,
@@ -14,21 +14,25 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { SortableItem } from './sortable-item'
-import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
 import type { DragEndEvent } from '@dnd-kit/core'
+import type { ApiShelfItem } from '@/integrations/shelves/shelves.types'
 
 interface DndTableProps {
-  dbItems: Array<Array<ApiRackDetailMachineItem>>
-  onReorder: (newItems: Array<Array<ApiRackDetailMachineItem>>) => void
+  shelves: Array<ApiShelfItem>
+  onReorder: (newShelves: Array<any>) => void
+  onDelete: (id: number) => void
 }
 
-export function DndTable({ dbItems, onReorder }: DndTableProps) {
-  const [shelves, setShelves] = useState(() =>
-    dbItems.map((machines, index) => ({
-      id: `shelf-${index}`,
-      machines,
-    })),
-  )
+export function DndTable({
+  shelves: initialShelves,
+  onReorder,
+  onDelete,
+}: DndTableProps) {
+  const [shelves, setShelves] = useState(initialShelves)
+  useEffect(() => {
+    setShelves(initialShelves)
+  }, [initialShelves])
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -46,7 +50,13 @@ export function DndTable({ dbItems, onReorder }: DndTableProps) {
         strategy={verticalListSortingStrategy}
       >
         {shelves.map((shelf) => (
-          <SortableItem items={shelf.machines} id={shelf.id} key={shelf.id} />
+          <SortableItem
+            items={shelf.machines}
+            shelfName={shelf.name}
+            id={shelf.id}
+            key={shelf.id}
+            onDelete={onDelete}
+          />
         ))}
       </SortableContext>
     </DndContext>
@@ -61,10 +71,12 @@ export function DndTable({ dbItems, onReorder }: DndTableProps) {
     const oldIndex = shelves.findIndex((shelf) => shelf.id === active.id)
     const newIndex = shelves.findIndex((shelf) => shelf.id === over.id)
 
-    const result = arrayMove(shelves, oldIndex, newIndex)
-    setShelves(result)
-    onReorder(result.map((shelf) => shelf.machines))
-
-    return result
+    const reorderedShelves = arrayMove(shelves, oldIndex, newIndex)
+    const updatedShelves = reorderedShelves.map((shelf, index) => ({
+      ...shelf,
+      order: index + 1,
+    }))
+    setShelves(updatedShelves)
+    onReorder(updatedShelves)
   }
 }

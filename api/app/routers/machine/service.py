@@ -174,6 +174,7 @@ class MachineService:
             ),
             "shelf_id": machine.shelf.id if machine.shelf else 0,
             "shelf_number": machine.shelf.order if machine.shelf else 0,
+            "shelf_name": machine.shelf.name if machine.shelf else "N/A",
             "room_name": machine.room.name if machine.room else "N/A",
             "room_id": machine.room.id if machine.room else None,
             "last_update": machine.machine_metadata.last_update,
