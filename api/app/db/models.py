@@ -109,7 +109,7 @@ class Rooms(Base):
     __table_args__ = (UniqueConstraint("name", "team_id", name="_room_team_uc"),)
 
     machines = relationship("Machines", back_populates="room")
-    inventory = relationship("Inventory", back_populates="room")
+    inventory_items = relationship("InventoryItem", back_populates="room")
     team = relationship("Teams", back_populates="rooms")
     racks = relationship("Rack", back_populates="room")
     tags = relationship("Tags", secondary="tags_rooms", back_populates="rooms")
@@ -173,7 +173,7 @@ class Machines(Base):
     room = relationship("Rooms", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
     machine_metadata = relationship("Metadata", back_populates="machines")
-    inventory = relationship("Inventory", back_populates="machine")
+    inventory_items = relationship("InventoryItem", back_populates="machine")
     shelf = relationship("Shelf", back_populates="machines")
     tags = relationship("Tags", secondary="tags_machines", back_populates="machines")
     cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
@@ -215,7 +215,7 @@ class Teams(Base):
     users = relationship("UsersTeams", back_populates="team")
     machines = relationship("Machines", back_populates="team")
     rooms = relationship("Rooms", back_populates="team")
-    inventory = relationship("Inventory", back_populates="team")
+    inventory_items = relationship("InventoryItem", back_populates="team")
     racks = relationship("Rack", back_populates="team")
 
 
@@ -271,7 +271,7 @@ class Rentals(Base):
     id = Column(Integer, primary_key=True)
     item_id = Column(
         Integer,
-        ForeignKey("inventory.id", use_alter=True, name="fk_rentals_inventory_id"),
+        ForeignKey("inventory_items.id", use_alter=True, name="fk_rentals_inventory_id"),
         nullable=False,
     )
     start_date = Column(Date, nullable=False)
@@ -286,23 +286,40 @@ class Rentals(Base):
 
     user = relationship("User", back_populates="rentals")
 
-    inventory = relationship(
-        "Inventory", foreign_keys=[item_id], back_populates="rental_history"
+    inventory_item = relationship(
+        "InventoryItem", foreign_keys=[item_id], back_populates="rental_history"
     )
 
 
-class Inventory(Base):
-    """Inventory model representing inventory items in the system."""
+class InventoryModel(Base):
+    """InventoryModel representing the catalog/dictionary of equipment."""
 
-    __tablename__ = "inventory"
+    __tablename__ = "inventory_models"
 
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    quantity = Column(Integer, nullable=False)
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+
+    version_id = Column(Integer, nullable=False, default=1)
+
+    __mapper_args__ = {"version_id_col": version_id}
+
+    category = relationship("Categories", back_populates="inventory_models")
+    items = relationship("InventoryItem", back_populates="model", cascade="all, delete-orphan")
+
+
+class InventoryItem(Base):
+    """InventoryItem representing physical instances/batches of inventory."""
+
+    __tablename__ = "inventory_items"
+
+    id = Column(Integer, primary_key=True)
+    model_id = Column(Integer, ForeignKey("inventory_models.id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
     machine_id = Column(Integer, ForeignKey("machines.id"), nullable=True)
-    category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
+    
     rental_status = Column(Boolean, nullable=False, default=False)
     rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=True)
 
@@ -310,16 +327,16 @@ class Inventory(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    room = relationship("Rooms", back_populates="inventory")
-    machine = relationship("Machines", back_populates="inventory")
-    team = relationship("Teams", back_populates="inventory")
+    model = relationship("InventoryModel", back_populates="items")
+    
+    room = relationship("Rooms", back_populates="inventory_items")
+    machine = relationship("Machines", back_populates="inventory_items")
+    team = relationship("Teams", back_populates="inventory_items")
+
     current_rental = relationship("Rentals", foreign_keys=[rental_id])
-
     rental_history = relationship(
-        "Rentals", foreign_keys="[Rentals.item_id]", back_populates="inventory"
+        "Rentals", foreign_keys="[Rentals.item_id]", back_populates="inventory_item"
     )
-
-    category = relationship("Categories", back_populates="inventory")
 
 
 class Categories(Base):
@@ -334,7 +351,7 @@ class Categories(Base):
 
     __mapper_args__ = {"version_id_col": version_id}
 
-    inventory = relationship("Inventory", back_populates="category")
+    inventory_models = relationship("InventoryModel", back_populates="category")
 
 
 class History(Base):

@@ -4,6 +4,7 @@ import type {
   ApiInventoryInfoResponse,
   ApiInventoryItem,
   ApiInventoryResponse,
+  ApiInventoryInfoGroupedResponse
 } from './inventory.types'
 import api from '@/lib/api'
 
@@ -12,6 +13,7 @@ const PATHS = {
   DETAIL: (id: string) => `/db/inventory/${id}`,
   INFO: '/db/inventory/details',
   SINGLE_INFO: (id: string) => `/db/inventory/details/${id}`,
+  GROUPED_INFO: '/db/inventory/details/grouped'
 }
 
 // Fetch full inventory list
@@ -55,3 +57,12 @@ export const inventoryItemInfoQueryOptions = (inventoryId: string) =>
       return data
     },
   })
+
+// Fetch full inventory info gruped list
+export const inventoryGroupedInfoQueryOptions = queryOptions({
+  queryKey: ['inventory', 'list', 'info', 'grouped'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiInventoryInfoGroupedResponse>(PATHS.GROUPED_INFO)
+    return data
+  },
+})

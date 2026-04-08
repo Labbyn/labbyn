@@ -9,7 +9,8 @@ from .disk.router import router as disks
 from .documentation.router import router as documentation
 from .history.router import router as history
 from .history.sub_router import router as history_sub
-from .inventory.router import router as inventory
+from .inventory_items.router import router as inventory
+from .inventory_models.router import router as inventory_models
 from .machine.router import router as machine
 from .map.router import router as maps
 from .metadata.router import router as metadata
@@ -29,6 +30,7 @@ prometheus_router = prometheus
 __all__ = [
     "prometheus",
     "category",
+    "inventory_models",
     "inventory",
     "maps",
     "machine",

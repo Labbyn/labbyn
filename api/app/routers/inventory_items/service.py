@@ -11,7 +11,7 @@ from .repository import InventoryRepository
 
 
 class InventoryService:
-    """Service for managing Inventory articles and their tag associations."""
+    """Service for managing Inventory items and their tag associations."""
 
     def __init__(self, db: AsyncSession, ctx: dependencies.RequestContext):
         """Init Inventory Service.
@@ -25,7 +25,7 @@ class InventoryService:
 
     async def get_inventory_or_404(
         self, item_id: int, detailed: bool = False
-    ) -> models.Inventory:
+    ) -> models.InventoryItem:
         """Fetch specific inventory item or raise 404.
 
         :param item_id: Item ID
@@ -40,7 +40,7 @@ class InventoryService:
         return item
 
     async def create_item(self, inventory_data):
-        """Create and add new inventory to database.
+        """Create and add new inventory item to database.
 
         :param inventory_data: Inventory data
         :return: Inventory item.
@@ -48,17 +48,17 @@ class InventoryService:
         self.ctx.require_user()
         try:
             data = inventory_data.model_dump()
-            await self.ctx.validate_team_access(data["team_id"])
+            await self.ctx.validate_team_access(data.get("team_id"))
 
-            obj = models.Inventory(**data)
+            obj = models.InventoryItem(**data)
             self.db.add(obj)
             await self.db.commit()
-            await self.db.refresh(obj, attribute_names=["category", "team"])
+            await self.db.refresh(obj, attribute_names=["team", "model"])
             return obj
         except Exception as e:
             await self.db.rollback()
             raise exceptions.ValidationError(
-                f"Could not create inventory item '{inventory_data.name}'"
+                "Could not create inventory item. Ensure the model_id exists."
             ) from e
 
     async def get_all_details(self):
@@ -72,6 +72,7 @@ class InventoryService:
             active_rentals_list = [
                 {
                     "id": r.id,
+                    "model_id": item.model_id,
                     "borrower_name": f"{r.user.name} {r.user.surname}",
                     "borrower_team": (
                         ", ".join([ut.team.name for ut in r.user.teams])
@@ -86,20 +87,23 @@ class InventoryService:
             ]
 
             total_rented = sum(r["quantity"] for r in active_rentals_list)
+            
+            model = item.model
+            category = model.category if model else None
 
             results.append(
                 {
                     "id": item.id,
-                    "name": item.name,
-                    "total_quantity": item.quantity,
-                    "in_stock_quantity": item.quantity - total_rented,
+                    "model_id": item.model_id,
+                    "name": model.name if model else "N/A",
+                    "quantity": item.quantity,
                     "team_id": item.team_id,
                     "team_name": item.team.name if item.team else "N/A",
                     "room_name": item.room.name if item.room else "N/A",
                     "room_id": item.room.id if item.room else 1,
                     "machine_info": item.machine.name if item.machine else "None",
-                    "category_id": item.category_id,
-                    "category_name": item.category.name if item.category else "N/A",
+                    "category_id": model.category_id if model else None,
+                    "category_name": category.name if category else "N/A",
                     "location_link": f"/labs/{item.localization_id}",
                     "active_rentals": active_rentals_list,
                 }
@@ -116,13 +120,13 @@ class InventoryService:
         new_items = []
         for item_data in items_data:
             data = item_data.model_dump()
-            new_items.append(models.Inventory(**data))
+            new_items.append(models.InventoryItem(**data))
 
         try:
             self.db.add_all(new_items)
             await self.db.commit()
             for item in new_items:
-                await self.db.refresh(item, attribute_names=["category", "team"])
+                await self.db.refresh(item, attribute_names=["team", "model"])
             return new_items
         except Exception as e:
             await self.db.rollback()
@@ -158,18 +162,20 @@ class InventoryService:
 
         total_rented = sum(r["quantity"] for r in active_rentals_list)
 
+        model = item.model
+        category = model.category if model else None
+
         return {
             "id": item.id,
-            "name": item.name,
-            "total_quantity": item.quantity,
-            "in_stock_quantity": item.quantity - total_rented,
+            "name": model.name if model else "N/A",
+            "quantity": item.quantity,
             "team_id": item.team_id,
             "team_name": item.team.name if item.team else "N/A",
             "room_name": item.room.name if item.room else "N/A",
             "room_id": item.room.id if item.room else 1,
             "machine_info": item.machine.name if item.machine else "None",
-            "category_id": item.category_id,
-            "category_name": item.category.name if item.category else "N/A",
+            "category_id": model.category_id if model else None,
+            "category_name": category.name if category else "N/A",
             "location_link": f"/labs/{item.localization_id}",
             "active_rentals": active_rentals_list,
         }
@@ -194,12 +200,12 @@ class InventoryService:
                 for k, v in data.items():
                     setattr(item, k, v)
                 await self.db.commit()
-                await self.db.refresh(item, attribute_names=["category", "team"])
+                await self.db.refresh(item, attribute_names=["team", "model"])
                 return item
             except Exception as e:
                 await self.db.rollback()
                 raise exceptions.ValidationError(
-                    f"Failed to update item '{item.name}'"
+                    f"Failed to update item with ID '{item.id}'"
                 ) from e
 
     async def delete_item(self, item_id: int):
@@ -216,5 +222,27 @@ class InventoryService:
             except Exception as e:
                 await self.db.rollback()
                 raise exceptions.ValidationError(
-                    f"Could not delete item '{item.name}'"
+                    f"Could not delete item with ID '{item.id}'"
                 ) from e
+
+    async def get_grouped_details(self):
+        """Fetch all inventory items and group them by their catalog model."""
+        detailed_items = await self.get_all_details()
+
+        grouped = {}
+        for item in detailed_items:
+            m_id = item["model_id"]
+            
+            if m_id not in grouped:
+                grouped[m_id] = {
+                    "model_id": m_id,
+                    "model_name": item["name"],
+                    "category_name": item["category_name"],
+                    "total_quantity": 0,
+                    "model_items": []
+                }
+
+            grouped[m_id]["model_items"].append(item)
+            grouped[m_id]["total_quantity"] += item["quantity"]
+            
+        return list(grouped.values())

@@ -1,4 +1,4 @@
-"""Router for Inventory Database API CRUD."""
+"""Router for Inventory Items API CRUD."""
 
 from typing import List
 
@@ -11,7 +11,7 @@ from app.schemas import inventory_schemas
 
 from .service import InventoryService
 
-router = APIRouter(prefix="/db/inventory", tags=["Inventory"])
+router = APIRouter(prefix="/db/inventory", tags=["Inventory Items"])
 
 
 @router.post(
@@ -24,9 +24,9 @@ async def create_item(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Create and add new inventory to database.
+    """Create and add new physical inventory item to database.
 
-    :param inventory_data: Inventory data
+    :param inventory_data: Inventory item data (requires model_id)
     :param db: Active database session
     :param ctx: Request context for user and team info
     :return: Inventory item.
@@ -39,7 +39,7 @@ async def get_inventory(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Fetch all inventory items.
+    """Fetch all physical inventory items (basic info).
 
     :param db: Active database session
     :param ctx: Request context for user and team info
@@ -55,11 +55,11 @@ async def get_inventory_details(
 ):
     """Fetch all inventory items with detailed information.
 
-    Related tables (team, room, machine, category).
+    Related tables (catalog model, team, room, machine, rentals).
 
     :param db: Active database session
     :param ctx: Request context for user and team info
-    :return: List of inventory items.
+    :return: List of flattened inventory items details.
     """
     return await InventoryService(db, ctx).get_all_details()
 
@@ -74,15 +74,27 @@ async def bulk_create_items(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Bulk import inventory items.
+    """Bulk import physical inventory items.
 
     :param items_data: List of inventory item data
     :param db: Active database session
     :param ctx: Request context for user and team info
-    :return: Inventory items
+    :return: Created inventory items
     """
     return await InventoryService(db, ctx).bulk_create_items(items_data)
 
+@router.get("/details/grouped", response_model=List[inventory_schemas.InventoryModelGroupedResponse])
+async def get_grouped_inventory_details(
+    db: AsyncSession = Depends(get_async_db),
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch inventory models with their associated physical items nested inside.
+
+    :param db: Active database session
+    :param ctx: Request context for user and team info
+    :return: Grouped list of models and their items.
+    """
+    return await InventoryService(db, ctx).get_grouped_details()
 
 @router.get(
     "/details/{item_id}", response_model=inventory_schemas.InventoryDetailResponse
@@ -92,8 +104,9 @@ async def get_inventory_item_details(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Fetch all specific item with detailed information.
-    Related tables (team, room, machine, category).
+    """Fetch specific item with detailed information.
+    
+    Related tables (catalog model, team, room, machine, rentals).
 
     :param item_id: Item ID
     :param db: Active database session
@@ -109,7 +122,7 @@ async def get_inventory_item(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Fetch specific inventory item by ID.
+    """Fetch specific physical inventory item by ID.
 
     :param item_id: Item ID
     :param db: Active database session
@@ -126,10 +139,12 @@ async def update_item(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Update item in inventory.
+    """Update specific physical item in inventory.
+    
+    Useful for moving item between labs, assigning to machines, or updating quantity.
 
     :param item_id: Item ID
-    :param item_data: Item data schema
+    :param item_data: Item update schema
     :param db: Active database session
     :return: Updated Inventory item.
     """
@@ -142,11 +157,12 @@ async def delete_item(
     db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Delete item in inventory.
+    """Delete item from inventory.
 
     :param item_id: Item ID
     :param db: Active database session
-    :return: 204 No Content as success
+    :return: 204 No Content on success
     """
     await InventoryService(db, ctx).delete_item(item_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+

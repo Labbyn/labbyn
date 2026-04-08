@@ -135,14 +135,9 @@ function InventoryDetailsPage() {
               <div className="flex flex-col">
                 {[
                   {
-                    label: 'Total quantity',
-                    name: 'total_quantity',
+                    label: 'Quantity',
+                    name: 'quantity',
                     icon: WeightTilde,
-                  },
-                  {
-                    label: 'In stock quantity',
-                    name: 'in_stock_quantity',
-                    icon: Coins,
                   },
                   {
                     label: 'Category',
@@ -238,7 +233,7 @@ function InventoryDetailsPage() {
           {/* Localization section */}
           <SubpageCard
             title="Localization"
-            description="Inventory placement"
+            description="Item assigned"
             type="info"
             Icon={MapPin}
             content={

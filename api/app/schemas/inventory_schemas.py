@@ -55,20 +55,35 @@ class RentalReturn(BaseModel):
         description="Quantity being returned; if not provided, assumes full return",
     )
 
+class InventoryModelBase(BaseModel):
+    """Base model for Inventory dictionary (Katalog)."""
+    name: str = Field(..., max_length=100, description="Name of the equipment model")
+    category_id: int = Field(..., description="ID of the item category")
+
+
+class InventoryModelCreate(InventoryModelBase):
+    """Schema for creating a new dictionary equipment model."""
+
+
+class InventoryModelResponse(InventoryModelBase):
+    """Schema for reading Inventory dictionary model data."""
+    id: int
+    version_id: int
+    model_config = ConfigDict(from_attributes=True)
+
 
 class InventoryBase(BaseModel):
     """Base model for Inventory items."""
 
-    name: str = Field(..., max_length=100, description="Name of the item")
+    model_id: int = Field(..., description="Id of the InventoryModel")
     quantity: int = Field(..., description="Quantity available")
     team_id: Optional[int] = Field(None, description="ID of the team owning the item")
-    localization_id: int = Field(
+    localization_id: Optional[int] = Field(
         ..., description="ID of the room where item is located"
     )
     machine_id: Optional[int] = Field(
         None, description="ID of the machine if item is part of one"
     )
-    category_id: int = Field(..., description="ID of the item category")
     rental_status: bool = Field(False, description="True if item is currently rented")
     rental_id: Optional[int] = Field(
         None, description="ID of the current active rental"
@@ -82,12 +97,11 @@ class InventoryCreate(InventoryBase):
 class InventoryUpdate(BaseModel):
     """Schema for updating an Inventory item."""
 
-    name: Optional[str] = Field(None, max_length=100)
+    model_id: Optional[int] = None
     quantity: Optional[int] = None
     team_id: Optional[int] = None
     localization_id: Optional[int] = None
     machine_id: Optional[int] = None
-    category_id: Optional[int] = None
     rental_status: Optional[bool] = None
     rental_id: Optional[int] = None
 
@@ -105,8 +119,8 @@ class InventoryDetailResponse(BaseModel):
 
     id: int
     name: str
-    total_quantity: int
-    in_stock_quantity: int
+    model_id: int
+    quantity: int
     team_id: Optional[int]
     team_name: str
     room_name: str
@@ -118,3 +132,11 @@ class InventoryDetailResponse(BaseModel):
     active_rentals: List[RentalInfo] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+class InventoryModelGroupedResponse(BaseModel):
+    """Schema for grouped inventory items by their dictionary model."""
+    model_id: int
+    model_name: str
+    category_name: str
+    total_quantity: int
+    model_items: List[InventoryDetailResponse]

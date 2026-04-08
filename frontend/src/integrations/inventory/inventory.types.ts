@@ -14,8 +14,7 @@ export interface InventoryResponse {
 export interface ApiInventoryInfoItem {
   id: number
   name: string
-  total_quantity: number | null
-  in_stock_quantity: number | null
+  quantity: number | null
   team_name: string | null
   room_name: string | null
   machine_info: string | null
@@ -34,6 +33,13 @@ export interface ApiUpdateInventory {
   category_id?: number
   rental_status?: boolean
   rental_id?: number | null
+}
+
+export interface ApiInventoryInfoGroupedResponse {
+  model_id: number
+  model_name: string
+  category_name: string
+  model_items: Array<ApiInventoryInfoItem>
 }
 
 export type ApiInventoryItem = InventoryResponse

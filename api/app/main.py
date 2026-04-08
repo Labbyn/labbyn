@@ -93,6 +93,7 @@ all_app_routers = [
     routers.cpus,
     routers.disks,
     routers.inventory,
+    routers.inventory_models,
     routers.category,
     routers.rental,
     routers.metadata,
