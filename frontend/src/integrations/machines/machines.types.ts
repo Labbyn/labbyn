@@ -47,6 +47,7 @@ export interface ApiMachineInfo {
   pdu_port: number
   added_on: string // format: date-time
   shelf_number: number | null
+  shelf_name: string | null
   shelf_id: number | null
   team_id: string | null
   team_name: string
