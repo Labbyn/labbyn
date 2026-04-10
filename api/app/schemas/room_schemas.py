@@ -42,6 +42,7 @@ class RoomsResponse(RoomsBase):
     id: int = Field(..., description="Unique identifier of the room")
     version_id: int
     tags: List[tag_schemas.TagsResponse] = []
+    map_link: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
 
