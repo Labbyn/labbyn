@@ -37,7 +37,7 @@ export function AddCategoriesDialog({
     mutationFn: useCreateCategoryMutation,
     onSuccess: () => {
       toast.success('Category added successfully')
-      queryClient.invalidateQueries({ queryKey: ['category'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
       setOpen(false)
       form.reset()
     },

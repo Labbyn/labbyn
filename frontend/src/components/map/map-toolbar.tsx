@@ -8,19 +8,10 @@ import {
   Trash2,
   Type,
 } from 'lucide-react'
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '../ui/combobox'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -32,85 +23,65 @@ interface MapToolbarProps {
 
 export function MapToolbar({ mode, setMode }: MapToolbarProps) {
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="p-1.5 backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl w-fit">
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={mode}
-          onValueChange={(v) => v && setMode(v)}
-        >
-          <ToolbarItem
-            mode={mode}
-            value="view"
-            icon={<MousePointer2 size={16} />}
-            label="Inspect"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="select"
-            icon={<BoxSelect size={16} />}
-            label="Marquee Select"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="move"
-            icon={<Move size={16} />}
-            label="Move"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="rotate"
-            icon={<RotateCw size={16} />}
-            label="Rotate"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="add-rack"
-            icon={<Plus size={16} />}
-            label="Add Rack"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="add-wall"
-            icon={<Hammer size={16} />}
-            label="Add Wall"
-          />
-          <ToolbarItem
-            mode={mode}
-            value="add-label"
-            icon={<Type size={16} />}
-            label="Add Label"
-          />
+    <div className="p-1.5 backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl w-fit">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={mode}
+        onValueChange={(v) => v && setMode(v)}
+      >
+        <ToolbarItem
+          mode={mode}
+          value="view"
+          icon={<MousePointer2 size={16} />}
+          label="Inspect"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="select"
+          icon={<BoxSelect size={16} />}
+          label="Marquee Select"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="move"
+          icon={<Move size={16} />}
+          label="Move"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="rotate"
+          icon={<RotateCw size={16} />}
+          label="Rotate"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="add-rack"
+          icon={<Plus size={16} />}
+          label="Add Rack"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="add-wall"
+          icon={<Hammer size={16} />}
+          label="Add Wall"
+        />
+        <ToolbarItem
+          mode={mode}
+          value="add-label"
+          icon={<Type size={16} />}
+          label="Add Label"
+        />
 
-          <ToolbarItem
-            mode={mode}
-            value="delete"
-            icon={<Trash2 size={16} />}
-            label="Delete"
-            className="text-destructive data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
-          />
-        </ToggleGroup>
-
-        <Combobox defaultValue={'Bio lab #1'}>
-          <ComboboxInput placeholder="Select a room/lab" />
-          <ComboboxEmpty>No rooms/labs found</ComboboxEmpty>
-          <ComboboxContent>
-            <ComboboxList>
-              <ComboboxItem key="1" value="Bio lab #1">
-                Bio lab #1
-              </ComboboxItem>
-              <ComboboxItem key="2" value="Bio lab #2">
-                Bio lab #2
-              </ComboboxItem>
-              <ComboboxItem key="3" value="Big room">
-                Big room
-              </ComboboxItem>
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
-      </div>
-    </TooltipProvider>
+        <ToolbarItem
+          mode={mode}
+          value="delete"
+          icon={<Trash2 size={16} />}
+          label="Delete"
+          className="text-destructive data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+        />
+      </ToggleGroup>
+    </div>
   )
 }
 

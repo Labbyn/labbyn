@@ -21,4 +21,10 @@ export interface ApiShelfCreate {
   order: number
 }
 
+export interface ApiShelfUpdate {
+  name?: string | null
+  order?: number | null
+  rack_id?: number | null
+}
+
 export type ApiShelvesResponse = Array<ApiShelfItem>
