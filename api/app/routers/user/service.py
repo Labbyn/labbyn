@@ -43,7 +43,7 @@ class UserService:
         user_team_ids = {m.team_id for m in u.teams}
         is_in_common_team = any(tid in self.ctx.team_ids for tid in user_team_ids)
         can_see_full_data = self.ctx.is_admin or is_in_common_team
-
+        can_see_secret_details = self.ctx.is_admin or self.ctx.is_group_admin
         memberships = [
             {
                 "team_id": m.team_id,
@@ -67,9 +67,11 @@ class UserService:
                     "email": u.email,
                     "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
                     "group_links": [f"/teams/{tid}" for tid in user_team_ids],
-                    "force_password_change": u.force_password_change,
                 }
             )
+            if can_see_secret_details:
+                user_data["force_password_change"] = u.force_password_change
+
             return user_schemas.UserInfoExtended.model_validate(user_data)
 
         return user_schemas.UserInfo.model_validate(user_data)
@@ -288,8 +290,16 @@ class UserService:
             else:
                 membership.is_group_admin = promote_data.is_group_admin
 
-            if promote_data.is_group_admin and user.user_type == models.UserType.USER:
-                user.user_type = models.UserType.GROUP_ADMIN
+            await self.db.flush()
+
+            is_anywhere_admin = await self.repo.count_admin_memberships(self.db, user_id)
+
+            if is_anywhere_admin > 0:
+                if user.user_type == models.UserType.USER:
+                    user.user_type = models.UserType.GROUP_ADMIN
+            else:
+                if user.user_type == models.UserType.GROUP_ADMIN:
+                    user.user_type = models.UserType.USER
 
             try:
                 await self.db.commit()
