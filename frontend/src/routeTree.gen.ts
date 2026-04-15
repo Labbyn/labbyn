@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupPasswordRouteImport } from './routes/setup-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
@@ -39,6 +40,11 @@ import { Route as AuthAdminPanelLoggingRouteImport } from './routes/_auth/admin-
 import { Route as AuthAdminPanelInventoryRouteImport } from './routes/_auth/admin-panel/inventory'
 import { Route as AuthInventoryDeviceDeviceidRouteImport } from './routes/_auth/inventory/device/$deviceid'
 
+const SetupPasswordRoute = SetupPasswordRouteImport.update({
+  id: '/setup-password',
+  path: '/setup-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -189,6 +195,7 @@ const AuthInventoryDeviceDeviceidRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthIndexRoute
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/add-items': typeof AuthAddItemsRoute
   '/documentation': typeof AuthDocumentationRouteWithChildren
   '/import-export': typeof AuthImportExportRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/add-items': typeof AuthAddItemsRoute
   '/import-export': typeof AuthImportExportRoute
   '/map': typeof AuthMapRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/_auth/add-items': typeof AuthAddItemsRoute
   '/_auth/documentation': typeof AuthDocumentationRouteWithChildren
   '/_auth/import-export': typeof AuthImportExportRoute
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/setup-password'
     | '/add-items'
     | '/documentation'
     | '/import-export'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/setup-password'
     | '/add-items'
     | '/import-export'
     | '/map'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_auth'
     | '/login'
+    | '/setup-password'
     | '/_auth/add-items'
     | '/_auth/documentation'
     | '/_auth/import-export'
@@ -373,10 +385,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SetupPasswordRoute: typeof SetupPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup-password': {
+      id: '/setup-password'
+      path: '/setup-password'
+      fullPath: '/setup-password'
+      preLoaderRoute: typeof SetupPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -657,6 +677,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
+  SetupPasswordRoute: SetupPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
