@@ -120,7 +120,7 @@ async def upload_avatar(
     return await UserService(db, ctx).upload_avatar(file)
 
 
-@router.patch("/{user_id}/promote", response_model=user_schemas.UserInfoExtended)
+@router.patch("/{user_id}/change_team_access", response_model=user_schemas.UserInfoExtended)
 async def promote_user(
     user_id: int,
     promote_data: user_schemas.UserTeamRoleUpdate,
@@ -128,4 +128,4 @@ async def promote_user(
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update user's group admin role within a specific team."""
-    return await UserService(db, ctx).promote_user(user_id, promote_data)
+    return await UserService(db, ctx).change_user_access(user_id, promote_data)

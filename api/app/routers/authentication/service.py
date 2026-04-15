@@ -37,3 +37,22 @@ class AuthService:
         await self.db.commit()
 
         return {"message": "Password has been set successfully."}
+
+    async def force_password_reset(self, user_id: int):
+        """Setup password change flag.
+
+        Set flag to force password reset to redirect user to
+        password reset subpage.
+
+        :param user_id: User ID
+        :return: Success or error message
+        """
+        db_user = await self.repo.get_user_by_id(self.db, user_id)
+
+        if not self.user.force_password_change:
+            raise exceptions.ValidationError("Change password is not required.")
+
+        db_user.force_password_change = True
+        self.db.add(db_user)
+        await self.db.commit()
+        return {"message": f"Password reset forced for user {db_user.login}"}
