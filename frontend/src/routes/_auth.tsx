@@ -16,27 +16,17 @@ export const Route = createFileRoute('/_auth')({
         },
       })
     }
+
+    if (context.auth.user?.force_password_change) {
+      throw redirect({
+        to: '/setup-password',
+      })
+    }
   },
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  /*
-  const router = useRouter()
-  const navigate = Route.useNavigate()
-  const auth = useAuth()
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      auth.logout()
-
-      //Invalidate the router to clear cached data
-      router.invalidate().finally(() => {
-        navigate({ to: '/' })
-      })
-    }
-  }
-  */
-
   return (
     <SidebarProvider>
       <AppSidebar />
