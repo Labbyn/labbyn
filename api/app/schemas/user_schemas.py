@@ -136,6 +136,7 @@ class UserInfoExtended(UserInfo):
     group_links: List[str] = Field(
         default=[], description="Links to the assigned groups details"
     )
+    force_password_change: Optional[bool] = None
 
 
 class UserTeamRoleUpdate(BaseModel):

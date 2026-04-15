@@ -49,8 +49,8 @@ class AuthService:
         """
         db_user = await self.repo.get_user_by_id(self.db, user_id)
 
-        if not self.user.force_password_change:
-            raise exceptions.ValidationError("Change password is not required.")
+        if not db_user:
+            raise exceptions.ObjectNotFoundError("User")
 
         db_user.force_password_change = True
         self.db.add(db_user)
