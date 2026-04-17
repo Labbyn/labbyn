@@ -138,6 +138,10 @@ export default function UserAdminPanel() {
   const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    password: string
+  } | null>(null)
+
   const createUser = useCreateUserMutation()
 
   const newUserTemplate: UserCreate = {
@@ -152,29 +156,62 @@ export default function UserAdminPanel() {
 
   const handleCreateUser = (data: UserCreate) => {
     createUser.mutate(data, {
-      onSuccess: () => setIsDialogOpen(false),
+      onSuccess: (response) => {
+        setIsDialogOpen(false)
+        if (response.generated_password) {
+          setGeneratedCredentials({
+            password: response.generated_password,
+          })
+        }
+      },
     })
   }
 
   if (isLoading) return <PageIsLoading />
 
   return (
-    <DataTable
-      columns={columns}
-      data={users}
-      actionElement={
-        <>
-          <Button onClick={() => setIsDialogOpen(true)}>Add New User</Button>
+    <>
+      <DataTable
+        columns={columns}
+        data={users}
+        actionElement={
+          <>
+            <Button onClick={() => setIsDialogOpen(true)}>Add New User</Button>
 
-          <GenericCreateDialog
-            title="Create New User"
-            isOpen={isDialogOpen}
-            onClose={() => setIsDialogOpen(false)}
-            defaultValues={newUserTemplate}
-            onSubmit={handleCreateUser}
-          />
-        </>
-      }
-    />
+            <GenericCreateDialog
+              title="Create New User"
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              defaultValues={newUserTemplate}
+              onSubmit={handleCreateUser}
+            />
+          </>
+        }
+      />
+      <Dialog
+        open={!!generatedCredentials}
+        onOpenChange={(open) => {
+          if (!open) setGeneratedCredentials(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Created Successfully</DialogTitle>
+            <DialogDescription>
+              A password was automatically generated for this user. Please copy it
+              now, as it will not be shown again.
+            </DialogDescription>
+          </DialogHeader>
+
+            <div className="grid gap-2">
+              <Label>Generated Password</Label>
+              <Input readOnly value={generatedCredentials?.password || ''} />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setGeneratedCredentials(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
