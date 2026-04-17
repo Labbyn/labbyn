@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { MoreHorizontal, Eye, EyeOff } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { PageIsLoading } from '../page-is-loading'
 import { DataTable } from '../ui/data-table'
@@ -16,6 +16,16 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { DataTableColumnHeader } from '../data-table/column-header'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import { Label } from '../ui/label'
+import { Input } from '../ui/input'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { UserCreate } from '@/integrations/user/user.types'
@@ -25,9 +35,6 @@ import {
   useDeleteUserMutation,
   useResetUserPasswordMutation,
 } from '@/integrations/user/user.mutation'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
-import { Label } from '../ui/label'
-import { Input } from '../ui/input'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
 
@@ -173,7 +180,6 @@ export default function UserAdminPanel() {
 
   return (
     <>
-    
       <DataTable
         columns={columns}
         data={users}
@@ -201,8 +207,8 @@ export default function UserAdminPanel() {
           <DialogHeader>
             <DialogTitle>User Created Successfully</DialogTitle>
             <DialogDescription>
-              Here are login credentials for this user. Please copy it
-              now, as it will not be shown again.
+              Here are login credentials for this user. Please copy it now, as
+              it will not be shown again.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
