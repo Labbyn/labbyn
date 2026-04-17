@@ -23,7 +23,11 @@ import { adminUsersQueryOptions } from '@/integrations/user/user.query'
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
+  useResetUserPasswordMutation,
 } from '@/integrations/user/user.mutation'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog'
+import { Label } from '../ui/label'
+import { Input } from '../ui/input'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
 
@@ -92,6 +96,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
     cell: ({ row }) => {
       const user = row.original
       const deleteMutation = useDeleteUserMutation()
+      const resetPasswordMutation = useResetUserPasswordMutation()
 
       return (
         <DropdownMenu>
@@ -110,11 +115,10 @@ export const columns: Array<ColumnDef<UserItem>> = [
               Edit User
             </DropdownMenuItem>
 
-            {/* @todo implement password reset*/}
             <DropdownMenuItem
-              onClick={() => console.log('Reset password', user.email)}
+              onClick={() => resetPasswordMutation.mutate(user.id)}
             >
-              Reset Password
+              Force password reset
             </DropdownMenuItem>
 
             <DropdownMenuItem
