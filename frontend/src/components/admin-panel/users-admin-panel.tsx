@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 import { PageIsLoading } from '../page-is-loading'
 import { DataTable } from '../ui/data-table'
@@ -139,6 +139,7 @@ export default function UserAdminPanel() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const [generatedCredentials, setGeneratedCredentials] = useState<{
+    login: string
     password: string
   } | null>(null)
 
@@ -160,6 +161,7 @@ export default function UserAdminPanel() {
         setIsDialogOpen(false)
         if (response.generated_password) {
           setGeneratedCredentials({
+            login: response.login,
             password: response.generated_password,
           })
         }
@@ -171,6 +173,7 @@ export default function UserAdminPanel() {
 
   return (
     <>
+    
       <DataTable
         columns={columns}
         data={users}
@@ -198,14 +201,19 @@ export default function UserAdminPanel() {
           <DialogHeader>
             <DialogTitle>User Created Successfully</DialogTitle>
             <DialogDescription>
-              A password was automatically generated for this user. Please copy it
+              Here are login credentials for this user. Please copy it
               now, as it will not be shown again.
             </DialogDescription>
           </DialogHeader>
-
+          <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Generated Password</Label>
+              <Label>Login</Label>
+              <Input readOnly value={generatedCredentials?.login || ''} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Password</Label>
               <Input readOnly value={generatedCredentials?.password || ''} />
+            </div>
           </div>
           <DialogFooter>
             <Button onClick={() => setGeneratedCredentials(null)}>Close</Button>
