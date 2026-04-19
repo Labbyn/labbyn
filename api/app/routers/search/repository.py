@@ -19,6 +19,6 @@ class SearchRepository:
             "docs": sql.select(models.Documentation),
             "machines": ctx.team_filter(sql.select(models.Machines), models.Machines),
             "racks": ctx.team_filter(sql.select(models.Rack), models.Rack),
-            "items": ctx.team_filter(sql.select(models.Inventory), models.Inventory),
+            "items": ctx.team_filter(sql.select(models.InventoryModel), models.InventoryModel),
             "rooms": ctx.team_filter(sql.select(models.Rooms), models.Rooms),
         }

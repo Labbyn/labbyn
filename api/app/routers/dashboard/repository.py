@@ -21,7 +21,7 @@ class DashboardRepository:
         """
         machines_stmt = ctx.team_filter(select(models.Machines), models.Machines)
         rooms_stmt = ctx.team_filter(select(models.Rooms), models.Rooms)
-        inventory_stmt = ctx.team_filter(select(models.Inventory), models.Inventory)
+        inventory_stmt = ctx.team_filter(select(models.InventoryModel), models.InventoryModel)
         teams_stmt = ctx.team_filter(select(models.Teams), models.Teams)
         history_stmt = ctx.team_filter(select(models.History), models.History)
 
