@@ -21,6 +21,7 @@ export interface AuthState {
   user: User | null
   login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  setupPassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -88,6 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  const setupPassword = useCallback(async (newPassword: string) => {
+    await api.post('/auth/setup-password', { new_password: newPassword })
+
+    const userRes = await api.get<User>('/users/me')
+    const userData = userRes.data
+
+    setUser(userData)
+    localStorage.setItem('user', JSON.stringify(userData))
+  }, [])
+
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -107,7 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, login, logout, setupPassword }}
+    >
       {children}
     </AuthContext.Provider>
   )

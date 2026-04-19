@@ -43,7 +43,7 @@ class UserService:
         user_team_ids = {m.team_id for m in u.teams}
         is_in_common_team = any(tid in self.ctx.team_ids for tid in user_team_ids)
         can_see_full_data = self.ctx.is_admin or is_in_common_team
-
+        can_see_secret_details = self.ctx.is_admin or self.ctx.is_group_admin
         memberships = [
             {
                 "team_id": m.team_id,
@@ -61,7 +61,6 @@ class UserService:
             "user_type": u.user_type,
             "membership": memberships,
         }
-
         if detailed and can_see_full_data:
             user_data.update(
                 {
@@ -70,6 +69,9 @@ class UserService:
                     "group_links": [f"/teams/{tid}" for tid in user_team_ids],
                 }
             )
+            if can_see_secret_details:
+                user_data["force_password_change"] = u.force_password_change
+
             return user_schemas.UserInfoExtended.model_validate(user_data)
 
         return user_schemas.UserInfo.model_validate(user_data)
@@ -88,6 +90,11 @@ class UserService:
             )
 
         raw_password = user_data.password or security.generate_starting_password()
+        if user_data.password and len(user_data.password) < 6:
+            raise exceptions.ValidationError(
+                "Password must be at least 6 characters long."
+            )
+
         user_fields = user_data.model_dump(exclude={"password", "team_ids"})
 
         new_user = models.User(
@@ -159,15 +166,19 @@ class UserService:
 
             data = user_data.model_dump(exclude_unset=True)
 
-            if not self.ctx.is_admin:
-                if data.get("user_type") == models.UserType.ADMIN:
-                    raise exceptions.AccessDeniedError(
-                        "Access denied to promote to ADMIN"
-                    )
-                data.pop("team_ids", None)
-
             try:
+                if "user_type" in data:
+                    new_type = data.pop("user_type")
+                    if not self.ctx.is_admin and new_type == models.UserType.ADMIN:
+                        raise exceptions.AccessDeniedError(
+                            "Only system admins can promote to ADMIN."
+                        )
+
+                    user.user_type = new_type
+
                 if "password" in data:
+                    if len(data["password"]) < 6:
+                        raise exceptions.ValidationError("New password is too short.")
                     user.hashed_password = security.hash_password(data.pop("password"))
 
                 if "team_ids" in data and self.ctx.is_admin:
@@ -256,7 +267,7 @@ class UserService:
                 await self.db.rollback()
                 raise exceptions.ValidationError(f"Could not delete user '{login}'")
 
-    async def promote_user(self, user_id: int, promote_data):
+    async def change_user_access(self, user_id: int, promote_data):
         """Promote a user to Group Admin within a specific team.
 
         :param user_id: ID of the user to promote.
@@ -283,8 +294,18 @@ class UserService:
             else:
                 membership.is_group_admin = promote_data.is_group_admin
 
-            if promote_data.is_group_admin and user.user_type == models.UserType.USER:
-                user.user_type = models.UserType.GROUP_ADMIN
+            await self.db.flush()
+
+            is_anywhere_admin = await self.repo.count_admin_memberships(
+                self.db, user_id
+            )
+
+            if is_anywhere_admin > 0:
+                if user.user_type == models.UserType.USER:
+                    user.user_type = models.UserType.GROUP_ADMIN
+            else:
+                if user.user_type == models.UserType.GROUP_ADMIN:
+                    user.user_type = models.UserType.USER
 
             try:
                 await self.db.commit()

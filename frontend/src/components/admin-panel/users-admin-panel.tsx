@@ -16,6 +16,16 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
 import { DataTableColumnHeader } from '../data-table/column-header'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../ui/dialog'
+import { Label } from '../ui/label'
+import { Input } from '../ui/input'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { UserCreate } from '@/integrations/user/user.types'
@@ -23,6 +33,7 @@ import { adminUsersQueryOptions } from '@/integrations/user/user.query'
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
+  useResetUserPasswordMutation,
 } from '@/integrations/user/user.mutation'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
@@ -92,6 +103,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
     cell: ({ row }) => {
       const user = row.original
       const deleteMutation = useDeleteUserMutation()
+      const resetPasswordMutation = useResetUserPasswordMutation()
 
       return (
         <DropdownMenu>
@@ -110,11 +122,10 @@ export const columns: Array<ColumnDef<UserItem>> = [
               Edit User
             </DropdownMenuItem>
 
-            {/* @todo implement password reset*/}
             <DropdownMenuItem
-              onClick={() => console.log('Reset password', user.email)}
+              onClick={() => resetPasswordMutation.mutate(user.id)}
             >
-              Reset Password
+              Force password reset
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -134,6 +145,11 @@ export default function UserAdminPanel() {
   const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  const [generatedCredentials, setGeneratedCredentials] = useState<{
+    login: string
+    password: string
+  } | null>(null)
+
   const createUser = useCreateUserMutation()
 
   const newUserTemplate: UserCreate = {
@@ -148,29 +164,68 @@ export default function UserAdminPanel() {
 
   const handleCreateUser = (data: UserCreate) => {
     createUser.mutate(data, {
-      onSuccess: () => setIsDialogOpen(false),
+      onSuccess: (response) => {
+        setIsDialogOpen(false)
+        if (response.generated_password) {
+          setGeneratedCredentials({
+            login: response.login,
+            password: response.generated_password,
+          })
+        }
+      },
     })
   }
 
   if (isLoading) return <PageIsLoading />
 
   return (
-    <DataTable
-      columns={columns}
-      data={users}
-      actionElement={
-        <>
-          <Button onClick={() => setIsDialogOpen(true)}>Add New User</Button>
+    <>
+      <DataTable
+        columns={columns}
+        data={users}
+        actionElement={
+          <>
+            <Button onClick={() => setIsDialogOpen(true)}>Add New User</Button>
 
-          <GenericCreateDialog
-            title="Create New User"
-            isOpen={isDialogOpen}
-            onClose={() => setIsDialogOpen(false)}
-            defaultValues={newUserTemplate}
-            onSubmit={handleCreateUser}
-          />
-        </>
-      }
-    />
+            <GenericCreateDialog
+              title="Create New User"
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              defaultValues={newUserTemplate}
+              onSubmit={handleCreateUser}
+            />
+          </>
+        }
+      />
+      <Dialog
+        open={!!generatedCredentials}
+        onOpenChange={(open) => {
+          if (!open) setGeneratedCredentials(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>User Created Successfully</DialogTitle>
+            <DialogDescription>
+              Here are login credentials for this user. Please copy it now, as
+              it will not be shown again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Login</Label>
+              <Input readOnly value={generatedCredentials?.login || ''} />
+            </div>
+            <div className="grid gap-2">
+              <Label>Password</Label>
+              <Input readOnly value={generatedCredentials?.password || ''} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setGeneratedCredentials(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

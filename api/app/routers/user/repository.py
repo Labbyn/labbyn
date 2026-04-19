@@ -57,3 +57,18 @@ class UserRepository:
         )
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def count_admin_memberships(db: AsyncSession, user_id: int) -> int:
+        """Count how many teams the user is an admin of.
+
+        :param db: Active database session.
+        :param user_id: ID of the user.
+        :return: Number of admin memberships.
+        """
+        stmt = sql.select(sql.func.count(models.UsersTeams.team_id)).where(
+            models.UsersTeams.user_id == user_id,
+            models.UsersTeams.is_group_admin == True,
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one()
