@@ -1,4 +1,5 @@
 """Pydantic user models for database schemas."""
+
 from email.policy import default
 from typing import List, Optional
 
@@ -73,6 +74,7 @@ class UserUpdate(BaseModel):
     user_type: base_schemas.UserTypeEnum = Field(
         ..., max_length=50, description="User's role in the system"
     )
+
 
 class UserResponse(UserBase):
     """Schema for reading User data.

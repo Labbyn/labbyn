@@ -91,7 +91,9 @@ class UserService:
 
         raw_password = user_data.password or security.generate_starting_password()
         if user_data.password and len(user_data.password) < 6:
-            raise exceptions.ValidationError("Password must be at least 6 characters long.")
+            raise exceptions.ValidationError(
+                "Password must be at least 6 characters long."
+            )
 
         user_fields = user_data.model_dump(exclude={"password", "team_ids"})
 
@@ -168,7 +170,9 @@ class UserService:
                 if "user_type" in data:
                     new_type = data.pop("user_type")
                     if not self.ctx.is_admin and new_type == models.UserType.ADMIN:
-                        raise exceptions.AccessDeniedError("Only system admins can promote to ADMIN.")
+                        raise exceptions.AccessDeniedError(
+                            "Only system admins can promote to ADMIN."
+                        )
 
                     user.user_type = new_type
 
@@ -292,7 +296,9 @@ class UserService:
 
             await self.db.flush()
 
-            is_anywhere_admin = await self.repo.count_admin_memberships(self.db, user_id)
+            is_anywhere_admin = await self.repo.count_admin_memberships(
+                self.db, user_id
+            )
 
             if is_anywhere_admin > 0:
                 if user.user_type == models.UserType.USER:

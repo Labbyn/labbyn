@@ -66,12 +66,9 @@ class UserRepository:
         :param user_id: ID of the user.
         :return: Number of admin memberships.
         """
-        stmt = (
-            sql.select(sql.func.count(models.UsersTeams.team_id))
-            .where(
-                models.UsersTeams.user_id == user_id,
-                models.UsersTeams.is_group_admin == True
-            )
+        stmt = sql.select(sql.func.count(models.UsersTeams.team_id)).where(
+            models.UsersTeams.user_id == user_id,
+            models.UsersTeams.is_group_admin == True,
         )
         result = await db.execute(stmt)
         return result.scalar_one()

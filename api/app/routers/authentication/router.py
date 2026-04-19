@@ -36,9 +36,9 @@ async def setup_first_password(
 
 @router.post("/reset-password/{user_id}")
 async def reset_password(
-        user_id: int,
-        user: models.User = Depends(current_user),
-        db: AsyncSession = Depends(get_async_db),
+    user_id: int,
+    user: models.User = Depends(current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """Force password reset for given user.
 
