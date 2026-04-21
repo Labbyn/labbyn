@@ -3,7 +3,6 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import {
   ChevronRight,
   Contact,
-  FileUser,
   Info,
   Mail,
   UserSearch,
