@@ -12,16 +12,14 @@ class MachinesBase(BaseModel):
     """Base model for Machines."""
 
     name: str = Field(..., max_length=100, description="Unique machine name/hostname")
-    localization_id: int = Field(
-        ..., description="ID of the room where machine is located"
-    )
+    room_name: str = Field(..., description="ID of the room where machine is located")
     mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
     ip_address: Optional[str] = Field(None, max_length=15, description="IP Address")
     pdu_port: Optional[int] = Field(
         None, description="Power Distribution Unit port number"
     )
-    team_id: Optional[int] = Field(
-        None, description="ID of the team owning the machine"
+    team_name: Optional[str] = Field(
+        None, description="Name of team owning the machine"
     )
     os: Optional[str] = Field(None, max_length=30, description="Operating System")
     serial_number: Optional[str] = Field(

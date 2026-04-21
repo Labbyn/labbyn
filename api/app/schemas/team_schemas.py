@@ -27,7 +27,7 @@ class TeamsResponse(TeamsBase):
     """Schema for reading Team data."""
 
     id: int
-    version_id: int
+    admins: str = Field(validation_alias="admin_names")
     model_config = ConfigDict(from_attributes=True)
 
 

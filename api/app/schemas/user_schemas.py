@@ -1,6 +1,5 @@
 """Pydantic user models for database schemas."""
 
-from email.policy import default
 from typing import List, Optional
 
 from fastapi_users import schemas
@@ -45,7 +44,8 @@ class UserCreate(UserBase):
     """
 
     password: Optional[str] = Field(
-        default=None,
+        None,
+        min_length=6,
         max_length=255,
         description="If not provided, a random one will be generated",
     )
@@ -71,9 +71,6 @@ class UserUpdate(BaseModel):
         description="New password if change is requested",
     )
     team_ids: Optional[List[int]] = None
-    user_type: base_schemas.UserTypeEnum = Field(
-        None, max_length=50, description="User's role in the system"
-    )
 
 
 class UserResponse(UserBase):
@@ -83,7 +80,6 @@ class UserResponse(UserBase):
     """
 
     id: int
-    version_id: int
     membership: List[UserTeamMemebership] = Field(
         default=[], description="User's memberships"
     )
@@ -192,7 +188,7 @@ class FastApiUserCreate(schemas.BaseUserCreate):
     surname: str = Field(..., max_length=80)
     login: str = Field(..., max_length=30)
     user_type: base_schemas.UserTypeEnum = base_schemas.UserTypeEnum.USER
-    password: Optional[str] = None
+    password: Optional[str] = Field(None, min_length=6, max_length=255)
     team_ids: Optional[List[int]] = Field(default=[], description="Team IDs")
 
 
