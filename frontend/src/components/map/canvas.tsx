@@ -1919,6 +1919,7 @@ export function CanvasComponent3D({
                 geometry={rackGeometryBase}
                 castShadow
                 receiveShadow
+                frustumCulled={false}
               >
                 {viewOverlay === 'none' ? (
                   <meshStandardMaterial
