@@ -23,12 +23,13 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
   },
   {
     id: 'admins',
-    accessorFn: (row: any) => row.admins?.map((a: any) => a.full_name).join(', ') || '-',
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Administrator" />,
+    accessorFn: (row: any) =>
+      row.admins?.map((a: any) => a.full_name).join(', ') || '-',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Administrator" />
+    ),
     cell: ({ getValue }) => (
-      <div className="whitespace-normal">
-        {getValue<string>()}
-      </div>
+      <div className="whitespace-normal">{getValue<string>()}</div>
     ),
   },
   {
