@@ -19,33 +19,12 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Name" />
     },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('name')} {row.original.surname}
-      </span>
-    ),
   },
   {
     accessorKey: 'surname',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Surname" />
     },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('surname')} {row.original.surname}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'login',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Login" />
-    },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('login')} {row.original.surname}
-      </span>
-    ),
   },
   {
     accessorKey: 'user_type',

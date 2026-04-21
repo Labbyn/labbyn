@@ -54,7 +54,6 @@ function InventoryDetailsPage() {
                     { label: 'E-mail', value: user.email, icon: Mail },
                     { label: 'Name', value: user.name, icon: Contact },
                     { label: 'Surname', value: user.surname, icon: Contact },
-                    { label: 'Login', value: user.login, icon: FileUser },
                     {
                       label: 'User type',
                       value: user.user_type,
