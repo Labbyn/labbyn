@@ -99,7 +99,7 @@ class Rooms(Base):
     __tablename__ = "rooms"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, unique=True)
     room_type = Column(String(100), nullable=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     version_id = Column(Integer, nullable=False, default=1)

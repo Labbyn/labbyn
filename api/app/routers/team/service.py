@@ -159,7 +159,7 @@ class TeamService:
             await self.db.flush()
 
             virtual_lab = models.Rooms(
-                name="virtual", room_type="virtual", team_id=obj.id
+                name=f"virtual_{team_data.name}", room_type="virtual", team_id=obj.id
             )
             self.db.add(virtual_lab)
 
