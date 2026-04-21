@@ -22,24 +22,14 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
     cell: ({ row }) => <span>{row.getValue('name')}</span>,
   },
   {
-    accessorKey: 'admins',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Administrator" />
-    },
-    cell: ({ row }) => {
-      const admins = row.getValue<Array<any>>('admins')
-
-      if (!admins.length)
-        return <span className="text-muted-foreground">-</span>
-
-      return (
-        <div className="flex gap-1 flex-wrap">
-          {admins.map((admin, index) => (
-            <span key={index}>{admin.full_name}</span>
-          ))}
-        </div>
-      )
-    },
+    id: 'admins',
+    accessorFn: (row: any) => row.admins?.map((a: any) => a.full_name).join(', ') || '-',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Administrator" />,
+    cell: ({ getValue }) => (
+      <div className="whitespace-normal">
+        {getValue<string>()}
+      </div>
+    ),
   },
   {
     accessorKey: 'member_count',
