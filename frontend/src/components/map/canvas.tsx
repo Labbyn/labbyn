@@ -686,6 +686,34 @@ function SceneController({
   const [, getKeys] = useKeyboardControls()
   const initialized = useRef(false)
   const prevIs2D = useRef(is2D)
+  const isTypingRef = useRef(false)
+
+  useEffect(() => {
+    const checkIsInput = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false
+      return (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      )
+    }
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (checkIsInput(e.target)) isTypingRef.current = true
+    }
+
+    const handleFocusOut = (e: FocusEvent) => {
+      if (checkIsInput(e.target)) isTypingRef.current = false
+    }
+
+    document.addEventListener('focusin', handleFocusIn, true)
+    document.addEventListener('focusout', handleFocusOut, true)
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn, true)
+      document.removeEventListener('focusout', handleFocusOut, true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!controlsRef.current || !center) return
@@ -714,7 +742,7 @@ function SceneController({
   const rightVec = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((_, delta) => {
-    if (!enabled || !controlsRef.current) return
+    if (!enabled || !controlsRef.current || isTypingRef.current) return
     const { forward, back, left, right, rotateLeft, rotateRight } = getKeys()
 
     if ((rotateLeft || rotateRight) && !is2D) {
