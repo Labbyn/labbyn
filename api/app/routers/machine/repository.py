@@ -29,6 +29,7 @@ class MachineRepository:
             orm.joinedload(models.Machines.disks),
             orm.joinedload(models.Machines.team),
             orm.joinedload(models.Machines.machine_metadata),
+            orm.joinedload(models.Machines.room),
         )
         stmt = ctx.team_filter(stmt, models.Machines)
         result = await db.execute(stmt)

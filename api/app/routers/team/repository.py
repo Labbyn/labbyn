@@ -16,9 +16,11 @@ class TeamRepository:
         :param db: Active database session.
         :return: List of Team objects.
         """
-        stmt = sql.select(models.Teams)
+        stmt = sql.select(models.Teams).options(
+            orm.joinedload(models.Teams.users).joinedload(models.UsersTeams.user)
+        )
         result = await db.execute(stmt)
-        return result.scalars().all()
+        return result.unique().scalars().all()
 
     @staticmethod
     async def get_by_id(
