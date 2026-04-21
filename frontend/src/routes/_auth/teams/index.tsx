@@ -42,7 +42,7 @@ export const columns: Array<ColumnDef<ApiTeamInfo>> = [
     },
   },
   {
-    accessorKey: 'memberCount',
+    accessorKey: 'member_count',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Members" />
     },
