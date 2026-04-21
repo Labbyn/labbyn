@@ -2,13 +2,12 @@ export interface InventoryResponse {
   id: number
   name: string
   quantity: number
-  team_id: number | null
-  localization_id: number
-  machine_id: number | null
-  category_id: number
+  team_name: string | null
+  room_name: string
+  machine_name: string | null
+  category_name: string
   rental_status: boolean
   rental_id: number | null
-  version_id: number
 }
 
 export interface ApiInventoryInfoItem {

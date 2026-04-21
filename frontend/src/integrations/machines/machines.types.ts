@@ -20,7 +20,7 @@ export interface MachinesResponse {
   mac_address: string | null
   ip_address: string | null
   pdu_port: number | null
-  team_id: number | null
+  team_name: string | null
   os: string | null
   serial_number: string | null
   note: string | null

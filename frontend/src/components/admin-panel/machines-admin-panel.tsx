@@ -27,7 +27,7 @@ export const columns: Array<ColumnDef<MachineItem>> = [
       'mac_address',
       'ip_address',
       'pdu_port',
-      'team_id',
+      'team_name',
       'os',
       'serial_number',
       'note',
@@ -35,10 +35,7 @@ export const columns: Array<ColumnDef<MachineItem>> = [
       'cpu',
       'ram',
       'disk',
-      'localization_id',
-      'metadata_id',
-      'layout_id',
-      'version_id',
+      'room_name',
     ] as Array<keyof MachineItem>
   ).map((key) => ({
     accessorKey: key,

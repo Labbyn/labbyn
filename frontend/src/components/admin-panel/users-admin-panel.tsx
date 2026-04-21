@@ -60,13 +60,9 @@ export const columns: Array<ColumnDef<UserItem>> = [
       'id',
       'email',
       'login',
-      'team_id',
+      'membership',
       'user_type',
-      'is_active',
-      'is_superuser',
-      'is_verified',
-      'force_password_change',
-      'version_id',
+      'must_change_password',
     ] as Array<keyof UserItem>
   )
     .filter((key) => !HIDE_FIELDS.includes(key as string))
@@ -81,18 +77,35 @@ export const columns: Array<ColumnDef<UserItem>> = [
       cell: ({ getValue }: { getValue: () => any }) => {
         const value = getValue()
 
+        if (key === 'membership' && Array.isArray(value)) {
+          return (
+            <div className="flex flex-wrap gap-1">
+              {value.map((m: any) => (
+                <Badge key={m.team_id} variant="secondary" className="text-[10px]">
+                  {m.team_name} {m.is_group_admin && "(Admin)"}
+                </Badge>
+              ))}
+              {value.length === 0 && "-"}
+            </div>
+          )
+        }
+
         if (typeof value === 'boolean') {
           return (
             <Badge
               className={
                 value
-                  ? 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
-                  : 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
+                  ? 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300'
+                  : 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300'
               }
             >
               {value ? 'YES' : 'NO'}
             </Badge>
           )
+        }
+
+        if (key === 'user_type' && typeof value === 'string') {
+          return value.toUpperCase().replace('_', ' ')
         }
 
         return value ?? '-'
@@ -116,8 +129,6 @@ export const columns: Array<ColumnDef<UserItem>> = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* @todo implement user editing dialog*/}
-
             <DropdownMenuItem onClick={() => console.log('Edit user', user.id)}>
               Edit User
             </DropdownMenuItem>
