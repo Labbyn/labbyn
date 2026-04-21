@@ -72,7 +72,7 @@ class UserUpdate(BaseModel):
     )
     team_ids: Optional[List[int]] = None
     user_type: base_schemas.UserTypeEnum = Field(
-        ..., max_length=50, description="User's role in the system"
+        None, max_length=50, description="User's role in the system"
     )
 
 
