@@ -33,16 +33,13 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     },
   },
   {
-    accessorKey: 'membership',
+    id: 'membership',
+    accessorFn: (row) => row.membership.map((g) => g.team_name).join(', '),
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Teams" />
     },
-    cell: ({ row }) => {
-      const groupNames = row.original.membership
-        .map((g) => g.team_name)
-        .join(', ')
-
-      return <span>{groupNames}</span>
+    cell: ({ getValue }) => {
+      return <span>{getValue() as string}</span>
     },
   },
 ]
