@@ -280,6 +280,8 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     @property
     def team_name(self) -> str:
+        if "teams" not in self.__dict__:
+            return None
         return self.team.name if self.team else None
 
     teams = relationship("UsersTeams", back_populates="user")

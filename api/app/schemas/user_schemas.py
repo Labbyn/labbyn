@@ -121,7 +121,9 @@ class UserInfo(BaseModel):
     membership: List[UserTeamMemebership] = Field(
         default=[], description="Detailed team memberships"
     )
-
+    force_password_change: Optional[bool] = None
+    avatar_url: Optional[str] = None
+    email: Optional[str] = None
 
 class UserInfoExtended(UserInfo):
     """Extended user profile information for detailed views.

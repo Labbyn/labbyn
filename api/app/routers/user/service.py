@@ -61,17 +61,18 @@ class UserService:
             "user_type": u.user_type,
             "membership": memberships,
         }
-        if detailed and can_see_full_data:
-            user_data.update(
-                {
-                    "email": u.email,
-                    "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
-                    "group_links": [f"/teams/{tid}" for tid in user_team_ids],
-                }
+        if can_see_full_data:
+            user_data["email"] = u.email
+            user_data["avatar_url"] = (
+                u.avatar_path if hasattr(u, "avatar_path") else None
             )
-            if can_see_secret_details:
-                user_data["force_password_change"] = u.force_password_change
 
+        if can_see_secret_details:
+            user_data["force_password_change"] = u.force_password_change
+
+        if detailed and can_see_full_data:
+
+            user_data["group_links"] = [f"/teams/{tid}" for tid in user_team_ids]
             return user_schemas.UserInfoExtended.model_validate(user_data)
 
         return user_schemas.UserInfo.model_validate(user_data)

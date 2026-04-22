@@ -62,7 +62,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
       'login',
       'membership',
       'user_type',
-      'must_change_password',
+      'force_password_change'
     ] as Array<keyof UserItem>
   )
     .filter((key) => !HIDE_FIELDS.includes(key as string))
