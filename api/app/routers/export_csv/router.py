@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from app.auth import dependencies
-from app.database import get_async_db
 from .service import ExportService
 
 router = APIRouter(prefix="/db/export", tags=["Export"])
@@ -12,10 +11,14 @@ router = APIRouter(prefix="/db/export", tags=["Export"])
 
 @router.get("/all/bulk")
 async def export_bulk_data(
-    db=Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    service = ExportService(db, ctx)
+    """ Exports bulk data for all entities
+
+    :param ctx: Request context for user and team info
+    :return: 204: Json formatted response with bulk data
+    """
+    service = ExportService(ctx.db, ctx)
     bundle = await service.export_bulk()
 
     filename = f"labbyn_bulk_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
@@ -30,10 +33,16 @@ async def export_bulk_data(
 async def export_data(
     entity_type: str,
     format: str = Query("json", regex="^(json|csv)$"),
-    db=Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    service = ExportService(db, ctx)
+    """ Exports data for given entity type
+
+    :param entity_type: Entity type
+    :param format: Format of exported data
+    :param ctx: Request context for user and team info
+    :return: CSV or Json formatted file
+    """
+    service = ExportService(ctx.db, ctx)
     now = datetime.now()
     timestamp = now.strftime("%Y%m%d_%H%M")
 

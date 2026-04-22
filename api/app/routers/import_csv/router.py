@@ -1,10 +1,8 @@
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Body, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
-from app.database import get_async_db
 
 from .service import ImportService
 
@@ -16,7 +14,6 @@ async def generic_db_import(
     entity_type: str,
     ui_team_id: int = Body(..., embed=True),
     rows: List[Dict[str, Any]] = Body(...),
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """
@@ -31,5 +28,5 @@ async def generic_db_import(
     :param ctx: Request context for user identity and team authorization.
     :return: Summary of the import process including success/failure counts and detailed row logs.
     """
-    service = ImportService(db, ctx)
+    service = ImportService(ctx.db, ctx)
     return await service.run_import(entity_type, rows, ui_team_id)
