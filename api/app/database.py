@@ -41,9 +41,13 @@ async def get_async_db():
     """Dependency generator that yields an asynchronous database session.
 
     Ensures the session is closed after the request is finished.
+    return: SQLAlchemyAsyncSession instance
     """
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 async def get_user_db(session=Depends(get_async_db)):
