@@ -125,6 +125,7 @@ class UserInfo(BaseModel):
     avatar_url: Optional[str] = None
     email: Optional[str] = None
 
+
 class UserInfoExtended(UserInfo):
     """Extended user profile information for detailed views.
 
