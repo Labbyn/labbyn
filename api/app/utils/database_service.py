@@ -114,7 +114,8 @@ async def init_virtual_lab(db: AsyncSession):
     service_team = await init_service_team(db)
 
     stmt = sql.select(models.Rooms).filter(
-        models.Rooms.name == "virtual_ServiceTeam", models.Rooms.team_id == service_team.id
+        models.Rooms.name == "virtual_ServiceTeam",
+        models.Rooms.team_id == service_team.id,
     )
     result = await db.execute(stmt)
 
