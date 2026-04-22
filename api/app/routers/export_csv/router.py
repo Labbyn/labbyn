@@ -13,7 +13,7 @@ router = APIRouter(prefix="/db/export", tags=["Export"])
 async def export_bulk_data(
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """ Exports bulk data for all entities
+    """Exports bulk data for all entities
 
     :param ctx: Request context for user and team info
     :return: 204: Json formatted response with bulk data
@@ -35,7 +35,7 @@ async def export_data(
     format: str = Query("json", regex="^(json|csv)$"),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """ Exports data for given entity type
+    """Exports data for given entity type
 
     :param entity_type: Entity type
     :param format: Format of exported data

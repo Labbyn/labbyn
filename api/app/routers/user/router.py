@@ -43,9 +43,11 @@ async def get_users_list(
     return [service.get_masked_user_model(u, detailed=False) for u in users]
 
 
-@router.get("/{user_id}",
-            response_model=user_schemas.UserInfoExtended,
-            response_model_exclude_none=True)
+@router.get(
+    "/{user_id}",
+    response_model=user_schemas.UserInfoExtended,
+    response_model_exclude_none=True,
+)
 async def get_user_detail(
     user_id: int,
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
@@ -108,7 +110,9 @@ async def upload_avatar(
     return await UserService(ctx.db, ctx).upload_avatar(file)
 
 
-@router.patch("/{user_id}/change_team_access", response_model=user_schemas.UserInfoExtended)
+@router.patch(
+    "/{user_id}/change_team_access", response_model=user_schemas.UserInfoExtended
+)
 async def change_team_access(
     user_id: int,
     promote_data: user_schemas.UserTeamRoleUpdate,
