@@ -176,10 +176,14 @@ class Machines(Base):
 
     @property
     def team_name(self):
+        if "team" not in self.__dict__:
+            return None
         return self.team.name if self.team else None
 
     @property
     def room_name(self):
+        if "room" not in self.__dict__:
+            return None
         return self.room.name if self.room else None
 
     room = relationship("Rooms", back_populates="machines")
@@ -225,7 +229,9 @@ class Teams(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     @property
-    def admin_names(self) -> str:
+    def admin_names(self):
+        if "users" not in self.__dict__:
+            return None
         admins = [
             f"{ut.user.name} {ut.user.surname}"
             for ut in self.users
@@ -337,18 +343,26 @@ class Inventory(Base):
 
     @property
     def category_name(self):
+        if "category" not in self.__dict__:
+            return None
         return self.category.name if self.category else None
 
     @property
     def machine_name(self):
+        if "machine" not in self.__dict__:
+            return None
         return self.machine.name if self.machine else None
 
     @property
     def room_name(self):
+        if "room" not in self.__dict__:
+            return None
         return self.room.name if self.room else None
 
     @property
     def team_name(self):
+        if "team" not in self.__dict__:
+            return None
         return self.team.name if self.team else None
 
     room = relationship("Rooms", back_populates="inventory")
