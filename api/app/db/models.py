@@ -222,7 +222,7 @@ class Teams(Base):
     __tablename__ = "teams"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, unique=True)
 
     version_id = Column(Integer, nullable=False, default=1)
 
