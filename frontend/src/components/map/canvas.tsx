@@ -62,6 +62,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@/components/ui/combobox'
+import type { ApiRackDetailItem } from '@/integrations/racks/racks.types'
 
 // --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
@@ -1276,9 +1277,18 @@ export function CanvasComponent3D({
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const roomIdFromUrl = searchParams.get('roomId');
+
   const availableRacks = useMemo(() => {
     if (!allRacks || !Array.isArray(allRacks)) return []
-    return allRacks.filter((r: any) => !equipmentIds.includes(String(r.id)))
+    return allRacks.filter((r: ApiRackDetailItem) => {
+      const isNotUsed = !equipmentIds.includes(String(r.id));
+      
+      const belongsToRoom = roomIdFromUrl ? r.room_id === Number(roomIdFromUrl) : true;
+
+      return isNotUsed && belongsToRoom;
+    });
   }, [allRacks, equipmentIds])
 
   const { historyIndex, history, saveToHistory, undo, redo } = useLabHistory(
