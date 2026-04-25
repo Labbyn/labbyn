@@ -56,76 +56,66 @@ async def websocket_endpoint(
 
 @router.get("/prometheus/hosts")
 async def get_hosts(
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all unique hosts [ex.192.168.1.2, server1-example.com] from Prometheus.
 
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: List of unique hostnames/IPs.
     """
-    return await PrometheusService(db, ctx).get_hosts()
+    return await PrometheusService(ctx.db, ctx).get_hosts()
 
 
 @router.get("/prometheus/metrics")
 async def get_all_metrics(
     instances: Optional[List[str]] = Query(None),
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch metrics for selected instances directly from Prometheus (bypasses cache).
 
     :param instances: List of instances as comma separated string
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: Metrics data for selected instances, or all if none specified.
     """
-    return await PrometheusService(db, ctx).get_all_metrics(instances)
+    return await PrometheusService(ctx.db, ctx).get_all_metrics(instances)
 
 
 @router.get("/prometheus/instances")
 async def get_instances(
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all unique host instances [HOST::PORT] from Prometheus.
 
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: List of unique hosts.
     """
-    return await PrometheusService(db, ctx).get_instances()
+    return await PrometheusService(ctx.db, ctx).get_instances()
 
 
 @router.post("/prometheus/target")
 async def add_target(
     target: service_schemas.PrometheusTarget,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Add a new target to Prometheus targets file.
 
     :param target: PrometheusTarget object containing instance and labels
     :param ctx: Request context for user and team info
-    :param db: Active database session
     :return: Success message.
     """
-    return await PrometheusService(db, ctx).add_target(target)
+    return await PrometheusService(ctx.db, ctx).add_target(target)
 
 
 @router.delete("/prometheus/target")
 async def delete_target(
     target: service_schemas.PrometheusBase,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Add a new target to Prometheus targets file.
 
     :param target: Prometheus instance object containing instance and labels
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: Success message.
     """
-    await PrometheusService(db, ctx).remove_target(target.instance)
+    await PrometheusService(ctx.db, ctx).remove_target(target.instance)
     return Response(status_code=204)
