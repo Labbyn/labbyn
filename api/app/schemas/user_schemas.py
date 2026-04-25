@@ -1,7 +1,7 @@
 """Pydantic user models for database schemas."""
 
 from email.policy import default
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from fastapi_users import schemas
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -52,6 +52,7 @@ class UserCreate(UserBase):
     team_ids: Optional[List[int]] = Field(
         default=[], description="List of team IDs to assign the user to upon creation"
     )
+    team_id: Optional[Union[int, str]] = None
 
 
 class UserUpdate(BaseModel):
@@ -125,6 +126,9 @@ class UserInfo(BaseModel):
     membership: List[UserTeamMemebership] = Field(
         default=[], description="Detailed team memberships"
     )
+    force_password_change: Optional[bool] = None
+    avatar_url: Optional[str] = None
+    email: Optional[str] = None
 
 
 class UserInfoExtended(UserInfo):

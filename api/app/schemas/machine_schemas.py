@@ -15,13 +15,17 @@ class MachinesBase(BaseModel):
     localization_id: int = Field(
         ..., description="ID of the room where machine is located"
     )
+    room_name: Optional[str] = Field(
+        None, description="ID of the room where machine is located"
+    )
     mac_address: Optional[str] = Field(None, max_length=17, description="MAC Address")
     ip_address: Optional[str] = Field(None, max_length=15, description="IP Address")
     pdu_port: Optional[int] = Field(
         None, description="Power Distribution Unit port number"
     )
-    team_id: Optional[int] = Field(
-        None, description="ID of the team owning the machine"
+    team_id: Optional[int] = Field(None, description="ID of team owning the machine")
+    team_name: Optional[str] = Field(
+        None, description="Name of team owning the machine"
     )
     os: Optional[str] = Field(None, max_length=30, description="Operating System")
     serial_number: Optional[str] = Field(
@@ -46,6 +50,8 @@ class MachinesBase(BaseModel):
 class MachinesCreate(MachinesBase):
     """Schema for creating a Machine."""
 
+    room_name: Optional[str] = Field(None, exclude=True)
+    team_name: Optional[str] = Field(None, exclude=True)
     added_on: datetime = Field(
         default_factory=datetime.now,
         description="Date when machine was added. Defaults to now.",

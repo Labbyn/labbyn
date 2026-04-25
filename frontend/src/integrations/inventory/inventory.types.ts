@@ -6,6 +6,10 @@ export interface InventoryResponse {
   localization_id: number
   machine_id: number | null
   category_id: number
+  team_name: string | null
+  room_name: string | null
+  machine_name: string | null
+  category_name: string | null
   rental_status: boolean
   rental_id: number | null
   version_id: number

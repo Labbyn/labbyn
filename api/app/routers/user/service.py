@@ -61,17 +61,18 @@ class UserService:
             "user_type": u.user_type,
             "membership": memberships,
         }
-        if detailed and can_see_full_data:
-            user_data.update(
-                {
-                    "email": u.email,
-                    "avatar_url": u.avatar_path if hasattr(u, "avatar_path") else None,
-                    "group_links": [f"/teams/{tid}" for tid in user_team_ids],
-                }
+        if can_see_full_data:
+            user_data["email"] = u.email
+            user_data["avatar_url"] = (
+                u.avatar_path if hasattr(u, "avatar_path") else None
             )
-            if can_see_secret_details:
-                user_data["force_password_change"] = u.force_password_change
 
+        if can_see_secret_details:
+            user_data["force_password_change"] = u.force_password_change
+
+        if detailed and can_see_full_data:
+
+            user_data["group_links"] = [f"/teams/{tid}" for tid in user_team_ids]
             return user_schemas.UserInfoExtended.model_validate(user_data)
 
         return user_schemas.UserInfo.model_validate(user_data)
@@ -95,7 +96,7 @@ class UserService:
                 "Password must be at least 6 characters long."
             )
 
-        user_fields = user_data.model_dump(exclude={"password", "team_ids"})
+        user_fields = user_data.model_dump(exclude={"password", "team_ids", "team_id"})
 
         new_user = models.User(
             **user_fields,
@@ -109,13 +110,14 @@ class UserService:
             self.db.add(new_user)
             await self.db.flush()
 
-            target_teams = user_data.team_ids or []
-            if not self.ctx.is_admin:
-                target_teams = [
-                    t_id for t_id in target_teams if t_id in self.ctx.team_ids
-                ]
-                if not target_teams and self.ctx.team_ids:
-                    target_teams = [self.ctx.team_ids[0]]
+            requested = list(user_data.team_ids) if user_data.team_ids else []
+            if self.ctx.is_admin:
+                target_teams = requested
+            else:
+                target_teams = [t for t in requested if t in self.ctx.team_ids]
+            if not target_teams and self.ctx.team_ids:
+                target_teams = [self.ctx.team_ids[0]]
+            target_teams = list(set(int(t) for t in target_teams if t is not None))
 
             for t_id in target_teams:
                 self.db.add(

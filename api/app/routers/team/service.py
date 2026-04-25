@@ -152,11 +152,21 @@ class TeamService:
         :param team_data: Pydantic schema containing new team details.
         :return: Created Team model instance.
         """
+        admin_id = team_data.team_admin_id
+
         self.ctx.require_admin()
         try:
-            obj = models.Teams(**team_data.model_dump())
+            data = team_data.model_dump()
+            data.pop("team_admin_id", None)
+            obj = models.Teams(**data)
             self.db.add(obj)
             await self.db.flush()
+
+            if admin_id:
+                new_membership = models.UsersTeams(
+                    user_id=admin_id, team_id=obj.id, is_group_admin=True
+                )
+                self.db.add(new_membership)
 
             virtual_lab = models.Rooms(
                 name=f"virtual_{team_data.name}", room_type="virtual", team_id=obj.id
@@ -164,6 +174,7 @@ class TeamService:
             self.db.add(virtual_lab)
 
             await self.db.commit()
+            await self.db.refresh(obj, ["users"])
             return obj
         except Exception as e:
             await self.db.rollback()

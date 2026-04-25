@@ -108,6 +108,10 @@ class Rooms(Base):
 
     __table_args__ = (UniqueConstraint("name", "team_id", name="_room_team_uc"),)
 
+    @property
+    def team_name(self):
+        return self.team.name if self.team else None
+
     machines = relationship("Machines", back_populates="room")
     inventory = relationship("Inventory", back_populates="room")
     team = relationship("Teams", back_populates="rooms")
@@ -170,6 +174,18 @@ class Machines(Base):
         UniqueConstraint("name", "localization_id", name="_machine_room_uc"),
     )
 
+    @property
+    def team_name(self):
+        if "team" not in self.__dict__:
+            return None
+        return self.team.name if self.team else None
+
+    @property
+    def room_name(self):
+        if "room" not in self.__dict__:
+            return None
+        return self.room.name if self.room else None
+
     room = relationship("Rooms", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
     machine_metadata = relationship("Metadata", back_populates="machines")
@@ -206,11 +222,22 @@ class Teams(Base):
     __tablename__ = "teams"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, unique=True)
 
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
+
+    @property
+    def admin_names(self):
+        if "users" not in self.__dict__:
+            return None
+        admins = [
+            f"{ut.user.name} {ut.user.surname}"
+            for ut in self.users
+            if ut.is_group_admin and ut.user
+        ]
+        return ", ".join(admins) if admins else "No Admin"
 
     users = relationship("UsersTeams", back_populates="team")
     machines = relationship("Machines", back_populates="team")
@@ -250,6 +277,12 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
+
+    @property
+    def team_name(self) -> str:
+        if "teams" not in self.__dict__:
+            return None
+        return self.team.name if self.team else None
 
     teams = relationship("UsersTeams", back_populates="user")
     rentals = relationship("Rentals", back_populates="user")
@@ -309,6 +342,30 @@ class Inventory(Base):
     version_id = Column(Integer, nullable=False, default=1)
 
     __mapper_args__ = {"version_id_col": version_id}
+
+    @property
+    def category_name(self):
+        if "category" not in self.__dict__:
+            return None
+        return self.category.name if self.category else None
+
+    @property
+    def machine_name(self):
+        if "machine" not in self.__dict__:
+            return None
+        return self.machine.name if self.machine else None
+
+    @property
+    def room_name(self):
+        if "room" not in self.__dict__:
+            return None
+        return self.room.name if self.room else None
+
+    @property
+    def team_name(self):
+        if "team" not in self.__dict__:
+            return None
+        return self.team.name if self.team else None
 
     room = relationship("Rooms", back_populates="inventory")
     machine = relationship("Machines", back_populates="inventory")

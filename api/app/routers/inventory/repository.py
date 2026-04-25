@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import orm, sql
+from sqlalchemy import orm, sql, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import models
@@ -20,7 +20,12 @@ class InventoryRepository:
         :param ctx: Request context for user and team info
         :return: List of inventory items.
         """
-        stmt = sql.select(models.Inventory)
+        stmt = select(models.Inventory).options(
+            orm.joinedload(models.Inventory.team),
+            orm.joinedload(models.Inventory.room),
+            orm.joinedload(models.Inventory.machine),
+            orm.joinedload(models.Inventory.category),
+        )
         stmt = ctx.team_filter(stmt, models.Inventory)
         result = await db.execute(stmt)
         return result.scalars().all()

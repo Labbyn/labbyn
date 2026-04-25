@@ -3,7 +3,7 @@
 from datetime import date
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, AliasPath
 
 
 class RentalsBase(BaseModel):
@@ -62,13 +62,23 @@ class InventoryBase(BaseModel):
     name: str = Field(..., max_length=100, description="Name of the item")
     quantity: int = Field(..., description="Quantity available")
     team_id: Optional[int] = Field(None, description="ID of the team owning the item")
+    team_name: Optional[str] = Field(
+        None, description="Name of the team owning the item"
+    )
     localization_id: int = Field(
         ..., description="ID of the room where item is located"
+    )
+    room_name: Optional[str] = Field(
+        None, description="Name of the room where item is located"
     )
     machine_id: Optional[int] = Field(
         None, description="ID of the machine if item is part of one"
     )
+    machine_name: Optional[str] = Field(
+        None, description="Name of the machine if item is part of one"
+    )
     category_id: int = Field(..., description="ID of the item category")
+    category_name: Optional[str] = Field(None, description="Name of the item category")
     rental_status: bool = Field(False, description="True if item is currently rented")
     rental_id: Optional[int] = Field(
         None, description="ID of the current active rental"
@@ -77,6 +87,11 @@ class InventoryBase(BaseModel):
 
 class InventoryCreate(InventoryBase):
     """Schema for creating an Inventory item."""
+
+    team_name: Optional[str] = Field(None, exclude=True)
+    room_name: Optional[str] = Field(None, exclude=True)
+    machine_name: Optional[str] = Field(None, exclude=True)
+    category_name: Optional[str] = Field(None, exclude=True)
 
 
 class InventoryUpdate(BaseModel):
@@ -96,8 +111,7 @@ class InventoryResponse(InventoryBase):
     """Schema for reading Inventory data."""
 
     id: int
-    version_id: int
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
 class InventoryDetailResponse(BaseModel):

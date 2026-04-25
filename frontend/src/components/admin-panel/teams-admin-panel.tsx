@@ -5,6 +5,7 @@ import { PageIsLoading } from '../page-is-loading'
 import { DataTable } from '../ui/data-table'
 
 import { Button } from '../ui/button'
+import { Badge } from '../ui/badge'
 import { GenericCreateDialog } from '../generic-create-dialog'
 import {
   DropdownMenu,
@@ -28,7 +29,7 @@ const formatHeader = (key: string) =>
 
 export const columns: Array<ColumnDef<ApiTeamItem>> = [
   ...(
-    ['id', 'name', 'team_admin_id', 'version_id'] as Array<keyof ApiTeamItem>
+    ['id', 'name', 'admins'] as Array<keyof ApiTeamItem>
   ).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
@@ -39,6 +40,27 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
     ),
     cell: ({ getValue }: { getValue: () => any }) => {
       const value = getValue()
+
+      if (key === 'admins' && typeof value === 'string') {
+        if (value === "No Admin" || !value || value === "-") {
+            return <span className="text-muted-foreground">-</span>
+        }
+
+        const adminList = value.split(', ')
+        return (
+          <div className="flex flex-wrap gap-1">
+            {adminList.map((admin, index) => (
+              <Badge
+                key={index}
+                variant="secondary"
+                className="text-[10px]"
+              >
+                {admin}
+              </Badge>
+            ))}
+          </div>
+        )
+      }
 
       return value ?? '-'
     },

@@ -16,6 +16,8 @@ class TeamsBase(BaseModel):
 class TeamsCreate(TeamsBase):
     """Schema for creating a Team."""
 
+    team_admin_id: Optional[int] = Field(None, description="ID of the user to be admin")
+
 
 class TeamsUpdate(BaseModel):
     """Schema for updating a Team."""
@@ -27,6 +29,7 @@ class TeamsResponse(TeamsBase):
     """Schema for reading Team data."""
 
     id: int
+    admins: Optional[str] = Field(None, validation_alias="admin_names")
     version_id: int
     model_config = ConfigDict(from_attributes=True)
 
