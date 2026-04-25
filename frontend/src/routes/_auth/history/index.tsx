@@ -134,7 +134,10 @@ function RouteComponent() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={!entry.can_rollback || rollbackMutation.isPending}
-                onClick={() => rollbackMutation.mutate(entry.id)} //
+                onClick={(e) => {
+                  e.stopPropagation()
+                  rollbackMutation.mutate(entry.id)
+                }}
                 className="text-destructive focus:text-destructive"
               >
                 <RotateCcw className="mr-2 h-4 w-4" /> Rollback Change
