@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { ArrowLeft, Check, Edit2, X } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,31 @@ export function SubpageHeader({
 
   const isEditableType = type === 'editable'
   const isDeletableType = type === 'deletable'
+
+  const [titleValue, setTitleValue] = useState(editValue)
+
+  useEffect(() => {
+    setTitleValue(editValue)
+  }, [editValue])
+
+  const handleStartEdit = () => {
+    setTitleValue(editValue || title)
+    if (onStartEdit) onStartEdit()
+  }
+
+  const handleCancel = () => {
+    setTitleValue(editValue)
+    if (onCancel) onCancel()
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setTitleValue(val)
+    if (onEditChange) {
+      onEditChange(val)
+    }
+  }
+
   return (
     <div className="flex items-center gap-4 px-6 py-4 z-10">
       <Button onClick={() => router.history.back()} variant="ghost" size="icon">
@@ -42,8 +68,8 @@ export function SubpageHeader({
         {isEditableType && isEditing ? (
           onEditChange && (
             <Input
-              value={editValue}
-              onChange={(e) => onEditChange(e.target.value)}
+              value={titleValue}
+              onChange={handleChange}
             />
           )
         ) : (
