@@ -247,10 +247,10 @@ class TeamService:
             except Exception:
                 await self.db.rollback()
                 raise exceptions.ValidationError(f"Could not delete team '{team_name}'")
-            
+
     async def get_my_teams(self) -> List[models.Teams]:
         """Fetch teams belonging strictly to the authenticated user.
-        
+
         :return: List of Team models associated with the user.
         """
         self.ctx.require_user()

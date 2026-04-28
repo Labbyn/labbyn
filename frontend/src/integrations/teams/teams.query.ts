@@ -58,7 +58,7 @@ export const singleTeamInfoQueryOptions = (teamId: string | number) =>
   })
 
 export const currentUserTeamsQueryOptions = queryOptions({
-    queryKey: ['teams'],
+  queryKey: ['teams'],
   queryFn: async () => {
     const { data } = await api.get<ApiTeamInfoResponse>(PATHS.CURRENT_USER)
     return data

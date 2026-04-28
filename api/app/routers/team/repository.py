@@ -29,9 +29,14 @@ class TeamRepository:
         :param db: Active database session.
         :return: List of Team objects.
         """
-        stmt = sql.select(models.Teams).options(
-            orm.joinedload(models.Teams.users).joinedload(models.UsersTeams.user)
-        ).join(models.UsersTeams).filter(models.UsersTeams.user_id == user_id)
+        stmt = (
+            sql.select(models.Teams)
+            .options(
+                orm.joinedload(models.Teams.users).joinedload(models.UsersTeams.user)
+            )
+            .join(models.UsersTeams)
+            .filter(models.UsersTeams.user_id == user_id)
+        )
 
         result = await db.execute(stmt)
         return result.unique().scalars().all()

@@ -84,6 +84,7 @@ async def get_current_user_teams(
 
     return await TeamService(ctx.db, ctx).get_my_teams()
 
+
 @router.patch("/{team_id}", response_model=team_schemas.TeamsResponse)
 async def update_team(
     team_id: int,
