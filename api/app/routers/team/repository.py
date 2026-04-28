@@ -27,6 +27,7 @@ class TeamRepository:
         """Fetch teams associated with the user.
 
         :param db: Active database session.
+        :param user_id: User ID
         :return: List of Team objects.
         """
         stmt = (
