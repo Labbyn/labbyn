@@ -62,7 +62,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
       'login',
       'membership',
       'user_type',
-      'force_password_change'
+      'force_password_change',
     ] as Array<keyof UserItem>
   )
     .filter((key) => !HIDE_FIELDS.includes(key as string))
@@ -81,11 +81,15 @@ export const columns: Array<ColumnDef<UserItem>> = [
           return (
             <div className="flex flex-wrap gap-1">
               {value.map((m: any) => (
-                <Badge key={m.team_id} variant="secondary" className="text-[10px]">
-                  {m.team_name} {m.is_group_admin && "(Admin)"}
+                <Badge
+                  key={m.team_id}
+                  variant="secondary"
+                  className="text-[10px]"
+                >
+                  {m.team_name} {m.is_group_admin && '(Admin)'}
                 </Badge>
               ))}
-              {value.length === 0 && "-"}
+              {value.length === 0 && '-'}
             </div>
           )
         }

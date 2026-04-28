@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, Edit2, X } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
@@ -40,16 +40,6 @@ export function SubpageHeader({
     setTitleValue(editValue)
   }, [editValue])
 
-  const handleStartEdit = () => {
-    setTitleValue(editValue || title)
-    if (onStartEdit) onStartEdit()
-  }
-
-  const handleCancel = () => {
-    setTitleValue(editValue)
-    if (onCancel) onCancel()
-  }
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setTitleValue(val)
@@ -66,12 +56,7 @@ export function SubpageHeader({
 
       <div className="flex-1">
         {isEditableType && isEditing ? (
-          onEditChange && (
-            <Input
-              value={titleValue}
-              onChange={handleChange}
-            />
-          )
+          onEditChange && <Input value={titleValue} onChange={handleChange} />
         ) : (
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
         )}
