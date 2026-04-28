@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { Box, Cpu, Info, Layers, Users } from 'lucide-react'
+import { Box, Cpu, Info, Layers, Users, MapPin } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -47,7 +47,7 @@ function RacksDetailsPage() {
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
   const navigate = useNavigate()
-
+  
   const form = useForm({
     defaultValues: {
       name: rack.name,
@@ -175,6 +175,7 @@ function RacksDetailsPage() {
                 {[
                   { label: 'Team', name: 'team_name' as const, icon: Users },
                   { label: 'Tags', name: 'tags' as const, icon: Box },
+                  { label: 'Localization', name: 'room_name' as const, icon: MapPin },
                 ].map((field) => {
                   const fieldValue = rack[field.name]
                   return (
@@ -195,7 +196,7 @@ function RacksDetailsPage() {
                               />
                             )}
                           />
-                        ) : (
+                        ) : field.name === 'team_name' ? (
                           <form.Field
                             name="team_id"
                             children={(formField) => (
@@ -221,6 +222,10 @@ function RacksDetailsPage() {
                               </Select>
                             )}
                           />
+                        ) : (
+                          <span className="font-medium">
+                            {fieldValue ? fieldValue.toString() : '—'}
+                          </span>
                         )
                       ) : field.name === 'tags' ? (
                         <TagList
@@ -232,7 +237,8 @@ function RacksDetailsPage() {
                         <span className="font-medium">
                           {fieldValue ? fieldValue.toString() : '—'}
                         </span>
-                      )}
+                      ) 
+                      }
                     </div>
                   )
                 })}
