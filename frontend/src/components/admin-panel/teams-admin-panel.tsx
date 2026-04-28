@@ -28,9 +28,7 @@ const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
 export const columns: Array<ColumnDef<ApiTeamItem>> = [
-  ...(
-    ['id', 'name', 'admins'] as Array<keyof ApiTeamItem>
-  ).map((key) => ({
+  ...(['id', 'name', 'admins'] as Array<keyof ApiTeamItem>).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
       <DataTableColumnHeader
@@ -42,19 +40,15 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
       const value = getValue()
 
       if (key === 'admins' && typeof value === 'string') {
-        if (value === "No Admin" || !value || value === "-") {
-            return <span className="text-muted-foreground">-</span>
+        if (value === 'No Admin' || !value || value === '-') {
+          return <span className="text-muted-foreground">-</span>
         }
 
         const adminList = value.split(', ')
         return (
           <div className="flex flex-wrap gap-1">
             {adminList.map((admin, index) => (
-              <Badge
-                key={index}
-                variant="secondary"
-                className="text-[10px]"
-              >
+              <Badge key={index} variant="secondary" className="text-[10px]">
                 {admin}
               </Badge>
             ))}
