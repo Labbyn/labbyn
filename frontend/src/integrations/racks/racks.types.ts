@@ -11,6 +11,7 @@ export interface ApiRackDetailItem {
   tags: Array<ApiTagsItem>
   machines: Array<Array<ApiRackDetailMachineItem>>
   shelves: Array<ApiShelfItem>
+  room_name: string
 }
 
 export interface ApiRackDetailMachineItem {
