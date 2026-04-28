@@ -23,6 +23,20 @@ class TeamRepository:
         return result.unique().scalars().all()
 
     @staticmethod
+    async def get_users_teams(db: AsyncSession, user_id: int) -> List[models.Teams]:
+        """Fetch teams associated with the user.
+
+        :param db: Active database session.
+        :return: List of Team objects.
+        """
+        stmt = sql.select(models.Teams).options(
+            orm.joinedload(models.Teams.users).joinedload(models.UsersTeams.user)
+        ).join(models.UsersTeams).filter(models.UsersTeams.user_id == user_id)
+
+        result = await db.execute(stmt)
+        return result.unique().scalars().all()
+
+    @staticmethod
     async def get_by_id(
         db: AsyncSession, team_id: int, detailed: bool = False
     ) -> Optional[models.Teams]:

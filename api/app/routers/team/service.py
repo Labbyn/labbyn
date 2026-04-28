@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from sqlalchemy import sql
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -247,3 +247,16 @@ class TeamService:
             except Exception:
                 await self.db.rollback()
                 raise exceptions.ValidationError(f"Could not delete team '{team_name}'")
+            
+    async def get_my_teams(self) -> List[models.Teams]:
+        """Fetch teams belonging strictly to the authenticated user.
+        
+        :return: List of Team models associated with the user.
+        """
+        self.ctx.require_user()
+        user_id = self.ctx.current_user.id
+        teams = await self.repo.get_users_teams(self.db, user_id)
+
+        formatted_teams = [self.format_team_output(team) for team in teams]
+
+        return formatted_teams

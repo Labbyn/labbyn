@@ -38,7 +38,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useCreateRackMutation } from '@/integrations/racks/racks.mutation'
 import { zodValidate } from '@/utils/index'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsQueryOptions } from '@/integrations/labs/labs.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
@@ -59,7 +59,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: labs } = useSuspenseQuery(labsQueryOptions)
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(currentUserTeamsQueryOptions)
   const { data: tags } = useSuspenseQuery(tagsQueryOptions)
 
   const mutation = useMutation({
@@ -116,7 +116,6 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
         >
           <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1 mb-6">
             {/* Rack name, room name, team name, tags - Always Required */}
-            {/* Display names, get ids as values - requierd in POST operation */}
             <form.Field
               name="name"
               validators={{ onChange: zodValidate(schemas.name) }}
