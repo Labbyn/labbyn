@@ -72,6 +72,19 @@ async def get_team_info_by_id(
     return await TeamService(ctx.db, ctx).get_detailed_team(team_id)
 
 
+@router.get("/user_teams", response_model=List[team_schemas.TeamDetailResponse])
+async def get_current_user_teams(
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch basic information about teams associated with the user.
+
+    :param ctx: Request context for user and team info
+    :return: Teams associated with the user.
+    """
+
+    return await TeamService(ctx.db, ctx).get_my_teams()
+
+
 @router.patch("/{team_id}", response_model=team_schemas.TeamsResponse)
 async def update_team(
     team_id: int,

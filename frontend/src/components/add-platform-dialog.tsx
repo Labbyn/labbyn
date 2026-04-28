@@ -43,7 +43,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { handlePlatformSubmission } from '@/integrations/machines/machines.mutation'
 import { zodValidate } from '@/utils/index'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
 import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
 import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
@@ -72,7 +72,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
   const queryClient = useQueryClient()
 
   const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(currentUserTeamsQueryOptions)
   const { data: racks } = useSuspenseQuery(racksBaseListQueryOptions)
 
   const mutation = useMutation({
