@@ -52,7 +52,18 @@ class AuthService:
         if not db_user:
             raise exceptions.ObjectNotFoundError("User")
 
+        temp_password = security.generate_starting_password()
+
+        db_user.hashed_password = security.hash_password(temp_password)
         db_user.force_password_change = True
+
+        self.db.info["user_id"] = self.user.id
+
         self.db.add(db_user)
         await self.db.commit()
-        return {"message": f"Password reset forced for user {db_user.login}"}
+
+        return {
+            "message": f"Password reset forced for user {db_user.login}",
+            "login": db_user.login,
+            "password": temp_password,
+        }
