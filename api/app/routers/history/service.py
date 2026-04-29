@@ -203,7 +203,7 @@ class HistoryService:
                     "user": log.user,
                     "before_state": clean_before or None,
                     "after_state": clean_after or None,
-                    "can_rollback": log.can_rollback,
+                    "can_rollback": can_rollback,
                 }
             )
         return results
@@ -225,6 +225,10 @@ class HistoryService:
             log.before_state, log.after_state
         )
 
+        can_rollback = log.can_rollback
+        if "password" in clean_after:
+            can_rollback = False
+
         return {
             "id": log.id,
             "timestamp": log.timestamp,
@@ -242,7 +246,7 @@ class HistoryService:
             "user": log.user,
             "before_state": clean_before or None,
             "after_state": clean_after or None,
-            "can_rollback": log.can_rollback,
+            "can_rollback": can_rollback,
         }
 
     async def get_log_or_404(self, history_id: int) -> models.History:
@@ -308,6 +312,10 @@ class HistoryService:
                 log.before_state, log.after_state
             )
 
+            can_rollback = log.can_rollback
+            if "password" in clean_after:
+                can_rollback = False
+
             results.append(
                 {
                     "id": log.id,
@@ -328,7 +336,7 @@ class HistoryService:
                     "user": log.user,
                     "before_state": clean_before if clean_before else None,
                     "after_state": clean_after if clean_after else None,
-                    "can_rollback": log.can_rollback,
+                    "can_rollback": can_rollback,
                 }
             )
         return results
@@ -350,6 +358,10 @@ class HistoryService:
             log.before_state, log.after_state
         )
 
+        can_rollback = log.can_rollback
+        if "password" in clean_after:
+            can_rollback = False
+
         return {
             "id": log.id,
             "timestamp": log.timestamp,
@@ -367,7 +379,7 @@ class HistoryService:
             "user": log.user,
             "before_state": clean_before if clean_before else None,
             "after_state": clean_after if clean_after else None,
-            "can_rollback": log.can_rollback,
+            "can_rollback": can_rollback,
         }
 
     async def rollback_entry(self, history_id: int) -> Dict[str, Any]:
