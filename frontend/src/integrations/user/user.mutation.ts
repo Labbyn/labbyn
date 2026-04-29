@@ -32,7 +32,7 @@ export const useUpdateUserMutation = (userId: string | number) => {
 
   return useMutation({
     mutationFn: async (userData: UserUpdate) => {
-      const { data } = await api.put(PATHS.DETAIL(userId), userData)
+      const { data } = await api.patch(PATHS.DETAIL(userId), userData)
       return data
     },
     onSuccess: () => {

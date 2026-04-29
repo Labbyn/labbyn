@@ -1,20 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { MoreHorizontal } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { PageIsLoading } from '../page-is-loading'
 import { DataTable } from '../ui/data-table'
 
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import { GenericCreateDialog } from '../generic-create-dialog'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
+import {  GenericCreateDialog } from '../generic-create-dialog'
 import { DataTableColumnHeader } from '../data-table/column-header'
 import {
   Dialog,
@@ -26,15 +18,19 @@ import {
 } from '../ui/dialog'
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
+import { DataTableRowActions } from '../data-table/row-actions'
+import type {FieldConfig} from '../generic-create-dialog';
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { UserCreate } from '@/integrations/user/user.types'
+import type { UserCreate, UserUpdate } from '@/integrations/user/user.types'
 import { adminUsersQueryOptions } from '@/integrations/user/user.query'
 import {
   useCreateUserMutation,
   useDeleteUserMutation,
   useResetUserPasswordMutation,
+  useUpdateUserMutation,
 } from '@/integrations/user/user.mutation'
+import { adminTeamsQueryOptions } from '@/integrations/teams/teams.query'
 
 type UserItem = ReturnType<typeof fetchUserData>[number]
 
@@ -62,7 +58,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
       'login',
       'membership',
       'user_type',
-      'force_password_change'
+      'force_password_change',
     ] as Array<keyof UserItem>
   )
     .filter((key) => !HIDE_FIELDS.includes(key as string))
@@ -81,11 +77,15 @@ export const columns: Array<ColumnDef<UserItem>> = [
           return (
             <div className="flex flex-wrap gap-1">
               {value.map((m: any) => (
-                <Badge key={m.team_id} variant="secondary" className="text-[10px]">
-                  {m.team_name} {m.is_group_admin && "(Admin)"}
+                <Badge
+                  key={m.team_id}
+                  variant="secondary"
+                  className="text-[10px]"
+                >
+                  {m.team_name} {m.is_group_admin && '(Admin)'}
                 </Badge>
               ))}
-              {value.length === 0 && "-"}
+              {value.length === 0 && '-'}
             </div>
           )
         }
@@ -105,7 +105,10 @@ export const columns: Array<ColumnDef<UserItem>> = [
         }
 
         if (key === 'user_type' && typeof value === 'string') {
-          return value.toUpperCase().replace('_', ' ')
+          return (
+            value.charAt(0).toUpperCase() +
+            value.slice(1).toLowerCase().replace('_', ' ')
+          )
         }
 
         return value ?? '-'
@@ -113,48 +116,52 @@ export const columns: Array<ColumnDef<UserItem>> = [
     })),
   {
     id: 'actions',
-    cell: ({ row }) => {
+    meta: {
+      headerClassName: 'sticky right-0 z-20',
+      cellClassName: 'sticky right-0 z-10',
+    },
+    cell: ({ row, table }) => {
       const user = row.original
       const deleteMutation = useDeleteUserMutation()
       const resetPasswordMutation = useResetUserPasswordMutation()
+      const meta = table.options.meta as any
 
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => console.log('Edit user', user.id)}>
-              Edit User
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => resetPasswordMutation.mutate(user.id)}
-            >
-              Force password reset
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              className="text-destructive"
-              onClick={() => deleteMutation.mutate(user.id)}
-            >
-              Delete User
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <DataTableRowActions
+          row={user}
+          idBadge={user.id}
+          actions={[
+            {
+              label: 'Edit User',
+              onClick: (u) => meta?.onEdit?.(u),
+            },
+            {
+              label: 'Reset password (WIP)',
+              onClick: (u) => console.log('Reset user password', u.id),
+            },
+            {
+              label: 'Force password change',
+              onClick: (u) => resetPasswordMutation.mutate(u.id),
+            },
+            {
+              label: 'Delete User',
+              isDestructive: true,
+              onClick: (u) => deleteMutation.mutate(u.id),
+            },
+          ]}
+        />
       )
     },
   },
 ]
 
 export default function UserAdminPanel() {
+  const navigate = useNavigate()
+
   const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
+  const { data: teams = [] } = useQuery(adminTeamsQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null)
 
   const [generatedCredentials, setGeneratedCredentials] = useState<{
     login: string
@@ -162,13 +169,35 @@ export default function UserAdminPanel() {
   } | null>(null)
 
   const createUser = useCreateUserMutation()
+  const updateUser = useUpdateUserMutation(editingUser?.id || '')
+
+  const fieldsConfig: Record<string, FieldConfig> = {
+    user_type: {
+      type: 'select',
+      options: [
+        { label: 'User', value: 'user' },
+        { label: 'Admin', value: 'admin' },
+        { label: 'Group Admin', value: 'group_admin' },
+      ],
+    },
+    team_ids: {
+      type: 'multi-select',
+      options: teams.map((team) => ({
+        label: team.name,
+        value: String(team.id),
+      })),
+    },
+    password: {
+      type: 'password',
+    },
+  }
 
   const newUserTemplate: UserCreate = {
     name: '',
     surname: '',
     login: '',
     email: '',
-    team_id: null,
+    team_ids: [],
     user_type: 'user',
     password: '',
   }
@@ -187,6 +216,12 @@ export default function UserAdminPanel() {
     })
   }
 
+  const handleEditUser = (data: UserUpdate) => {
+    updateUser.mutate(data, {
+      onSuccess: () => setEditingUser(null),
+    })
+  }
+
   if (isLoading) return <PageIsLoading />
 
   return (
@@ -194,6 +229,13 @@ export default function UserAdminPanel() {
       <DataTable
         columns={columns}
         data={users}
+        meta={{ onEdit: setEditingUser }}
+        onRowClick={(row) => {
+          navigate({
+            to: '/users/$userId',
+            params: { userId: String(row.id) },
+          })
+        }}
         actionElement={
           <>
             <Button onClick={() => setIsDialogOpen(true)}>Add New User</Button>
@@ -203,11 +245,32 @@ export default function UserAdminPanel() {
               isOpen={isDialogOpen}
               onClose={() => setIsDialogOpen(false)}
               defaultValues={newUserTemplate}
+              fieldsConfig={fieldsConfig}
               onSubmit={handleCreateUser}
             />
           </>
         }
       />
+
+      {editingUser && (
+        <GenericCreateDialog
+          title="Edit User"
+          isOpen={!!editingUser}
+          onClose={() => setEditingUser(null)}
+          defaultValues={{
+            name: editingUser.name,
+            surname: editingUser.surname,
+            login: editingUser.login,
+            email: editingUser.email,
+            user_type: editingUser.user_type,
+            team_ids:
+              editingUser.membership?.map((m: any) => String(m.team_id)) || [],
+          }}
+          fieldsConfig={fieldsConfig}
+          onSubmit={handleEditUser}
+        />
+      )}
+
       <Dialog
         open={!!generatedCredentials}
         onOpenChange={(open) => {

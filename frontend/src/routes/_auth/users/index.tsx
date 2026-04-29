@@ -52,6 +52,18 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="User type" />
     },
+    cell: ({ getValue }) => {
+      const value = getValue()
+
+      if (typeof value !== 'string') return null
+
+      return (
+        <span>
+          {value.charAt(0).toUpperCase() +
+            value.slice(1).toLowerCase().replace('_', ' ')}
+        </span>
+      )
+    },
   },
   {
     accessorKey: 'membership',

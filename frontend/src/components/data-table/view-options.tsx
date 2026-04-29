@@ -25,7 +25,7 @@ export function DataTableViewOptions<TData>({
           View
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-37.5">
+      <DropdownMenuContent align="end" className="w-fit">
         <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {table
@@ -45,7 +45,9 @@ export function DataTableViewOptions<TData>({
                   column.toggleVisibility(!!value)
                 }
               >
-                {column.id}
+                {column.id
+                  .replace(/([a-z])([A-Z])/g, '$1 $2')
+                  .replace(/_/g, ' ')}
               </DropdownMenuCheckboxItem>
             )
           })}

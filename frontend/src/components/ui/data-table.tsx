@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
@@ -48,6 +49,7 @@ interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void
   selectedId?: string
   actionElement?: React.ReactNode
+  meta?: any
 }
 
 export function DataTable<TData, TValue>({
@@ -56,6 +58,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   selectedId,
   actionElement,
+  meta,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -79,6 +82,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    meta,
   })
 
   return (
@@ -108,7 +112,13 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="px-4">
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        'px-4',
+                        (header.column.columnDef.meta as any)?.headerClassName,
+                      )}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -132,11 +142,16 @@ export function DataTable<TData, TValue>({
                       : undefined
                   }
                   className="cursor-pointer"
-                  // Handle click interaction
                   onClick={() => onRowClick && onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="p-3">
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'p-3',
+                        (cell.column.columnDef.meta as any)?.cellClassName,
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
