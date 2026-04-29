@@ -3,10 +3,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, File, Response, UploadFile, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
-from app.database import get_async_db
 from app.schemas import user_schemas
 
 from .service import UserService
@@ -21,31 +19,27 @@ router = APIRouter(prefix="/db/users", tags=["Users"])
 )
 async def create_user(
     user_data: user_schemas.UserCreate,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Create and add new user to database.
 
     :param user_data: User data
-    :param db: Active database session
     :return: New user.
     """
-    return await UserService(db, ctx).create_user(user_data)
+    return await UserService(ctx.db, ctx).create_user(user_data)
 
 
 @router.get("/list_info", response_model=List[user_schemas.UserInfo])
 async def get_users_list(
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all users with their assigned groups (masked based on permissions).
 
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: User object.
     """
-    service = UserService(db, ctx)
-    users = await service.repo.get_all_with_teams(db)
+    service = UserService(ctx.db, ctx)
+    users = await service.repo.get_all_with_teams(ctx.db)
     return [service.get_masked_user_model(u, detailed=False) for u in users]
 
 
@@ -56,18 +50,16 @@ async def get_users_list(
 )
 async def get_user_detail(
     user_id: int,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch full user profile including avatar and group links (requires permissions).
 
     :param user_id: User ID
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: User object with extended info.
     """
-    service = UserService(db, ctx)
-    user = await service.repo.get_by_id(db, user_id, detailed=True)
+    service = UserService(ctx.db, ctx)
+    user = await service.repo.get_by_id(ctx.db, user_id, detailed=True)
     return service.get_masked_user_model(user, detailed=True)
 
 
@@ -75,41 +67,36 @@ async def get_user_detail(
 async def update_user(
     user_id: int,
     user_data: user_schemas.UserUpdate,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Update user data.
 
     :param user_id: User ID
     :param user_data: User data schema
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: Updated User.
     """
-    return await UserService(db, ctx).update_user(user_id, user_data)
+    return await UserService(ctx.db, ctx).update_user(user_id, user_data)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Delete user.
 
     :param user_id: User ID
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: None.
     """
-    await UserService(db, ctx).delete_user(user_id)
+    await UserService(ctx.db, ctx).delete_user(user_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/avatar")
 async def upload_avatar(
     file: UploadFile = File(...),
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Upload user avatar.
@@ -117,11 +104,10 @@ async def upload_avatar(
     Avatars are static files mounted in /home/labbyn/avatars directory
 
     :param file: File to upload
-    :param db: Active database session
     :param ctx: Request context for user and team info
     :return: None.
     """
-    return await UserService(db, ctx).upload_avatar(file)
+    return await UserService(ctx.db, ctx).upload_avatar(file)
 
 
 @router.patch(
@@ -130,8 +116,13 @@ async def upload_avatar(
 async def change_team_access(
     user_id: int,
     promote_data: user_schemas.UserTeamRoleUpdate,
-    db: AsyncSession = Depends(get_async_db),
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
-    """Update user's group admin role within a specific team."""
-    return await UserService(db, ctx).change_user_access(user_id, promote_data)
+    """Update user's group admin role within a specific team.
+
+    :param user_id: User ID
+    :param promote_data: User profile data
+    :param ctx: Request context for user and team info
+    :return: None.
+    """
+    return await UserService(ctx.db, ctx).change_user_access(user_id, promote_data)

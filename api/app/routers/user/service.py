@@ -96,7 +96,7 @@ class UserService:
                 "Password must be at least 6 characters long."
             )
 
-        user_fields = user_data.model_dump(exclude={"password", "team_ids"})
+        user_fields = user_data.model_dump(exclude={"password", "team_ids", "team_id"})
 
         new_user = models.User(
             **user_fields,
@@ -110,13 +110,14 @@ class UserService:
             self.db.add(new_user)
             await self.db.flush()
 
-            target_teams = user_data.team_ids or []
-            if not self.ctx.is_admin:
-                target_teams = [
-                    t_id for t_id in target_teams if t_id in self.ctx.team_ids
-                ]
-                if not target_teams and self.ctx.team_ids:
-                    target_teams = [self.ctx.team_ids[0]]
+            requested = list(user_data.team_ids) if user_data.team_ids else []
+            if self.ctx.is_admin:
+                target_teams = requested
+            else:
+                target_teams = [t for t in requested if t in self.ctx.team_ids]
+            if not target_teams and self.ctx.team_ids:
+                target_teams = [self.ctx.team_ids[0]]
+            target_teams = list(set(int(t) for t in target_teams if t is not None))
 
             for t_id in target_teams:
                 self.db.add(

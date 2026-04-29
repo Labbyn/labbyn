@@ -121,7 +121,7 @@ async def init_virtual_lab(db: AsyncSession):
 
     if not result.scalar_one_or_none():
         virtual_lab = models.Rooms(
-            name="virtual", room_type="virtual", team_id=service_team.id
+            name="virtual_ServiceTeam", room_type="virtual", team_id=service_team.id
         )
         db.add(virtual_lab)
         await db.commit()
