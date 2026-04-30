@@ -5,7 +5,6 @@ import { BookText } from 'lucide-react'
 import { DocsProvider } from './documentation/-context'
 import type { Document } from '@/types/types'
 import { DocumentList } from '@/components/document-list'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { PageIsLoading } from '@/components/page-is-loading'
 import { documentationQueryOptions } from '@/integrations/documentation/documentation.query'
 import {
@@ -77,32 +76,30 @@ function DocsLayout() {
     <>
       <div className="h-auto xl:h-screen w-full xl:overflow-hidden">
         <div className="grid grid-cols-1 xl:grid-cols-5 h-full">
-          <div className="xl:col-span-2 h-full xl:overflow-y-hidden">
-            <div className="p-4 pb-0 xl:p-6 xl:pb-0 xl:pr-3">
+          <div className="xl:col-span-2 flex flex-col h-full overflow-hidden border-r">
+            <div className="shrink-0 p-4 pb-0 xl:p-6 xl:pb-0 xl:pr-3">
               <PageHeader
                 title="Documentation"
                 description="Notes, scripts, instructions..."
                 icon={BookText}
               />
             </div>
-            <ScrollArea className="h-full" dir="rtl">
-              <div className="p-4 pb-0 xl:p-6 xl:pb-6 xl:pr-3" dir="ltr">
-                <DocumentList
-                  documents={documents}
-                  selectedDoc={null}
-                  onSelectDocument={(doc) =>
-                    navigate({
-                      to: '/documentation/$docId',
-                      params: { docId: String(doc.id) },
-                    })
-                  }
-                  onCreateDocument={handleCreate}
-                  onDeleteDocument={handleDelete}
-                />
-              </div>
-            </ScrollArea>
+            <div className="flex-1 min-h-0 overflow-hidden p-4 pt-4 xl:p-6 xl:pt-4 xl:pb-6 xl:pr-3">
+              <DocumentList
+                documents={documents}
+                selectedDoc={null}
+                onSelectDocument={(doc) =>
+                  navigate({
+                    to: '/documentation/$docId',
+                    params: { docId: String(doc.id) },
+                  })
+                }
+                onCreateDocument={handleCreate}
+                onDeleteDocument={handleDelete}
+              />
+            </div>
           </div>
-          <div className="xl:col-span-3 w-full h-full xl:overflow-hidden">
+          <div className="xl:col-span-3 w-full h-full overflow-y-auto">
             <DocsProvider
               value={{
                 documents,

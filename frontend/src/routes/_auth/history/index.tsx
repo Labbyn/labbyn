@@ -128,13 +128,19 @@ function RouteComponent() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>Audit Options</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => setDiffEntry(entry)}>
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation()
+                setDiffEntry(entry)
+              }}>
                 <Eye className="mr-2 h-4 w-4" /> Compare Changes
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 disabled={!entry.can_rollback || rollbackMutation.isPending}
-                onClick={() => rollbackMutation.mutate(entry.id)} //
+                onClick={(e) => {
+                  e.stopPropagation()
+                  rollbackMutation.mutate(entry.id)
+                }}
                 className="text-destructive focus:text-destructive"
               >
                 <RotateCcw className="mr-2 h-4 w-4" /> Rollback Change
@@ -227,8 +233,9 @@ function RouteComponent() {
             <Button
               variant="destructive"
               disabled={!diffEntry?.can_rollback || rollbackMutation.isPending}
-              onClick={() => {
+              onClick={(e) => {
                 if (diffEntry) {
+                  e.stopPropagation()
                   rollbackMutation.mutate(diffEntry.id)
                   setDiffEntry(null)
                 }
