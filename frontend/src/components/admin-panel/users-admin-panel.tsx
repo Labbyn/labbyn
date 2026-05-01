@@ -6,7 +6,7 @@ import { DataTable } from '../ui/data-table'
 
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import {  GenericCreateDialog } from '../generic-create-dialog'
+import { GenericCreateDialog } from '../generic-create-dialog'
 import { DataTableColumnHeader } from '../data-table/column-header'
 import {
   Dialog,
@@ -19,7 +19,7 @@ import {
 import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { DataTableRowActions } from '../data-table/row-actions'
-import type {FieldConfig} from '../generic-create-dialog';
+import type { FieldConfig } from '../generic-create-dialog'
 import type { fetchUserData } from '@/integrations/user/user.adapter'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { UserCreate, UserUpdate } from '@/integrations/user/user.types'
