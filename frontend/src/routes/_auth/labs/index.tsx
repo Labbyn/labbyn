@@ -35,7 +35,7 @@ function RouteComponent() {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 w-full">
         {labs.map((lab) => (
-          <Card>
+          <Card key={lab.id}>
             <CardHeader>
               <div className="space-y-1">
                 <CardTitle className="text-xl font-bold text-primary">
