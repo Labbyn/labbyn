@@ -132,7 +132,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
           idBadge={user.id}
           actions={[
             {
-              label: 'Edit User',
+              label: 'Edit',
               onClick: (u) => meta?.onEdit?.(u),
             },
             {
@@ -144,7 +144,7 @@ export const columns: Array<ColumnDef<UserItem>> = [
               onClick: (u) => resetPasswordMutation.mutate(u.id),
             },
             {
-              label: 'Delete User',
+              label: 'Delete',
               isDestructive: true,
               onClick: (u) => deleteMutation.mutate(u.id),
             },

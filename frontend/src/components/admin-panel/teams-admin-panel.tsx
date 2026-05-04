@@ -6,11 +6,11 @@ import { DataTable } from '../ui/data-table'
 
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
-import {  GenericCreateDialog } from '../generic-create-dialog'
+import { GenericCreateDialog } from '../generic-create-dialog'
 
 import { DataTableColumnHeader } from '../data-table/column-header'
 import { DataTableRowActions } from '../data-table/row-actions'
-import type {FieldConfig} from '../generic-create-dialog';
+import type { FieldConfig } from '../generic-create-dialog'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ApiTeamItem } from '@/integrations/teams/teams.types'
 import type { fetchTeamData } from '@/integrations/teams/teams.adapter'
@@ -76,11 +76,11 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
           idBadge={team.id}
           actions={[
             {
-              label: 'Edit User',
+              label: 'Edit',
               onClick: () => meta?.onEdit?.(team),
             },
             {
-              label: 'Delete User',
+              label: 'Delete',
               isDestructive: true,
               onClick: () => deleteTeam.mutate(team.id),
             },
