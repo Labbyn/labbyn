@@ -49,7 +49,7 @@ async def get_inventory_details(
 ):
     """Fetch all inventory items with detailed information.
 
-    Related tables (team, room, machine, category).
+    Related tables (team, room, category).
 
     :param ctx: Request context for user and team info
     :return: List of inventory items.
@@ -83,7 +83,7 @@ async def get_inventory_item_details(
     ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
 ):
     """Fetch all specific item with detailed information.
-    Related tables (team, room, machine, category).
+    Related tables (team, room, category).
 
     :param item_id: Item ID
     :param ctx: Request context for user and team info

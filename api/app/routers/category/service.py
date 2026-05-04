@@ -1,5 +1,8 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from datetime import datetime
 
 from app.auth import dependencies
 from app.core import exceptions
@@ -124,3 +127,64 @@ class CategoryService:
                 raise exceptions.ValidationError(
                     f"Could not delete category '{cat.name}'"
                 ) from e
+
+
+    async def get_grouped_categories(self):
+        """Fetch categories grouped with their detailed associated inventory items."""
+        self.ctx.require_user()
+        today = datetime.now().date()
+        
+        cat_stmt = select(models.Categories)
+        cat_result = await self.db.execute(cat_stmt)
+        all_categories = cat_result.scalars().all()
+        
+        categories_map = {
+            cat.name: {
+                "category_name": cat.name,
+                "quantity": 0,
+                "item_group": []
+            }
+            for cat in all_categories
+        }
+
+        inv_stmt = select(models.Inventory).options(
+            selectinload(models.Inventory.category),
+            selectinload(models.Inventory.team),
+            selectinload(models.Inventory.room), 
+            selectinload(models.Inventory.machine),
+            selectinload(models.Inventory.rental_history)
+        )
+        inv_result = await self.db.execute(inv_stmt)
+        inventory_items = inv_result.scalars().all()
+
+        for item in inventory_items:
+            cat_name = item.category.name if item.category else "Uncategorized"
+            
+            if cat_name not in categories_map:
+                categories_map[cat_name] = {
+                    "category_name": cat_name,
+                    "quantity": 0,
+                    "item_group": []
+                }
+
+            active_rentals = [r for r in item.rental_history if r.end_date >= today]
+            is_rented = len(active_rentals) > 0
+            current_rental_id = active_rentals[0].id if is_rented else None
+
+            item_detail = {
+                "name": item.name,
+                "quantity": item.quantity,
+                "team_id": item.team_id,
+                "team_name": item.team.name if item.team else None,
+                "localization_id": item.localization_id,
+                "room_name": item.room.name if item.room else None,
+                "category_id": item.category_id,
+                "category_name": item.category.name if item.category else None,
+                "rental_status": is_rented,
+                "rental_id": current_rental_id
+            }
+
+            categories_map[cat_name]["quantity"] += item.quantity
+            categories_map[cat_name]["item_group"].append(item_detail)
+
+        return list(categories_map.values())

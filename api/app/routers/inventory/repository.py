@@ -23,7 +23,6 @@ class InventoryRepository:
         stmt = select(models.Inventory).options(
             orm.joinedload(models.Inventory.team),
             orm.joinedload(models.Inventory.room),
-            orm.joinedload(models.Inventory.machine),
             orm.joinedload(models.Inventory.category),
         )
         stmt = ctx.team_filter(stmt, models.Inventory)
@@ -34,7 +33,7 @@ class InventoryRepository:
     async def get_detailed_list(db: AsyncSession, ctx) -> List[models.Inventory]:
         """Fetch all inventory items with detailed information.
 
-        Related tables (team, room, machine, category).
+        Related tables (team, room, category).
 
         :param db: Active database session
         :param ctx: Request context for user and team info
@@ -43,7 +42,6 @@ class InventoryRepository:
         stmt = sql.select(models.Inventory).options(
             orm.joinedload(models.Inventory.team),
             orm.joinedload(models.Inventory.room),
-            orm.joinedload(models.Inventory.machine),
             orm.joinedload(models.Inventory.category),
             orm.joinedload(models.Inventory.rental_history)
             .joinedload(models.Rentals.user)
@@ -72,7 +70,6 @@ class InventoryRepository:
             stmt = stmt.options(
                 orm.joinedload(models.Inventory.team),
                 orm.joinedload(models.Inventory.room),
-                orm.joinedload(models.Inventory.machine),
                 orm.joinedload(models.Inventory.category),
                 orm.joinedload(models.Inventory.rental_history)
                 .joinedload(models.Rentals.user)

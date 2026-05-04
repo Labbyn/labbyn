@@ -42,6 +42,18 @@ async def get_categories(
     return await CategoryService(ctx.db, ctx).get_categories()
 
 
+@router.get("/grouped", response_model=List[category_schemas.CategoryGroupedResponse])
+async def get_grouped_categories(
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Fetch all categories grouped with their associated items.
+
+    :param ctx: Request context for user and team info
+    :return: List of categories with nested items and total quantity.
+    """
+    return await CategoryService(ctx.db, ctx).get_grouped_categories()
+
+
 @router.get("/{cat_id}", response_model=category_schemas.CategoriesResponse)
 async def get_category_by_id(
     cat_id: int,

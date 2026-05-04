@@ -71,12 +71,6 @@ class InventoryBase(BaseModel):
     room_name: Optional[str] = Field(
         None, description="Name of the room where item is located"
     )
-    machine_id: Optional[int] = Field(
-        None, description="ID of the machine if item is part of one"
-    )
-    machine_name: Optional[str] = Field(
-        None, description="Name of the machine if item is part of one"
-    )
     category_id: int = Field(..., description="ID of the item category")
     category_name: Optional[str] = Field(None, description="Name of the item category")
     rental_status: bool = Field(False, description="True if item is currently rented")
@@ -90,7 +84,6 @@ class InventoryCreate(InventoryBase):
 
     team_name: Optional[str] = Field(None, exclude=True)
     room_name: Optional[str] = Field(None, exclude=True)
-    machine_name: Optional[str] = Field(None, exclude=True)
     category_name: Optional[str] = Field(None, exclude=True)
 
 
@@ -101,7 +94,6 @@ class InventoryUpdate(BaseModel):
     quantity: Optional[int] = None
     team_id: Optional[int] = None
     localization_id: Optional[int] = None
-    machine_id: Optional[int] = None
     category_id: Optional[int] = None
     rental_status: Optional[bool] = None
     rental_id: Optional[int] = None
@@ -125,7 +117,6 @@ class InventoryDetailResponse(BaseModel):
     team_name: str
     room_name: str
     room_id: Optional[int]
-    machine_info: Optional[str]
     category_name: str
     category_id: Optional[int]
     location_link: str
