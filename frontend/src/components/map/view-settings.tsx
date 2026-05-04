@@ -1,15 +1,5 @@
-import {
-  Box,
-  EthernetPort,
-  Flame,
-  Grid3X3,
-  Map as MapIcon,
-  Redo2,
-  Undo2,
-} from 'lucide-react'
+import { Box, EthernetPort, Flame, Grid3X3, Map as MapIcon } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import { ButtonGroup } from '../ui/button-group'
-import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import {
   Tooltip,
@@ -20,10 +10,6 @@ import {
 type ViewOverlay = 'none' | 'heatmap' | 'network'
 
 interface ViewSettingsProps {
-  onUndo: () => void
-  onRedo: () => void
-  canUndo: boolean
-  canRedo: boolean
   viewOverlay: ViewOverlay
   setViewOverlay: (v: ViewOverlay) => void
   useSnap: boolean
@@ -35,10 +21,6 @@ interface ViewSettingsProps {
 }
 
 export function ViewSettings({
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
   viewOverlay,
   setViewOverlay,
   useSnap,
@@ -49,131 +31,113 @@ export function ViewSettings({
   setProjection,
 }: ViewSettingsProps) {
   return (
-    <div className="backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl">
+    <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex p-1.5 shadow-2xl gap-1.5">
       {/* View Mode Group */}
       <ToggleGroup
         type="single"
         value={is2D ? '2D' : '3D'}
-        onValueChange={(value) => {
-          if (value) setIs2D(value === '2D')
-        }}
-        variant={'default'}
+        onValueChange={(value) => value && setIs2D(value === '2D')}
+        className="bg-background/50 rounded-xl p-1"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="2D">
-              <MapIcon /> 2D
+            <ToggleGroupItem value="2D" className="h-8 rounded-lg">
+              <MapIcon className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>2D Top-down View</TooltipContent>
+          <TooltipContent side="left">2D View</TooltipContent>
         </Tooltip>
-
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="3D">
-              <Box /> 3D
+            <ToggleGroupItem value="3D" className="h-8 rounded-lg">
+              <Box className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>3D Perspective View</TooltipContent>
+          <TooltipContent side="left">3D View</TooltipContent>
         </Tooltip>
       </ToggleGroup>
 
-      {/* Camera Projection Group */}
-      <ToggleGroup
-        type="single"
-        value={projection}
-        onValueChange={(v) =>
-          v && setProjection(v as 'perspective' | 'orthographic')
-        }
-      >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ToggleGroupItem value="orthographic">Ort</ToggleGroupItem>
-          </TooltipTrigger>
-          <TooltipContent>Orthographic Camera</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ToggleGroupItem value="perspective">Pers</ToggleGroupItem>
-          </TooltipTrigger>
-          <TooltipContent>Perspective Camera</TooltipContent>
-        </Tooltip>
-      </ToggleGroup>
+      {/* Projection & Snap */}
+      <div className="flex justify-between px-1">
+        <ToggleGroup
+          type="single"
+          value={projection}
+          onValueChange={(v) =>
+            v && setProjection(v as 'perspective' | 'orthographic')
+          }
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem
+                value="orthographic"
+                className="h-8 w-8 p-0 rounded-lg text-[10px] font-bold"
+              >
+                ORT
+              </ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent side="left">Orthographic</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <ToggleGroupItem
+                value="perspective"
+                className="h-8 w-8 p-0 rounded-lg text-[10px] font-bold"
+              >
+                PER
+              </ToggleGroupItem>
+            </TooltipTrigger>
+            <TooltipContent side="left">Perspective</TooltipContent>
+          </Tooltip>
+        </ToggleGroup>
 
-      {/* Overlay Group */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Toggle
+              pressed={useSnap}
+              onPressedChange={setUseSnap}
+              className="h-8 w-8"
+            >
+              <Grid3X3
+                className={`w-4 h-4 ${useSnap ? 'text-primary' : 'text-muted-foreground'}`}
+              />
+            </Toggle>
+          </TooltipTrigger>
+          <TooltipContent side="left">Snap to Grid</TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Overlays */}
       <ToggleGroup
         type="single"
         value={viewOverlay}
         onValueChange={(v) => setViewOverlay(v as ViewOverlay)}
+        className="bg-background/50 rounded-xl p-1"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="heatmap">
+            <ToggleGroupItem value="heatmap" className="h-8 rounded-lg">
               <Flame
                 className={
-                  viewOverlay === 'heatmap' ? 'text-orange-500' : 'text'
+                  viewOverlay === 'heatmap' ? 'text-orange-500' : 'w-4 h-4'
                 }
               />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>Thermal Heatmap</TooltipContent>
+          <TooltipContent side="left">Thermal Heatmap</TooltipContent>
         </Tooltip>
-
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="network">
+            <ToggleGroupItem value="network" className="h-8 rounded-lg">
               <EthernetPort
-                className={viewOverlay === 'network' ? 'text-blue-500' : 'text'}
+                className={
+                  viewOverlay === 'network' ? 'text-blue-500' : 'w-4 h-4'
+                }
               />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>Network Topology</TooltipContent>
+          <TooltipContent side="left">Network Topology</TooltipContent>
         </Tooltip>
       </ToggleGroup>
-
-      {/* Snap Toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Toggle
-            pressed={useSnap}
-            onPressedChange={setUseSnap}
-          >
-            <Grid3X3 className={useSnap ? 'text-primary' : ''} />
-          </Toggle>
-        </TooltipTrigger>
-        <TooltipContent>Snap to Grid</TooltipContent>
-      </Tooltip>
-
-      {/* History Group */}
-      <ButtonGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={'outline'}
-              onClick={onUndo}
-              disabled={!canUndo}
-            >
-              <Undo2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Undo</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={'outline'}
-              onClick={onRedo}
-              disabled={!canRedo}
-            >
-              <Redo2 />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Redo</TooltipContent>
-        </Tooltip>
-      </ButtonGroup>
     </div>
   )
 }

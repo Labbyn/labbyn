@@ -1,3 +1,4 @@
+// components/map-toolbar.tsx
 import {
   BoxSelect,
   Hammer,
@@ -23,62 +24,65 @@ interface MapToolbarProps {
 
 export function MapToolbar({ mode, setMode }: MapToolbarProps) {
   return (
-    <div className="backdrop-blur-md bg-card/30 rounded-xl border border-border/40 shadow-2xl w-fit">
+    <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 shadow-2xl p-1.5 flex items-center">
       <ToggleGroup
         type="single"
-        orientation="vertical"
+        orientation="horizontal"
         value={mode}
         onValueChange={(v) => v && setMode(v)}
+        className="gap-1"
       >
         <ToolbarItem
           mode={mode}
           value="view"
-          icon={<MousePointer2 size={16} />}
+          icon={<MousePointer2 size={18} />}
           label="Inspect"
         />
         <ToolbarItem
           mode={mode}
           value="select"
-          icon={<BoxSelect size={16} />}
+          icon={<BoxSelect size={18} />}
           label="Marquee Select"
         />
+        <div className="w-px h-6 bg-border/50 mx-1" /> {/* Divider */}
         <ToolbarItem
           mode={mode}
           value="move"
-          icon={<Move size={16} />}
+          icon={<Move size={18} />}
           label="Move"
         />
         <ToolbarItem
           mode={mode}
           value="rotate"
-          icon={<RotateCw size={16} />}
+          icon={<RotateCw size={18} />}
           label="Rotate"
         />
+        <div className="w-px h-6 bg-border/50 mx-1" /> {/* Divider */}
         <ToolbarItem
           mode={mode}
           value="add-rack"
-          icon={<Plus size={16} />}
+          icon={<Plus size={18} />}
           label="Add Rack"
         />
         <ToolbarItem
           mode={mode}
           value="add-wall"
-          icon={<Hammer size={16} />}
+          icon={<Hammer size={18} />}
           label="Add Wall"
         />
         <ToolbarItem
           mode={mode}
           value="add-label"
-          icon={<Type size={16} />}
+          icon={<Type size={18} />}
           label="Add Label"
         />
-
+        <div className="w-px h-6 bg-border/50 mx-1" /> {/* Divider */}
         <ToolbarItem
           mode={mode}
           value="delete"
-          icon={<Trash2 size={16} />}
+          icon={<Trash2 size={18} />}
           label="Delete"
-          className="text-destructive data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
+          className="text-destructive hover:text-destructive data-[state=on]:bg-destructive data-[state=on]:text-destructive-foreground"
         />
       </ToggleGroup>
     </div>
@@ -105,8 +109,8 @@ function ToolbarItem({
       aria-label={label}
       className={cn(
         className,
-        isActive && 'bg-accent text-accent-foreground',
-        'relative w-9 h-9 p-0',
+        isActive && 'bg-primary/20 text-primary shadow-sm',
+        'relative w-10 h-10 rounded-full transition-all duration-200 hover:bg-muted/50',
       )}
     >
       <Tooltip>
@@ -115,7 +119,11 @@ function ToolbarItem({
             {icon}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={10}>
+        <TooltipContent
+          side="top"
+          sideOffset={12}
+          className="text-xs font-semibold"
+        >
           <p>{label}</p>
         </TooltipContent>
       </Tooltip>

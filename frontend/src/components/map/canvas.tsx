@@ -29,10 +29,11 @@ import * as THREE from 'three'
 import { formatHex } from 'culori'
 import { useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { Save, Trash2, X } from 'lucide-react'
+import { Redo2, Save, Trash2, Undo2, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { Badge } from '../ui/badge'
 import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
 import { MapToolbar } from './map-toolbar'
@@ -43,6 +44,7 @@ import type {
   TransformControls as TransformControlsImpl,
 } from 'three-stdlib'
 import type { Equipment, WallNode, WallSegment } from '@/types/types'
+import type { ApiRackDetailItem } from '@/integrations/racks/racks.types'
 import {
   Select,
   SelectContent,
@@ -62,7 +64,6 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@/components/ui/combobox'
-import type { ApiRackDetailItem } from '@/integrations/racks/racks.types'
 
 // --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
@@ -1305,18 +1306,22 @@ export function CanvasComponent3D({
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const roomIdFromUrl = searchParams.get('roomId');
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : '',
+  )
+  const roomIdFromUrl = searchParams.get('roomId')
 
   const availableRacks = useMemo(() => {
     if (!allRacks || !Array.isArray(allRacks)) return []
     return allRacks.filter((r: ApiRackDetailItem) => {
-      const isNotUsed = !equipmentIds.includes(String(r.id));
-      
-      const belongsToRoom = roomIdFromUrl ? r.room_id === Number(roomIdFromUrl) : true;
+      const isNotUsed = !equipmentIds.includes(String(r.id))
 
-      return isNotUsed && belongsToRoom;
-    });
+      const belongsToRoom = roomIdFromUrl
+        ? r.room_id === Number(roomIdFromUrl)
+        : true
+
+      return isNotUsed && belongsToRoom
+    })
   }, [allRacks, equipmentIds])
 
   const { historyIndex, history, saveToHistory, undo, redo } = useLabHistory(
@@ -1687,60 +1692,116 @@ export function CanvasComponent3D({
       tabIndex={0}
       onMouseDown={(e) => e.currentTarget.focus()}
     >
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-4">
+      {/* 1. TOP LEFT: Room Selector */}
+      <div className="absolute top-6 left-6 z-20 backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex p-1.5 shadow-2xl gap-1.5 flex-col">
         {onRoomChange && (
-          <Select
-            value={roomId?.toString()}
-            onValueChange={onRoomChange}
-            disabled={isLoadingRooms}
+          <>
+            <span className='text-center text-muted-foreground uppercase text-[10px]'>Select a room to view</span>
+            
+            <Select
+              value={roomId?.toString()}
+              onValueChange={onRoomChange}
+              disabled={isLoadingRooms}
+            >
+              <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl w-[220px] h-12 text-sm font-semibold">
+                <SelectValue
+                  placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
+                />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                align="start"
+                className="rounded-xl"
+              >
+                {rooms.map((room: any) => (
+                  <SelectItem
+                    key={room.id}
+                    value={room.id.toString()}
+                    className="py-2"
+                  >
+                    {room.name || `Room ${room.id}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          
+          </>
+        )}
+      </div>
+
+      {/* 2. TOP RIGHT: Global Actions (Save, Undo, Redo) */}
+      <div className="absolute top-6 right-6 z-20 flex items-center gap-3">
+        <div className="flex bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl p-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-xl"
+            onClick={() => undo(wallNodes, wallSegments, labels)}
+            disabled={historyIndex < 0}
           >
-            <SelectTrigger className="bg-card/90 backdrop-blur-md border border-border/50 shadow-lg rounded-xl">
-              <SelectValue
-                placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
-              />
-            </SelectTrigger>
-            <SelectContent position="popper" align="start">
-              {rooms.map((room: any) => (
-                <SelectItem key={room.id} value={room.id.toString()}>
-                  {room.name || `Room ${room.id}`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Undo2 className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-xl"
+            onClick={redo}
+            disabled={historyIndex >= history.length - 1}
+          >
+            <Redo2 className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {hasUnsavedChanges && (
+          <Button
+            onClick={handleSaveToBackend}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 rounded-2xl h-11 px-5 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <Save className="w-4 h-4 mr-2" /> Save Layout
+          </Button>
+        )}
+      </div>
+
+      {/* 3. BOTTOM CENTER: The Tools Dock & Contextual Selection */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none">
+        {selectedIds.length > 0 && (
+          <div className="pointer-events-auto flex items-center gap-2 backdrop-blur-xl bg-primary/10 p-1.5 rounded-full border border-primary/20 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
+            <Badge variant="default" className="ml-2 rounded-full font-bold">
+              {selectedIds.length} Selected
+            </Badge>
+            <div className="w-px h-4 bg-primary/20 mx-1" />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full hover:bg-primary/20 hover:text-primary"
+              onClick={() => setSelectedIds([])}
+            >
+              <X className="w-4 h-4 mr-1" /> Clear
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 rounded-full"
+              onClick={deleteSelection}
+            >
+              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            </Button>
+          </div>
         )}
 
-        <ViewSettings
-          canUndo={historyIndex >= 0}
-          canRedo={historyIndex < history.length - 1}
-          onUndo={() => undo(wallNodes, wallSegments, labels)}
-          onRedo={redo}
-          viewOverlay={viewOverlay}
-          setViewOverlay={setViewOverlay}
-          useSnap={useSnap}
-          setUseSnap={setUseSnap}
-          is2D={is2D}
-          setIs2D={setIs2D}
-          projection={projection}
-          setProjection={setProjection}
-        />
-        <MapToolbar
-          mode={mode}
-          setMode={(v) => {
-            setMode(v as EditMode)
-            if (v !== 'add-rack') setPendingRackId('')
-          }}
-        />
-
         {mode === 'add-rack' && (
-          <div className="flex flex-col gap-2 p-3 bg-card/90 backdrop-blur-md rounded-xl border border-border/50 shadow-lg animate-in fade-in slide-in-from-left-4 w-70">
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Select Rack to Place
+          <div className="pointer-events-auto p-4 bg-card/90 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-80">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">
+              Select Rack from Database
             </div>
             <Combobox
               value={pendingRackId}
               onValueChange={(val) => setPendingRackId(val ?? '')}
             >
-              <ComboboxInput placeholder="Search available racks..." />
+              <ComboboxInput
+                placeholder="Search available racks..."
+                className="h-10 rounded-xl"
+              />
               <ComboboxEmpty>No racks available</ComboboxEmpty>
               <ComboboxContent>
                 <ComboboxList>
@@ -1752,49 +1813,37 @@ export function CanvasComponent3D({
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
-            <div className="text-[10px] text-muted-foreground leading-tight mt-1">
-              Select a rack from the database, then click on the grid to place
-              it.
-            </div>
           </div>
         )}
-      </div>
 
-      <div className="absolute top-4 right-4 z-20 flex gap-2">
-        {hasUnsavedChanges && (
-          <Button
-            onClick={handleSaveToBackend}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white animate-in fade-in slide-in-from-top-4 shadow-lg"
-          >
-            <Save className="w-4 h-4 mr-2" /> Save Changes
-          </Button>
-        )}
-      </div>
-
-      {selectedIds.length > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 backdrop-blur-xl bg-card/90 p-2 rounded-xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-6">
-          <div className="px-3 py-1 text-sm font-bold tracking-tight flex items-center border-r border-border/50 text-foreground">
-            {selectedIds.length} Selected
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8"
-            onClick={() => setSelectedIds([])}
-          >
-            <X className="w-4 h-4 mr-1" /> Clear
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-8"
-            onClick={deleteSelection}
-          >
-            <Trash2 className="w-4 h-4 mr-1" /> Delete
-          </Button>
+        <div className="pointer-events-auto">
+          <MapToolbar
+            mode={mode}
+            setMode={(v) => {
+              setMode(v as EditMode)
+              if (v !== 'add-rack') setPendingRackId('')
+            }}
+          />
         </div>
-      )}
+      </div>
 
+      {/* 4. BOTTOM RIGHT: View Controls */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-end gap-3 pointer-events-none">
+        <div className="pointer-events-auto">
+          <ViewSettings
+            viewOverlay={viewOverlay}
+            setViewOverlay={setViewOverlay}
+            useSnap={useSnap}
+            setUseSnap={setUseSnap}
+            is2D={is2D}
+            setIs2D={setIs2D}
+            projection={projection}
+            setProjection={setProjection}
+          />
+        </div>
+      </div>
+
+      {/* The 3D Canvas Layer */}
       <div className="flex-1 relative h-full min-w-0">
         <KeyboardControls
           map={[
