@@ -151,9 +151,13 @@ class CategoryService:
             selectinload(models.Inventory.category),
             selectinload(models.Inventory.team),
             selectinload(models.Inventory.room), 
-            selectinload(models.Inventory.machine),
             selectinload(models.Inventory.rental_history)
         )
+
+        if not self.ctx.is_admin:
+            inv_stmt = inv_stmt.where(models.Inventory.team_id.in_(self.ctx.team_ids))
+
+
         inv_result = await self.db.execute(inv_stmt)
         inventory_items = inv_result.scalars().all()
 
@@ -172,6 +176,7 @@ class CategoryService:
             current_rental_id = active_rentals[0].id if is_rented else None
 
             item_detail = {
+                "id": item.id,
                 "name": item.name,
                 "quantity": item.quantity,
                 "team_id": item.team_id,

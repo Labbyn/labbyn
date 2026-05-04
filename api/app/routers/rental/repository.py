@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from sqlalchemy import func, sql
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import models
@@ -65,3 +66,18 @@ class RentalRepository:
         )
         result = await db.execute(sum_stmt)
         return result.scalar()
+
+    async def get_by_item_id(self, db: AsyncSession, item_id: int, ctx):
+        """Fetch all rentals associated with a specific item ID."""
+        
+        stmt = sql.select(models.Rentals).where(models.Rentals.item_id == item_id)
+        stmt = stmt.options(
+            selectinload(models.Rentals.user),
+            selectinload(models.Rentals.inventory)
+        )
+
+        if not ctx.is_admin:
+            stmt = stmt.join(models.Inventory).where(models.Inventory.team_id.in_(ctx.team_ids))
+
+        result = await db.execute(stmt)
+        return result.scalars().all()

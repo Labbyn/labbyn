@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from .inventory_schemas import InventoryBase
+from .inventory_schemas import InventoryRental
 
 class CategoriesBase(BaseModel):
     """Base model for Inventory Categories."""
@@ -32,4 +32,4 @@ class CategoriesResponse(CategoriesBase):
 class CategoryGroupedResponse(BaseModel):
     category_name: str
     quantity: int
-    item_group: List[InventoryBase]
+    item_group: List[InventoryRental]

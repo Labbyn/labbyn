@@ -6,6 +6,7 @@ export interface ApiCategoryItem {
 }
 
 export interface ApiCategoryInventoryGrouped {
+  id: number
   category_name: string
   quantity: number
   item_group: Array<InventoryResponse>

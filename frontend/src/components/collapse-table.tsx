@@ -12,6 +12,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function CollapseTable({ inventory }) {
   
@@ -42,12 +43,17 @@ export function CollapseTable({ inventory }) {
                 </TableRow>
 
                 <CollapsibleContent asChild>
-                  <TableRow>
-                    <TableCell colSpan={6} className="p-0 border-b-0">
+                  <TableRow className="hover:bg-transparent">
+                    <TableCell colSpan={6} className="p-0">
                       <div className="bg-muted/30 px-6 py-4 text-sm text-muted-foreground shadow-inner">
                         <div className="space-y-3">
                           {category.item_group.map((item) => (
-                            <div key={item.id} className="grid grid-cols-2 gap-5 bg-background p-3 rounded-md border shadow-sm items-center">
+                            <div key={item.id} className="bg-background p-3 border rounded-sm items-center cursor-pointer transition-colors hover:bg-muted/80">
+                              <Link 
+                              key={item.id} 
+                              to={`/inventory/${item.id}`}
+                              className="grid grid-cols-2"
+                            >
                               <div>
                                 <span className="text-xs font-medium uppercase text-muted-foreground block">Name</span>
                                 <span className="text-foreground">{item.name}</span>
@@ -64,7 +70,9 @@ export function CollapseTable({ inventory }) {
                                 <span className="text-xs font-medium uppercase text-muted-foreground block">Team</span>
                                 <span className="text-foreground">{item.team_name}</span>
                               </div>
+                              </Link>
                             </div>
+
                           ))}
                         </div>
                       </div>

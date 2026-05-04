@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm, useStore } from '@tanstack/react-form'
+import { Button } from '@/components/ui/button'
 import {
   BanknoteArrowUp,
   Book,
@@ -30,8 +31,9 @@ import {
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
-import { machinesQueryOptions } from '@/integrations/machines/machines.query'
+import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
 import { categoryListQueryOptions } from '@/integrations/category/category.query'
+import { ManageRentalDialog } from '@/components/manage-rental-dialog'
 
 export const Route = createFileRoute('/_auth/inventory/$inventoryId')({
   component: InventoryDetailsPage,
@@ -45,7 +47,7 @@ function InventoryDetailsPage() {
     inventoryItemInfoQueryOptions(inventoryId),
   )
 
-  const { data: machines } = useSuspenseQuery(machinesQueryOptions)
+  const { data: rooms } = useSuspenseQuery(labsBaseQueryOptions)
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const { data: category } = useSuspenseQuery(categoryListQueryOptions)
 
@@ -57,8 +59,6 @@ function InventoryDetailsPage() {
     defaultValues: {
       ...inventory,
       team_id: (inventory as any).team_id ?? (undefined as number | undefined),
-      machine_id:
-        (inventory as any).machine_id ?? (undefined as number | undefined),
       category_id:
         (inventory as any).category_id ?? (undefined as number | undefined),
       rental_status: (inventory as any).rental_status ?? true,
@@ -70,9 +70,7 @@ function InventoryDetailsPage() {
         name: value.name,
         quantity: Number(value.total_quantity || 0),
         team_id: value.team_id ? Number(value.team_id) : null,
-        // TO DO: disscuss inventory assigment and rentals
-        localization_id: inventory.room_id || 0,
-        machine_id: value.machine_id ? Number(value.machine_id) : null,
+        localization_id: value.room_id || 0,
         category_id: Number(value.category_id || 0),
         rental_status: value.rental_status ?? true,
         rental_id: value.rental_id ? Number(value.rental_id) : null,
@@ -90,9 +88,6 @@ function InventoryDetailsPage() {
   })
 
   const currentTeamId = useStore(form.store, (state) => state.values.team_id)
-  const availableMachines = machines.filter(
-    (machine) => Number(machine.team_id) === Number(currentTeamId),
-  )
 
   return (
     <SubPageTemplate
@@ -173,7 +168,7 @@ function InventoryDetailsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 min-h-8 justify-center">
-                        {isEditing && !formField.isList ? (
+                        {isEditing && formField.name !== "in_stock_quantity" ? (
                           formField.name === 'category_name' ? (
                             <form.Field
                               name="category_id"
@@ -200,11 +195,14 @@ function InventoryDetailsPage() {
                                 </Select>
                               )}
                             />
+                          ) : formField.name === 'active_rentals' ? (
+                            <ManageRentalDialog open={isRentalDialogOpen} onOpenChange={setIsRentalDialogOpen} itemId={inventoryId}/>
                           ) : (
                             <form.Field
                               name={formField.name as any}
                               children={(field) => (
                                 <Input
+                                  type="number"
                                   value={String(field.state.value ?? '')}
                                   onChange={(e) =>
                                     field.handleChange(e.target.value as any)
@@ -254,7 +252,6 @@ function InventoryDetailsPage() {
                             value={field.state.value?.toString() ?? ''}
                             onValueChange={(value) => {
                               field.handleChange(Number(value))
-                              form.setFieldValue('machine_id', undefined)
                             }}
                           >
                             <SelectTrigger>
@@ -274,30 +271,31 @@ function InventoryDetailsPage() {
                         </>
                       )}
                     />
-                    {/* Machine Selection */}
                     <form.Field
-                      name="machine_id"
+                      name="room_id"
                       children={(field) => (
-                        <Select
-                          value={field.state.value?.toString() ?? ''}
-                          onValueChange={(value) => {
-                            field.handleChange(Number(value))
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder={'Select a machine'} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableMachines.map((machine) => (
-                              <SelectItem
-                                key={machine.id}
-                                value={machine.id.toString()}
-                              >
-                                {machine.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <>
+                          <Select
+                            value={field.state.value?.toString() ?? ''}
+                            onValueChange={(value) => {
+                              field.handleChange(Number(value))
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a room" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rooms.map((room) => (
+                                <SelectItem
+                                  key={room.id}
+                                  value={room.id.toString()}
+                                >
+                                  {room.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </>
                       )}
                     />
                   </div>
@@ -305,7 +303,7 @@ function InventoryDetailsPage() {
                   <div className="flex flex-col">
                     {[
                       { label: 'Team Name', value: inventory.team_name },
-                      { label: 'Machine Name', value: inventory.machine_info },
+                      { label: 'Room Name', value: inventory.room_name }
                     ].map((item, index, array) => (
                       <div
                         key={item.label}

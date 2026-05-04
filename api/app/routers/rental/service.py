@@ -175,3 +175,11 @@ class RentalService:
                 raise exceptions.ValidationError(
                     f"Could not delete rental for '{item_name}'"
                 )
+    async def get_rentals_by_item_id(self, item_id: int):
+        """Fetch all rentals for a specific inventory item.
+
+        :param item_id: Inventory Item ID
+        :return: List of rentals.
+        """
+        self.ctx.require_user()
+        return await self.repo.get_by_item_id(self.db, item_id, self.ctx)

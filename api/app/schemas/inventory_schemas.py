@@ -13,6 +13,7 @@ class RentalsBase(BaseModel):
     start_date: date = Field(..., description="Start date of the rental")
     end_date: date = Field(..., description="End date of the rental")
     quantity: int = Field(..., ge=1, description="Number of items to rent")
+    team_id: int = Field(..., description="ID of the team item being rented to")
 
 
 class RentalsCreate(RentalsBase):
@@ -26,6 +27,7 @@ class RentalsUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     user_id: Optional[int] = None
+    team_id: Optional[int] = None
 
 
 class RentalsResponse(RentalsBase):
@@ -78,7 +80,10 @@ class InventoryBase(BaseModel):
         None, description="ID of the current active rental"
     )
 
+class InventoryRental(InventoryBase):
+    """Schema dedicated for invenotry subpage and rental"""
 
+    id: Optional[int]
 class InventoryCreate(InventoryBase):
     """Schema for creating an Inventory item."""
 

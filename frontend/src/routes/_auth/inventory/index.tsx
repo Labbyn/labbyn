@@ -21,6 +21,7 @@ function RouteComponent() {
   const { data: inventory = [], isLoading } = useQuery(
     categoryGroupedInventoryListQueryOptions,
   )
+  console.log(inventory);
   
   const navigate = Route.useNavigate()
   if (isLoading) return <PageIsLoading />
