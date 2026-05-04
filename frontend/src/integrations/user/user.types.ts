@@ -25,7 +25,7 @@ export type UserCreate = {
   is_active?: boolean | null
   is_superuser?: boolean | null
   is_verified?: boolean | null
-  team_id?: number | null
+  team_ids?: Array<number> | Array<string> | null
   user_type?: UserType
 }
 
