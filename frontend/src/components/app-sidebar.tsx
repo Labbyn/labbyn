@@ -14,7 +14,6 @@ import {
   MapPin,
   Moon,
   PanelsTopLeft,
-  ScrollText,
   Server,
   Settings,
   Sun,
