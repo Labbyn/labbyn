@@ -23,10 +23,10 @@ interface MapToolbarProps {
 
 export function MapToolbar({ mode, setMode }: MapToolbarProps) {
   return (
-    <div className="p-1.5 backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl w-fit">
+    <div className="backdrop-blur-md bg-card/30 rounded-xl border border-border/40 shadow-2xl w-fit">
       <ToggleGroup
         type="single"
-        variant="outline"
+        orientation="vertical"
         value={mode}
         onValueChange={(v) => v && setMode(v)}
       >

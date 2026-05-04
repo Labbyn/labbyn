@@ -49,7 +49,7 @@ export function ViewSettings({
   setProjection,
 }: ViewSettingsProps) {
   return (
-    <div className="p-1.5 backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl">
+    <div className="backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl">
       {/* View Mode Group */}
       <ToggleGroup
         type="single"
@@ -57,7 +57,7 @@ export function ViewSettings({
         onValueChange={(value) => {
           if (value) setIs2D(value === '2D')
         }}
-        variant={'outline'}
+        variant={'default'}
       >
         <Tooltip>
           <TooltipTrigger asChild>
@@ -81,7 +81,6 @@ export function ViewSettings({
       {/* Camera Projection Group */}
       <ToggleGroup
         type="single"
-        variant={'outline'}
         value={projection}
         onValueChange={(v) =>
           v && setProjection(v as 'perspective' | 'orthographic')
@@ -105,7 +104,6 @@ export function ViewSettings({
       <ToggleGroup
         type="single"
         value={viewOverlay}
-        variant={'outline'}
         onValueChange={(v) => setViewOverlay(v as ViewOverlay)}
       >
         <Tooltip>
@@ -139,7 +137,6 @@ export function ViewSettings({
           <Toggle
             pressed={useSnap}
             onPressedChange={setUseSnap}
-            variant={'outline'}
           >
             <Grid3X3 className={useSnap ? 'text-primary' : ''} />
           </Toggle>
