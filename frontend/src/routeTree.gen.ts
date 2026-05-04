@@ -36,7 +36,6 @@ import { Route as AuthDocumentationDocIdRouteImport } from './routes/_auth/docum
 import { Route as AuthAdminPanelUsersRouteImport } from './routes/_auth/admin-panel/users'
 import { Route as AuthAdminPanelTeamsRouteImport } from './routes/_auth/admin-panel/teams'
 import { Route as AuthAdminPanelMachinesRouteImport } from './routes/_auth/admin-panel/machines'
-import { Route as AuthAdminPanelLoggingRouteImport } from './routes/_auth/admin-panel/logging'
 import { Route as AuthAdminPanelInventoryRouteImport } from './routes/_auth/admin-panel/inventory'
 import { Route as AuthInventoryDeviceDeviceidRouteImport } from './routes/_auth/inventory/device/$deviceid'
 
@@ -175,11 +174,6 @@ const AuthAdminPanelMachinesRoute = AuthAdminPanelMachinesRouteImport.update({
   path: '/admin-panel/machines',
   getParentRoute: () => AuthRoute,
 } as any)
-const AuthAdminPanelLoggingRoute = AuthAdminPanelLoggingRouteImport.update({
-  id: '/admin-panel/logging',
-  path: '/admin-panel/logging',
-  getParentRoute: () => AuthRoute,
-} as any)
 const AuthAdminPanelInventoryRoute = AuthAdminPanelInventoryRouteImport.update({
   id: '/admin-panel/inventory',
   path: '/admin-panel/inventory',
@@ -203,7 +197,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthSettingsRoute
   '/user-dashboard': typeof AuthUserDashboardRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
-  '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
@@ -233,7 +226,6 @@ export interface FileRoutesByTo {
   '/user-dashboard': typeof AuthUserDashboardRoute
   '/': typeof AuthIndexRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
-  '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
@@ -266,7 +258,6 @@ export interface FileRoutesById {
   '/_auth/user-dashboard': typeof AuthUserDashboardRoute
   '/_auth/': typeof AuthIndexRoute
   '/_auth/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
-  '/_auth/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/_auth/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
   '/_auth/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/_auth/admin-panel/users': typeof AuthAdminPanelUsersRoute
@@ -299,7 +290,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/user-dashboard'
     | '/admin-panel/inventory'
-    | '/admin-panel/logging'
     | '/admin-panel/machines'
     | '/admin-panel/teams'
     | '/admin-panel/users'
@@ -329,7 +319,6 @@ export interface FileRouteTypes {
     | '/user-dashboard'
     | '/'
     | '/admin-panel/inventory'
-    | '/admin-panel/logging'
     | '/admin-panel/machines'
     | '/admin-panel/teams'
     | '/admin-panel/users'
@@ -361,7 +350,6 @@ export interface FileRouteTypes {
     | '/_auth/user-dashboard'
     | '/_auth/'
     | '/_auth/admin-panel/inventory'
-    | '/_auth/admin-panel/logging'
     | '/_auth/admin-panel/machines'
     | '/_auth/admin-panel/teams'
     | '/_auth/admin-panel/users'
@@ -579,13 +567,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminPanelMachinesRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_auth/admin-panel/logging': {
-      id: '/_auth/admin-panel/logging'
-      path: '/admin-panel/logging'
-      fullPath: '/admin-panel/logging'
-      preLoaderRoute: typeof AuthAdminPanelLoggingRouteImport
-      parentRoute: typeof AuthRoute
-    }
     '/_auth/admin-panel/inventory': {
       id: '/_auth/admin-panel/inventory'
       path: '/admin-panel/inventory'
@@ -625,7 +606,6 @@ interface AuthRouteChildren {
   AuthUserDashboardRoute: typeof AuthUserDashboardRoute
   AuthIndexRoute: typeof AuthIndexRoute
   AuthAdminPanelInventoryRoute: typeof AuthAdminPanelInventoryRoute
-  AuthAdminPanelLoggingRoute: typeof AuthAdminPanelLoggingRoute
   AuthAdminPanelMachinesRoute: typeof AuthAdminPanelMachinesRoute
   AuthAdminPanelTeamsRoute: typeof AuthAdminPanelTeamsRoute
   AuthAdminPanelUsersRoute: typeof AuthAdminPanelUsersRoute
@@ -653,7 +633,6 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthUserDashboardRoute: AuthUserDashboardRoute,
   AuthIndexRoute: AuthIndexRoute,
   AuthAdminPanelInventoryRoute: AuthAdminPanelInventoryRoute,
-  AuthAdminPanelLoggingRoute: AuthAdminPanelLoggingRoute,
   AuthAdminPanelMachinesRoute: AuthAdminPanelMachinesRoute,
   AuthAdminPanelTeamsRoute: AuthAdminPanelTeamsRoute,
   AuthAdminPanelUsersRoute: AuthAdminPanelUsersRoute,

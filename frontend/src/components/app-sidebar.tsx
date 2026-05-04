@@ -132,7 +132,6 @@ const adminPanelItems = [
   { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
   { title: 'Machines', url: '/admin-panel/machines', icon: HardDrive },
   { title: 'Inventory', url: '/admin-panel/inventory', icon: Archive },
-  { title: 'Logging', url: '/admin-panel/logging', icon: ScrollText },
 ]
 
 function useTheme() {
