@@ -243,6 +243,7 @@ class Teams(Base):
     rooms = relationship("Rooms", back_populates="team")
     inventory = relationship("Inventory", back_populates="team")
     racks = relationship("Rack", back_populates="team")
+    rentals = relationship("Rentals", back_populates="team")
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -306,7 +307,7 @@ class Rentals(Base):
         ForeignKey("inventory.id", use_alter=True, name="fk_rentals_inventory_id"),
         nullable=False,
     )
-    team_id = Column(Date, nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
@@ -318,7 +319,7 @@ class Rentals(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     user = relationship("User", back_populates="rentals")
-
+    team = relationship("Teams", back_populates="rentals")
     inventory = relationship(
         "Inventory", foreign_keys=[item_id], back_populates="rental_history"
     )

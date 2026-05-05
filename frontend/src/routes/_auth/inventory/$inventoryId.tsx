@@ -14,7 +14,9 @@ import {
   WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Card, CardContent } from "@/components/ui/card"
 import type { ApiUpdateInventory } from '@/integrations/inventory/inventory.types'
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -50,10 +52,11 @@ function InventoryDetailsPage() {
   const { data: rooms } = useSuspenseQuery(labsBaseQueryOptions)
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const { data: category } = useSuspenseQuery(categoryListQueryOptions)
-
+  
   const updateItem = useUpdateInventoryMutation(inventoryId)
   const deleteItem = useDeleteInventoryMutation(inventoryId)
   const [isEditing, setIsEditing] = useState(false)
+  const [isRentalDialogOpen, setIsRentalDialogOpen] = useState(false)
 
   const form = useForm({
     defaultValues: {
@@ -152,7 +155,7 @@ function InventoryDetailsPage() {
                   },
                 ].map((formField, index, array) => {
                   const rawValue = (inventory as any)[formField.name]
-
+                  
                   return (
                     <div
                       key={formField.name}
@@ -196,7 +199,7 @@ function InventoryDetailsPage() {
                               )}
                             />
                           ) : formField.name === 'active_rentals' ? (
-                            <ManageRentalDialog open={isRentalDialogOpen} onOpenChange={setIsRentalDialogOpen} itemId={inventoryId}/>
+                            <ManageRentalDialog open={isRentalDialogOpen} onOpenChange={setIsRentalDialogOpen} item={inventory}/>
                           ) : (
                             <form.Field
                               name={formField.name as any}
@@ -213,11 +216,25 @@ function InventoryDetailsPage() {
                             />
                           )
                         ) : (
-                          <div className="text-sm font-medium text-foreground flex flex-col gap-1">
-                            {formField.isList && Array.isArray(rawValue) ? (
-                              rawValue.map((item: any, i: number) => (
-                                <div key={i}>{item}</div>
-                              ))
+                          <div className="text-sm font-medium text-foreground flex flex-row">
+                            {formField.name === "active_rentals" ? (
+                              <ScrollArea className="w-96 whitespace-nowrap">
+                                <div className="flex w-max space-x-3 pb-3">
+                              {inventory.active_rentals.map((item, i) => (
+                              <Card key={i} className="w-40 h-40 shrink-0">
+                                <CardContent className="pl-3 flex flex-col">
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Name</span>
+                                      <span className="text-foreground">{item.borrower_team}</span>
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Quantity</span>
+                                      <span className="text-foreground">{item.quantity}</span>
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">End date</span>
+                                      <span className="text-foreground">{item.end_date}</span> 
+                              </CardContent>
+                              </Card>
+                              ))}
+                              </div>
+                              <ScrollBar orientation="horizontal" />
+                              </ScrollArea>
                             ) : (
                               <span className="truncate">
                                 {rawValue || '—'}

@@ -1,9 +1,20 @@
 import React, { useState } from 'react'
 import { Loader2, Plus, ToolCase } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Card, CardContent, CardFooter, CardTitle } from "@/components/ui/card"
 import { toast } from 'sonner'
+import { Separator } from './ui/separator'
 import { z } from 'zod'
+import { DeleteAlertDialog } from '@/components/delete-alert-dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select'
 import {
   Dialog,
   DialogContent,
@@ -19,23 +30,24 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useCreateCategoryMutation } from '@/integrations/category/category.mutation'
 import { zodValidate } from '@/utils/index'
-import { rentalsInvenotryItemQueryOptions } from '@/integrations/rentals/rentals.query'
+import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
 
 const schemas = {
   name: z.string().min(1, 'Name is required'),
 }
 
 export function ManageRentalDialog({
-  children, itemId
+  item
 }: {
-  children?: React.ReactNode
-  itemId: number
+  item?: React.ReactNode
 }) {
   
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
 
-  const { data: rentals } = useSuspenseQuery(rentalsInvenotryItemQueryOptions(itemId))
+  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
 
   const mutation = useMutation({
     mutationKey: ['create-category'],
@@ -64,7 +76,7 @@ export function ManageRentalDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <div>
-         <Button
+        <Button
           variant="outline"
           type="button"
         >Manage rentals</Button>
@@ -85,22 +97,44 @@ export function ManageRentalDialog({
           }}
         >
           <div>
-            <span>Current Rentals</span>
+            <p>Current rentals</p>
+            <ScrollArea className="w-96 h-55 whitespace-nowrap">
+            
+            <div className="flex w-max space-x-3 pb-3">
+            {item.active_rentals.map((item, idx) => (
+              <Card key={idx} className="w-40 h-40 shrink-0">
+                                <CardContent className="pl-3 flex flex-col">
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Name</span>
+                                      <span className="text-foreground">{item.borrower_team}</span>
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Quantity</span>
+                                      <span className="text-foreground">{item.quantity}</span>
+                                      <span className="text-xs font-medium uppercase text-muted-foreground block">End date</span>
+                                      <span className="text-foreground">{item.end_date}</span>
+                              </CardContent>
+                              <CardFooter>
+                                <DeleteAlertDialog />
+                              </CardFooter>
+                              </Card>
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+          </ScrollArea>
           </div>
           <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1 mb-6">
-            {/* Category name */}
+            <p>Add new rental</p>
+            {/* New rental object */}
             <form.Field
-              name="name"
+              name="qunatity"
               validators={{ onChange: zodValidate(schemas.name) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Category Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
                   <Input
                     id={field.name}
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder="e.g. Cables"
+                    type="number"
                     className={
                       field.state.meta.errors.length ? 'border-destructive' : ''
                     }
@@ -109,6 +143,62 @@ export function ManageRentalDialog({
                 </Field>
               )}
             />
+            <form.Field
+                          name="team_id"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Team name</FieldLabel>
+                              <Select
+                                value={field.state.value?.toString() ?? ''}
+                                onValueChange={(value) => {
+                                  field.handleChange(Number(value))
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a team" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {teams.map((team) => (
+                                    <SelectItem
+                                      key={team.id}
+                                      value={team.id.toString()}
+                                    >
+                                      {team.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          )}
+                        />
+           <form.Field
+                          name="room_id"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>Room name</FieldLabel>
+                              <Select
+                                value={field.state.value?.toString() ?? ''}
+                                onValueChange={(value) => {
+                                  field.handleChange(Number(value))
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a room" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {labs.map((lab) => (
+                                    <SelectItem
+                                      key={lab.id}
+                                      value={lab.id.toString()}
+                                    >
+                                      {lab.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </Field>
+                          )}
+                        />
           </div>
           <DialogFooter>
             <Button
@@ -132,7 +222,7 @@ export function ManageRentalDialog({
                     </>
                   ) : (
                     <>
-                      Apply
+                      Create new rental
                     </>
                   )}
                 </Button>

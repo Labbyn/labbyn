@@ -17,7 +17,7 @@ export const rentalsQueryOptions = queryOptions({
 })
 
 //Fetch all invenotry item rentals
-export const rentalsInvenotryItemQueryOptions = (itemId: string | number) =>
+export const rentalsInventoryItemQueryOptions = (itemId: string | number) =>
   queryOptions({
     queryKey: ['invenotry', String(itemId)],
     queryFn: async () => {
