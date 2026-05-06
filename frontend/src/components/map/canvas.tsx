@@ -602,10 +602,12 @@ function GhostPreview({
   mode,
   wallStart,
   wallNodes,
+  useSnap,
 }: {
   mode: EditMode
   wallStart: THREE.Vector3 | null
   wallNodes: Array<WallNode>
+  useSnap: boolean
 }) {
   const cursorRef = useRef<THREE.Group>(null)
   const wallMeshRef = useRef<THREE.Mesh>(null)
@@ -621,8 +623,8 @@ function GhostPreview({
     raycaster.setFromCamera(mouse, camera)
     raycaster.ray.intersectPlane(plane, point)
 
-    let snappedX = Math.round(point.x)
-    let snappedZ = Math.round(point.z)
+    let snappedX = useSnap ? Math.round(point.x) : point.x
+    let snappedZ = useSnap ? Math.round(point.z) : point.z
 
     if (mode === 'add-wall') {
       for (const n of wallNodes) {
@@ -1560,9 +1562,9 @@ export function CanvasComponent3D({
 
     e.stopPropagation()
     const pt = new THREE.Vector3(
-      Math.round(e.point.x),
+      useSnap ? Math.round(e.point.x) : e.point.x,
       0,
-      Math.round(e.point.z),
+      useSnap ? Math.round(e.point.z) : e.point.z,
     )
     saveToHistory(wallNodes, wallSegments, labels)
 
@@ -2126,6 +2128,7 @@ export function CanvasComponent3D({
                 mode={mode}
                 wallStart={wallStart}
                 wallNodes={wallNodes}
+                useSnap={useSnap}
               />
               <ContactShadows
                 opacity={0.4}

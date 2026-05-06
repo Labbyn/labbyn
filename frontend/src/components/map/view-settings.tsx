@@ -104,7 +104,11 @@ export function ViewSettings({
             <Toggle
               pressed={useSnap}
               onPressedChange={setUseSnap}
-              className="h-8 w-8 rounded-full p-0 data-[state=on]:bg-primary/20 data-[state=on]:text-primary text-muted-foreground hover:text-foreground"
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                useSnap 
+                  ? 'bg-primary/20 text-primary shadow-sm' 
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
               <Grid3X3 className="w-4 h-4" />
             </Toggle>
