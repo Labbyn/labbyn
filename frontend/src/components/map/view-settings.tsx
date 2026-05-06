@@ -1,4 +1,4 @@
-import { Box, EthernetPort, Flame, Grid3X3, Map as MapIcon } from 'lucide-react'
+import { Box, Grid3X3, Map as MapIcon, Palette } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
 import { Toggle } from '@/components/ui/toggle'
 import {
@@ -7,11 +7,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-type ViewOverlay = 'none' | 'heatmap' | 'network'
-
 interface ViewSettingsProps {
-  viewOverlay: ViewOverlay
-  setViewOverlay: (v: ViewOverlay) => void
+  viewMode: 'default' | 'custom'
+  setViewMode: (v: 'default' | 'custom') => void
   useSnap: boolean
   setUseSnap: (v: boolean) => void
   is2D: boolean
@@ -21,8 +19,8 @@ interface ViewSettingsProps {
 }
 
 export function ViewSettings({
-  viewOverlay,
-  setViewOverlay,
+  viewMode,
+  setViewMode,
   useSnap,
   setUseSnap,
   is2D,
@@ -119,39 +117,25 @@ export function ViewSettings({
 
       <div className="h-px w-5 bg-border/50 my-1" />
 
-      {/* Overlays Group */}
-      <ToggleGroup
-        type="single"
-        orientation="vertical"
-        value={viewOverlay}
-        onValueChange={(v) => setViewOverlay(v as ViewOverlay)}
-        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
-      >
+      {/* Custom Color Toggle */}
+      <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="heatmap" className="h-8 w-8 rounded-full p-0">
-              <Flame
-                className={
-                  viewOverlay === 'heatmap' ? 'text-orange-500' : 'w-4 h-4'
-                }
-              />
-            </ToggleGroupItem>
+            <Toggle
+              pressed={viewMode === 'custom'}
+              onPressedChange={(pressed) => setViewMode(pressed ? 'custom' : 'default')}
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                viewMode === 'custom' 
+                  ? 'bg-primary/20 text-primary shadow-sm' 
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Palette className="w-4 h-4" />
+            </Toggle>
           </TooltipTrigger>
-          <TooltipContent side="left">Thermal Heatmap</TooltipContent>
+          <TooltipContent side="left">Toggle Custom Colors</TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ToggleGroupItem value="network" className="h-8 w-8 rounded-full p-0">
-              <EthernetPort
-                className={
-                  viewOverlay === 'network' ? 'text-blue-500' : 'w-4 h-4'
-                }
-              />
-            </ToggleGroupItem>
-          </TooltipTrigger>
-          <TooltipContent side="left">Network Topology</TooltipContent>
-        </Tooltip>
-      </ToggleGroup>
+      </div>
     </div>
   )
 }

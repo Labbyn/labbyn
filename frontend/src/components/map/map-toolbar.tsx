@@ -1,9 +1,9 @@
-// components/map-toolbar.tsx
 import {
   BoxSelect,
   Hammer,
   MousePointer2,
   Move,
+  Paintbrush,
   Plus,
   RotateCw,
   Trash2,
@@ -56,6 +56,13 @@ export function MapToolbar({ mode, setMode }: MapToolbarProps) {
           value="rotate"
           icon={<RotateCw size={18} />}
           label="Rotate"
+        />
+        <div className="w-px h-6 bg-border/50 mx-1" /> {/* Divider */}
+        <ToolbarItem
+          mode={mode}
+          value="paint"
+          icon={<Paintbrush size={18} />}
+          label="Paint Color"
         />
         <div className="w-px h-6 bg-border/50 mx-1" /> {/* Divider */}
         <ToolbarItem

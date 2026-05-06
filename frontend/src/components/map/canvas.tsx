@@ -29,7 +29,7 @@ import * as THREE from 'three'
 import { formatHex } from 'culori'
 import { useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { MapPin, Redo2, Save, Server, Trash2, Undo2, X } from 'lucide-react'
+import { MapPin, Palette, Redo2, Save, Server, Trash2, Undo2, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -56,17 +56,8 @@ import { useSyncRoomMap } from '@/integrations/map/map.mutation'
 import { Button } from '@/components/ui/button'
 import { useLabStore } from '@/lib/store'
 import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '@/components/ui/combobox'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 
-// --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
 const WALL_H = 22
 const WALL_T = 1.5
@@ -87,65 +78,54 @@ const glassMaterialBase = new THREE.MeshPhysicalMaterial({
   depthWrite: false,
 })
 
-// placeholder texture
 const generateServerTextures = () => {
   const w = 512
   const h = 1024
 
-  // Canvas 1: The physical metal chassis and drives
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')!
   canvas.width = w
   canvas.height = h
 
-  // Canvas 2: ONLY the LEDs (pure black everywhere else)
   const emissive = document.createElement('canvas')
   const ctxE = emissive.getContext('2d')!
   emissive.width = w
   emissive.height = h
 
-  // Base backgrounds
   ctx.fillStyle = '#050505'
   ctx.fillRect(0, 0, w, h)
   ctxE.fillStyle = '#000000'
   ctxE.fillRect(0, 0, w, h)
 
-  const slots = 22 // Reduced slots for much higher detail per server
+  const slots = 22
   const uHeight = h / slots
 
   for (let i = 0; i < slots; i++) {
     const y = i * uHeight
 
-    // Gap between servers
     ctx.fillStyle = '#000000'
     ctx.fillRect(0, y, w, 4)
 
-    // 15% chance empty slot
     const rand = Math.random()
     if (rand < 0.15) continue
 
-    // Server Chassis (Neutral Dark Grays)
     const chassisColor = Math.random() > 0.5 ? '#111111' : '#1c1c1c'
     ctx.fillStyle = chassisColor
     ctx.fillRect(8, y + 4, w - 16, uHeight - 4)
 
-    // Metal Rack Ears (Mounting Brackets)
     ctx.fillStyle = '#333333'
-    ctx.fillRect(8, y + 4, 20, uHeight - 4) // left ear
-    ctx.fillRect(w - 28, y + 4, 20, uHeight - 4) // right ear
+    ctx.fillRect(8, y + 4, 20, uHeight - 4)
+    ctx.fillRect(w - 28, y + 4, 20, uHeight - 4)
 
-    // --- DRAW SERVER TYPES ---
     if (rand < 0.5) {
-      // TYPE 1: Storage Array (12 Large Drive Bays)
       for (let d = 0; d < 12; d++) {
         const bayX = 40 + d * 34
-        ctx.fillStyle = '#080808' // Deep bay recess
+        ctx.fillStyle = '#080808'
         ctx.fillRect(bayX, y + 10, 26, uHeight - 16)
 
-        ctx.fillStyle = '#222222' // Drive release handle
+        ctx.fillStyle = '#222222'
         ctx.fillRect(bayX + 2, y + 12, 22, 6)
 
-        // Drive Activity LED
         if (Math.random() > 0.2) {
           const isErr = Math.random() > 0.95
           const color = isErr ? '#ff1111' : '#00ff44'
@@ -157,7 +137,6 @@ const generateServerTextures = () => {
         }
       }
     } else if (rand < 0.8) {
-      // TYPE 2: Compute Node (Ventilation Grilles + 4 Drives)
       ctx.fillStyle = '#030303'
       for (let v = 0; v < 6; v++) {
         ctx.fillRect(40, y + 12 + v * 5, 220, 3)
@@ -179,7 +158,6 @@ const generateServerTextures = () => {
         }
       }
     } else {
-      // TYPE 3: Network Switch
       ctx.fillStyle = '#080808'
       ctx.fillRect(40, y + 10, 360, uHeight - 16)
 
@@ -188,7 +166,6 @@ const generateServerTextures = () => {
         ctx.fillStyle = '#000000'
         ctx.fillRect(portX, y + 16, 10, 16)
 
-        // Port Link/Activity LED
         if (Math.random() > 0.3) {
           const color = Math.random() > 0.5 ? '#00ff44' : '#ffaa00'
           ctx.fillStyle = color
@@ -199,16 +176,13 @@ const generateServerTextures = () => {
       }
     }
 
-    // --- UNIVERSAL POWER/STATUS PANEL (Right Side) ---
     const pwrX = w - 60
 
-    // Main Power Button
     ctx.fillStyle = '#3b82f6'
     ctx.fillRect(pwrX, y + 16, 12, 12)
     ctxE.fillStyle = '#3b82f6'
     ctxE.fillRect(pwrX, y + 16, 12, 12)
 
-    // System Status LED
     const statColor = Math.random() > 0.9 ? '#ff1111' : '#00ff44'
     ctx.fillStyle = statColor
     ctx.fillRect(pwrX + 20, y + 18, 8, 8)
@@ -232,16 +206,12 @@ const generateRackBumpMap = () => {
   canvas.width = w
   canvas.height = h
 
-  // Base metal level (Mid-Gray = flat surface)
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, w, h)
 
-  // Draw Perforated Ventilation Holes (Black = deep indentations)
   ctx.fillStyle = '#000000'
-  // Leave a border for the solid metal frame
   for (let y = 30; y < h - 30; y += 10) {
     for (let x = 30; x < w - 30; x += 10) {
-      // Offset every other row to create a hexagonal mesh pattern
       const offsetX = (y / 10) % 2 === 0 ? 0 : 5
       ctx.beginPath()
       ctx.arc(x + offsetX, y, 3, 0, Math.PI * 2)
@@ -249,12 +219,10 @@ const generateRackBumpMap = () => {
     }
   }
 
-  // Draw Solid Frame Edges (White = raised edges)
   ctx.strokeStyle = '#ffffff'
   ctx.lineWidth = 20
   ctx.strokeRect(10, 10, w - 20, h - 20)
 
-  // Draw a back-door vertical split seam
   ctx.lineWidth = 4
   ctx.beginPath()
   ctx.moveTo(w / 2, 10)
@@ -263,11 +231,9 @@ const generateRackBumpMap = () => {
 
   const texture = new THREE.CanvasTexture(canvas)
 
-  // Allow the texture to repeat cleanly across the 3D box faces
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
-  // Scale the texture wrapping so the holes look appropriately sized on the sides vs top
   texture.repeat.set(1, 2)
 
   return texture
@@ -281,41 +247,35 @@ const generateWallBumpMap = () => {
   canvas.width = w
   canvas.height = h
 
-  // 1. Base plaster level
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, w, h)
 
-  // 2. Add procedural noise (creates a painted drywall or concrete texture)
   const imgData = ctx.getImageData(0, 0, w, h)
   const data = imgData.data
   for (let i = 0; i < data.length; i += 4) {
-    // Generate subtle grit
     const noise = (Math.random() - 0.5) * 25
     const val = 128 + noise
-    data[i] = val // R
-    data[i + 1] = val // G
-    data[i + 2] = val // B
-    data[i + 3] = 255 // A
+    data[i] = val
+    data[i + 1] = val
+    data[i + 2] = val
+    data[i + 3] = 255
   }
   ctx.putImageData(imgData, 0, 0)
 
-  // 3. Add Top Trim / Crown Molding (White = raised)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, w, 15)
-  ctx.fillStyle = '#b0b0b0' // subtle shadow under the trim
+  ctx.fillStyle = '#b0b0b0'
   ctx.fillRect(0, 15, w, 5)
 
-  // 4. Add Bottom Baseboard (White = raised)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, h - 35, w, 35)
-  ctx.fillStyle = '#a0a0a0' // lip of the baseboard
+  ctx.fillStyle = '#a0a0a0'
   ctx.fillRect(0, h - 38, w, 3)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
-  // Stretch the texture out horizontally so it doesn't compress on long walls
   texture.repeat.set(4, 1)
   texture.needsUpdate = true
 
@@ -325,7 +285,7 @@ const generateWallBumpMap = () => {
 const wallBumpTexture = generateWallBumpMap()
 
 const rackBumpTexture = generateRackBumpMap()
-// 3. The Server Material
+
 const innerServerMaterialBase = new THREE.MeshStandardMaterial({
   map: textures.map,
   emissiveMap: textures.emissiveMap,
@@ -353,6 +313,7 @@ export type EditMode =
   | 'add-label'
   | 'move'
   | 'rotate'
+  | 'paint'
   | 'delete'
 
 export interface LabLabel {
@@ -360,12 +321,11 @@ export interface LabLabel {
   text: string
   x: number
   y: number
+  color?: string
 }
 
 const snapToData = (v3d: number, enabled: boolean) =>
   enabled ? Math.round(v3d) * 10 : v3d * 10
-
-// --- Custom Hooks ---
 
 function useThemeColors() {
   const [colors, setColors] = useState({
@@ -596,8 +556,6 @@ function useBoxSelection(
   }
 }
 
-// --- Sub-components ---
-
 function GhostPreview({
   mode,
   wallStart,
@@ -802,7 +760,8 @@ function Rack({
   colors,
   mode,
   onSelect,
-  viewOverlay,
+  onPaint,
+  viewMode,
   isSelected,
   dragDeltaRef,
   dragDeltaRotRef,
@@ -813,7 +772,8 @@ function Rack({
   colors: any
   mode: EditMode
   onSelect: (id: string, shift: boolean) => void
-  viewOverlay: string
+  onPaint: (id: string) => void
+  viewMode: 'default' | 'custom'
   isSelected: boolean
   dragDeltaRef: React.MutableRefObject<THREE.Vector3>
   dragDeltaRotRef: React.MutableRefObject<number>
@@ -880,15 +840,11 @@ function Rack({
   })
 
   const rackColor = useMemo(() => {
-    const match = data.id.match(/R(\d+)-C(\d+)/)
-    const r = match ? parseInt(match[1], 10) : 0
-    const c = match ? parseInt(match[2], 10) : 0
-    if (viewOverlay === 'heatmap')
-      return `hsl(10, 100%, ${r % 2 === 0 ? 40 : 70}%)`
-    if (viewOverlay === 'network')
-      return `hsl(210, 100%, ${c % 2 === 0 ? 40 : 70}%)`
+    if (viewMode === 'custom' && (data as any).color) {
+      return (data as any).color
+    }
     return colors.rackBody
-  }, [viewOverlay, data.id, colors.rackBody])
+  }, [viewMode, (data as any).color, colors.rackBody])
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
@@ -900,6 +856,9 @@ function Rack({
       } else if (isDel) {
         saveToHistory()
         deleteMultipleEquipment([id])
+      } else if (mode === 'paint') {
+        saveToHistory()
+        onPaint(id)
       } else if (mode === 'view') {
         onSelect(id, e.shiftKey)
       }
@@ -910,6 +869,7 @@ function Rack({
       id,
       deleteMultipleEquipment,
       onSelect,
+      onPaint,
       saveToHistory,
       isSelected,
     ],
@@ -939,22 +899,20 @@ function Rack({
             roughness={0.6}
             bumpMap={rackBumpTexture}
             bumpScale={2}
-            emissive={viewOverlay !== 'none' ? rackColor : '#000'}
-            emissiveIntensity={viewOverlay !== 'none' ? 0.6 : 0}
+            emissive={viewMode === 'custom' && (data as any).color ? (data as any).color : '#000'}
+            emissiveIntensity={viewMode === 'custom' && (data as any).color ? 0.6 : 0}
           />
         </mesh>
       ) : (
         <Instance color={isDel ? '#ef4444' : rackColor} onClick={handleClick} />
       )}
 
-      {/* Layer 1: Internal servers with LEDs (Placed JUST outside the solid rack block) */}
       <mesh
         position={[0, 0, RACK_SIZE.d / 2 + 0.05]}
         geometry={glassGeometryBase}
         material={innerServerMaterialBase}
       />
 
-      {/* Layer 2: The tinted physical glass door (Sitting just over the servers) */}
       <mesh
         position={[0, 0, RACK_SIZE.d / 2 + 0.15]}
         geometry={glassGeometryBase}
@@ -973,7 +931,7 @@ function Rack({
           </mesh>
           <Text
             fontSize={2}
-            color={colors.text}
+            color={viewMode === 'custom' && (data as any).color ? (data as any).color : colors.text}
             fontWeight="bold"
             anchorX="center"
             anchorY="middle"
@@ -1054,7 +1012,7 @@ function WallNodeRenderer({
       }}
       onClick={(e) => {
         e.stopPropagation()
-        if (mode === 'select') return
+        if (mode === 'select' || mode === 'paint') return
         if (mode === 'add-wall') onDrawConnect(node)
         else if (mode === 'delete') onDelete(node.id)
         else if (['move', 'rotate', 'view'].includes(mode)) {
@@ -1169,7 +1127,7 @@ function WallSegmentRenderer({
       ref={groupRef}
       onClick={(e) => {
         e.stopPropagation()
-        if (mode === 'select') return
+        if (mode === 'select' || mode === 'paint') return
         if (mode === 'delete') onDelete(segment.id)
         else if (['move', 'rotate', 'view'].includes(mode)) {
           onSelectSegment(node1.id, node2.id, e.shiftKey)
@@ -1196,8 +1154,6 @@ function WallSegmentRenderer({
     </group>
   )
 }
-
-// --- Main Application Component ---
 
 export function CanvasComponent3D({
   roomId,
@@ -1296,9 +1252,9 @@ export function CanvasComponent3D({
   const [mode, setMode] = useState<EditMode>('view')
   const [pendingRackId, setPendingRackId] = useState<string>('')
   const [useSnap, setUseSnap] = useState(true)
-  const [viewOverlay, setViewOverlay] = useState<
-    'none' | 'heatmap' | 'network'
-  >('none')
+  
+  const [viewMode, setViewMode] = useState<'default' | 'custom'>('default')
+  const [paintColor, setPaintColor] = useState<string>('#3b82f6')
 
   const [wallStart, setWallStart] = useState<THREE.Vector3 | null>(null)
   const [wallStartNodeId, setWallStartNodeId] = useState<string | null>(null)
@@ -1306,6 +1262,13 @@ export function CanvasComponent3D({
   const colors = useThemeColors()
   const navigate = useNavigate()
   const activeCamera = is2D ? 'orthographic' : projection
+
+  // Automatically switch to custom color view when paintbrush is active
+  useEffect(() => {
+    if (mode === 'paint') {
+      setViewMode('custom')
+    }
+  }, [mode])
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 
@@ -1345,7 +1308,6 @@ export function CanvasComponent3D({
     handlePointerUp,
   } = useBoxSelection(mode, wallNodes, setSelectedIds)
 
-  // Refs for Drag Controls
   const mapControlsRef = useRef<MapControlsImpl>(null)
   const [transformControlNode, setTransformControlNode] =
     useState<TransformControlsImpl | null>(null)
@@ -1357,7 +1319,6 @@ export function CanvasComponent3D({
   const dragDeltaRotRef = useRef(0)
   const [dragDropCount, setDragDropCount] = useState(0)
 
-  // Clear drag parameters on deselection
   useEffect(() => {
     if (selectedIds.length === 0 || (mode !== 'move' && mode !== 'rotate')) {
       dragStartPos.current = null
@@ -1366,13 +1327,12 @@ export function CanvasComponent3D({
     }
   }, [selectedIds, mode])
 
-  // Reset temp states on mode change
   useEffect(() => {
     if (mode !== 'add-wall') {
       setWallStart(null)
       setWallStartNodeId(null)
     }
-    if (['add-rack', 'add-wall', 'add-label'].includes(mode)) {
+    if (['add-rack', 'add-wall', 'add-label', 'paint'].includes(mode)) {
       setSelectedIds([])
     }
     setSelectStart(null)
@@ -1478,7 +1438,6 @@ export function CanvasComponent3D({
     labels,
   ])
 
-  // Safe TransformControls Event Attachment
   useEffect(() => {
     if (transformControlNode && dummyObj) {
       const onDragChange = (e: any) => {
@@ -1544,8 +1503,12 @@ export function CanvasComponent3D({
     [navigate, mode, wallNodes, wallNodesMap],
   )
 
+  const handlePaint = useCallback((id: string) => {
+    updateMultipleEquipment([{ id, updates: { color: paintColor } }])
+  }, [updateMultipleEquipment, paintColor])
+
   const handleGridClick = (e: ThreeEvent<MouseEvent>) => {
-    if (mode === 'select' || mode === 'move' || mode === 'rotate') return
+    if (mode === 'select' || mode === 'move' || mode === 'rotate' || mode === 'paint') return
     if (mode === 'view') {
       setSelectedIds([])
       navigate({
@@ -1635,7 +1598,7 @@ export function CanvasComponent3D({
       if (text)
         setLabels([
           ...labels,
-          { id: `L-${Date.now()}`, text, x: pt.x, y: pt.z },
+          { id: `L-${Date.now()}`, text, x: pt.x, y: pt.z, color: undefined },
         ])
       setMode('view')
     }
@@ -1695,7 +1658,6 @@ export function CanvasComponent3D({
       tabIndex={0}
       onMouseDown={(e) => e.currentTarget.focus()}
     >
-      {/* 1. TOP CENTER: Room Selector */}
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
         {onRoomChange && (
           <Select
@@ -1732,7 +1694,6 @@ export function CanvasComponent3D({
         )}
       </div>
 
-      {/* 2. TOP RIGHT: Global Actions (Save, Undo, Redo) */}
       <div className="absolute top-6 right-6 z-20 flex items-center gap-3">
         <div className="flex bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full p-1">
           <Button
@@ -1765,7 +1726,6 @@ export function CanvasComponent3D({
         )}
       </div>
 
-      {/* 3. BOTTOM CENTER: The Tools Dock & Contextual Trays */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none">
         {selectedIds.length > 0 && (
           <div className="pointer-events-auto flex items-center gap-2 backdrop-blur-xl bg-primary/10 p-1.5 rounded-full border border-primary/20 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
@@ -1842,7 +1802,37 @@ export function CanvasComponent3D({
           </div>
         )}
 
-        {/* The Main Horizontal Dock */}
+        {mode === 'paint' && (
+          <div className="pointer-events-auto flex items-center gap-3 p-2 pr-3 bg-card/90 backdrop-blur-xl rounded-full border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-3 flex items-center gap-2">
+              <Palette className="w-3 h-3" /> Select Color
+            </span>
+            <div className="w-px h-4 bg-border/50" />
+            <div className="flex gap-1.5">
+              {[
+                { color: '#ef4444', label: 'Red' },
+                { color: '#f97316', label: 'Orange' },
+                { color: '#eab308', label: 'Yellow' },
+                { color: '#84cc16', label: 'Lime' },
+                { color: '#10b981', label: 'Emerald' },
+                { color: '#06b6d4', label: 'Cyan' },
+                { color: '#3b82f6', label: 'Blue' },
+                { color: '#8b5cf6', label: 'Violet' },
+                { color: '#d946ef', label: 'Fuchsia' },
+                { color: '#f43f5e', label: 'Rose' },
+              ].map(c => (
+                <button
+                  key={c.color}
+                  className={`w-6 h-6 rounded-full transition-all hover:scale-110 ${paintColor === c.color ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'ring-1 ring-border shadow-sm'}`}
+                  style={{ backgroundColor: c.color }}
+                  onClick={() => setPaintColor(c.color)}
+                  title={c.label}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="pointer-events-auto">
           <MapToolbar
             mode={mode}
@@ -1854,12 +1844,11 @@ export function CanvasComponent3D({
         </div>
       </div>
 
-      {/* 4. MIDDLE RIGHT: View Controls */}
       <div className="absolute top-1/2 right-9 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
         <div className="pointer-events-auto">
           <ViewSettings
-            viewOverlay={viewOverlay}
-            setViewOverlay={setViewOverlay}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
             useSnap={useSnap}
             setUseSnap={setUseSnap}
             is2D={is2D}
@@ -1870,7 +1859,6 @@ export function CanvasComponent3D({
         </div>
       </div>
 
-      {/* The 3D Canvas Layer */}
       <div className="flex-1 relative h-full min-w-0">
         <KeyboardControls
           map={[
@@ -2007,7 +1995,7 @@ export function CanvasComponent3D({
                 receiveShadow
                 frustumCulled={false}
               >
-                {viewOverlay === 'none' ? (
+                {viewMode === 'default' ? (
                   <meshStandardMaterial
                     metalness={0.8}
                     roughness={0.6}
@@ -2024,12 +2012,13 @@ export function CanvasComponent3D({
                     id={id}
                     colors={colors}
                     mode={mode}
-                    viewOverlay={viewOverlay}
+                    viewMode={viewMode}
                     isSelected={selectedIds.includes(id)}
                     groupCenter={groupCenter}
                     dragDeltaRef={dragDeltaRef}
                     dragDeltaRotRef={dragDeltaRotRef}
                     onSelect={handleSelect}
+                    onPaint={handlePaint}
                     saveToHistory={() =>
                       saveToHistory(wallNodes, wallSegments, labels)
                     }
@@ -2115,9 +2104,16 @@ export function CanvasComponent3D({
                 <Billboard key={l.id} position={[l.x, 8, l.y]}>
                   <Text
                     fontSize={5}
-                    color={colors.text}
+                    color={viewMode === 'custom' && l.color ? l.color : colors.text}
                     fontWeight="bold"
                     fillOpacity={0.7}
+                    onClick={(e) => {
+                      if (mode === 'paint') {
+                        e.stopPropagation()
+                        saveToHistory(wallNodes, wallSegments, labels)
+                        setLabels(labels.map(label => label.id === l.id ? { ...label, color: paintColor } : label))
+                      }
+                    }}
                   >
                     {l.text}
                   </Text>
