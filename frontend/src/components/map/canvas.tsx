@@ -29,7 +29,7 @@ import * as THREE from 'three'
 import { formatHex } from 'culori'
 import { useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { Redo2, Save, Trash2, Undo2, X } from 'lucide-react'
+import { MapPin, Redo2, Save, Server, Trash2, Undo2, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -64,6 +64,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from '@/components/ui/combobox'
+import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 
 // --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
@@ -1692,50 +1693,50 @@ export function CanvasComponent3D({
       tabIndex={0}
       onMouseDown={(e) => e.currentTarget.focus()}
     >
-      {/* 1. TOP LEFT: Room Selector */}
-      <div className="absolute top-6 left-6 z-20 backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex p-1.5 shadow-2xl gap-1.5 flex-col">
+      {/* 1. TOP CENTER: Room Selector */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
         {onRoomChange && (
-          <>
-            <span className='text-center text-muted-foreground uppercase text-[10px]'>Select a room to view</span>
-            
-            <Select
-              value={roomId?.toString()}
-              onValueChange={onRoomChange}
-              disabled={isLoadingRooms}
-            >
-              <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl w-[220px] h-12 text-sm font-semibold">
+          <Select
+            value={roomId?.toString()}
+            onValueChange={onRoomChange}
+            disabled={isLoadingRooms}
+          >
+            <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full h-12 px-6 flex items-center justify-between gap-3 text-sm font-semibold hover:bg-card/90 transition-colors w-[260px]">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
                 <SelectValue
                   placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
                 />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                align="start"
-                className="rounded-xl"
-              >
-                {rooms.map((room: any) => (
-                  <SelectItem
-                    key={room.id}
-                    value={room.id.toString()}
-                    className="py-2"
-                  >
+              </div>
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              align="center"
+              className="rounded-2xl shadow-xl border-border/50"
+            >
+              {rooms.map((room: any) => (
+                <SelectItem
+                  key={room.id}
+                  value={room.id.toString()}
+                  className="py-2.5 px-4 rounded-xl cursor-pointer"
+                >
+                  <span className="font-medium">
                     {room.name || `Room ${room.id}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          
-          </>
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         )}
       </div>
 
       {/* 2. TOP RIGHT: Global Actions (Save, Undo, Redo) */}
       <div className="absolute top-6 right-6 z-20 flex items-center gap-3">
-        <div className="flex bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-2xl p-1">
+        <div className="flex bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full p-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl"
+            className="h-9 w-9 rounded-full"
             onClick={() => undo(wallNodes, wallSegments, labels)}
             disabled={historyIndex < 0}
           >
@@ -1744,7 +1745,7 @@ export function CanvasComponent3D({
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-xl"
+            className="h-9 w-9 rounded-full"
             onClick={redo}
             disabled={historyIndex >= history.length - 1}
           >
@@ -1755,14 +1756,14 @@ export function CanvasComponent3D({
         {hasUnsavedChanges && (
           <Button
             onClick={handleSaveToBackend}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 rounded-2xl h-11 px-5 animate-in fade-in zoom-in-95 duration-200"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 rounded-full h-11 px-5 animate-in fade-in zoom-in-95 duration-200"
           >
             <Save className="w-4 h-4 mr-2" /> Save Layout
           </Button>
         )}
       </div>
 
-      {/* 3. BOTTOM CENTER: The Tools Dock & Contextual Selection */}
+      {/* 3. BOTTOM CENTER: The Tools Dock & Contextual Trays */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none">
         {selectedIds.length > 0 && (
           <div className="pointer-events-auto flex items-center gap-2 backdrop-blur-xl bg-primary/10 p-1.5 rounded-full border border-primary/20 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
@@ -1790,32 +1791,56 @@ export function CanvasComponent3D({
         )}
 
         {mode === 'add-rack' && (
-          <div className="pointer-events-auto p-4 bg-card/90 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-80">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">
-              Select Rack from Database
+          <div className="pointer-events-auto flex flex-col gap-3 p-4 bg-card/90 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-full max-w-[700px]">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                <Server className="w-3 h-3" /> Select a Rack to Place
+              </span>
+              <Badge variant="secondary" className="rounded-full text-[10px]">
+                {availableRacks.length} Available
+              </Badge>
             </div>
-            <Combobox
-              value={pendingRackId}
-              onValueChange={(val) => setPendingRackId(val ?? '')}
-            >
-              <ComboboxInput
-                placeholder="Search available racks..."
-                className="h-10 rounded-xl"
-              />
-              <ComboboxEmpty>No racks available</ComboboxEmpty>
-              <ComboboxContent>
-                <ComboboxList>
-                  {availableRacks.map((r: any) => (
-                    <ComboboxItem key={r.id} value={String(r.id)}>
-                      {r.name || `Rack #${r.id}`}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
+
+            <ScrollArea className="w-full">
+              <div className="flex gap-3 pb-3 px-2">
+                {availableRacks.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 px-2 italic">
+                    All assigned racks have been placed.
+                  </div>
+                ) : (
+                  availableRacks.map((r: any) => (
+                    <Button
+                      key={r.id}
+                      variant={
+                        pendingRackId === String(r.id) ? 'default' : 'outline'
+                      }
+                      className={`flex flex-col items-start justify-center gap-1.5 h-auto py-3 px-4 rounded-2xl shrink-0 min-w-[140px] transition-all ${
+                        pendingRackId === String(r.id)
+                          ? 'shadow-md scale-105 ring-2 ring-primary/50'
+                          : 'hover:border-primary/50 hover:bg-primary/5'
+                      }`}
+                      onClick={() => setPendingRackId(String(r.id))}
+                    >
+                      <Server
+                        className={`w-5 h-5 ${
+                          pendingRackId === String(r.id)
+                            ? 'text-primary-foreground'
+                            : 'text-primary'
+                        }`}
+                      />
+                      <span className="font-semibold text-sm truncate w-full text-left">
+                        {r.name || `Rack #${r.id}`}
+                      </span>
+                    </Button>
+                  ))
+                )}
+              </div>
+              <ScrollBar orientation="horizontal" className="h-1.5" />
+            </ScrollArea>
           </div>
         )}
 
+        {/* The Main Horizontal Dock */}
         <div className="pointer-events-auto">
           <MapToolbar
             mode={mode}
@@ -1827,8 +1852,8 @@ export function CanvasComponent3D({
         </div>
       </div>
 
-      {/* 4. BOTTOM RIGHT: View Controls */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-end gap-3 pointer-events-none">
+      {/* 4. MIDDLE RIGHT: View Controls */}
+      <div className="absolute top-1/2 right-9 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
         <div className="pointer-events-auto">
           <ViewSettings
             viewOverlay={viewOverlay}
@@ -2113,7 +2138,9 @@ export function CanvasComponent3D({
             </Suspense>
           </Canvas>
         </KeyboardControls>
+
         <ControlsOverlay is2D={is2D} />
+
         <Loader
           containerStyles={{ background: 'var(--background)' }}
           innerStyles={{ backgroundColor: 'var(--card)' }}
@@ -2121,6 +2148,7 @@ export function CanvasComponent3D({
         />
       </div>
 
+      {/* Rack info panel */}
       {selectedIds.length === 1 &&
         getEquipmentArray().find((e) => e.id === selectedIds[0]) &&
         mode === 'view' && (

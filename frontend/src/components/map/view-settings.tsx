@@ -31,17 +31,19 @@ export function ViewSettings({
   setProjection,
 }: ViewSettingsProps) {
   return (
-    <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex p-1.5 shadow-2xl gap-1.5">
+    <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex flex-col items-center p-1.5 shadow-2xl gap-2">
+      
       {/* View Mode Group */}
       <ToggleGroup
         type="single"
+        orientation="vertical"
         value={is2D ? '2D' : '3D'}
         onValueChange={(value) => value && setIs2D(value === '2D')}
-        className="bg-background/50 rounded-xl p-1"
+        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="2D" className="h-8 rounded-lg">
+            <ToggleGroupItem value="2D" className="h-8 w-8 rounded-full p-0">
               <MapIcon className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -49,7 +51,7 @@ export function ViewSettings({
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="3D" className="h-8 rounded-lg">
+            <ToggleGroupItem value="3D" className="h-8 w-8 rounded-full p-0">
               <Box className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -57,65 +59,73 @@ export function ViewSettings({
         </Tooltip>
       </ToggleGroup>
 
-      {/* Projection & Snap */}
-      <div className="flex justify-between px-1">
-        <ToggleGroup
-          type="single"
-          value={projection}
-          onValueChange={(v) =>
-            v && setProjection(v as 'perspective' | 'orthographic')
-          }
-        >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <ToggleGroupItem
-                value="orthographic"
-                className="h-8 w-8 p-0 rounded-lg text-[10px] font-bold"
-              >
-                ORT
-              </ToggleGroupItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">Orthographic</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <ToggleGroupItem
-                value="perspective"
-                className="h-8 w-8 p-0 rounded-lg text-[10px] font-bold"
-              >
-                PER
-              </ToggleGroupItem>
-            </TooltipTrigger>
-            <TooltipContent side="left">Perspective</TooltipContent>
-          </Tooltip>
-        </ToggleGroup>
+      <div className="h-px w-5 bg-border/50 my-1" />
 
+      {/* Projection Group */}
+      <ToggleGroup
+        type="single"
+        orientation="vertical"
+        value={projection}
+        onValueChange={(v) =>
+          v && setProjection(v as 'perspective' | 'orthographic')
+        }
+        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="orthographic"
+              className="h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter"
+            >
+              ORT
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent side="left">Orthographic</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <ToggleGroupItem
+              value="perspective"
+              className="h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter"
+            >
+              PER
+            </ToggleGroupItem>
+          </TooltipTrigger>
+          <TooltipContent side="left">Perspective</TooltipContent>
+        </Tooltip>
+      </ToggleGroup>
+
+      <div className="h-px w-5 bg-border/50 my-1" />
+
+      {/* Snap Toggle */}
+      <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Toggle
               pressed={useSnap}
               onPressedChange={setUseSnap}
-              className="h-8 w-8"
+              className="h-8 w-8 rounded-full p-0 data-[state=on]:bg-primary/20 data-[state=on]:text-primary text-muted-foreground hover:text-foreground"
             >
-              <Grid3X3
-                className={`w-4 h-4 ${useSnap ? 'text-primary' : 'text-muted-foreground'}`}
-              />
+              <Grid3X3 className="w-4 h-4" />
             </Toggle>
           </TooltipTrigger>
           <TooltipContent side="left">Snap to Grid</TooltipContent>
         </Tooltip>
       </div>
 
-      {/* Overlays */}
+      <div className="h-px w-5 bg-border/50 my-1" />
+
+      {/* Overlays Group */}
       <ToggleGroup
         type="single"
+        orientation="vertical"
         value={viewOverlay}
         onValueChange={(v) => setViewOverlay(v as ViewOverlay)}
-        className="bg-background/50 rounded-xl p-1"
+        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="heatmap" className="h-8 rounded-lg">
+            <ToggleGroupItem value="heatmap" className="h-8 w-8 rounded-full p-0">
               <Flame
                 className={
                   viewOverlay === 'heatmap' ? 'text-orange-500' : 'w-4 h-4'
@@ -127,7 +137,7 @@ export function ViewSettings({
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="network" className="h-8 rounded-lg">
+            <ToggleGroupItem value="network" className="h-8 w-8 rounded-full p-0">
               <EthernetPort
                 className={
                   viewOverlay === 'network' ? 'text-blue-500' : 'w-4 h-4'
