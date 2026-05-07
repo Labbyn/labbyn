@@ -42,7 +42,7 @@ class RentalInfo(BaseModel):
     """Schema for reading Rental info."""
 
     id: int
-    borrower_name: str
+    owner_name: str
     borrower_team: str
     quantity: int
     end_date: date

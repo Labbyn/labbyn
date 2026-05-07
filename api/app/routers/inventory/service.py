@@ -138,16 +138,12 @@ class InventoryService:
         self.ctx.require_user()
         item = await self.get_inventory_or_404(item_id, detailed=True)
         today = datetime.now().date()
-
+        
         active_rentals_list = [
             {
                 "id": r.id,
-                "borrower_name": f"{r.user.name} {r.user.surname}",
-                "borrower_team": (
-                    ", ".join([ut.team.name for ut in r.user.teams])
-                    if r.user.teams
-                    else "N/A"
-                ),
+                "owner_name": f"{r.user.name} {r.user.surname}",
+                "borrower_team": r.team.name if r.team_id else "N/A",
                 "quantity": r.quantity,
                 "end_date": r.end_date,
             }

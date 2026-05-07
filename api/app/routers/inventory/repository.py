@@ -75,6 +75,8 @@ class InventoryRepository:
                 .joinedload(models.Rentals.user)
                 .joinedload(models.User.teams)
                 .joinedload(models.UsersTeams.team),
+                orm.joinedload(models.Inventory.rental_history)
+                .joinedload(models.Rentals.team),
             )
 
         stmt = ctx.team_filter(stmt, models.Inventory)

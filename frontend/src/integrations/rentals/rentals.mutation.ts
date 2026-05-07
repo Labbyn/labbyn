@@ -1,6 +1,11 @@
+import { ManageRentalDialog } from '@/components/manage-rental-dialog'
+import api from '@/lib/api'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+
 const PATHS = {
-  BASE: '/db/rental/',
-  DETAIL: (id: string | number) => `/db/rental/${id}`,
+  BASE: '/db/rentals',
+  DETAIL: (id: string | number) => `/db/rentals/${id}`,
 }
 
 export async function useCreateRentalMutation(rentData: {
@@ -12,4 +17,18 @@ export async function useCreateRentalMutation(rentData: {
 }) {
   const { data } = await api.post(PATHS.BASE, rentData)
   return data
+}
+
+export const useDeleteRentalMutation = (inventoryId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (rentId: number) => {
+      await api.delete(PATHS.DETAIL(rentId))
+    },
+    onSuccess: () => {
+      toast.success('Rental deleted')
+      queryClient.invalidateQueries({ queryKey: ['inventory', inventoryId, 'info'] })
+    },
+  })
 }
