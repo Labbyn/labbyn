@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useForm, useStore } from '@tanstack/react-form'
-import { Button } from '@/components/ui/button'
+import { useForm } from '@tanstack/react-form'
 import {
   BanknoteArrowUp,
   Book,
@@ -14,9 +13,9 @@ import {
   WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Card, CardContent } from "@/components/ui/card"
 import type { ApiUpdateInventory } from '@/integrations/inventory/inventory.types'
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Card, CardContent } from '@/components/ui/card'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -52,7 +51,7 @@ function InventoryDetailsPage() {
   const { data: rooms } = useSuspenseQuery(labsBaseQueryOptions)
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const { data: category } = useSuspenseQuery(categoryListQueryOptions)
-  
+
   const updateItem = useUpdateInventoryMutation(inventoryId)
   const deleteItem = useDeleteInventoryMutation(inventoryId)
   const [isEditing, setIsEditing] = useState(false)
@@ -89,8 +88,6 @@ function InventoryDetailsPage() {
       })
     },
   })
-
-  const currentTeamId = useStore(form.store, (state) => state.values.team_id)
 
   return (
     <SubPageTemplate
@@ -155,7 +152,7 @@ function InventoryDetailsPage() {
                   },
                 ].map((formField, index, array) => {
                   const rawValue = (inventory as any)[formField.name]
-                  
+
                   return (
                     <div
                       key={formField.name}
@@ -171,7 +168,7 @@ function InventoryDetailsPage() {
                       </div>
 
                       <div className="flex flex-col gap-2 min-h-8 justify-center">
-                        {isEditing && formField.name !== "in_stock_quantity" ? (
+                        {isEditing && formField.name !== 'in_stock_quantity' ? (
                           formField.name === 'category_name' ? (
                             <form.Field
                               name="category_id"
@@ -199,7 +196,11 @@ function InventoryDetailsPage() {
                               )}
                             />
                           ) : formField.name === 'active_rentals' ? (
-                            <ManageRentalDialog open={isRentalDialogOpen} onOpenChange={setIsRentalDialogOpen} item={inventory}/>
+                            <ManageRentalDialog
+                              open={isRentalDialogOpen}
+                              onOpenChange={setIsRentalDialogOpen}
+                              item={inventory}
+                            />
                           ) : (
                             <form.Field
                               name={formField.name as any}
@@ -217,23 +218,38 @@ function InventoryDetailsPage() {
                           )
                         ) : (
                           <div className="text-sm font-medium text-foreground flex flex-row">
-                            {formField.name === "active_rentals" ? (
+                            {formField.name === 'active_rentals' ? (
                               <ScrollArea className="w-96 whitespace-nowrap">
                                 <div className="flex w-max space-x-3 pb-3">
-                              {inventory.active_rentals.map((item, i) => (
-                              <Card key={i} className="w-40 h-40 shrink-0">
-                                <CardContent className="pl-3 flex flex-col">
-                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Name</span>
-                                      <span className="text-foreground">{item.borrower_team}</span>
-                                      <span className="text-xs font-medium uppercase text-muted-foreground block">Quantity</span>
-                                      <span className="text-foreground">{item.quantity}</span>
-                                      <span className="text-xs font-medium uppercase text-muted-foreground block">End date</span>
-                                      <span className="text-foreground">{item.end_date}</span> 
-                              </CardContent>
-                              </Card>
-                              ))}
-                              </div>
-                              <ScrollBar orientation="horizontal" />
+                                  {inventory.active_rentals.map((item, i) => (
+                                    <Card
+                                      key={i}
+                                      className="w-40 h-40 shrink-0"
+                                    >
+                                      <CardContent className="pl-3 flex flex-col">
+                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                          Name
+                                        </span>
+                                        <span className="text-foreground">
+                                          {item.borrower_team}
+                                        </span>
+                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                          Quantity
+                                        </span>
+                                        <span className="text-foreground">
+                                          {item.quantity}
+                                        </span>
+                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                          End date
+                                        </span>
+                                        <span className="text-foreground">
+                                          {item.end_date}
+                                        </span>
+                                      </CardContent>
+                                    </Card>
+                                  ))}
+                                </div>
+                                <ScrollBar orientation="horizontal" />
                               </ScrollArea>
                             ) : (
                               <span className="truncate">
@@ -320,7 +336,7 @@ function InventoryDetailsPage() {
                   <div className="flex flex-col">
                     {[
                       { label: 'Team Name', value: inventory.team_name },
-                      { label: 'Room Name', value: inventory.room_name }
+                      { label: 'Room Name', value: inventory.room_name },
                     ].map((item, index, array) => (
                       <div
                         key={item.label}

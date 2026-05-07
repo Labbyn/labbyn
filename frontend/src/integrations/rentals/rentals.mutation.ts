@@ -1,7 +1,6 @@
-import { ManageRentalDialog } from '@/components/manage-rental-dialog'
-import api from '@/lib/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import api from '@/lib/api'
 
 const PATHS = {
   BASE: '/db/rentals',
@@ -28,7 +27,9 @@ export const useDeleteRentalMutation = (inventoryId: string) => {
     },
     onSuccess: () => {
       toast.success('Rental deleted')
-      queryClient.invalidateQueries({ queryKey: ['inventory', inventoryId, 'info'] })
+      queryClient.invalidateQueries({
+        queryKey: ['inventory', inventoryId, 'info'],
+      })
     },
   })
 }

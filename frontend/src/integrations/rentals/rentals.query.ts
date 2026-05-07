@@ -1,10 +1,10 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiRentalsItemResponse } from './rentals.types'
+import type { ApiRentalsItem, ApiRentalsItemResponse } from './rentals.types'
 import api from '@/lib/api'
 
 const PATHS = {
   BASE: '/db/rentals',
-  INVENTORY: (id: string) => `/db/rentals/item/${id}`
+  INVENTORY: (id: string) => `/db/rentals/item/${id}`,
 }
 
 // Fetch all rentals
@@ -16,8 +16,8 @@ export const rentalsQueryOptions = queryOptions({
   },
 })
 
-//Fetch all invenotry item rentals
-export const rentalsInventoryItemQueryOptions = (itemId: string | number) =>
+// Fetch all invenotry item rentals
+export const rentalsInventoryItemQueryOptions = (itemId: string) =>
   queryOptions({
     queryKey: ['invenotry', String(itemId)],
     queryFn: async () => {
@@ -25,4 +25,3 @@ export const rentalsInventoryItemQueryOptions = (itemId: string | number) =>
       return data
     },
   })
-

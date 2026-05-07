@@ -128,10 +128,12 @@ function RouteComponent() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>Audit Options</DropdownMenuLabel>
-              <DropdownMenuItem onClick={(e) => {
-                e.stopPropagation()
-                setDiffEntry(entry)
-              }}>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDiffEntry(entry)
+                }}
+              >
                 <Eye className="mr-2 h-4 w-4" /> Compare Changes
               </DropdownMenuItem>
               <DropdownMenuSeparator />
