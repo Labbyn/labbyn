@@ -5,6 +5,7 @@ import {
   Cpu,
   Edit2,
   Layers,
+  Link as LinkIcon,
   Loader2,
   Save,
   Server,
@@ -46,8 +47,8 @@ export function RackInfoPanel({
     singleShelfQueryOptions(String(rack.id)),
   )
 
-  const { mutateAsync: updateShelvesOrder } = useUpdateShelvesOrderMutation(
-    rack.id,
+  const { mutateAsync: updateShelvesOrder, isPending: isUpdatingOrder } = useUpdateShelvesOrderMutation(
+    Number(rack.id),
   )
   const { mutateAsync: deleteShelf } = useDeleteShelfMutation()
 
@@ -91,9 +92,12 @@ export function RackInfoPanel({
         id: item.id,
         order: index + 1,
       }))
-      await updateShelvesOrder(updates)
+      
+      if (updates.length > 0) {
+        await updateShelvesOrder(updates)
+      }
 
-      queryClient.setQueryData(['shelf', String(rack.id)], shelvesData)
+      queryClient.setQueryData(['shelf', Number(rack.id)], shelvesData)
 
       toast.success('Rack shelves updated successfully')
       setDeletedIds([])
@@ -105,8 +109,16 @@ export function RackInfoPanel({
     }
   }
 
+  const handleShare = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('redirectId', String(rack.id))
+    url.searchParams.set('redirectType', rack.type || 'rack')
+    navigator.clipboard.writeText(url.toString())
+    toast.success("Link to rack copied to clipboard!")
+  }
+
   return (
-    <aside className="absolute inset-y-0 right-0 z-50 flex h-full w-112.5 flex-col border border-border/40 backdrop-blur-md bg-card/50 shadow-2xl animate-in slide-in-from-right">
+    <aside className="absolute inset-y-0 right-0 z-50 flex h-full w-[400px] flex-col border border-border/40 backdrop-blur-md bg-card/50 shadow-2xl animate-in slide-in-from-right">
       <header className="flex shrink-0 items-start justify-between p-4">
         <div className="space-y-1">
           <h2 className="flex items-center gap-2 text-2xl font-semibold w-70 truncate">
@@ -120,15 +132,26 @@ export function RackInfoPanel({
             </Badge>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full shrink-0"
-          onClick={onClose}
-          disabled={isSaving}
-        >
-          <X />
-        </Button>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full hover:bg-primary/20 hover:text-primary transition-colors"
+            onClick={handleShare}
+            title="Copy Link to Rack"
+          >
+            <LinkIcon className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={onClose}
+            disabled={isSaving}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </header>
 
       <ScrollArea className="flex-1">
@@ -174,7 +197,6 @@ export function RackInfoPanel({
           <Separator className="opacity-50" />
 
           {/* Shelves Section */}
-          {/* @TODO refactor shelfs */}
           <section className="space-y-3 w-full overflow-hidden">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -212,7 +234,7 @@ export function RackInfoPanel({
                     size="sm"
                     className="h-7 text-xs"
                     onClick={handleSaveChanges}
-                    disabled={isSaving}
+                    disabled={isSaving || isUpdatingOrder}
                   >
                     {isSaving ? (
                       <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
@@ -225,7 +247,7 @@ export function RackInfoPanel({
               )}
             </div>
 
-            <div className="border border-border/50 rounded-xl overflow-hidden bg-background w-full max-w-104">
+            <div className="border border-border/50 rounded-xl overflow-hidden bg-background w-full">
               {isLoading ? (
                 <div className="p-4 space-y-3">
                   <Skeleton className="h-10 w-full" />
@@ -237,7 +259,6 @@ export function RackInfoPanel({
                   No shelves configured in this rack yet.
                 </div>
               ) : isEditing ? (
-                /* Interactive Drag and Drop Table */
                 <div
                   className="
                   w-full

@@ -657,18 +657,40 @@ function SceneController({
   center,
   enabled,
   controlsRef,
+  focusTarget,
 }: {
   is2D: boolean
   activeCamera: string
   center?: THREE.Vector3
   enabled: boolean
   controlsRef: React.RefObject<MapControlsImpl | null>
+  focusTarget?: THREE.Vector3 | null
 }) {
   const { camera, invalidate } = useThree()
   const [, getKeys] = useKeyboardControls()
   const initialized = useRef(false)
   const prevIs2D = useRef(is2D)
   const isTypingRef = useRef(false)
+
+  const [lerpState, setLerpState] = useState<{target: THREE.Vector3, camPos: THREE.Vector3} | null>(null)
+
+  useEffect(() => {
+    if (focusTarget && controlsRef.current && initialized.current) {
+      const currentOffset = new THREE.Vector3().copy(camera.position).sub(controlsRef.current.target)
+      setLerpState({
+        target: focusTarget.clone(),
+        camPos: focusTarget.clone().add(currentOffset)
+      })
+    }
+  }, [focusTarget])
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const cancelLerp = () => setLerpState(null);
+    controls.addEventListener('start', cancelLerp);
+    return () => controls.removeEventListener('start', cancelLerp);
+  }, [controlsRef.current])
 
   useEffect(() => {
     const checkIsInput = (target: EventTarget | null) => {
@@ -710,7 +732,7 @@ function SceneController({
       return
     }
 
-    if (prevIs2D.current !== is2D) {
+    if (prevIs2D.current !== is2D && !lerpState) {
       const target = controlsRef.current.target
       if (is2D) camera.position.set(target.x, 600, target.z)
       else camera.position.set(target.x + 150, 200, target.z + 150)
@@ -718,13 +740,27 @@ function SceneController({
       prevIs2D.current = is2D
       invalidate()
     }
-  }, [is2D, camera, invalidate, center, controlsRef])
+  }, [is2D, camera, invalidate, center, controlsRef, lerpState])
 
   const direction = useMemo(() => new THREE.Vector3(), [])
   const rightVec = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((_, delta) => {
-    if (!enabled || !controlsRef.current || isTypingRef.current) return
+    if (lerpState && controlsRef.current) {
+      controlsRef.current.target.lerp(lerpState.target, 8 * delta)
+      camera.position.lerp(lerpState.camPos, 8 * delta)
+      controlsRef.current.update()
+      invalidate()
+      
+      if (controlsRef.current.target.distanceTo(lerpState.target) < 1.0) {
+        controlsRef.current.target.copy(lerpState.target)
+        camera.position.copy(lerpState.camPos)
+        controlsRef.current.update()
+        setLerpState(null)
+      }
+    }
+
+    if (!enabled || !controlsRef.current || isTypingRef.current || lerpState) return
     const { forward, back, left, right, rotateLeft, rotateRight } = getKeys()
 
     if ((rotateLeft || rotateRight) && !is2D) {
@@ -1386,6 +1422,8 @@ export function CanvasComponent3D({
   
   const displaySaveButton = hasUnsavedChanges || localUnsaved
 
+  const coordsRef = useRef<HTMLSpanElement>(null)
+
   // Prevent closing the browser tab/refreshing if there are unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1488,9 +1526,18 @@ export function CanvasComponent3D({
     initWallSegments,
   ])
 
+  const prevInitialSelectedId = useRef(initialSelectedId)
   const [selectedIds, setSelectedIds] = useState<Array<string>>(
     initialSelectedId ? [String(initialSelectedId)] : [],
   )
+
+  useEffect(() => {
+    if (initialSelectedId && initialSelectedId !== prevInitialSelectedId.current) {
+      setSelectedIds([String(initialSelectedId)])
+      prevInitialSelectedId.current = initialSelectedId
+    }
+  }, [initialSelectedId])
+
   const [is2D, setIs2D] = useState(false)
   const [projection, setProjection] = useState<'perspective' | 'orthographic'>(
     'perspective',
@@ -1504,6 +1551,9 @@ export function CanvasComponent3D({
 
   const [wallStart, setWallStart] = useState<THREE.Vector3 | null>(null)
   const [wallStartNodeId, setWallStartNodeId] = useState<string | null>(null)
+  
+  const [focusTarget, setFocusTarget] = useState<THREE.Vector3 | null>(null)
+  const lastPannedId = useRef<string | null>(null)
 
   const colors = useThemeColors()
   const navigate = useNavigate()
@@ -1514,6 +1564,39 @@ export function CanvasComponent3D({
       setViewMode('custom')
     }
   }, [mode])
+
+  useEffect(() => {
+    const activeSelection = selectedIds.length === 1 ? selectedIds[0] : null
+    
+    if (activeSelection && activeSelection !== lastPannedId.current && initStore.current) {
+      const id = String(activeSelection);
+      
+      const eq = useLabStore.getState().equipment[id];
+      if (eq) {
+        setFocusTarget(new THREE.Vector3(eq.x / 10, RACK_SIZE.h / 2, eq.y / 10));
+        lastPannedId.current = activeSelection;
+        return;
+      }
+      
+      const nd = useLabStore.getState().wallNodes[id];
+      if (nd) {
+        setFocusTarget(new THREE.Vector3(nd.x / 10, WALL_H / 2, nd.y / 10));
+        lastPannedId.current = activeSelection;
+        return;
+      }
+      
+      const lb = labels.find(l => String(l.id) === id);
+      if (lb) {
+        setFocusTarget(new THREE.Vector3(lb.x, 8, lb.y));
+        lastPannedId.current = activeSelection;
+        return;
+      }
+    }
+    
+    if (!activeSelection) {
+      lastPannedId.current = null;
+    }
+  }, [selectedIds, labels])
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 
@@ -1793,6 +1876,15 @@ export function CanvasComponent3D({
     }
   }, [updateMultipleEquipment, paintColor, isLabel])
 
+  const handlePlanePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
+    handlePointerMove(e);
+    if (coordsRef.current) {
+      const x = (useSnap ? Math.round(e.point.x) : e.point.x).toFixed(1)
+      const z = (useSnap ? Math.round(e.point.z) : e.point.z).toFixed(1)
+      coordsRef.current.innerText = `X: ${x} | Y: ${z}`
+    }
+  }, [handlePointerMove, useSnap])
+
   const handleGridClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 2) return // Ignore click if user was dragging/panning the map
     if (mode === 'select' || mode === 'move' || mode === 'rotate' || mode === 'paint') return
@@ -1974,7 +2066,17 @@ export function CanvasComponent3D({
         {onRoomChange && (
           <Select
             value={roomId?.toString()}
-            onValueChange={onRoomChange}
+            onValueChange={(val) => {
+              if (displaySaveButtonRef.current) {
+                setShowUnsavedDialog(true)
+                discardAction.current = () => {
+                  if (onRoomChange) onRoomChange(val)
+                }
+                cancelAction.current = () => {}
+              } else if (onRoomChange) {
+                onRoomChange(val)
+              }
+            }}
             disabled={isLoadingRooms}
           >
             <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full h-12 px-6 flex items-center justify-between gap-3 text-sm font-semibold hover:bg-card/90 transition-colors w-[260px]">
@@ -2156,6 +2258,11 @@ export function CanvasComponent3D({
         </div>
       </div>
 
+      {/* Coordinate Map Overlay */}
+      <div className="absolute bottom-6 right-6 z-20 pointer-events-none bg-card/80 backdrop-blur-xl border border-border/50 text-muted-foreground px-4 py-2 rounded-full text-[11px] font-bold tracking-widest tabular-nums shadow-lg">
+        <span ref={coordsRef}>X: 0.0 | Y: 0.0</span>
+      </div>
+
       <div className="absolute top-1/2 right-9 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
         <div className="pointer-events-auto">
           <ViewSettings
@@ -2188,7 +2295,7 @@ export function CanvasComponent3D({
             gl={{ antialias: true, logarithmicDepthBuffer: true }}
           >
             <Suspense fallback={null}>
-              <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+              <GizmoHelper alignment="bottom-right" margin={[100, 120]}>
                 <GizmoViewport />
               </GizmoHelper>
               <PerspectiveCamera
@@ -2210,6 +2317,7 @@ export function CanvasComponent3D({
                 center={mode === 'view' ? sceneCenter : undefined}
                 enabled={mode !== 'select'}
                 controlsRef={mapControlsRef}
+                focusTarget={focusTarget}
               />
 
               <ambientLight intensity={0.6} />
@@ -2227,7 +2335,7 @@ export function CanvasComponent3D({
                 position={[0, -0.05, 0]}
                 onClick={handleGridClick}
                 onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
+                onPointerMove={handlePlanePointerMove}
                 onPointerUp={handlePointerUp}
               >
                 <planeGeometry args={[10000, 10000]} />
