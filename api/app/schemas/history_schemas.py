@@ -45,6 +45,9 @@ class HistoryResponse(HistoryBase):
     id: int
     timestamp: datetime = Field(..., description="Exact time when the action occurred")
     model_config = ConfigDict(from_attributes=True)
+    user: Optional[user_schemas.UserShortResponse] = Field(
+        None, description="User who performed the action"
+    )
 
 
 class HistoryEnhancedResponse(HistoryResponse):

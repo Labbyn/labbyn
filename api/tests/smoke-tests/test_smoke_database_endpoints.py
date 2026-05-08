@@ -215,6 +215,8 @@ async def test_machine_full_lifecycle(db_session):
     db_session.add(author)
     await db_session.flush()
 
+    db_session.info["user_id"] = author.id
+
     rack = models.Rack(
         name=unique_str("Rack"),
         room_id=room.id,
