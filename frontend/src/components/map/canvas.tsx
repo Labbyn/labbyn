@@ -27,9 +27,9 @@ import {
 } from '@react-three/drei'
 import * as THREE from 'three'
 import { formatHex } from 'culori'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useBlocker } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { MapPin, Palette, Redo2, Save, Server, Trash2, Type, Undo2, X } from 'lucide-react'
+import { AlertTriangle, MapPin, Palette, Redo2, Save, Server, Trash2, Type, Undo2, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -52,6 +52,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogMedia,
+} from '@/components/ui/alert-dialog'
 import { useSyncRoomMap } from '@/integrations/map/map.mutation'
 import { Button } from '@/components/ui/button'
 import { useLabStore } from '@/lib/store'
@@ -856,6 +867,7 @@ function Rack({
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
+      if (e.delta > 2) return // Prevent selection if map was just dragged/panned
       e.stopPropagation()
       if (mode === 'select') return
 
@@ -1019,6 +1031,7 @@ function WallNodeRenderer({
         setHovered(false)
       }}
       onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
         e.stopPropagation()
         if (mode === 'select' || mode === 'paint') return
         if (mode === 'add-wall') onDrawConnect(node)
@@ -1134,6 +1147,7 @@ function WallSegmentRenderer({
     <group
       ref={groupRef}
       onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
         e.stopPropagation()
         if (mode === 'select' || mode === 'paint') return
         if (mode === 'delete') onDelete(segment.id)
@@ -1218,6 +1232,7 @@ function LabelRenderer({
     <group
       ref={groupRef}
       onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
         e.stopPropagation()
         const strId = String(label.id)
         if (mode === 'select') return
@@ -1368,7 +1383,71 @@ export function CanvasComponent3D({
 
   const [labels, setLabels] = useState<Array<LabLabel>>([])
   const [localUnsaved, setLocalUnsaved] = useState(false)
+  
   const displaySaveButton = hasUnsavedChanges || localUnsaved
+
+  // Prevent closing the browser tab/refreshing if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (displaySaveButton) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [displaySaveButton])
+
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+  const discardAction = useRef<(() => void) | null>(null)
+  const cancelAction = useRef<(() => void) | null>(null)
+  
+  const displaySaveButtonRef = useRef(displaySaveButton)
+  useEffect(() => {
+    displaySaveButtonRef.current = displaySaveButton
+  }, [displaySaveButton])
+
+  useBlocker({
+    shouldBlockFn: (opts: any) => {
+      const currentLocation = opts.currentLocation || opts.current;
+      const nextLocation = opts.nextLocation || opts.next;
+
+      const isSamePath = currentLocation?.pathname === nextLocation?.pathname;
+      const isSameRoom = String(currentLocation?.search?.roomId) === String(nextLocation?.search?.roomId);
+
+      if (isSamePath && isSameRoom) {
+        return false;
+      }
+
+      if (displaySaveButtonRef.current) {
+        return new Promise<boolean>((resolve) => {
+          setShowUnsavedDialog(true)
+          discardAction.current = () => resolve(false)
+          cancelAction.current = () => resolve(true)
+        })
+      }
+      return false
+    }
+  })
+
+  const handleDiscardUnsaved = () => {
+    setShowUnsavedDialog(false)
+    setLocalUnsaved(false)
+    markSaved()
+    displaySaveButtonRef.current = false
+    if (discardAction.current) {
+      discardAction.current()
+      discardAction.current = null
+    }
+  }
+
+  const handleCancelUnsaved = () => {
+    setShowUnsavedDialog(false)
+    if (cancelAction.current) {
+      cancelAction.current()
+      cancelAction.current = null
+    }
+  }
 
   useEffect(() => {
     if (!initStore.current || prevRoomId.current !== roomId) {
@@ -1393,6 +1472,7 @@ export function CanvasComponent3D({
 
       setLabels(safeLabels)
       setLocalUnsaved(false)
+      displaySaveButtonRef.current = false
 
       initStore.current = true
       prevRoomId.current = roomId
@@ -1714,6 +1794,7 @@ export function CanvasComponent3D({
   }, [updateMultipleEquipment, paintColor, isLabel])
 
   const handleGridClick = (e: ThreeEvent<MouseEvent>) => {
+    if (e.delta > 2) return // Ignore click if user was dragging/panning the map
     if (mode === 'select' || mode === 'move' || mode === 'rotate' || mode === 'paint') return
     if (mode === 'view') {
       setSelectedIds([])
@@ -1837,6 +1918,7 @@ export function CanvasComponent3D({
       setTimeout(() => {
         markSaved()
         setLocalUnsaved(false)
+        displaySaveButtonRef.current = false
       }, 500)
       toast.success('Map layout saved successfully')
     } catch (error) {
@@ -2377,6 +2459,36 @@ export function CanvasComponent3D({
           barStyles={{ backgroundColor: 'var(--primary)' }}
         />
       </div>
+
+      <AlertDialog open={showUnsavedDialog} onOpenChange={(open) => {
+        if (!open) handleCancelUnsaved()
+      }}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <AlertTriangle />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes in the current laboratory. If you switch laboratories or navigate away, your unsaved progress will be lost. Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelUnsaved} variant="outline">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={(e) => {
+                e.preventDefault()
+                handleDiscardUnsaved()
+              }} 
+              variant="destructive"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {selectedIds.length === 1 && isLabel(selectedIds[0]) && mode === 'view' && (
         <LabelEditorPanel
