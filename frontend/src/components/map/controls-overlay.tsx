@@ -1,4 +1,4 @@
-import { Expand, MousePointer2, RotateCcw } from 'lucide-react'
+import { Expand, RotateCcw } from 'lucide-react'
 import { Kbd } from '../ui/kbd'
 
 export function ControlsOverlay({ is2D }: { is2D: boolean }) {

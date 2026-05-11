@@ -1,13 +1,19 @@
-import { Button } from '@/components/ui/button'
 import { Map as MapIcon } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { Button } from '@/components/ui/button'
 
 interface ShowOnMapButtonProps {
   roomId: string | number
   equipmentId: string | number
   type?: 'rack' | 'machine' | 'lab'
   className?: string
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
   size?: 'default' | 'sm' | 'lg' | 'icon'
 }
 
@@ -17,7 +23,7 @@ export function ShowOnMapButton({
   type = 'rack',
   className,
   variant = 'outline',
-  size = 'sm'
+  size = 'sm',
 }: ShowOnMapButtonProps) {
   return (
     <Button variant={variant} size={size} className={className} asChild>
