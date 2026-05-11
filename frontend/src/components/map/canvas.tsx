@@ -35,6 +35,7 @@ import {
   Palette,
   Redo2,
   Save,
+  Search,
   Server,
   Trash2,
   Type,
@@ -1618,6 +1619,8 @@ export function CanvasComponent3D({
   const navigate = useNavigate()
   const activeCamera = is2D ? 'orthographic' : projection
 
+  const [rackSearchQuery, setRackSearchQuery] = useState('')
+
   useEffect(() => {
     if (mode === 'paint') {
       setViewMode('custom')
@@ -1681,7 +1684,17 @@ export function CanvasComponent3D({
 
       return isNotUsed && belongsToRoom
     })
-  }, [allRacks, equipmentIds])
+  }, [allRacks, equipmentIds, roomIdFromUrl])
+
+  const filteredRacks = useMemo(() => {
+    if (!rackSearchQuery) return availableRacks
+    const query = rackSearchQuery.toLowerCase()
+    return availableRacks.filter(
+      (r: any) =>
+        (r.name || '').toLowerCase().includes(query) ||
+        String(r.id).toLowerCase().includes(query),
+    )
+  }, [availableRacks, rackSearchQuery])
 
   const { historyIndex, history, saveToHistory, undo, redo } = useLabHistory(
     initEquipment,
@@ -2014,6 +2027,7 @@ export function CanvasComponent3D({
       } as any)
 
       setPendingRackId('')
+      setRackSearchQuery('')
       setMode('view')
     } else if (mode === 'add-wall') {
       const clickedPt = new THREE.Vector2(pt.x * 10, pt.z * 10)
@@ -2259,51 +2273,66 @@ export function CanvasComponent3D({
         )}
 
         {mode === 'add-rack' && (
-          <div className="pointer-events-auto flex flex-col gap-3 p-4 bg-card/90 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-full max-w-[700px]">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-                <Server className="w-3 h-3" /> Select a Rack to Place
-              </span>
-              <Badge variant="secondary" className="rounded-full text-[10px]">
-                {availableRacks.length} Available
-              </Badge>
+          <div className="pointer-events-auto flex flex-col gap-3 p-4 bg-card/90 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-full max-w-[500px] max-h-[400px]">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                  <Server className="w-3 h-3" /> Select a Rack to Place
+                </span>
+                <Badge variant="secondary" className="rounded-full text-[10px]">
+                  {filteredRacks.length} Available
+                </Badge>
+              </div>
+
+              <div className="relative px-2">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search racks..."
+                  value={rackSearchQuery}
+                  onChange={(e) => setRackSearchQuery(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-xl pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                />
+              </div>
             </div>
 
-            <ScrollArea className="w-full">
-              <div className="flex gap-3 pb-3 px-2">
-                {availableRacks.length === 0 ? (
-                  <div className="text-sm text-muted-foreground py-4 px-2 italic">
-                    All assigned racks have been placed.
+            <ScrollArea className="w-full px-2">
+              <div className="grid grid-cols-2 gap-2 pb-2">
+                {filteredRacks.length === 0 ? (
+                  <div className="col-span-2 text-center text-sm text-muted-foreground py-8 italic bg-muted/5 rounded-xl border border-dashed border-border/50">
+                    {rackSearchQuery
+                      ? 'No matching racks found'
+                      : 'No racks available to place'}
                   </div>
                 ) : (
-                  availableRacks.map((r: any) => (
+                  filteredRacks.map((r: any) => (
                     <Button
                       key={r.id}
                       variant={
                         pendingRackId === String(r.id) ? 'default' : 'outline'
                       }
-                      className={`flex flex-col items-start justify-center gap-1.5 h-auto py-3 px-4 rounded-2xl shrink-0 min-w-[140px] transition-all ${
+                      className={`flex items-center justify-start gap-2 h-10 px-3 rounded-xl transition-all ${
                         pendingRackId === String(r.id)
-                          ? 'shadow-md scale-105 ring-2 ring-primary/50'
+                          ? 'shadow-md ring-1 ring-primary/50'
                           : 'hover:border-primary/50 hover:bg-primary/5'
                       }`}
                       onClick={() => setPendingRackId(String(r.id))}
                     >
                       <Server
-                        className={`w-5 h-5 ${
+                        className={`w-3.5 h-3.5 shrink-0 ${
                           pendingRackId === String(r.id)
                             ? 'text-primary-foreground'
                             : 'text-primary'
                         }`}
                       />
-                      <span className="font-semibold text-sm truncate w-full text-left">
+                      <span className="font-bold text-xs truncate">
                         {r.name || `Rack #${r.id}`}
                       </span>
                     </Button>
                   ))
                 )}
               </div>
-              <ScrollBar orientation="horizontal" className="h-1.5" />
+              <ScrollBar orientation="vertical" className="w-1.5" />
             </ScrollArea>
           </div>
         )}
@@ -2344,7 +2373,10 @@ export function CanvasComponent3D({
             mode={mode}
             setMode={(v) => {
               setMode(v as EditMode)
-              if (v !== 'add-rack') setPendingRackId('')
+              if (v !== 'add-rack') {
+                setPendingRackId('')
+                setRackSearchQuery('')
+              }
             }}
           />
         </div>
