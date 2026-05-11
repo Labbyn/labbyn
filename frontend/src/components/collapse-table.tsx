@@ -1,5 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import type { ApiCategoryInventoryGroupedResponse } from '@/integrations/category/category.types'
 import {
   Table,
   TableBody,
@@ -13,10 +14,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import type { ApiCategoryInventoryGroupedResponse } from '@/integrations/category/category.types'
 
-
-export function CollapseTable({ inventory }: {inventory: ApiCategoryInventoryGroupedResponse}) {
+export function CollapseTable({
+  inventory,
+}: {
+  inventory: ApiCategoryInventoryGroupedResponse
+}) {
   const navigate = useNavigate()
   return (
     <div className="w-full sm:p-4">
@@ -30,7 +33,7 @@ export function CollapseTable({ inventory }: {inventory: ApiCategoryInventoryGro
             </TableRow>
           </TableHeader>
 
-          {inventory?.map((category) => (
+          {inventory.map((category) => (
             <Collapsible key={category.id} asChild>
               <TableBody>
                 <TableRow className="group">
@@ -53,45 +56,45 @@ export function CollapseTable({ inventory }: {inventory: ApiCategoryInventoryGro
                             <div
                               key={item.id}
                               className="bg-background p-3 border rounded-sm items-center cursor-pointer transition-colors hover:bg-muted/80"
-                              onClick={() => 
-                                navigate({ 
-                                  to: '/inventory/$inventoryId', 
-                                  params: { inventoryId: String(item.id) } 
-                                })}
+                              onClick={() =>
+                                navigate({
+                                  to: '/inventory/$inventoryId',
+                                  params: { inventoryId: String(item.id) },
+                                })
+                              }
                             >
-                              
-                                <div>
-                                  <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                    Name
-                                  </span>
-                                  <span className="text-foreground">
-                                    {item.name}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                    Room
-                                  </span>
-                                  <span className="text-foreground">
-                                    {item.room_name}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                    Quantity
-                                  </span>
-                                  <span className="text-foreground">
-                                    {item.quantity}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                    Team
-                                  </span>
-                                  <span className="text-foreground">
-                                    {item.team_name}
-                                  </span>
-                                </div>
+                              <div>
+                                <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                  Name
+                                </span>
+                                <span className="text-foreground">
+                                  {item.name}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                  Room
+                                </span>
+                                <span className="text-foreground">
+                                  {item.room_name}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                  Quantity
+                                </span>
+                                <span className="text-foreground">
+                                  {item.quantity}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-xs font-medium uppercase text-muted-foreground block">
+                                  Team
+                                </span>
+                                <span className="text-foreground">
+                                  {item.team_name}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>

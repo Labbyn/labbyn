@@ -226,7 +226,7 @@ export function ManageRentalDialog({
                           className="justify-start font-normal"
                         >
                           {field.state.value ? (
-                            format(field.state.value, 'PPP')
+                            format(new Date(field.state.value), 'PPP')
                           ) : (
                             <span>Pick start date</span>
                           )}
@@ -235,11 +235,21 @@ export function ManageRentalDialog({
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.state.value}
-                          onSelect={(date) =>
-                            field.handleChange(format(date, 'yyyy-MM-dd'))
+                          selected={
+                            field.state.value
+                              ? new Date(field.state.value)
+                              : undefined
                           }
-                          defaultMonth={field.state.value}
+                          onSelect={(date) =>
+                            field.handleChange(
+                              date ? format(date, 'yyyy-MM-dd') : '',
+                            )
+                          }
+                          defaultMonth={
+                            field.state.value
+                              ? new Date(field.state.value)
+                              : undefined
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -259,7 +269,7 @@ export function ManageRentalDialog({
                           className="justify-start font-normal"
                         >
                           {field.state.value ? (
-                            format(field.state.value, 'PPP')
+                            format(new Date(field.state.value), 'PPP')
                           ) : (
                             <span>Pick end date</span>
                           )}
@@ -268,11 +278,21 @@ export function ManageRentalDialog({
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.state.value}
-                          onSelect={(date) =>
-                            field.handleChange(format(date, 'yyyy-MM-dd'))
+                          selected={
+                            field.state.value
+                              ? new Date(field.state.value)
+                              : undefined
                           }
-                          defaultMonth={field.state.value}
+                          onSelect={(date) =>
+                            field.handleChange(
+                              date ? format(date, 'yyyy-MM-dd') : '',
+                            )
+                          }
+                          defaultMonth={
+                            field.state.value
+                              ? new Date(field.state.value)
+                              : undefined
+                          }
                         />
                       </PopoverContent>
                     </Popover>

@@ -138,7 +138,7 @@ class InventoryService:
         self.ctx.require_user()
         item = await self.get_inventory_or_404(item_id, detailed=True)
         today = datetime.now().date()
-        
+
         active_rentals_list = [
             {
                 "id": r.id,

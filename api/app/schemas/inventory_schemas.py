@@ -80,10 +80,13 @@ class InventoryBase(BaseModel):
         None, description="ID of the current active rental"
     )
 
+
 class InventoryRental(InventoryBase):
     """Schema dedicated for invenotry subpage and rental"""
 
     id: Optional[int]
+
+
 class InventoryCreate(InventoryBase):
     """Schema for creating an Inventory item."""
 

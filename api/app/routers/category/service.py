@@ -128,47 +128,41 @@ class CategoryService:
                     f"Could not delete category '{cat.name}'"
                 ) from e
 
-
     async def get_grouped_categories(self):
         """Fetch categories grouped with their detailed associated inventory items."""
         self.ctx.require_user()
         today = datetime.now().date()
-        
+
         cat_stmt = select(models.Categories)
         cat_result = await self.db.execute(cat_stmt)
         all_categories = cat_result.scalars().all()
-        
+
         categories_map = {
-            cat.name: {
-                "category_name": cat.name,
-                "quantity": 0,
-                "item_group": []
-            }
+            cat.name: {"category_name": cat.name, "quantity": 0, "item_group": []}
             for cat in all_categories
         }
 
         inv_stmt = select(models.Inventory).options(
             selectinload(models.Inventory.category),
             selectinload(models.Inventory.team),
-            selectinload(models.Inventory.room), 
-            selectinload(models.Inventory.rental_history)
+            selectinload(models.Inventory.room),
+            selectinload(models.Inventory.rental_history),
         )
 
         if not self.ctx.is_admin:
             inv_stmt = inv_stmt.where(models.Inventory.team_id.in_(self.ctx.team_ids))
-
 
         inv_result = await self.db.execute(inv_stmt)
         inventory_items = inv_result.scalars().all()
 
         for item in inventory_items:
             cat_name = item.category.name if item.category else "Uncategorized"
-            
+
             if cat_name not in categories_map:
                 categories_map[cat_name] = {
                     "category_name": cat_name,
                     "quantity": 0,
-                    "item_group": []
+                    "item_group": [],
                 }
 
             active_rentals = [r for r in item.rental_history if r.end_date >= today]
@@ -186,7 +180,7 @@ class CategoryService:
                 "category_id": item.category_id,
                 "category_name": item.category.name if item.category else None,
                 "rental_status": is_rented,
-                "rental_id": current_rental_id
+                "rental_id": current_rental_id,
             }
 
             categories_map[cat_name]["quantity"] += item.quantity

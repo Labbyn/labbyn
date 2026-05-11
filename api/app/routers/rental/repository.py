@@ -69,15 +69,16 @@ class RentalRepository:
 
     async def get_by_item_id(self, db: AsyncSession, item_id: int, ctx):
         """Fetch all rentals associated with a specific item ID."""
-        
+
         stmt = sql.select(models.Rentals).where(models.Rentals.item_id == item_id)
         stmt = stmt.options(
-            selectinload(models.Rentals.user),
-            selectinload(models.Rentals.inventory)
+            selectinload(models.Rentals.user), selectinload(models.Rentals.inventory)
         )
 
         if not ctx.is_admin:
-            stmt = stmt.join(models.Inventory).where(models.Inventory.team_id.in_(ctx.team_ids))
+            stmt = stmt.join(models.Inventory).where(
+                models.Inventory.team_id.in_(ctx.team_ids)
+            )
 
         result = await db.execute(stmt)
         return result.scalars().all()

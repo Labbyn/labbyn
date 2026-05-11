@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .inventory_schemas import InventoryRental
 
+
 class CategoriesBase(BaseModel):
     """Base model for Inventory Categories."""
 
@@ -28,6 +29,7 @@ class CategoriesResponse(CategoriesBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
 
 class CategoryGroupedResponse(BaseModel):
     category_name: str

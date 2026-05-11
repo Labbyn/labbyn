@@ -55,6 +55,7 @@ async def get_rentals(
     """
     return await RentalService(ctx.db, ctx).repo.get_all(ctx.db, ctx)
 
+
 @router.get("/item/{item_id}", response_model=List[inventory_schemas.RentalsResponse])
 async def get_rentals_by_item_id(
     item_id: int,
@@ -67,6 +68,7 @@ async def get_rentals_by_item_id(
     :return: List of rentals for the specified item.
     """
     return await RentalService(ctx.db, ctx).get_rentals_by_item_id(item_id)
+
 
 @router.get("/{rental_id}", response_model=inventory_schemas.RentalsResponse)
 async def get_rental_by_id(
