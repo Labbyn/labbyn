@@ -27,13 +27,25 @@ import {
 } from '@react-three/drei'
 import * as THREE from 'three'
 import { formatHex } from 'culori'
-import { useNavigate, useBlocker } from '@tanstack/react-router'
+import { useBlocker, useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { AlertTriangle, MapPin, Palette, Redo2, Save, Server, Trash2, Type, Undo2, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  MapPin,
+  Palette,
+  Redo2,
+  Save,
+  Server,
+  Trash2,
+  Type,
+  Undo2,
+  X,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { Badge } from '../ui/badge'
+import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
 import { MapToolbar } from './map-toolbar'
@@ -60,14 +72,13 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogMedia,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useSyncRoomMap } from '@/integrations/map/map.mutation'
 import { Button } from '@/components/ui/button'
 import { useLabStore } from '@/lib/store'
 import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
-import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
 const WALL_H = 22
@@ -553,7 +564,12 @@ function useBoxSelection(
         setSelectedIds((prev) => {
           if (e.shiftKey)
             return Array.from(
-              new Set([...prev, ...selectedRacks, ...selectedNodes, ...selectedLabels]),
+              new Set([
+                ...prev,
+                ...selectedRacks,
+                ...selectedNodes,
+                ...selectedLabels,
+              ]),
             )
           return [...selectedRacks, ...selectedNodes, ...selectedLabels]
         })
@@ -672,24 +688,29 @@ function SceneController({
   const prevIs2D = useRef(is2D)
   const isTypingRef = useRef(false)
 
-  const [lerpState, setLerpState] = useState<{target: THREE.Vector3, camPos: THREE.Vector3} | null>(null)
+  const [lerpState, setLerpState] = useState<{
+    target: THREE.Vector3
+    camPos: THREE.Vector3
+  } | null>(null)
 
   useEffect(() => {
     if (focusTarget && controlsRef.current && initialized.current) {
-      const currentOffset = new THREE.Vector3().copy(camera.position).sub(controlsRef.current.target)
+      const currentOffset = new THREE.Vector3()
+        .copy(camera.position)
+        .sub(controlsRef.current.target)
       setLerpState({
         target: focusTarget.clone(),
-        camPos: focusTarget.clone().add(currentOffset)
+        camPos: focusTarget.clone().add(currentOffset),
       })
     }
   }, [focusTarget])
 
   useEffect(() => {
-    const controls = controlsRef.current;
-    if (!controls) return;
-    const cancelLerp = () => setLerpState(null);
-    controls.addEventListener('start', cancelLerp);
-    return () => controls.removeEventListener('start', cancelLerp);
+    const controls = controlsRef.current
+    if (!controls) return
+    const cancelLerp = () => setLerpState(null)
+    controls.addEventListener('start', cancelLerp)
+    return () => controls.removeEventListener('start', cancelLerp)
   }, [controlsRef.current])
 
   useEffect(() => {
@@ -751,7 +772,7 @@ function SceneController({
       camera.position.lerp(lerpState.camPos, 8 * delta)
       controlsRef.current.update()
       invalidate()
-      
+
       if (controlsRef.current.target.distanceTo(lerpState.target) < 1.0) {
         controlsRef.current.target.copy(lerpState.target)
         camera.position.copy(lerpState.camPos)
@@ -760,7 +781,8 @@ function SceneController({
       }
     }
 
-    if (!enabled || !controlsRef.current || isTypingRef.current || lerpState) return
+    if (!enabled || !controlsRef.current || isTypingRef.current || lerpState)
+      return
     const { forward, back, left, right, rotateLeft, rotateRight } = getKeys()
 
     if ((rotateLeft || rotateRight) && !is2D) {
@@ -955,8 +977,14 @@ function Rack({
             roughness={0.6}
             bumpMap={rackBumpTexture}
             bumpScale={2}
-            emissive={viewMode === 'custom' && (data as any).color ? (data as any).color : '#000'}
-            emissiveIntensity={viewMode === 'custom' && (data as any).color ? 0.6 : 0}
+            emissive={
+              viewMode === 'custom' && (data as any).color
+                ? (data as any).color
+                : '#000'
+            }
+            emissiveIntensity={
+              viewMode === 'custom' && (data as any).color ? 0.6 : 0
+            }
           />
         </mesh>
       ) : (
@@ -987,7 +1015,11 @@ function Rack({
           </mesh>
           <Text
             fontSize={2}
-            color={viewMode === 'custom' && (data as any).color ? (data as any).color : colors.text}
+            color={
+              viewMode === 'custom' && (data as any).color
+                ? (data as any).color
+                : colors.text
+            }
             fontWeight="bold"
             anchorX="center"
             anchorY="middle"
@@ -1225,7 +1257,7 @@ function LabelRenderer({
   onSelect,
   onDelete,
   onPaint,
-  saveToHistory
+  saveToHistory,
 }: {
   label: LabLabel
   colors: any
@@ -1251,8 +1283,11 @@ function LabelRenderer({
       groupCenter &&
       (dragDeltaRef.current.lengthSq() > 0 || dragDeltaRotRef.current !== 0)
     ) {
-      p1.set(label.x - groupCenter.x, 0, label.y - groupCenter.z)
-        .applyAxisAngle(yAxis, dragDeltaRotRef.current)
+      p1.set(
+        label.x - groupCenter.x,
+        0,
+        label.y - groupCenter.z,
+      ).applyAxisAngle(yAxis, dragDeltaRotRef.current)
       const nx = groupCenter.x + p1.x + dragDeltaRef.current.x
       const nz = groupCenter.z + p1.z + dragDeltaRef.current.z
       groupRef.current.position.set(nx, 8, nz)
@@ -1286,13 +1321,24 @@ function LabelRenderer({
       {isSelected && (
         <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <circleGeometry args={[6, 32]} />
-          <meshBasicMaterial color={colors.primary} transparent opacity={0.3} depthWrite={false} />
+          <meshBasicMaterial
+            color={colors.primary}
+            transparent
+            opacity={0.3}
+            depthWrite={false}
+          />
         </mesh>
       )}
       <Billboard>
         <Text
           fontSize={5}
-          color={isDel ? '#ef4444' : (viewMode === 'custom' && label.color ? label.color : colors.text)}
+          color={
+            isDel
+              ? '#ef4444'
+              : viewMode === 'custom' && label.color
+                ? label.color
+                : colors.text
+          }
           fontWeight="bold"
           fillOpacity={isSelected ? 1 : 0.8}
           outlineWidth={isSelected ? 0.2 : 0}
@@ -1308,16 +1354,16 @@ function LabelRenderer({
 function LabelEditorPanel({
   label,
   onUpdate,
-  onClose
+  onClose,
 }: {
-  label: LabLabel;
-  onUpdate: (id: string, text: string) => void;
-  onClose: () => void;
+  label: LabLabel
+  onUpdate: (id: string, text: string) => void
+  onClose: () => void
 }) {
   const [val, setVal] = useState(label.text || label.name || '')
-  
-  useEffect(() => { 
-    setVal(label.text || label.name || '') 
+
+  useEffect(() => {
+    setVal(label.text || label.name || '')
   }, [label.text, label.name])
 
   return (
@@ -1326,13 +1372,20 @@ function LabelEditorPanel({
         <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
           <Type className="w-4 h-4" /> Edit Label
         </h3>
-        <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={onClose}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 rounded-full"
+          onClick={onClose}
+        >
           <X className="w-3 h-3" />
         </Button>
       </div>
       <div className="space-y-3">
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1 block">Text Content</label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1 block">
+            Text Content
+          </label>
           <input
             autoFocus
             type="text"
@@ -1340,7 +1393,8 @@ function LabelEditorPanel({
             value={val}
             onChange={(e) => setVal(e.target.value)}
             onBlur={() => {
-              if (val !== (label.text || label.name)) onUpdate(String(label.id), val)
+              if (val !== (label.text || label.name))
+                onUpdate(String(label.id), val)
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -1419,7 +1473,7 @@ export function CanvasComponent3D({
 
   const [labels, setLabels] = useState<Array<LabLabel>>([])
   const [localUnsaved, setLocalUnsaved] = useState(false)
-  
+
   const displaySaveButton = hasUnsavedChanges || localUnsaved
 
   const coordsRef = useRef<HTMLSpanElement>(null)
@@ -1439,7 +1493,7 @@ export function CanvasComponent3D({
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const discardAction = useRef<(() => void) | null>(null)
   const cancelAction = useRef<(() => void) | null>(null)
-  
+
   const displaySaveButtonRef = useRef(displaySaveButton)
   useEffect(() => {
     displaySaveButtonRef.current = displaySaveButton
@@ -1447,14 +1501,16 @@ export function CanvasComponent3D({
 
   useBlocker({
     shouldBlockFn: (opts: any) => {
-      const currentLocation = opts.currentLocation || opts.current;
-      const nextLocation = opts.nextLocation || opts.next;
+      const currentLocation = opts.currentLocation || opts.current
+      const nextLocation = opts.nextLocation || opts.next
 
-      const isSamePath = currentLocation?.pathname === nextLocation?.pathname;
-      const isSameRoom = String(currentLocation?.search?.roomId) === String(nextLocation?.search?.roomId);
+      const isSamePath = currentLocation?.pathname === nextLocation?.pathname
+      const isSameRoom =
+        String(currentLocation?.search?.roomId) ===
+        String(nextLocation?.search?.roomId)
 
       if (isSamePath && isSameRoom) {
-        return false;
+        return false
       }
 
       if (displaySaveButtonRef.current) {
@@ -1465,7 +1521,7 @@ export function CanvasComponent3D({
         })
       }
       return false
-    }
+    },
   })
 
   const handleDiscardUnsaved = () => {
@@ -1504,7 +1560,7 @@ export function CanvasComponent3D({
           ...l,
           id: safeId,
           text: l.text || l.name || 'New Label',
-          name: l.name || l.text || 'New Label'
+          name: l.name || l.text || 'New Label',
         }
       })
 
@@ -1532,7 +1588,10 @@ export function CanvasComponent3D({
   )
 
   useEffect(() => {
-    if (initialSelectedId && initialSelectedId !== prevInitialSelectedId.current) {
+    if (
+      initialSelectedId &&
+      initialSelectedId !== prevInitialSelectedId.current
+    ) {
       setSelectedIds([String(initialSelectedId)])
       prevInitialSelectedId.current = initialSelectedId
     }
@@ -1545,13 +1604,13 @@ export function CanvasComponent3D({
   const [mode, setMode] = useState<EditMode>('view')
   const [pendingRackId, setPendingRackId] = useState<string>('')
   const [useSnap, setUseSnap] = useState(true)
-  
+
   const [viewMode, setViewMode] = useState<'default' | 'custom'>('default')
   const [paintColor, setPaintColor] = useState<string>('#3b82f6')
 
   const [wallStart, setWallStart] = useState<THREE.Vector3 | null>(null)
   const [wallStartNodeId, setWallStartNodeId] = useState<string | null>(null)
-  
+
   const [focusTarget, setFocusTarget] = useState<THREE.Vector3 | null>(null)
   const lastPannedId = useRef<string | null>(null)
 
@@ -1567,34 +1626,40 @@ export function CanvasComponent3D({
 
   useEffect(() => {
     const activeSelection = selectedIds.length === 1 ? selectedIds[0] : null
-    
-    if (activeSelection && activeSelection !== lastPannedId.current && initStore.current) {
-      const id = String(activeSelection);
-      
-      const eq = useLabStore.getState().equipment[id];
-      if (eq) {
-        setFocusTarget(new THREE.Vector3(eq.x / 10, RACK_SIZE.h / 2, eq.y / 10));
-        lastPannedId.current = activeSelection;
-        return;
+
+    if (
+      activeSelection &&
+      activeSelection !== lastPannedId.current &&
+      initStore.current
+    ) {
+      const id = String(activeSelection)
+
+      const equipmentMap = useLabStore.getState().equipment
+      if (id in equipmentMap) {
+        const eq = equipmentMap[id]
+        setFocusTarget(new THREE.Vector3(eq.x / 10, RACK_SIZE.h / 2, eq.y / 10))
+        lastPannedId.current = activeSelection
+        return
       }
-      
-      const nd = useLabStore.getState().wallNodes[id];
-      if (nd) {
-        setFocusTarget(new THREE.Vector3(nd.x / 10, WALL_H / 2, nd.y / 10));
-        lastPannedId.current = activeSelection;
-        return;
+
+      const wallNodesMapState = useLabStore.getState().wallNodes
+      if (id in wallNodesMapState) {
+        const nd = wallNodesMapState[id]
+        setFocusTarget(new THREE.Vector3(nd.x / 10, WALL_H / 2, nd.y / 10))
+        lastPannedId.current = activeSelection
+        return
       }
-      
-      const lb = labels.find(l => String(l.id) === id);
+
+      const lb = labels.find((l) => String(l.id) === id)
       if (lb) {
-        setFocusTarget(new THREE.Vector3(lb.x, 8, lb.y));
-        lastPannedId.current = activeSelection;
-        return;
+        setFocusTarget(new THREE.Vector3(lb.x, 8, lb.y))
+        lastPannedId.current = activeSelection
+        return
       }
     }
-    
+
     if (!activeSelection) {
-      lastPannedId.current = null;
+      lastPannedId.current = null
     }
   }, [selectedIds, labels])
 
@@ -1667,12 +1732,17 @@ export function CanvasComponent3D({
     setSelectEnd(null)
   }, [mode, setSelectStart, setSelectEnd])
 
-  const isLabel = useCallback((id: string) => labels.some(l => String(l.id) === id), [labels])
+  const isLabel = useCallback(
+    (id: string) => labels.some((l) => String(l.id) === id),
+    [labels],
+  )
 
   const selectedEquipmentData = useLabStore(
     useShallow((state) =>
       selectedIds
-        .filter((id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id))
+        .filter(
+          (id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id),
+        )
         .map((id) => state.equipment[id])
         .filter(Boolean),
     ),
@@ -1763,19 +1833,17 @@ export function CanvasComponent3D({
       setLabels((prevLabels) =>
         prevLabels.map((l) => {
           if (!labelIdsToUpdate.includes(String(l.id))) return l
-          tempOffset
-            .set(l.x - cx, 0, l.y - cz)
-            .applyAxisAngle(yAxis, angle)
-          
-          const newX = cx + tempOffset.x + dx;
-          const newZ = cz + tempOffset.z + dz;
+          tempOffset.set(l.x - cx, 0, l.y - cz).applyAxisAngle(yAxis, angle)
+
+          const newX = cx + tempOffset.x + dx
+          const newZ = cz + tempOffset.z + dz
 
           return {
             ...l,
             x: useSnap ? Math.round(newX) : newX,
             y: useSnap ? Math.round(newZ) : newZ,
           }
-        })
+        }),
       )
       setLocalUnsaved(true)
     }
@@ -1796,7 +1864,7 @@ export function CanvasComponent3D({
     wallNodes,
     wallSegments,
     labels,
-    isLabel
+    isLabel,
   ])
 
   useEffect(() => {
@@ -1866,28 +1934,44 @@ export function CanvasComponent3D({
     [navigate, mode, wallNodes, wallNodesMap, isLabel],
   )
 
-  const handlePaint = useCallback((rawId: string | number) => {
-    const id = String(rawId)
-    if (isLabel(id)) {
-      setLabels(prev => prev.map(l => String(l.id) === id ? { ...l, color: paintColor } : l))
-      setLocalUnsaved(true)
-    } else {
-      updateMultipleEquipment([{ id, updates: { color: paintColor } }])
-    }
-  }, [updateMultipleEquipment, paintColor, isLabel])
+  const handlePaint = useCallback(
+    (rawId: string | number) => {
+      const id = String(rawId)
+      if (isLabel(id)) {
+        setLabels((prev) =>
+          prev.map((l) =>
+            String(l.id) === id ? { ...l, color: paintColor } : l,
+          ),
+        )
+        setLocalUnsaved(true)
+      } else {
+        updateMultipleEquipment([{ id, updates: { color: paintColor } }])
+      }
+    },
+    [updateMultipleEquipment, paintColor, isLabel],
+  )
 
-  const handlePlanePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
-    handlePointerMove(e);
-    if (coordsRef.current) {
-      const x = (useSnap ? Math.round(e.point.x) : e.point.x).toFixed(1)
-      const z = (useSnap ? Math.round(e.point.z) : e.point.z).toFixed(1)
-      coordsRef.current.innerText = `X: ${x} | Y: ${z}`
-    }
-  }, [handlePointerMove, useSnap])
+  const handlePlanePointerMove = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      handlePointerMove(e)
+      if (coordsRef.current) {
+        const x = (useSnap ? Math.round(e.point.x) : e.point.x).toFixed(1)
+        const z = (useSnap ? Math.round(e.point.z) : e.point.z).toFixed(1)
+        coordsRef.current.innerText = `X: ${x} | Y: ${z}`
+      }
+    },
+    [handlePointerMove, useSnap],
+  )
 
   const handleGridClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 2) return // Ignore click if user was dragging/panning the map
-    if (mode === 'select' || mode === 'move' || mode === 'rotate' || mode === 'paint') return
+    if (
+      mode === 'select' ||
+      mode === 'move' ||
+      mode === 'rotate' ||
+      mode === 'paint'
+    )
+      return
     if (mode === 'view') {
       setSelectedIds([])
       navigate({
@@ -1976,7 +2060,14 @@ export function CanvasComponent3D({
       const newLabelId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       setLabels([
         ...labels,
-        { id: newLabelId, text: 'New Label', name: 'New Label', x: pt.x, y: pt.z, color: undefined },
+        {
+          id: newLabelId,
+          text: 'New Label',
+          name: 'New Label',
+          x: pt.x,
+          y: pt.z,
+          color: undefined,
+        },
       ])
       setLocalUnsaved(true)
       setMode('view')
@@ -2000,10 +2091,10 @@ export function CanvasComponent3D({
         equipment: getEquipmentArray(),
         wallNodes: Object.values(useLabStore.getState().wallNodes),
         wallSegments: Object.values(useLabStore.getState().wallSegments),
-        labels: labels.map(l => ({
+        labels: labels.map((l) => ({
           ...l,
           name: l.text || l.name || 'New Label',
-          text: l.text || l.name || 'New Label'
+          text: l.text || l.name || 'New Label',
         })),
       })
 
@@ -2022,7 +2113,7 @@ export function CanvasComponent3D({
   const deleteSelection = () => {
     saveToHistory(wallNodes, wallSegments, labels)
     const eqIds = selectedIds.filter(
-      (id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id)
+      (id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id),
     )
     const nodeIds = selectedIds.filter((id) => id.startsWith('WN'))
     const segIds = selectedIds.filter((id) => id.startsWith('WS'))
@@ -2036,8 +2127,9 @@ export function CanvasComponent3D({
 
     if (eqIds.length > 0) deleteMultipleEquipment(eqIds)
     if (nodeIds.length > 0) deleteMultipleWallNodes(nodeIds)
-    if (allSegIdsToDelete.length > 0) deleteMultipleWallSegments(allSegIdsToDelete)
-    
+    if (allSegIdsToDelete.length > 0)
+      deleteMultipleWallSegments(allSegIdsToDelete)
+
     if (labelIds.length > 0) {
       setLabels((prev) => prev.filter((l) => !labelIds.includes(String(l.id))))
       setLocalUnsaved(true)
@@ -2070,10 +2162,10 @@ export function CanvasComponent3D({
               if (displaySaveButtonRef.current) {
                 setShowUnsavedDialog(true)
                 discardAction.current = () => {
-                  if (onRoomChange) onRoomChange(val)
+                  onRoomChange(val)
                 }
                 cancelAction.current = () => {}
-              } else if (onRoomChange) {
+              } else {
                 onRoomChange(val)
               }
             }}
@@ -2234,7 +2326,7 @@ export function CanvasComponent3D({
                 { color: '#8b5cf6', label: 'Violet' },
                 { color: '#d946ef', label: 'Fuchsia' },
                 { color: '#f43f5e', label: 'Rose' },
-              ].map(c => (
+              ].map((c) => (
                 <button
                   key={c.color}
                   className={`w-6 h-6 rounded-full transition-all hover:scale-110 ${paintColor === c.color ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'ring-1 ring-border shadow-sm'}`}
@@ -2384,7 +2476,7 @@ export function CanvasComponent3D({
                 groupCenter && (
                   <group key={selectedIds.join('-') + dragDropCount}>
                     <group ref={setDummyObj} position={groupCenter} />
-                    {dummyObj && dummyObj.parent && (
+                    {dummyObj && (
                       <TransformControls
                         ref={setTransformControlNode}
                         object={dummyObj}
@@ -2533,11 +2625,15 @@ export function CanvasComponent3D({
                   dragDeltaRotRef={dragDeltaRotRef}
                   onSelect={handleSelect}
                   onDelete={(id) => {
-                    setLabels(prev => prev.filter(lb => String(lb.id) !== id))
+                    setLabels((prev) =>
+                      prev.filter((lb) => String(lb.id) !== id),
+                    )
                     setLocalUnsaved(true)
                   }}
                   onPaint={handlePaint}
-                  saveToHistory={() => saveToHistory(wallNodes, wallSegments, labels)}
+                  saveToHistory={() =>
+                    saveToHistory(wallNodes, wallSegments, labels)
+                  }
                 />
               ))}
 
@@ -2568,9 +2664,12 @@ export function CanvasComponent3D({
         />
       </div>
 
-      <AlertDialog open={showUnsavedDialog} onOpenChange={(open) => {
-        if (!open) handleCancelUnsaved()
-      }}>
+      <AlertDialog
+        open={showUnsavedDialog}
+        onOpenChange={(open) => {
+          if (!open) handleCancelUnsaved()
+        }}
+      >
         <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
@@ -2578,18 +2677,20 @@ export function CanvasComponent3D({
             </AlertDialogMedia>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes in the current laboratory. If you switch laboratories or navigate away, your unsaved progress will be lost. Are you sure you want to proceed?
+              You have unsaved changes in the current laboratory. If you switch
+              laboratories or navigate away, your unsaved progress will be lost.
+              Are you sure you want to proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleCancelUnsaved} variant="outline">
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault()
                 handleDiscardUnsaved()
-              }} 
+              }}
               variant="destructive"
             >
               Discard Changes
@@ -2598,18 +2699,24 @@ export function CanvasComponent3D({
         </AlertDialogContent>
       </AlertDialog>
 
-      {selectedIds.length === 1 && isLabel(selectedIds[0]) && mode === 'view' && (
-        <LabelEditorPanel
-          key={selectedIds[0]}
-          label={labels.find(l => String(l.id) === selectedIds[0])!}
-          onUpdate={(id, text) => {
-            saveToHistory(wallNodes, wallSegments, labels)
-            setLabels(prev => prev.map(l => String(l.id) === id ? { ...l, text, name: text } : l))
-            setLocalUnsaved(true)
-          }}
-          onClose={() => setSelectedIds([])}
-        />
-      )}
+      {selectedIds.length === 1 &&
+        isLabel(selectedIds[0]) &&
+        mode === 'view' && (
+          <LabelEditorPanel
+            key={selectedIds[0]}
+            label={labels.find((l) => String(l.id) === selectedIds[0])!}
+            onUpdate={(id, text) => {
+              saveToHistory(wallNodes, wallSegments, labels)
+              setLabels((prev) =>
+                prev.map((l) =>
+                  String(l.id) === id ? { ...l, text, name: text } : l,
+                ),
+              )
+              setLocalUnsaved(true)
+            }}
+            onClose={() => setSelectedIds([])}
+          />
+        )}
 
       {selectedIds.length === 1 &&
         getEquipmentArray().find((e) => e.id === selectedIds[0]) &&
