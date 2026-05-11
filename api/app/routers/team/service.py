@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-from sqlalchemy import sql
+from sqlalchemy import sql, orm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import dependencies
@@ -174,8 +174,19 @@ class TeamService:
             self.db.add(virtual_lab)
 
             await self.db.commit()
-            await self.db.refresh(obj, ["users"])
-            return obj
+
+            stmt = (
+                sql.select(models.Teams)
+                .options(
+                    orm.selectinload(models.Teams.users).selectinload(
+                        models.UsersTeams.user
+                    )
+                )
+                .filter(models.Teams.id == obj.id)
+            )
+            result = await self.db.execute(stmt)
+            return result.scalar_one()
+
         except Exception as e:
             await self.db.rollback()
             raise exceptions.ValidationError(
