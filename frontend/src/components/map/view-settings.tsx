@@ -30,18 +30,24 @@ export function ViewSettings({
 }: ViewSettingsProps) {
   return (
     <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex flex-col items-center p-1.5 shadow-2xl gap-2">
-      
-      {/* View Mode Group */}
       <ToggleGroup
         type="single"
         orientation="vertical"
+        spacing={0.1}
         value={is2D ? '2D' : '3D'}
         onValueChange={(value) => value && setIs2D(value === '2D')}
         className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="2D" className="h-8 w-8 rounded-full p-0">
+            <ToggleGroupItem
+              value="2D"
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                is2D
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
               <MapIcon className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -49,7 +55,14 @@ export function ViewSettings({
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="3D" className="h-8 w-8 rounded-full p-0">
+            <ToggleGroupItem
+              value="3D"
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                !is2D
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
               <Box className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
@@ -59,10 +72,10 @@ export function ViewSettings({
 
       <div className="h-px w-5 bg-border/50 my-1" />
 
-      {/* Projection Group */}
       <ToggleGroup
         type="single"
         orientation="vertical"
+        spacing={0.1}
         value={projection}
         onValueChange={(v) =>
           v && setProjection(v as 'perspective' | 'orthographic')
@@ -73,7 +86,11 @@ export function ViewSettings({
           <TooltipTrigger asChild>
             <ToggleGroupItem
               value="orthographic"
-              className="h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter"
+              className={`h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter transition-all ${
+                projection === 'orthographic'
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
               ORT
             </ToggleGroupItem>
@@ -84,7 +101,11 @@ export function ViewSettings({
           <TooltipTrigger asChild>
             <ToggleGroupItem
               value="perspective"
-              className="h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter"
+              className={`h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter transition-all ${
+                projection === 'perspective'
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
               PER
             </ToggleGroupItem>
@@ -95,7 +116,6 @@ export function ViewSettings({
 
       <div className="h-px w-5 bg-border/50 my-1" />
 
-      {/* Snap Toggle */}
       <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
@@ -103,8 +123,8 @@ export function ViewSettings({
               pressed={useSnap}
               onPressedChange={setUseSnap}
               className={`h-8 w-8 rounded-full p-0 transition-all ${
-                useSnap 
-                  ? 'bg-primary/20 text-primary shadow-sm' 
+                useSnap
+                  ? 'bg-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
@@ -117,16 +137,17 @@ export function ViewSettings({
 
       <div className="h-px w-5 bg-border/50 my-1" />
 
-      {/* Custom Color Toggle */}
       <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
             <Toggle
               pressed={viewMode === 'custom'}
-              onPressedChange={(pressed) => setViewMode(pressed ? 'custom' : 'default')}
+              onPressedChange={(pressed) =>
+                setViewMode(pressed ? 'custom' : 'default')
+              }
               className={`h-8 w-8 rounded-full p-0 transition-all ${
-                viewMode === 'custom' 
-                  ? 'bg-primary/20 text-primary shadow-sm' 
+                viewMode === 'custom'
+                  ? 'bg-primary/20 text-primary shadow-sm'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               }`}
             >
