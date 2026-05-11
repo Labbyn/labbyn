@@ -2185,7 +2185,7 @@ export function CanvasComponent3D({
             }}
             disabled={isLoadingRooms}
           >
-            <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full h-12 px-6 flex items-center justify-between gap-3 text-sm font-semibold hover:bg-card/90 transition-colors w-[260px]">
+            <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full h-12 px-6 flex items-center justify-between gap-3 text-sm font-semibold hover:bg-card/90 transition-colors w-fit">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
                 <SelectValue
