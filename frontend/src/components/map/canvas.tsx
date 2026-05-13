@@ -30,6 +30,8 @@ import { formatHex } from 'culori'
 import { useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
 import { Save, Trash2, X } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
@@ -41,8 +43,26 @@ import type {
   TransformControls as TransformControlsImpl,
 } from 'three-stdlib'
 import type { Equipment, WallNode, WallSegment } from '@/types/types'
+import type { ApiRackDetailItem } from '@/integrations/racks/racks.types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useSyncRoomMap } from '@/integrations/map/map.mutation'
 import { Button } from '@/components/ui/button'
 import { useLabStore } from '@/lib/store'
+import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from '@/components/ui/combobox'
 
 // --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
@@ -667,6 +687,34 @@ function SceneController({
   const [, getKeys] = useKeyboardControls()
   const initialized = useRef(false)
   const prevIs2D = useRef(is2D)
+  const isTypingRef = useRef(false)
+
+  useEffect(() => {
+    const checkIsInput = (target: EventTarget | null) => {
+      if (!(target instanceof HTMLElement)) return false
+      return (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      )
+    }
+
+    const handleFocusIn = (e: FocusEvent) => {
+      if (checkIsInput(e.target)) isTypingRef.current = true
+    }
+
+    const handleFocusOut = (e: FocusEvent) => {
+      if (checkIsInput(e.target)) isTypingRef.current = false
+    }
+
+    document.addEventListener('focusin', handleFocusIn, true)
+    document.addEventListener('focusout', handleFocusOut, true)
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn, true)
+      document.removeEventListener('focusout', handleFocusOut, true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!controlsRef.current || !center) return
@@ -695,7 +743,7 @@ function SceneController({
   const rightVec = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((_, delta) => {
-    if (!enabled || !controlsRef.current) return
+    if (!enabled || !controlsRef.current || isTypingRef.current) return
     const { forward, back, left, right, rotateLeft, rotateRight } = getKeys()
 
     if ((rotateLeft || rotateRight) && !is2D) {
@@ -1148,10 +1196,26 @@ function WallSegmentRenderer({
 // --- Main Application Component ---
 
 export function CanvasComponent3D({
-  equipment: initialEquipment,
-  walls: initialWalls,
+  roomId,
+  rooms = [],
+  isLoadingRooms = false,
+  onRoomChange,
+  initialEquipment = [],
+  initialNodes = [],
+  initialSegments = [],
+  initialLabels = [],
   initialSelectedId,
-}: any) {
+}: {
+  roomId?: string | number
+  rooms?: Array<any>
+  isLoadingRooms?: boolean
+  onRoomChange?: (id: string) => void
+  initialEquipment?: Array<Equipment>
+  initialNodes?: Array<WallNode>
+  initialSegments?: Array<WallSegment>
+  initialLabels?: Array<LabLabel>
+  initialSelectedId?: string
+}) {
   const initEquipment = useLabStore((state) => state.initEquipment)
   const getEquipmentArray = useLabStore((state) => state.getEquipmentArray)
   const addEquipment = useLabStore((state) => state.addEquipment)
@@ -1192,28 +1256,27 @@ export function CanvasComponent3D({
   )
 
   const initStore = useRef(false)
+  const prevRoomId = useRef(roomId)
+
+  const [labels, setLabels] = useState<Array<LabLabel>>(initialLabels)
+
   useEffect(() => {
-    if (!initStore.current) {
+    if (!initStore.current || prevRoomId.current !== roomId) {
       initEquipment(initialEquipment)
-      const nodes: Array<WallNode> = []
-      const segments: Array<WallSegment> = []
+      initWallNodes(initialNodes)
+      initWallSegments(initialSegments)
 
-      if (initialWalls) {
-        initialWalls.forEach((w: any) => {
-          const n1 = { id: `WN-${w.id}-1`, x: w.x1, y: w.y1 }
-          const n2 = { id: `WN-${w.id}-2`, x: w.x2, y: w.y2 }
-          nodes.push(n1, n2)
-          segments.push({ id: `WS-${w.id}`, node1Id: n1.id, node2Id: n2.id })
-        })
-      }
+      setLabels(initialLabels)
 
-      initWallNodes(nodes)
-      initWallSegments(segments)
       initStore.current = true
+      prevRoomId.current = roomId
     }
   }, [
+    roomId,
     initialEquipment,
-    initialWalls,
+    initialNodes,
+    initialSegments,
+    initialLabels,
     initEquipment,
     initWallNodes,
     initWallSegments,
@@ -1226,8 +1289,8 @@ export function CanvasComponent3D({
   const [projection, setProjection] = useState<'perspective' | 'orthographic'>(
     'perspective',
   )
-  const [labels, setLabels] = useState<Array<LabLabel>>([])
   const [mode, setMode] = useState<EditMode>('view')
+  const [pendingRackId, setPendingRackId] = useState<string>('')
   const [useSnap, setUseSnap] = useState(true)
   const [viewOverlay, setViewOverlay] = useState<
     'none' | 'heatmap' | 'network'
@@ -1239,6 +1302,26 @@ export function CanvasComponent3D({
   const colors = useThemeColors()
   const navigate = useNavigate()
   const activeCamera = is2D ? 'orthographic' : projection
+
+  const { data: allRacks } = useQuery(racksBaseListQueryOptions)
+
+  const searchParams = new URLSearchParams(
+    typeof window !== 'undefined' ? window.location.search : '',
+  )
+  const roomIdFromUrl = searchParams.get('roomId')
+
+  const availableRacks = useMemo(() => {
+    if (!allRacks || !Array.isArray(allRacks)) return []
+    return allRacks.filter((r: ApiRackDetailItem) => {
+      const isNotUsed = !equipmentIds.includes(String(r.id))
+
+      const belongsToRoom = roomIdFromUrl
+        ? r.room_id === Number(roomIdFromUrl)
+        : true
+
+      return isNotUsed && belongsToRoom
+    })
+  }, [allRacks, equipmentIds])
 
   const { historyIndex, history, saveToHistory, undo, redo } = useLabHistory(
     initEquipment,
@@ -1482,14 +1565,25 @@ export function CanvasComponent3D({
     saveToHistory(wallNodes, wallSegments, labels)
 
     if (mode === 'add-rack') {
+      if (!pendingRackId) {
+        toast.error('Please select a rack to place first')
+        return
+      }
+
+      const selectedRack = availableRacks.find(
+        (r: any) => String(r.id) === pendingRackId,
+      )
+
       addEquipment({
-        id: `RACK-${Date.now()}`,
+        id: pendingRackId,
         x: pt.x * 10,
         y: pt.z * 10,
         rotation: 0,
         type: 'rack',
-        label: 'New',
+        label: selectedRack?.name || `Rack ${pendingRackId}`,
       } as any)
+
+      setPendingRackId('')
       setMode('view')
     } else if (mode === 'add-wall') {
       const clickedPt = new THREE.Vector2(pt.x * 10, pt.z * 10)
@@ -1551,7 +1645,24 @@ export function CanvasComponent3D({
     return new THREE.Vector3(avgX / 10, 0, avgY / 10)
   }, [equipmentIds.length, getEquipmentArray])
 
-  const handleSaveToBackend = () => setTimeout(() => markSaved(), 500)
+  const { mutateAsync: syncMap } = useSyncRoomMap(roomId || '')
+
+  const handleSaveToBackend = async () => {
+    try {
+      await syncMap({
+        equipment: getEquipmentArray(),
+        wallNodes: Object.values(useLabStore.getState().wallNodes),
+        wallSegments: Object.values(useLabStore.getState().wallSegments),
+        labels: labels,
+      })
+
+      setTimeout(() => markSaved(), 500)
+      toast.success('Map layout saved successfully')
+    } catch (error) {
+      console.error('Save failed:', error)
+      toast.error('Failed to save map layout')
+    }
+  }
 
   const deleteSelection = () => {
     saveToHistory(wallNodes, wallSegments, labels)
@@ -1581,6 +1692,27 @@ export function CanvasComponent3D({
       onMouseDown={(e) => e.currentTarget.focus()}
     >
       <div className="absolute top-4 left-4 z-20 flex flex-col gap-4">
+        {onRoomChange && (
+          <Select
+            value={roomId?.toString()}
+            onValueChange={onRoomChange}
+            disabled={isLoadingRooms}
+          >
+            <SelectTrigger className="bg-card/90 backdrop-blur-md border border-border/50 shadow-lg rounded-xl">
+              <SelectValue
+                placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
+              />
+            </SelectTrigger>
+            <SelectContent position="popper" align="start">
+              {rooms.map((room: any) => (
+                <SelectItem key={room.id} value={room.id.toString()}>
+                  {room.name || `Room ${room.id}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
         <ViewSettings
           canUndo={historyIndex >= 0}
           canRedo={historyIndex < history.length - 1}
@@ -1595,7 +1727,41 @@ export function CanvasComponent3D({
           projection={projection}
           setProjection={setProjection}
         />
-        <MapToolbar mode={mode} setMode={(v) => setMode(v as EditMode)} />
+        <MapToolbar
+          mode={mode}
+          setMode={(v) => {
+            setMode(v as EditMode)
+            if (v !== 'add-rack') setPendingRackId('')
+          }}
+        />
+
+        {mode === 'add-rack' && (
+          <div className="flex flex-col gap-2 p-3 bg-card/90 backdrop-blur-md rounded-xl border border-border/50 shadow-lg animate-in fade-in slide-in-from-left-4 w-70">
+            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              Select Rack to Place
+            </div>
+            <Combobox
+              value={pendingRackId}
+              onValueChange={(val) => setPendingRackId(val ?? '')}
+            >
+              <ComboboxInput placeholder="Search available racks..." />
+              <ComboboxEmpty>No racks available</ComboboxEmpty>
+              <ComboboxContent>
+                <ComboboxList>
+                  {availableRacks.map((r: any) => (
+                    <ComboboxItem key={r.id} value={String(r.id)}>
+                      {r.name || `Rack #${r.id}`}
+                    </ComboboxItem>
+                  ))}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+            <div className="text-[10px] text-muted-foreground leading-tight mt-1">
+              Select a rack from the database, then click on the grid to place
+              it.
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="absolute top-4 right-4 z-20 flex gap-2">
@@ -1767,6 +1933,7 @@ export function CanvasComponent3D({
                 geometry={rackGeometryBase}
                 castShadow
                 receiveShadow
+                frustumCulled={false}
               >
                 {viewOverlay === 'none' ? (
                   <meshStandardMaterial

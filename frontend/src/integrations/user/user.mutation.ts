@@ -6,6 +6,7 @@ import api from '@/lib/api'
 const PATHS = {
   BASE: '/db/users/',
   DETAIL: (id: string | number) => `/db/users/${id}`,
+  AUTH_RESET_PASSWORD: (id: string | number) => `/auth/reset-password/${id}`,
 }
 
 export const useCreateUserMutation = () => {
@@ -31,7 +32,7 @@ export const useUpdateUserMutation = (userId: string | number) => {
 
   return useMutation({
     mutationFn: async (userData: UserUpdate) => {
-      const { data } = await api.put(PATHS.DETAIL(userId), userData)
+      const { data } = await api.patch(PATHS.DETAIL(userId), userData)
       return data
     },
     onSuccess: () => {
@@ -52,6 +53,21 @@ export const useDeleteUserMutation = () => {
     onSuccess: () => {
       toast.success('User deleted successfully')
       queryClient.invalidateQueries({ queryKey: ['users'] })
+    },
+  })
+}
+
+export const useResetUserPasswordMutation = () => {
+  return useMutation({
+    mutationFn: async (userId: string | number) => {
+      const { data } = await api.post(PATHS.AUTH_RESET_PASSWORD(userId))
+      return data
+    },
+    onSuccess: () => {
+      toast.success('Password reset successfully')
+    },
+    onError: () => {
+      toast.error('Failed to reset password')
     },
   })
 }

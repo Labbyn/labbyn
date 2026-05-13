@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2, Plus, Tag } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -33,7 +33,7 @@ const schemas = {
   color: z.string().min(1, 'Color is required'),
 }
 
-export function AddTagDialog() {
+export function AddTagDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
 
@@ -69,17 +69,19 @@ export function AddTagDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <Tag />
-          <span>Add Tag</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <Tag />
+            <span>Add Tag</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add new tag</DialogTitle>
           <DialogDescription>
-            Create new tag to group your resources
+            Create a new tag to group your resources
           </DialogDescription>
         </DialogHeader>
 

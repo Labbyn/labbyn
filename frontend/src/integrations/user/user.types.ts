@@ -6,11 +6,8 @@ export interface UserRead {
   name: string
   surname: string
   login: string
-  team_id: number | null
+  membership: Array<string> | null
   user_type: UserType
-  is_active: boolean
-  is_superuser: boolean
-  is_verified: boolean
   force_password_change: boolean
   version_id: number
 }
@@ -28,7 +25,7 @@ export type UserCreate = {
   is_active?: boolean | null
   is_superuser?: boolean | null
   is_verified?: boolean | null
-  team_id?: number | null
+  team_ids?: Array<number> | Array<string> | null
   user_type?: UserType
 }
 

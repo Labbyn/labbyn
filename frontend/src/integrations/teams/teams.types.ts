@@ -4,6 +4,7 @@ export type ApiTeamItem = {
   id: number
   name: string
   team_admin_id: number | null
+  admins: Array<any> | null
   version_id: number | null
 }
 

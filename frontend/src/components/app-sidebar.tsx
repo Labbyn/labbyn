@@ -1,23 +1,27 @@
-// src/components/app-sidebar.tsx
 import {
   Archive,
   Box,
   ChevronDown,
   ChevronsUpDown,
   CirclePile,
+  Component,
   FileText,
   FolderInput,
   HardDrive,
   History,
+  LayoutGrid,
   LogOut,
+  MapPin,
   Moon,
   PanelsTopLeft,
   ScrollText,
   Server,
   Settings,
   Sun,
+  Tags,
   User,
   Users,
+  Zap,
 } from 'lucide-react'
 import {
   Link,
@@ -29,33 +33,31 @@ import React from 'react'
 import { CommandMenu } from './command-menu'
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from './ui/hover-card'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
 import { AddPlatformDialog } from './add-platform-dialog'
 import { AddTagDialog } from './add-tag-dialog'
+import { AddRackDialog } from './add-rack-dialog'
+import { AddCategoriesDialog } from './add-categories-dialog'
+import { AddRoomsDialog } from './add-rooms-dialog'
+import { AddInventoryDialog } from './add-inventory-dialog'
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from './ui/collapsible'
 import { Badge } from './ui/badge'
-import { AddRackDialog } from './add-rack-dialog'
-import { AddCategoriesDialog } from './add-categories-dialog'
-import { AddRoomsDialog } from './add-rooms-dialog'
-import { AddInventoryDialog } from './add-inventory-dialog'
+import { Button } from './ui/button'
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
@@ -67,7 +69,52 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from '@/components/ui/sidebar'
-import { useAuth } from '@/routes/auth' //
+import { useAuth } from '@/routes/auth'
+
+const QUICK_ACTIONS = [
+  {
+    id: 'platform',
+    label: 'New Platform',
+    desc: 'Register a new machine',
+    icon: Box,
+    Component: AddPlatformDialog,
+  },
+  {
+    id: 'tag',
+    label: 'Create Tag',
+    desc: 'Add new organizational labels',
+    icon: Tags,
+    Component: AddTagDialog,
+  },
+  {
+    id: 'rack',
+    label: 'Add Rack',
+    desc: 'Define a new server rack',
+    icon: Server,
+    Component: AddRackDialog,
+  },
+  {
+    id: 'category',
+    label: 'New Category',
+    desc: 'Group your inventory logically',
+    icon: LayoutGrid,
+    Component: AddCategoriesDialog,
+  },
+  {
+    id: 'rooms',
+    label: 'Add Room',
+    desc: 'Add physical locations',
+    icon: MapPin,
+    Component: AddRoomsDialog,
+  },
+  {
+    id: 'inventory',
+    label: 'Add Inventory',
+    desc: 'Record a new device or part',
+    icon: Component,
+    Component: AddInventoryDialog,
+  },
+]
 
 const items = [
   { title: 'Dashboard', url: '/user-dashboard', icon: PanelsTopLeft },
@@ -156,55 +203,80 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <CommandMenu />
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <div className="sr-only">
+              {QUICK_ACTIONS.map((action) => (
+                <action.Component key={`hidden-dialog-${action.id}`}>
+                  <button
+                    id={`trigger-${action.id}`}
+                    type="button"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                </action.Component>
+              ))}
+            </div>
+
+            <HoverCard openDelay={100} closeDelay={150}>
+              <HoverCardTrigger asChild>
+                <SidebarMenuButton
+                  className="group text-primary transition-all"
+                  tooltip="Quick Actions"
+                >
+                  <Zap className="text-primary fill-primary/20 group-hover:scale-110 transition-transform" />
+                  <span className="font-medium">Quick Actions</span>
+                </SidebarMenuButton>
+              </HoverCardTrigger>
+
+              <HoverCardContent
+                side={isMobile ? 'bottom' : 'right'}
+                align="start"
+                sideOffset={16}
+                className="w-130 p-4 shadow-xl border-border/50 backdrop-blur-sm bg-card/60"
+              >
+                <div className="mb-4 space-y-1">
+                  <h4 className="text-sm font-semibold leading-none tracking-tight">
+                    Quick Actions
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Instantly add new resources to your lab environment.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {QUICK_ACTIONS.map((action) => (
+                    <div key={action.id} className="relative">
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          document
+                            .getElementById(`trigger-${action.id}`)
+                            ?.click()
+                        }
+                        className="flex items-start justify-start gap-3 p-3 w-full h-full text-left whitespace-normal hover:bg-primary/10 border border-transparent hover:border-border/50"
+                      >
+                        <div className="mt-0.5 bg-muted/50 p-1.5 rounded-md shadow-sm border border-border/50 shrink-0">
+                          <action.icon className="size-4 text-primary" />
+                        </div>
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-sm font-medium leading-none">
+                            {action.label}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {action.desc}
+                          </span>
+                        </div>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Quick actions</SidebarGroupLabel>
-          <SidebarGroupAction>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Settings />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-fit rounded-lg"
-                side={isMobile ? 'bottom' : 'right'}
-                align="end"
-                sideOffset={4}
-              >
-                <DropdownMenuLabel>Configure quick actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-
-                <DropdownMenuGroup>
-                  <DropdownMenuCheckboxItem checked>
-                    Add platform
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem checked>
-                    Add tag
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>
-                    Add inventory item
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem>
-                    Add something
-                  </DropdownMenuCheckboxItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </SidebarGroupAction>
-          <SidebarContent>
-            <SidebarMenuItem>
-              <AddPlatformDialog />
-              <AddTagDialog />
-              <AddRackDialog />
-              <AddCategoriesDialog />
-              <AddRoomsDialog />
-              <AddInventoryDialog />
-            </SidebarMenuItem>
-          </SidebarContent>
-        </SidebarGroup>
-
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarGroupContent>

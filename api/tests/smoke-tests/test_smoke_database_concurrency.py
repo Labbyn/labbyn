@@ -98,6 +98,7 @@ async def test_rental_race_condition_async(test_client, db_session, service_head
                 "quantity": 1,
                 "start_date": "2026-01-01",
                 "end_date": "2026-01-07",
+                "team_id": team_id,
             },
             headers={"Authorization": f"Bearer {token}"},
         )

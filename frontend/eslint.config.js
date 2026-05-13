@@ -9,6 +9,7 @@ export default [
     ignores: [
       'eslint.config.js',
       'prettier.config.js',
+      'src/routeTree.gen.ts',
       'vite.config.ts',
       'dist/',
       'build/',

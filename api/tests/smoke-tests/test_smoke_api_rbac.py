@@ -1,4 +1,5 @@
 import uuid
+
 import pytest
 
 pytestmark = [pytest.mark.smoke, pytest.mark.api, pytest.mark.rbac, pytest.mark.asyncio]
@@ -101,7 +102,7 @@ async def test_rbac_permission_elevation_flow(
     t_id = int(rbac_data_suite["team_a_id"])
 
     await ac.patch(
-        f"/db/users/{u_id}/promote",
+        f"/db/users/{u_id}/change_team_access",
         json={"team_id": t_id, "is_group_admin": True},
         headers=service_header,
     )
@@ -152,7 +153,7 @@ async def test_rbac_multi_group_admin_management(
     )
 
     await ac.patch(
-        f"/db/users/{u_id}/promote",
+        f"/db/users/{u_id}/change_team_access",
         json={"team_id": team_b, "is_group_admin": True},
         headers=service_header,
     )

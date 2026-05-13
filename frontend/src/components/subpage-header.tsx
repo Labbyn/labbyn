@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, Edit2, X } from 'lucide-react'
 import { useRouter } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,21 @@ export function SubpageHeader({
   const router = useRouter()
 
   const isEditableType = type === 'editable'
+  const isDeletableType = type === 'deletable'
+
+  const [titleValue, setTitleValue] = useState(editValue)
+
+  useEffect(() => {
+    setTitleValue(editValue)
+  }, [editValue])
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setTitleValue(val)
+    if (onEditChange) {
+      onEditChange(val)
+    }
+  }
 
   return (
     <div className="flex items-center gap-4 px-6 py-4 z-10">
@@ -40,12 +56,7 @@ export function SubpageHeader({
 
       <div className="flex-1">
         {isEditableType && isEditing ? (
-          onEditChange && (
-            <Input
-              value={editValue}
-              onChange={(e) => onEditChange(e.target.value)}
-            />
-          )
+          onEditChange && <Input value={titleValue} onChange={handleChange} />
         ) : (
           <h1 className="text-xl font-bold tracking-tight">{title}</h1>
         )}
@@ -69,6 +80,17 @@ export function SubpageHeader({
                 <Check /> Save
               </Button>
             </ButtonGroup>
+          )}
+        </div>
+      )}
+      {isDeletableType && (
+        <div className="flex gap-2 items-center">
+          {title === 'virtual' ? (
+            <span className="text-sm text-muted-foreground">
+              Cannot delete virtual lab
+            </span>
+          ) : (
+            onDelete && <DeleteAlertDialog onDelete={onDelete} />
           )}
         </div>
       )}

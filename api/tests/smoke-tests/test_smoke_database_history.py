@@ -5,12 +5,10 @@ import uuid
 import pytest
 from sqlalchemy import select
 
-from app.db import models, schemas
-from app.routers.database_history_router import (
-    _rollback_create,
-    _rollback_delete,
-    _rollback_update,
-)
+from app.auth import dependencies
+from app.db import models
+from app.routers.history.service import HistoryService
+from app.schemas import history_schemas
 from app.utils import database_service as service
 
 pytestmark = [pytest.mark.smoke, pytest.mark.database, pytest.mark.asyncio]
@@ -38,6 +36,14 @@ async def test_history_full_cycle_with_rollback(
     5. ROLLBACK UPDATE -> Check if user data is back to original state
     6. ROLLBACK CREATE -> Check if user doesn't exist
     """
+
+    # Dummy authorization
+    ctx = dependencies.RequestContext(db=db_session)
+    ctx.is_admin = True
+    ctx.is_group_admin = True
+    ctx.user_type = models.UserType.ADMIN
+
+    history_service = HistoryService(db=db_session, ctx=ctx)
     team_res = await test_client.post(
         "/db/teams", json={"name": unique_str("HistoryTeam")}, headers=service_header
     )
@@ -159,7 +165,7 @@ async def test_history_full_cycle_with_rollback(
     assert log_delete.before_state["id"] == user_id
 
     await db_session.refresh(log_delete)
-    msg = await _rollback_delete(models.User, log_delete, db_session)
+    msg = await history_service._rollback_delete(models.User, log_delete)
     await db_session.commit()
     db_session.expire_all()
     restored_user = await db_session.get(models.User, user_id)
@@ -172,7 +178,7 @@ async def test_history_full_cycle_with_rollback(
     ), f"Wrong email after restoring expected: {new_email}, get: {restored_user.email}"
 
     await db_session.refresh(log_update)
-    msg = await _rollback_update(models.User, log_update, db_session)
+    msg = await history_service._rollback_update(models.User, log_update)
     await db_session.commit()
     await db_session.refresh(restored_user)
 
@@ -181,7 +187,7 @@ async def test_history_full_cycle_with_rollback(
     ), "Rollback UPDATE didn't revert email to original"
 
     await db_session.refresh(log_create)
-    msg = await _rollback_create(models.User, log_create, db_session)
+    msg = await history_service._rollback_create(models.User, log_create)
     await db_session.commit()
 
     final_check = await db_session.get(models.User, user_id)

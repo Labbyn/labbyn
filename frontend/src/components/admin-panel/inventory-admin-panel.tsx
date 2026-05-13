@@ -28,12 +28,10 @@ export const columns: Array<ColumnDef<InventoryItem>> = [
       'name',
       'quantity',
       'rental_status',
-      'team_id',
-      'localization_id',
-      'machine_id',
-      'category_id',
-      'rental_id',
-      'version_id',
+      'team_name',
+      'localization_name',
+      'machine_name',
+      'category_name',
     ] as Array<keyof InventoryItem>
   ).map((key) => ({
     accessorKey: key,

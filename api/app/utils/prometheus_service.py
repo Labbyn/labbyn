@@ -9,7 +9,7 @@ import aiofiles
 import httpx
 from dotenv import load_dotenv
 
-from app.core.exceptions import ExternalServiceError, ValidationError
+from app.core import exceptions
 
 load_dotenv(".env/api.env")
 PROMETHEUS_URL = os.getenv("PROMETHEUS_URL")
@@ -25,10 +25,6 @@ DEFAULT_QUERIES = {
 }
 
 _targets_lock = asyncio.Lock()
-
-
-class TargetSaveError(Exception):
-    """Custom exception for target saving errors."""
 
 
 async def _request(
@@ -58,7 +54,7 @@ async def _request(
             await asyncio.sleep(backoff_factor)
         except (httpx.RequestError, asyncio.TimeoutError):
             await asyncio.sleep(backoff_factor)
-    raise ExternalServiceError(
+    raise exceptions.ExternalServiceError(
         service="Prometheus", detail=f"Failed to connect after {retries} attempts:"
     )
 
@@ -130,7 +126,7 @@ async def load_targets_file():
             targets = json.loads(content)
         return targets
     except (FileNotFoundError, OSError, json.JSONDecodeError) as e:
-        raise ValidationError(
+        raise exceptions.ValidationError(
             "Prometheus targets file is corrupted or unreadable"
         ) from e
 
@@ -141,14 +137,14 @@ async def save_targets_file(targets: List[dict]):
     :param targets: List of target dictionaries.
     """
     if not PROMETHEUS_TARGETS_PATH:
-        raise TargetSaveError("PROMETHEUS_TARGETS_PATH is not set.")
+        raise exceptions.TargetSaveError("PROMETHEUS_TARGETS_PATH is not set.")
     try:
         async with aiofiles.open(
             PROMETHEUS_TARGETS_PATH, mode="w", encoding="utf-8"
         ) as file:
             await file.write(json.dumps(targets, indent=2))
     except (OSError, TypeError) as e:
-        raise ValidationError(
+        raise exceptions.ValidationError(
             "Prometheus targets file is corrupted or unreadable"
         ) from e
 
@@ -165,8 +161,28 @@ async def add_prometheus_target(instance: str, labels: dict):
         targets.append(entry)
         try:
             await save_targets_file(targets)
-        except TargetSaveError as e:
-            raise ValidationError(
+        except exceptions.TargetSaveError as e:
+            raise exceptions.ValidationError(
                 "Prometheus targets file is corrupted or unreadable"
             ) from e
     return entry
+
+
+async def remove_prometheus_target(instance: str):
+    """Remove a target from the Prometheus targets file.
+
+    :param instance: Target instance to delete
+    """
+    async with _targets_lock:
+        targets = await load_targets_file()
+        new_targets = [t for t in targets if instance not in t.get("targets", [])]
+
+        if len(new_targets) == len(targets):
+            raise exceptions.ObjectNotFoundError("Prometheus target", instance)
+
+        try:
+            await save_targets_file(new_targets)
+        except exceptions.TargetSaveError as e:
+            raise exceptions.ValidationError(
+                "Prometheus targets file maybe corrupted or unreadable"
+            ) from e

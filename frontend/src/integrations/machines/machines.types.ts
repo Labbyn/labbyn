@@ -21,6 +21,7 @@ export interface MachinesResponse {
   ip_address: string | null
   pdu_port: number | null
   team_id: number | null
+  team_name: string | null
   os: string | null
   serial_number: string | null
   note: string | null
@@ -47,6 +48,7 @@ export interface ApiMachineInfo {
   pdu_port: number
   added_on: string // format: date-time
   shelf_number: number | null
+  shelf_name: string | null
   shelf_id: number | null
   team_id: string | null
   team_name: string
@@ -126,6 +128,12 @@ export interface AutoDiscoverPayload {
     ansible_user: string
     ansible_password: string
   }
+}
+
+export interface AgentDialogPayload {
+  host: string
+  username: string
+  password: string
 }
 
 export type ApiMachineItem = MachinesResponse

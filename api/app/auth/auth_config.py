@@ -6,9 +6,9 @@ from fastapi_users.authentication import AuthenticationBackend, BearerTransport
 from fastapi_users.authentication.strategy.db import DatabaseStrategy
 from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
 
-from app.auth.manager import get_user_manager
+from app.auth import manager
 from app.database import get_access_token_db
-from app.db.models import User
+from app.db import models
 
 bearer_transport = BearerTransport(tokenUrl="auth/login")
 
@@ -30,6 +30,6 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_database_strategy,
 )
 
-fastapi_users = FastAPIUsers[User, int](get_user_manager, [auth_backend])
+fastapi_users = FastAPIUsers[models.User, int](manager.get_user_manager, [auth_backend])
 
 current_active_user = fastapi_users.current_user(active=True)

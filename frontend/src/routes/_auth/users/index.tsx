@@ -19,51 +19,39 @@ export const columns: Array<ColumnDef<ApiUserInfo>> = [
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Name" />
     },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('name')} {row.original.surname}
-      </span>
-    ),
   },
   {
     accessorKey: 'surname',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Surname" />
     },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('surname')} {row.original.surname}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'login',
-    header: ({ column }) => {
-      return <DataTableColumnHeader column={column} title="Login" />
-    },
-    cell: ({ row }) => (
-      <span>
-        {row.getValue('login')} {row.original.surname}
-      </span>
-    ),
   },
   {
     accessorKey: 'user_type',
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="User type" />
     },
+    cell: ({ getValue }) => {
+      const value = getValue()
+
+      if (typeof value !== 'string') return null
+
+      return (
+        <span>
+          {value.charAt(0).toUpperCase() +
+            value.slice(1).toLowerCase().replace('_', ' ')}
+        </span>
+      )
+    },
   },
   {
-    accessorKey: 'membership',
+    id: 'membership',
+    accessorFn: (row) => row.membership.map((g) => g.team_name).join(', '),
     header: ({ column }) => {
       return <DataTableColumnHeader column={column} title="Teams" />
     },
-    cell: ({ row }) => {
-      const groupNames = row.original.membership
-        .map((g) => g.team_name)
-        .join(', ')
-
-      return <span>{groupNames}</span>
+    cell: ({ getValue }) => {
+      return <span>{getValue() as string}</span>
     },
   },
 ]

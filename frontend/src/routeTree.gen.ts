@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SetupPasswordRouteImport } from './routes/setup-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
@@ -39,6 +40,11 @@ import { Route as AuthAdminPanelLoggingRouteImport } from './routes/_auth/admin-
 import { Route as AuthAdminPanelInventoryRouteImport } from './routes/_auth/admin-panel/inventory'
 import { Route as AuthInventoryDeviceDeviceidRouteImport } from './routes/_auth/inventory/device/$deviceid'
 
+const SetupPasswordRoute = SetupPasswordRouteImport.update({
+  id: '/setup-password',
+  path: '/setup-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -187,14 +193,15 @@ const AuthInventoryDeviceDeviceidRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthIndexRoute
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/add-items': typeof AuthAddItemsRoute
   '/documentation': typeof AuthDocumentationRouteWithChildren
   '/import-export': typeof AuthImportExportRoute
   '/map': typeof AuthMapRoute
   '/settings': typeof AuthSettingsRoute
   '/user-dashboard': typeof AuthUserDashboardRoute
+  '/': typeof AuthIndexRoute
   '/admin-panel/inventory': typeof AuthAdminPanelInventoryRoute
   '/admin-panel/logging': typeof AuthAdminPanelLoggingRoute
   '/admin-panel/machines': typeof AuthAdminPanelMachinesRoute
@@ -209,15 +216,16 @@ export interface FileRoutesByFullPath {
   '/teams/$teamId': typeof AuthTeamsTeamIdRoute
   '/users/$userId': typeof AuthUsersUserIdRoute
   '/documentation/': typeof AuthDocumentationIndexRoute
-  '/history/': typeof AuthHistoryIndexRoute
-  '/inventory/': typeof AuthInventoryIndexRoute
-  '/labs/': typeof AuthLabsIndexRoute
-  '/teams/': typeof AuthTeamsIndexRoute
-  '/users/': typeof AuthUsersIndexRoute
+  '/history': typeof AuthHistoryIndexRoute
+  '/inventory': typeof AuthInventoryIndexRoute
+  '/labs': typeof AuthLabsIndexRoute
+  '/teams': typeof AuthTeamsIndexRoute
+  '/users': typeof AuthUsersIndexRoute
   '/inventory/device/$deviceid': typeof AuthInventoryDeviceDeviceidRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/add-items': typeof AuthAddItemsRoute
   '/import-export': typeof AuthImportExportRoute
   '/map': typeof AuthMapRoute
@@ -249,6 +257,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_auth': typeof AuthRouteWithChildren
   '/login': typeof LoginRoute
+  '/setup-password': typeof SetupPasswordRoute
   '/_auth/add-items': typeof AuthAddItemsRoute
   '/_auth/documentation': typeof AuthDocumentationRouteWithChildren
   '/_auth/import-export': typeof AuthImportExportRoute
@@ -280,14 +289,15 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/login'
+    | '/setup-password'
     | '/add-items'
     | '/documentation'
     | '/import-export'
     | '/map'
     | '/settings'
     | '/user-dashboard'
+    | '/'
     | '/admin-panel/inventory'
     | '/admin-panel/logging'
     | '/admin-panel/machines'
@@ -302,15 +312,16 @@ export interface FileRouteTypes {
     | '/teams/$teamId'
     | '/users/$userId'
     | '/documentation/'
-    | '/history/'
-    | '/inventory/'
-    | '/labs/'
-    | '/teams/'
-    | '/users/'
+    | '/history'
+    | '/inventory'
+    | '/labs'
+    | '/teams'
+    | '/users'
     | '/inventory/device/$deviceid'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/setup-password'
     | '/add-items'
     | '/import-export'
     | '/map'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_auth'
     | '/login'
+    | '/setup-password'
     | '/_auth/add-items'
     | '/_auth/documentation'
     | '/_auth/import-export'
@@ -373,10 +385,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   LoginRoute: typeof LoginRoute
+  SetupPasswordRoute: typeof SetupPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/setup-password': {
+      id: '/setup-password'
+      path: '/setup-password'
+      fullPath: '/setup-password'
+      preLoaderRoute: typeof SetupPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -387,7 +407,7 @@ declare module '@tanstack/react-router' {
     '/_auth': {
       id: '/_auth'
       path: ''
-      fullPath: '/'
+      fullPath: ''
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -443,35 +463,35 @@ declare module '@tanstack/react-router' {
     '/_auth/users/': {
       id: '/_auth/users/'
       path: '/users'
-      fullPath: '/users/'
+      fullPath: '/users'
       preLoaderRoute: typeof AuthUsersIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/teams/': {
       id: '/_auth/teams/'
       path: '/teams'
-      fullPath: '/teams/'
+      fullPath: '/teams'
       preLoaderRoute: typeof AuthTeamsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/labs/': {
       id: '/_auth/labs/'
       path: '/labs'
-      fullPath: '/labs/'
+      fullPath: '/labs'
       preLoaderRoute: typeof AuthLabsIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/inventory/': {
       id: '/_auth/inventory/'
       path: '/inventory'
-      fullPath: '/inventory/'
+      fullPath: '/inventory'
       preLoaderRoute: typeof AuthInventoryIndexRouteImport
       parentRoute: typeof AuthRoute
     }
     '/_auth/history/': {
       id: '/_auth/history/'
       path: '/history'
-      fullPath: '/history/'
+      fullPath: '/history'
       preLoaderRoute: typeof AuthHistoryIndexRouteImport
       parentRoute: typeof AuthRoute
     }
@@ -657,6 +677,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   LoginRoute: LoginRoute,
+  SetupPasswordRoute: SetupPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

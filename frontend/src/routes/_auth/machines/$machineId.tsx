@@ -42,7 +42,7 @@ import {
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { TagList } from '@/components/tag-list'
-import { addTextToString, convertTimestampToDate } from '@/utils'
+import { convertTimestampToDate } from '@/utils'
 import { AutoDiscovertDialog } from '@/components/auto-discovery-dialog'
 import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
@@ -50,6 +50,7 @@ import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
 import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 import { useCreateShelfMutation } from '@/integrations/shelves/shelves.mutation'
 import { PlatformWebsocket } from '@/components/platform-websocket'
+import { MachineAgentDialog } from '@/components/machine-agent-dialog'
 
 export const Route = createFileRoute('/_auth/machines/$machineId')({
   component: MachineDetailsPage,
@@ -67,6 +68,7 @@ function MachineDetailsPage() {
 
   const updateMachine = useUpdateMachineMutation(machineId)
   const deleteMachine = useDeleteMachineMutation(machineId)
+
   const { mutate: createShelf } = useCreateShelfMutation()
   // TO DO: make shelf creation auto select the created shelf for the machine
   const handleShelfCreation = (rackId: number) => {
@@ -176,6 +178,7 @@ function MachineDetailsPage() {
             machineId={machineId}
             machineHostname={machine.name}
           />
+          <MachineAgentDialog machine={machine} />
           {/* User General info */}
           <SubpageCard
             title={'System Information'}
@@ -400,6 +403,13 @@ function MachineDetailsPage() {
                                   )
                                 }}
                               />
+                            ) : formFiled.name === 'added_on' ? (
+                              <span className="truncate">
+                                {typeof rawValue === 'string' ||
+                                typeof rawValue === 'number'
+                                  ? rawValue
+                                  : '—'}
+                              </span>
                             ) : (
                               <form.Field
                                 name={formFiled.name as any}
@@ -431,7 +441,7 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {addTextToString(disk.capacity, 'GB')}
+                                    {disk.capacity}
                                   </span>
                                 </div>
                               ))
@@ -617,9 +627,7 @@ function MachineDetailsPage() {
                               {isLoadingShelves && field.state.value && (
                                 <SelectItem
                                   value={field.state.value.toString()}
-                                >
-                                  Shelf #{machine.shelf_number}
-                                </SelectItem>
+                                ></SelectItem>
                               )}
                               {shelves
                                 ?.sort((a, b) => a.order - b.order)
@@ -628,7 +636,7 @@ function MachineDetailsPage() {
                                     key={shelf.id}
                                     value={shelf.id.toString()}
                                   >
-                                    Shelf #{shelf.order}
+                                    {shelf.name}
                                   </SelectItem>
                                 ))}
                               <SelectItem value="new">
@@ -649,7 +657,7 @@ function MachineDetailsPage() {
                       { label: 'Team', value: machine.team_name },
                       { label: 'Room name', value: machine.room_name },
                       { label: 'Rack name', value: machine.rack_name },
-                      { label: 'Shelf number', value: machine.shelf_number },
+                      { label: 'Shelf name', value: machine.shelf_name },
                     ].map((item, index, array) => (
                       <div
                         key={item.label}
@@ -750,16 +758,19 @@ function MachineDetailsPage() {
                       label: 'Map view',
                       sub: 'Location details',
                       to: machine.map_link,
+                      condition: machine.rack_id != null,
                     },
                     {
                       label: 'Rack view',
                       sub: 'Hardware configuration',
                       to: machine.rack_link,
+                      condition: machine.rack_id != null,
                     },
                     {
                       label: 'Grafana dashboard',
                       sub: 'System metrics',
                       to: machine.grafana_link,
+                      condition: machine.monitoring,
                     },
                   ].map((item, index) => {
                     const isExternal = item.to.startsWith('http')
@@ -768,24 +779,28 @@ function MachineDetailsPage() {
                     const extraProps = isExternal
                       ? { href: item.to, target: '_blank', rel: 'noreferrer' }
                       : { to: item.to }
-                    return (
-                      <Component
-                        key={index}
-                        {...(extraProps as any)}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
-                      >
-                        <div className="flex flex-col gap-1">
-                          <span className="font-bold text-sm tracking-tight">
-                            {item.label}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground uppercase font-semibold opacity-70">
-                            {item.sub}
-                          </span>
-                        </div>
+                    if (item.condition) {
+                      return (
+                        <Component
+                          key={index}
+                          {...(extraProps as any)}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="font-bold text-sm tracking-tight">
+                              {item.label}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-semibold opacity-70">
+                              {item.sub}
+                            </span>
+                          </div>
 
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                      </Component>
-                    )
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                        </Component>
+                      )
+                    } else {
+                      return null
+                    }
                   })}
                 </div>
               </>

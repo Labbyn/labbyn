@@ -1,12 +1,12 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { Box, Cpu, Info, Users } from 'lucide-react'
+import { Box, Cpu, Info, Layers, MapPin, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
 import type { TagItem } from '@/integrations/tags/tags.types'
+import type { ApiRackDetailMachineItem } from '@/integrations/racks/racks.types'
 import { singleRackQueryOptions } from '@/integrations/racks/racks.query'
 import { DataTable } from '@/components/ui/data-table'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
@@ -26,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import {
+  useCreateShelfMutation,
+  useDeleteShelfMutation,
+} from '@/integrations/shelves/shelves.mutation'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
   component: RacksDetailsPage,
@@ -36,6 +41,8 @@ function RacksDetailsPage() {
   const router = useRouter()
   const deleteRack = useDeletRackMutation(Number(racksId))
   const updateRack = useUpdateRackMutation(Number(racksId))
+  const createShelf = useCreateShelfMutation()
+  const deleteShelf = useDeleteShelfMutation()
   const { data: rack } = useSuspenseQuery(singleRackQueryOptions(racksId))
   const { data: teams } = useSuspenseQuery(teamsQueryOptions)
   const [isEditing, setIsEditing] = useState(false)
@@ -47,7 +54,7 @@ function RacksDetailsPage() {
       team_id: rack.team_id,
       room_id: rack.room_id,
       tags: rack.tags,
-      machines: rack.machines,
+      shelves: rack.shelves,
     },
     onSubmit: ({ value }) => {
       updateRack.mutate(value, {
@@ -65,7 +72,7 @@ function RacksDetailsPage() {
 
   // Api returns machines in 2D array, it helps determine machines on the same shelf
   // For table we don't need nested structure
-  const flatMachines = rack.machines.flat()
+  const flatMachines = rack.shelves.flatMap((shelf) => shelf.machines)
 
   const columnsMachines: Array<ColumnDef<any>> = [
     {
@@ -85,6 +92,43 @@ function RacksDetailsPage() {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="MAC address" />
       ),
+    },
+  ]
+
+  const columnsShelves: Array<ColumnDef<any>> = [
+    {
+      accessorKey: 'name',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Shelf Name" />
+      ),
+    },
+    {
+      accessorKey: 'machines',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Machines" />
+      ),
+      cell: ({ row }) => {
+        const machines: Array<ApiRackDetailMachineItem> =
+          row.getValue('machines')
+
+        if (machines.length === 0)
+          return (
+            <span className="text-muted-foreground text-sm">No machines</span>
+          )
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {machines.map((machine, index) => (
+              <span
+                key={index}
+                className="text-sm font-semibold truncate flex items-center ml-2 bg-card text-card-foreground border rounded-sm px-3 py-1.5 min-w-[120px]"
+              >
+                {machine.name}
+              </span>
+            ))}
+          </div>
+        )
+      },
     },
   ]
 
@@ -131,6 +175,11 @@ function RacksDetailsPage() {
                 {[
                   { label: 'Team', name: 'team_name' as const, icon: Users },
                   { label: 'Tags', name: 'tags' as const, icon: Box },
+                  {
+                    label: 'Localization',
+                    name: 'room_name' as const,
+                    icon: MapPin,
+                  },
                 ].map((field) => {
                   const fieldValue = rack[field.name]
                   return (
@@ -151,7 +200,7 @@ function RacksDetailsPage() {
                               />
                             )}
                           />
-                        ) : (
+                        ) : field.name === 'team_name' ? (
                           <form.Field
                             name="team_id"
                             children={(formField) => (
@@ -177,6 +226,10 @@ function RacksDetailsPage() {
                               </Select>
                             )}
                           />
+                        ) : (
+                          <span className="font-medium">
+                            {fieldValue ? fieldValue.toString() : '—'}
+                          </span>
                         )
                       ) : field.name === 'tags' ? (
                         <TagList
@@ -203,30 +256,99 @@ function RacksDetailsPage() {
             Icon={Cpu}
             content={
               <>
+                <DataTable
+                  columns={columnsMachines}
+                  data={flatMachines}
+                  onRowClick={(row) => {
+                    navigate({
+                      to: '/machines/$machineId',
+                      params: { machineId: String(row.id) },
+                    })
+                  }}
+                />
+              </>
+            }
+          />
+          {/* Shelves Section */}
+          <SubpageCard
+            title={'Shelves'}
+            description={'Shelves with associated machines'}
+            type="table"
+            Icon={Layers}
+            content={
+              <>
                 {isEditing ? (
-                  <form.Field
-                    name="machines"
-                    children={(field) => (
-                      <DndTable
-                        dbItems={rack.machines}
-                        onReorder={(
-                          newMachines: Array<Array<ApiRackDetailMachineItem>>,
-                        ) => {
-                          field.handleChange(newMachines)
-                        }}
-                      />
-                    )}
-                  />
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        const currentShelves = form.getFieldValue('shelves')
+                        const highestOrder =
+                          currentShelves.length > 0
+                            ? Math.max(
+                                ...currentShelves.map((shelf) => shelf.order),
+                              )
+                            : 0
+                        const nextOrder = highestOrder + 1
+                        createShelf.mutate(
+                          {
+                            rackId: Number(racksId),
+                            shelfData: {
+                              name: `Shelf ${nextOrder}`,
+                              order: nextOrder,
+                            },
+                          },
+                          {
+                            onSuccess: (newShelf) => {
+                              form.setFieldValue('shelves', [
+                                ...currentShelves,
+                                newShelf.data,
+                              ])
+                              toast.success(`Shelf ${nextOrder} added!`)
+                            },
+                          },
+                        )
+                      }}
+                    >
+                      Add new shelf
+                    </Button>
+                    <form.Field
+                      name="shelves"
+                      children={(field) => (
+                        <DndTable
+                          shelves={field.state.value}
+                          onReorder={(newShelves) => {
+                            field.handleChange(newShelves)
+                          }}
+                          onDelete={(shelfId) => {
+                            deleteShelf.mutate(
+                              { shelfId },
+                              {
+                                onSuccess: () => {
+                                  const currentShelves =
+                                    form.getFieldValue('shelves')
+                                  form.setFieldValue(
+                                    'shelves',
+                                    currentShelves.filter(
+                                      (shelf) => shelf.id !== shelfId,
+                                    ),
+                                  )
+                                  toast.success(`Shelf deleted!`)
+                                },
+                              },
+                            )
+                          }}
+                        />
+                      )}
+                    />
+                  </>
                 ) : (
                   <DataTable
-                    columns={columnsMachines}
-                    data={flatMachines}
-                    onRowClick={(row) => {
-                      navigate({
-                        to: '/machines/$machineId',
-                        params: { machineId: String(row.id) },
-                      })
-                    }}
+                    columns={columnsShelves}
+                    data={rack.shelves.map((shelf) => ({
+                      name: shelf.name,
+                      machines: shelf.machines,
+                    }))}
                   />
                 )}
               </>

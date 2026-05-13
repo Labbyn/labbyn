@@ -28,26 +28,29 @@ import type {
   SortingState,
 } from '@tanstack/react-table'
 import {
-  Table,
+  // NOTE: <Table> from shadcn wraps <table> in <div className="overflow-auto">
+  // which breaks position:sticky on <thead>. We use raw <table> instead.
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
   const itemRank = rankItem(row.getValue(columnId), value)
   addMeta({ itemRank })
   return itemRank.passed
 }
+
 interface DataTableProps<TData, TValue> {
   columns: Array<ColumnDef<TData, TValue>>
   data: Array<TData>
-
   onRowClick?: (row: TData) => void
   selectedId?: string
   actionElement?: React.ReactNode
+  meta?: any
 }
 
 export function DataTable<TData, TValue>({
@@ -56,21 +59,19 @@ export function DataTable<TData, TValue>({
   onRowClick,
   selectedId,
   actionElement,
+  meta,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   )
   const [globalFilter, setGlobalFilter] = React.useState<string>('')
+  const scrollRef = React.useRef<HTMLDivElement>(null)
 
   const table = useReactTable({
     data,
     columns,
-    state: {
-      sorting,
-      columnFilters,
-      globalFilter,
-    },
+    state: { sorting, columnFilters, globalFilter },
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -79,12 +80,19 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    meta,
   })
+
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0
+    }
+  }, [table.getState().pagination.pageIndex])
 
   return (
     <div className="flex h-full flex-col gap-4">
       {/* Data table header */}
-      <div className="flex gap-4">
+      <div className="shrink-0 flex gap-4">
         <InputGroup>
           <InputGroupInput
             placeholder="Search..."
@@ -95,20 +103,27 @@ export function DataTable<TData, TValue>({
             <SearchIcon />
           </InputGroupAddon>
         </InputGroup>
-
         <DataTableViewOptions table={table} />
-
         {actionElement}
       </div>
 
-      <div className="relative flex-1 rounded-md border overflow-hidden">
-        <Table>
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 rounded-md border overflow-auto"
+      >
+        <table className="min-w-full caption-bottom text-sm">
           <TableHeader className="bg-secondary sticky top-0 z-10">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="px-4">
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        'px-4',
+                        (header.column.columnDef.meta as any)?.headerClassName,
+                      )}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -132,11 +147,16 @@ export function DataTable<TData, TValue>({
                       : undefined
                   }
                   className="cursor-pointer"
-                  // Handle click interaction
                   onClick={() => onRowClick && onRowClick(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="p-3">
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'p-3',
+                        (cell.column.columnDef.meta as any)?.cellClassName,
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),
@@ -176,9 +196,12 @@ export function DataTable<TData, TValue>({
               </TableRow>
             )}
           </TableBody>
-        </Table>
+        </table>
       </div>
-      <DataTablePagination table={table} />
+
+      <div className="shrink-0">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   )
 }

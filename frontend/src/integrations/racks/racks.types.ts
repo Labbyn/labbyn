@@ -1,4 +1,5 @@
 import type { ApiTagsItem } from '@/integrations/tags/tags.types'
+import type { ApiShelfItem } from '@/integrations/shelves/shelves.types'
 
 export interface ApiRackDetailItem {
   name: string
@@ -9,6 +10,8 @@ export interface ApiRackDetailItem {
   team_name: string
   tags: Array<ApiTagsItem>
   machines: Array<Array<ApiRackDetailMachineItem>>
+  shelves: Array<ApiShelfItem>
+  room_name: string
 }
 
 export interface ApiRackDetailMachineItem {

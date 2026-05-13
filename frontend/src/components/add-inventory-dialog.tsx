@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2, Plus, ToolCase } from 'lucide-react'
 import { useForm, useStore } from '@tanstack/react-form'
 import {
@@ -47,7 +47,11 @@ type InventoryFormValues = {
   rental_status: boolean
 }
 
-export function AddInventoryDialog() {
+export function AddInventoryDialog({
+  children,
+}: {
+  children?: React.ReactNode
+}) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
@@ -93,16 +97,20 @@ export function AddInventoryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <SidebarMenuButton>
-          <ToolCase />
-          <span>Add Inventory Item</span>
-        </SidebarMenuButton>
+        {children || (
+          <SidebarMenuButton>
+            <ToolCase />
+            <span>Add Inventory Item</span>
+          </SidebarMenuButton>
+        )}
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add new Item</DialogTitle>
-          <DialogDescription>Create new inventory item</DialogDescription>
+          <DialogTitle>Add Inventory Item</DialogTitle>
+          <DialogDescription>
+            Create a new item in your inventory
+          </DialogDescription>
         </DialogHeader>
 
         <form
@@ -161,7 +169,7 @@ export function AddInventoryDialog() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a team" />
+                      <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (

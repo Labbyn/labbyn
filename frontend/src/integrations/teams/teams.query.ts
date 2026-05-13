@@ -9,6 +9,7 @@ import api from '@/lib/api'
 const PATHS = {
   BASE: '/db/teams',
   INFO: '/db/teams/teams_info',
+  CURRENT_USER: '/db/teams/user_teams',
   SINGLE: (id: string | number) => `/db/teams/${id}`,
   SINGLE_INFO: (id: string | number) => `/db/teams/team_info/${id}`,
   ADMIN: '/db/teams',
@@ -55,3 +56,11 @@ export const singleTeamInfoQueryOptions = (teamId: string | number) =>
       return data
     },
   })
+
+export const currentUserTeamsQueryOptions = queryOptions({
+  queryKey: ['teams'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiTeamInfoResponse>(PATHS.CURRENT_USER)
+    return data
+  },
+})
