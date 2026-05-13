@@ -29,9 +29,17 @@ class MapService:
         :return: Map model
         """
         self.ctx.require_user()
+
+        room = await MapRepository.get_room_with_team(self.db, room_id)
+        if not room:
+            raise exceptions.ObjectNotFoundError(f"Room {room_id}")
+
+        await self.ctx.validate_team_access(room.team_id)
+
         db_map = await MapRepository.get_map_by_room_id(self.db, room_id)
         if not db_map:
             raise exceptions.ObjectNotFoundError(f"Map for Room ID {room_id}")
+
         return db_map
 
     async def sync_map(
