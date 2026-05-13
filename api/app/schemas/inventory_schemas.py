@@ -13,6 +13,7 @@ class RentalsBase(BaseModel):
     start_date: date = Field(..., description="Start date of the rental")
     end_date: date = Field(..., description="End date of the rental")
     quantity: int = Field(..., ge=1, description="Number of items to rent")
+    team_id: int = Field(..., description="ID of the team item being rented to")
 
 
 class RentalsCreate(RentalsBase):
@@ -26,6 +27,7 @@ class RentalsUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     user_id: Optional[int] = None
+    team_id: Optional[int] = None
 
 
 class RentalsResponse(RentalsBase):
@@ -40,7 +42,7 @@ class RentalInfo(BaseModel):
     """Schema for reading Rental info."""
 
     id: int
-    borrower_name: str
+    owner_name: str
     borrower_team: str
     quantity: int
     end_date: date
@@ -71,12 +73,6 @@ class InventoryBase(BaseModel):
     room_name: Optional[str] = Field(
         None, description="Name of the room where item is located"
     )
-    machine_id: Optional[int] = Field(
-        None, description="ID of the machine if item is part of one"
-    )
-    machine_name: Optional[str] = Field(
-        None, description="Name of the machine if item is part of one"
-    )
     category_id: int = Field(..., description="ID of the item category")
     category_name: Optional[str] = Field(None, description="Name of the item category")
     rental_status: bool = Field(False, description="True if item is currently rented")
@@ -85,12 +81,17 @@ class InventoryBase(BaseModel):
     )
 
 
+class InventoryRental(InventoryBase):
+    """Schema dedicated for invenotry subpage and rental"""
+
+    id: Optional[int]
+
+
 class InventoryCreate(InventoryBase):
     """Schema for creating an Inventory item."""
 
     team_name: Optional[str] = Field(None, exclude=True)
     room_name: Optional[str] = Field(None, exclude=True)
-    machine_name: Optional[str] = Field(None, exclude=True)
     category_name: Optional[str] = Field(None, exclude=True)
 
 
@@ -101,7 +102,6 @@ class InventoryUpdate(BaseModel):
     quantity: Optional[int] = None
     team_id: Optional[int] = None
     localization_id: Optional[int] = None
-    machine_id: Optional[int] = None
     category_id: Optional[int] = None
     rental_status: Optional[bool] = None
     rental_id: Optional[int] = None
@@ -125,7 +125,6 @@ class InventoryDetailResponse(BaseModel):
     team_name: str
     room_name: str
     room_id: Optional[int]
-    machine_info: Optional[str]
     category_name: str
     category_id: Optional[int]
     location_link: str

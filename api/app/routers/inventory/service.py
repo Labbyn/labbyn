@@ -97,7 +97,6 @@ class InventoryService:
                     "team_name": item.team.name if item.team else "N/A",
                     "room_name": item.room.name if item.room else "N/A",
                     "room_id": item.room.id if item.room else 1,
-                    "machine_info": item.machine.name if item.machine else "None",
                     "category_id": item.category_id,
                     "category_name": item.category.name if item.category else "N/A",
                     "location_link": f"/labs/{item.localization_id}",
@@ -143,12 +142,8 @@ class InventoryService:
         active_rentals_list = [
             {
                 "id": r.id,
-                "borrower_name": f"{r.user.name} {r.user.surname}",
-                "borrower_team": (
-                    ", ".join([ut.team.name for ut in r.user.teams])
-                    if r.user.teams
-                    else "N/A"
-                ),
+                "owner_name": f"{r.user.name} {r.user.surname}",
+                "borrower_team": r.team.name if r.team_id else "N/A",
                 "quantity": r.quantity,
                 "end_date": r.end_date,
             }
@@ -167,7 +162,6 @@ class InventoryService:
             "team_name": item.team.name if item.team else "N/A",
             "room_name": item.room.name if item.room else "N/A",
             "room_id": item.room.id if item.room else 1,
-            "machine_info": item.machine.name if item.machine else "None",
             "category_id": item.category_id,
             "category_name": item.category.name if item.category else "N/A",
             "location_link": f"/labs/{item.localization_id}",
