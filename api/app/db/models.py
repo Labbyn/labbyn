@@ -189,7 +189,6 @@ class Machines(Base):
     room = relationship("Rooms", back_populates="machines")
     team = relationship("Teams", back_populates="machines")
     machine_metadata = relationship("Metadata", back_populates="machines")
-    inventory = relationship("Inventory", back_populates="machine")
     shelf = relationship("Shelf", back_populates="machines")
     tags = relationship("Tags", secondary="tags_machines", back_populates="machines")
     cpus = relationship("CPUs", back_populates="machine", cascade="all, delete-orphan")
@@ -244,6 +243,7 @@ class Teams(Base):
     rooms = relationship("Rooms", back_populates="team")
     inventory = relationship("Inventory", back_populates="team")
     racks = relationship("Rack", back_populates="team")
+    rentals = relationship("Rentals", back_populates="team")
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -307,6 +307,7 @@ class Rentals(Base):
         ForeignKey("inventory.id", use_alter=True, name="fk_rentals_inventory_id"),
         nullable=False,
     )
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
@@ -318,7 +319,7 @@ class Rentals(Base):
     __mapper_args__ = {"version_id_col": version_id}
 
     user = relationship("User", back_populates="rentals")
-
+    team = relationship("Teams", back_populates="rentals")
     inventory = relationship(
         "Inventory", foreign_keys=[item_id], back_populates="rental_history"
     )
@@ -334,7 +335,6 @@ class Inventory(Base):
     quantity = Column(Integer, nullable=False)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     localization_id = Column(Integer, ForeignKey("rooms.id"), nullable=False)
-    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=True)
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     rental_status = Column(Boolean, nullable=False, default=False)
     rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=True)
@@ -368,7 +368,6 @@ class Inventory(Base):
         return self.team.name if self.team else None
 
     room = relationship("Rooms", back_populates="inventory")
-    machine = relationship("Machines", back_populates="inventory")
     team = relationship("Teams", back_populates="inventory")
     current_rental = relationship("Rentals", foreign_keys=[rental_id])
 

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import sql
+from sqlalchemy import sql, orm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,6 +51,39 @@ class HistoryService:
         self.db = db
         self.ctx = ctx
         self.repo = HistoryRepository()
+        if self.ctx.current_user:
+            self.db.info["user_id"] = self.ctx.current_user.id
+
+    def _apply_user_visibility(self, stmt) -> sql.Select:
+        """
+        Apply security filters to the statement to restrict visibility of user-type logs.
+
+        Global Admins see everything. Group Admins see logs of users within their teams.
+        Regular users do not see user-entity logs at all.
+
+        :param stmt: The SQLAlchemy select statement.
+        :return: The filtered select statement.
+        """
+        if self.ctx.is_admin:
+            return stmt
+        if self.ctx.is_group_admin:
+            user_visibility_filter = sql.or_(
+                models.History.entity_type != models.EntityType.USER,
+                sql.and_(
+                    models.History.entity_type == models.EntityType.USER,
+                    models.History.entity_id.in_(
+                        sql.select(models.UsersTeams.user_id).where(
+                            models.UsersTeams.team_id.in_(self.ctx.team_ids)
+                        )
+                    ),
+                ),
+            )
+            return stmt.where(user_visibility_filter)
+
+        regular_user_filter = sql.and_(
+            models.History.entity_type != models.EntityType.USER
+        )
+        return stmt.where(regular_user_filter)
 
     def _get_state_diff(
         self, before: Optional[Dict], after: Optional[Dict]
@@ -67,6 +100,8 @@ class HistoryService:
         before = before or {}
         after = after or {}
 
+        password_changed = before.get("hashed_password") != after.get("hashed_password")
+
         b_clean = {k: v for k, v in before.items() if k not in self.INTERNAL_KEYS}
         a_clean = {k: v for k, v in after.items() if k not in self.INTERNAL_KEYS}
 
@@ -80,6 +115,10 @@ class HistoryService:
             val_b, val_a = b_clean.get(key), a_clean.get(key)
             if val_b != val_a:
                 diff_before[key], diff_after[key] = val_b, val_a
+
+        if password_changed:
+            diff_before["password"] = "********"
+            diff_after["password"] = "Password reset successfully."
 
         return diff_before, diff_after
 
@@ -118,7 +157,16 @@ class HistoryService:
         :return: A list of dictionaries formatted for the enhanced history response.
         """
         self.ctx.require_user()
-        logs = await self.repo.get_all_logs(self.db, self.ctx, limit)
+        stmt = (
+            sql.select(models.History)
+            .options(orm.joinedload(models.History.user))
+            .order_by(models.History.timestamp.desc())
+            .limit(limit)
+        )
+        stmt = self._apply_user_visibility(stmt)
+
+        result = await self.db.execute(stmt)
+        logs = result.unique().scalars().all()
 
         results = []
         for log in logs:
@@ -126,6 +174,14 @@ class HistoryService:
             clean_before, clean_after = self._get_state_diff(
                 log.before_state, log.after_state
             )
+
+            lean_before, clean_after = self._get_state_diff(
+                log.before_state, log.after_state
+            )
+
+            can_rollback = log.can_rollback
+            if "password" in clean_after:
+                can_rollback = False
 
             results.append(
                 {
@@ -147,7 +203,7 @@ class HistoryService:
                     "user": log.user,
                     "before_state": clean_before or None,
                     "after_state": clean_after or None,
-                    "can_rollback": log.can_rollback,
+                    "can_rollback": can_rollback,
                 }
             )
         return results
@@ -169,6 +225,10 @@ class HistoryService:
             log.before_state, log.after_state
         )
 
+        can_rollback = log.can_rollback
+        if "password" in clean_after:
+            can_rollback = False
+
         return {
             "id": log.id,
             "timestamp": log.timestamp,
@@ -186,7 +246,7 @@ class HistoryService:
             "user": log.user,
             "before_state": clean_before or None,
             "after_state": clean_after or None,
-            "can_rollback": log.can_rollback,
+            "can_rollback": can_rollback,
         }
 
     async def get_log_or_404(self, history_id: int) -> models.History:
@@ -199,9 +259,31 @@ class HistoryService:
         :raises exceptions.ObjectNotFoundError: If the log is not found or user lacks access.
         """
         self.ctx.require_user()
-        log = await self.repo.get_by_id(self.db, history_id, self.ctx)
+        stmt = (
+            sql.select(models.History)
+            .options(orm.joinedload(models.History.user))
+            .where(models.History.id == history_id)
+        )
+        result = await self.db.execute(stmt)
+        log = result.unique().scalar_one_or_none()
+
         if not log:
             raise exceptions.ObjectNotFoundError("History log")
+
+        if not self.ctx.is_admin:
+            if log.entity_type == models.EntityType.USER:
+                if log.entity_id == self.ctx.current_user.id:
+                    return log
+
+                teams_stmt = sql.select(models.UsersTeams.team_id).where(
+                    models.UsersTeams.user_id == log.entity_id
+                )
+                res = await self.db.execute(teams_stmt)
+                user_teams = list(res.scalars())
+
+                if not any(tid in self.ctx.team_ids for tid in user_teams):
+                    raise exceptions.ObjectNotFoundError("History log")
+
         return log
 
     async def get_blackboxed_logs(self, limit: int = 200) -> List[Dict[str, Any]]:
@@ -212,7 +294,16 @@ class HistoryService:
 
         """
         self.ctx.require_user()
-        logs = await self.repo.get_all_logs(self.db, self.ctx, limit)
+        stmt = (
+            sql.select(models.History)
+            .options(orm.joinedload(models.History.user))
+            .order_by(models.History.timestamp.desc())
+            .limit(limit)
+        )
+        stmt = self._apply_user_visibility(stmt)
+
+        result = await self.db.execute(stmt)
+        logs = result.unique().scalars().all()
 
         results = []
         for log in logs:
@@ -220,6 +311,10 @@ class HistoryService:
             clean_before, clean_after = self._get_state_diff(
                 log.before_state, log.after_state
             )
+
+            can_rollback = log.can_rollback
+            if "password" in clean_after:
+                can_rollback = False
 
             results.append(
                 {
@@ -241,7 +336,7 @@ class HistoryService:
                     "user": log.user,
                     "before_state": clean_before if clean_before else None,
                     "after_state": clean_after if clean_after else None,
-                    "can_rollback": log.can_rollback,
+                    "can_rollback": can_rollback,
                 }
             )
         return results
@@ -253,7 +348,7 @@ class HistoryService:
         :return: A dictionary containing blackboxed log entry information.
         """
         self.ctx.require_user()
-        log = await self.repo.get_by_id(self.db, history_id, self.ctx)
+        log = await self.get_log_or_404(history_id)
 
         if not log:
             raise exceptions.ObjectNotFoundError("History log")
@@ -262,6 +357,10 @@ class HistoryService:
         clean_before, clean_after = self._get_state_diff(
             log.before_state, log.after_state
         )
+
+        can_rollback = log.can_rollback
+        if "password" in clean_after:
+            can_rollback = False
 
         return {
             "id": log.id,
@@ -280,7 +379,7 @@ class HistoryService:
             "user": log.user,
             "before_state": clean_before if clean_before else None,
             "after_state": clean_after if clean_after else None,
-            "can_rollback": log.can_rollback,
+            "can_rollback": can_rollback,
         }
 
     async def rollback_entry(self, history_id: int) -> Dict[str, Any]:
