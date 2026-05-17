@@ -379,7 +379,7 @@ function useThemeColors() {
           border: getHex('--border', '#333333'),
           card: getHex('--card', '#1a1a1a'),
           wall: getHex('--muted-foreground', '#666666'),
-          rackBody: '#131313',
+          rackBody: '#222222',
           grid: getHex('--border', '#333333'),
           text: getHex('--foreground', '#ffffff'),
         })
@@ -1007,7 +1007,7 @@ function Rack({
       <group ref={textGroupRef}>
         <Billboard position={[0, RACK_SIZE.h / 2 + 4, 0]}>
           <mesh>
-            <planeGeometry args={[data.id.length * 1.2 + 2, 4]} />
+            <planeGeometry args={[data.label.length * 1.2 + 2, 4]} />
             <meshBasicMaterial
               color={colors.background}
               transparent
@@ -1026,7 +1026,7 @@ function Rack({
             anchorY="middle"
             renderOrder={100}
           >
-            {data.id}
+            {data.label}
           </Text>
         </Billboard>
       </group>
