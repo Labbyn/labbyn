@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 interface ShowOnMapButtonProps {
   roomId: string | number
-  equipmentId: string | number
+  equipmentId?: string | number
   type?: 'rack' | 'machine' | 'lab'
   className?: string
   variant?:
@@ -35,8 +35,8 @@ export function ShowOnMapButton({
           redirectType: type,
         }}
       >
-        <MapIcon className="w-4 h-4 mr-2" />
-        Show on Map
+        <MapIcon className={size === 'icon' ? 'w-4 h-4' : 'w-4 h-4 mr-2'} />
+        {size !== 'icon' && 'Show on Map'}
       </Link>
     </Button>
   )
