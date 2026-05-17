@@ -56,6 +56,20 @@ async def get_rentals(
     return await RentalService(ctx.db, ctx).repo.get_all(ctx.db, ctx)
 
 
+@router.get("/item/{item_id}", response_model=List[inventory_schemas.RentalsResponse])
+async def get_rentals_by_item_id(
+    item_id: int,
+    ctx: dependencies.RequestContext = Depends(dependencies.RequestContext.create),
+):
+    """Get all rentals for a specific inventory item.
+
+    :param item_id: Inventory Item ID
+    :param ctx: Request context for user and team info
+    :return: List of rentals for the specified item.
+    """
+    return await RentalService(ctx.db, ctx).get_rentals_by_item_id(item_id)
+
+
 @router.get("/{rental_id}", response_model=inventory_schemas.RentalsResponse)
 async def get_rental_by_id(
     rental_id: int,

@@ -1,10 +1,15 @@
 import { queryOptions } from '@tanstack/react-query'
-import type { ApiCategoryItem, ApiCategoryResponse } from './category.types'
+import type {
+  ApiCategoryInventoryGroupedResponse,
+  ApiCategoryItem,
+  ApiCategoryResponse,
+} from './category.types'
 import api from '@/lib/api'
 
 const PATHS = {
   LIST: `/db/categories`,
   SINGLE: (id: string) => `/db/categories/${id}`,
+  GROUPED: '/db/categories/grouped',
 }
 
 // Fetch category list
@@ -25,3 +30,13 @@ export const singleCategoryQueryOptions = (categoryId: string) =>
       return data
     },
   })
+
+export const categoryGroupedInventoryListQueryOptions = queryOptions({
+  queryKey: ['categories', 'list', 'invenory'],
+  queryFn: async () => {
+    const { data } = await api.get<ApiCategoryInventoryGroupedResponse>(
+      PATHS.GROUPED,
+    )
+    return data
+  },
+})

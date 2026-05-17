@@ -72,6 +72,7 @@ class RentalService:
             try:
                 rental = models.Rentals(
                     item_id=rent_data.item_id,
+                    team_id=rent_data.team_id,
                     quantity=rent_data.quantity,
                     start_date=rent_data.start_date,
                     end_date=rent_data.end_date,
@@ -86,9 +87,10 @@ class RentalService:
                 await self.db.refresh(rental)
                 return rental
             except Exception as e:
+                error_item = item.name
                 await self.db.rollback()
                 raise exceptions.ValidationError(
-                    f"Failed to create rental for '{item.name}'"
+                    f"Failed to create rental for '{error_item}'"
                 ) from e
 
     async def return_rental(self, rental_id: int, return_data=None) -> Dict[str, str]:
@@ -175,3 +177,12 @@ class RentalService:
                 raise exceptions.ValidationError(
                     f"Could not delete rental for '{item_name}'"
                 )
+
+    async def get_rentals_by_item_id(self, item_id: int):
+        """Fetch all rentals for a specific inventory item.
+
+        :param item_id: Inventory Item ID
+        :return: List of rentals.
+        """
+        self.ctx.require_user()
+        return await self.repo.get_by_item_id(self.db, item_id, self.ctx)

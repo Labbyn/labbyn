@@ -1,8 +1,10 @@
 """Pydantic category models for database schemas."""
 
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from .inventory_schemas import InventoryRental
 
 
 class CategoriesBase(BaseModel):
@@ -27,3 +29,9 @@ class CategoriesResponse(CategoriesBase):
     id: int
     version_id: int
     model_config = ConfigDict(from_attributes=True)
+
+
+class CategoryGroupedResponse(BaseModel):
+    category_name: str
+    quantity: int
+    item_group: List[InventoryRental]
