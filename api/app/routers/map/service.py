@@ -105,6 +105,7 @@ class MapService:
                             y=eq.y,
                             rotation=eq.rotation,
                             label=eq.label,
+                            color=eq.color,
                             map_id=db_map.id,
                             rack_id=eq.rack_id,
                         )

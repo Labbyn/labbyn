@@ -21,6 +21,7 @@ export interface ApiEquipment {
   rotation: number
   label: string | null
   rack_id: number | null
+  color?: string | null
 }
 
 export interface ApiLabel {

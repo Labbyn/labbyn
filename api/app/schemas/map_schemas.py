@@ -29,6 +29,7 @@ class Equipment(BaseModel):
     y: float
     rotation: float = 0.0
     label: Optional[str] = None
+    color: Optional[str] = None
     rack_id: Optional[int] = None
     model_config = ConfigDict(from_attributes=True)
 
