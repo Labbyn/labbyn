@@ -1,15 +1,5 @@
-import {
-  Box,
-  EthernetPort,
-  Flame,
-  Grid3X3,
-  Map as MapIcon,
-  Redo2,
-  Undo2,
-} from 'lucide-react'
+import { Box, Grid3X3, Map as MapIcon, Palette } from 'lucide-react'
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group'
-import { ButtonGroup } from '../ui/button-group'
-import { Button } from '@/components/ui/button'
 import { Toggle } from '@/components/ui/toggle'
 import {
   Tooltip,
@@ -17,15 +7,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
-type ViewOverlay = 'none' | 'heatmap' | 'network'
-
 interface ViewSettingsProps {
-  onUndo: () => void
-  onRedo: () => void
-  canUndo: boolean
-  canRedo: boolean
-  viewOverlay: ViewOverlay
-  setViewOverlay: (v: ViewOverlay) => void
+  viewMode: 'default' | 'custom'
+  setViewMode: (v: 'default' | 'custom') => void
   useSnap: boolean
   setUseSnap: (v: boolean) => void
   is2D: boolean
@@ -35,12 +19,8 @@ interface ViewSettingsProps {
 }
 
 export function ViewSettings({
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
-  viewOverlay,
-  setViewOverlay,
+  viewMode,
+  setViewMode,
   useSnap,
   setUseSnap,
   is2D,
@@ -49,134 +29,134 @@ export function ViewSettings({
   setProjection,
 }: ViewSettingsProps) {
   return (
-    <div className="p-1.5 backdrop-blur-md bg-card/30 rounded-xl border border-border/40 flex items-center gap-2 shadow-2xl">
-      {/* View Mode Group */}
+    <div className="backdrop-blur-xl bg-card/60 rounded-2xl border border-border/50 flex flex-col items-center p-1.5 shadow-2xl gap-2">
       <ToggleGroup
         type="single"
+        orientation="vertical"
+        spacing={0.1}
         value={is2D ? '2D' : '3D'}
-        onValueChange={(value) => {
-          if (value) setIs2D(value === '2D')
-        }}
-        variant={'outline'}
+        onValueChange={(value) => value && setIs2D(value === '2D')}
+        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="2D">
-              <MapIcon /> 2D
+            <ToggleGroupItem
+              value="2D"
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                is2D
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <MapIcon className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>2D Top-down View</TooltipContent>
+          <TooltipContent side="left">2D View</TooltipContent>
         </Tooltip>
-
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="3D">
-              <Box /> 3D
+            <ToggleGroupItem
+              value="3D"
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                !is2D
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              <Box className="w-4 h-4" />
             </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>3D Perspective View</TooltipContent>
+          <TooltipContent side="left">3D View</TooltipContent>
         </Tooltip>
       </ToggleGroup>
 
-      {/* Camera Projection Group */}
+      <div className="h-px w-5 bg-border/50 my-1" />
+
       <ToggleGroup
         type="single"
-        variant={'outline'}
+        orientation="vertical"
+        spacing={0.1}
         value={projection}
         onValueChange={(v) =>
           v && setProjection(v as 'perspective' | 'orthographic')
         }
+        className="bg-background/50 rounded-full p-1 gap-1 flex flex-col"
       >
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="orthographic">Ort</ToggleGroupItem>
+            <ToggleGroupItem
+              value="orthographic"
+              className={`h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter transition-all ${
+                projection === 'orthographic'
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              ORT
+            </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>Orthographic Camera</TooltipContent>
+          <TooltipContent side="left">Orthographic</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="perspective">Pers</ToggleGroupItem>
+            <ToggleGroupItem
+              value="perspective"
+              className={`h-8 w-8 p-0 rounded-full text-[10px] font-bold tracking-tighter transition-all ${
+                projection === 'perspective'
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
+            >
+              PER
+            </ToggleGroupItem>
           </TooltipTrigger>
-          <TooltipContent>Perspective Camera</TooltipContent>
+          <TooltipContent side="left">Perspective</TooltipContent>
         </Tooltip>
       </ToggleGroup>
 
-      {/* Overlay Group */}
-      <ToggleGroup
-        type="single"
-        value={viewOverlay}
-        variant={'outline'}
-        onValueChange={(v) => setViewOverlay(v as ViewOverlay)}
-      >
+      <div className="h-px w-5 bg-border/50 my-1" />
+
+      <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
-            <ToggleGroupItem value="heatmap">
-              <Flame
-                className={
-                  viewOverlay === 'heatmap' ? 'text-orange-500' : 'text'
-                }
-              />
-            </ToggleGroupItem>
-          </TooltipTrigger>
-          <TooltipContent>Thermal Heatmap</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <ToggleGroupItem value="network">
-              <EthernetPort
-                className={viewOverlay === 'network' ? 'text-blue-500' : 'text'}
-              />
-            </ToggleGroupItem>
-          </TooltipTrigger>
-          <TooltipContent>Network Topology</TooltipContent>
-        </Tooltip>
-      </ToggleGroup>
-
-      {/* Snap Toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Toggle
-            pressed={useSnap}
-            onPressedChange={setUseSnap}
-            variant={'outline'}
-          >
-            <Grid3X3 className={useSnap ? 'text-primary' : ''} />
-          </Toggle>
-        </TooltipTrigger>
-        <TooltipContent>Snap to Grid</TooltipContent>
-      </Tooltip>
-
-      {/* History Group */}
-      <ButtonGroup>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={'outline'}
-              onClick={onUndo}
-              disabled={!canUndo}
+            <Toggle
+              pressed={useSnap}
+              onPressedChange={setUseSnap}
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                useSnap
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <Undo2 />
-            </Button>
+              <Grid3X3 className="w-4 h-4" />
+            </Toggle>
           </TooltipTrigger>
-          <TooltipContent>Undo</TooltipContent>
+          <TooltipContent side="left">Snap to Grid</TooltipContent>
         </Tooltip>
+      </div>
 
+      <div className="h-px w-5 bg-border/50 my-1" />
+
+      <div className="bg-background/50 rounded-full p-1 flex items-center justify-center">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant={'outline'}
-              onClick={onRedo}
-              disabled={!canRedo}
+            <Toggle
+              pressed={viewMode === 'custom'}
+              onPressedChange={(pressed) =>
+                setViewMode(pressed ? 'custom' : 'default')
+              }
+              className={`h-8 w-8 rounded-full p-0 transition-all ${
+                viewMode === 'custom'
+                  ? 'bg-primary/20 text-primary shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
-              <Redo2 />
-            </Button>
+              <Palette className="w-4 h-4" />
+            </Toggle>
           </TooltipTrigger>
-          <TooltipContent>Redo</TooltipContent>
+          <TooltipContent side="left">Toggle Custom Colors</TooltipContent>
         </Tooltip>
-      </ButtonGroup>
+      </div>
     </div>
   )
 }
