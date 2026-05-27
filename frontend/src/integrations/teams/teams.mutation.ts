@@ -3,21 +3,42 @@ import { toast } from 'sonner'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/teams/',
-  DETAIL: (id: number) => `/db/teams/${id}`,
+  BASE: '/db/teams',
+  DETAIL: (id: string | number) => `/db/teams/${id}`,
 }
 
 export const useCreateTeamMutation = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (teamData: { name: string; team_admin_id: number }) => {
+    mutationFn: async (teamData: {
+      name: string
+      team_admin_id: number | null
+    }) => {
       const { data } = await api.post(PATHS.BASE, teamData)
       return data
     },
     onSuccess: () => {
       toast.success('Team created successfully')
       queryClient.invalidateQueries({ queryKey: ['teams'] })
+    },
+  })
+}
+
+export const useUpdateTeamMutation = (teamId: string | number) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (teamData: Partial<{ name: string }>) => {
+      const { data } = await api.patch(PATHS.DETAIL(teamId), teamData)
+      return data
+    },
+    onSuccess: () => {
+      toast.success('Team updated successfully')
+      queryClient.invalidateQueries({ queryKey: ['teams'] })
+      queryClient.invalidateQueries({
+        queryKey: ['teams', 'info', String(teamId)],
+      })
     },
   })
 }

@@ -15,6 +15,7 @@ import { teamsQueryOptions } from '@/integrations/teams/teams.query'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { DndTable } from '@/components/dnd/dnd-table'
 import { SubpageCard } from '@/components/subpage-card'
+import { ShowOnMapButton } from '@/components/map/show-on-map-button'
 import {
   useDeletRackMutation,
   useUpdateRackMutation,
@@ -205,7 +206,7 @@ function RacksDetailsPage() {
                             name="team_id"
                             children={(formField) => (
                               <Select
-                                value={formField.state.value.toString()}
+                                value={formField.state.value.toString() || ''}
                                 onValueChange={(value) => {
                                   formField.handleChange(Number(value))
                                 }}
@@ -237,6 +238,18 @@ function RacksDetailsPage() {
                           entityType="rack"
                           entityId={racksId}
                         />
+                      ) : field.name === 'room_name' ? (
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium">
+                            {fieldValue ? fieldValue.toString() : '—'}
+                          </span>
+                          <ShowOnMapButton
+                            type="lab"
+                            roomId={rack.room_id}
+                            equipmentId={rack.id}
+                            variant="secondary"
+                          />
+                        </div>
                       ) : (
                         <span className="font-medium">
                           {fieldValue ? fieldValue.toString() : '—'}

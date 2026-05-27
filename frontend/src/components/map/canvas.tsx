@@ -27,12 +27,26 @@ import {
 } from '@react-three/drei'
 import * as THREE from 'three'
 import { formatHex } from 'culori'
-import { useNavigate } from '@tanstack/react-router'
+import { useBlocker, useNavigate } from '@tanstack/react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { Save, Trash2, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  MapPin,
+  Palette,
+  Redo2,
+  Save,
+  Search,
+  Server,
+  Trash2,
+  Type,
+  Undo2,
+  X,
+} from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+import { Badge } from '../ui/badge'
+import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import { RackInfoPanel } from './rack-info-panel'
 import { ControlsOverlay } from './controls-overlay'
 import { MapToolbar } from './map-toolbar'
@@ -51,20 +65,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useSyncRoomMap } from '@/integrations/map/map.mutation'
 import { Button } from '@/components/ui/button'
 import { useLabStore } from '@/lib/store'
 import { racksBaseListQueryOptions } from '@/integrations/racks/racks.query'
-import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from '@/components/ui/combobox'
 
-// --- Constants & Base Geometries ---
 const RACK_SIZE = { w: 8, h: 20, d: 8 }
 const WALL_H = 22
 const WALL_T = 1.5
@@ -85,65 +101,54 @@ const glassMaterialBase = new THREE.MeshPhysicalMaterial({
   depthWrite: false,
 })
 
-// placeholder texture
 const generateServerTextures = () => {
   const w = 512
   const h = 1024
 
-  // Canvas 1: The physical metal chassis and drives
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')!
   canvas.width = w
   canvas.height = h
 
-  // Canvas 2: ONLY the LEDs (pure black everywhere else)
   const emissive = document.createElement('canvas')
   const ctxE = emissive.getContext('2d')!
   emissive.width = w
   emissive.height = h
 
-  // Base backgrounds
   ctx.fillStyle = '#050505'
   ctx.fillRect(0, 0, w, h)
   ctxE.fillStyle = '#000000'
   ctxE.fillRect(0, 0, w, h)
 
-  const slots = 22 // Reduced slots for much higher detail per server
+  const slots = 22
   const uHeight = h / slots
 
   for (let i = 0; i < slots; i++) {
     const y = i * uHeight
 
-    // Gap between servers
     ctx.fillStyle = '#000000'
     ctx.fillRect(0, y, w, 4)
 
-    // 15% chance empty slot
     const rand = Math.random()
     if (rand < 0.15) continue
 
-    // Server Chassis (Neutral Dark Grays)
     const chassisColor = Math.random() > 0.5 ? '#111111' : '#1c1c1c'
     ctx.fillStyle = chassisColor
     ctx.fillRect(8, y + 4, w - 16, uHeight - 4)
 
-    // Metal Rack Ears (Mounting Brackets)
     ctx.fillStyle = '#333333'
-    ctx.fillRect(8, y + 4, 20, uHeight - 4) // left ear
-    ctx.fillRect(w - 28, y + 4, 20, uHeight - 4) // right ear
+    ctx.fillRect(8, y + 4, 20, uHeight - 4)
+    ctx.fillRect(w - 28, y + 4, 20, uHeight - 4)
 
-    // --- DRAW SERVER TYPES ---
     if (rand < 0.5) {
-      // TYPE 1: Storage Array (12 Large Drive Bays)
       for (let d = 0; d < 12; d++) {
         const bayX = 40 + d * 34
-        ctx.fillStyle = '#080808' // Deep bay recess
+        ctx.fillStyle = '#080808'
         ctx.fillRect(bayX, y + 10, 26, uHeight - 16)
 
-        ctx.fillStyle = '#222222' // Drive release handle
+        ctx.fillStyle = '#222222'
         ctx.fillRect(bayX + 2, y + 12, 22, 6)
 
-        // Drive Activity LED
         if (Math.random() > 0.2) {
           const isErr = Math.random() > 0.95
           const color = isErr ? '#ff1111' : '#00ff44'
@@ -155,7 +160,6 @@ const generateServerTextures = () => {
         }
       }
     } else if (rand < 0.8) {
-      // TYPE 2: Compute Node (Ventilation Grilles + 4 Drives)
       ctx.fillStyle = '#030303'
       for (let v = 0; v < 6; v++) {
         ctx.fillRect(40, y + 12 + v * 5, 220, 3)
@@ -177,7 +181,6 @@ const generateServerTextures = () => {
         }
       }
     } else {
-      // TYPE 3: Network Switch
       ctx.fillStyle = '#080808'
       ctx.fillRect(40, y + 10, 360, uHeight - 16)
 
@@ -186,7 +189,6 @@ const generateServerTextures = () => {
         ctx.fillStyle = '#000000'
         ctx.fillRect(portX, y + 16, 10, 16)
 
-        // Port Link/Activity LED
         if (Math.random() > 0.3) {
           const color = Math.random() > 0.5 ? '#00ff44' : '#ffaa00'
           ctx.fillStyle = color
@@ -197,16 +199,13 @@ const generateServerTextures = () => {
       }
     }
 
-    // --- UNIVERSAL POWER/STATUS PANEL (Right Side) ---
     const pwrX = w - 60
 
-    // Main Power Button
     ctx.fillStyle = '#3b82f6'
     ctx.fillRect(pwrX, y + 16, 12, 12)
     ctxE.fillStyle = '#3b82f6'
     ctxE.fillRect(pwrX, y + 16, 12, 12)
 
-    // System Status LED
     const statColor = Math.random() > 0.9 ? '#ff1111' : '#00ff44'
     ctx.fillStyle = statColor
     ctx.fillRect(pwrX + 20, y + 18, 8, 8)
@@ -230,16 +229,12 @@ const generateRackBumpMap = () => {
   canvas.width = w
   canvas.height = h
 
-  // Base metal level (Mid-Gray = flat surface)
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, w, h)
 
-  // Draw Perforated Ventilation Holes (Black = deep indentations)
   ctx.fillStyle = '#000000'
-  // Leave a border for the solid metal frame
   for (let y = 30; y < h - 30; y += 10) {
     for (let x = 30; x < w - 30; x += 10) {
-      // Offset every other row to create a hexagonal mesh pattern
       const offsetX = (y / 10) % 2 === 0 ? 0 : 5
       ctx.beginPath()
       ctx.arc(x + offsetX, y, 3, 0, Math.PI * 2)
@@ -247,12 +242,10 @@ const generateRackBumpMap = () => {
     }
   }
 
-  // Draw Solid Frame Edges (White = raised edges)
   ctx.strokeStyle = '#ffffff'
   ctx.lineWidth = 20
   ctx.strokeRect(10, 10, w - 20, h - 20)
 
-  // Draw a back-door vertical split seam
   ctx.lineWidth = 4
   ctx.beginPath()
   ctx.moveTo(w / 2, 10)
@@ -261,11 +254,9 @@ const generateRackBumpMap = () => {
 
   const texture = new THREE.CanvasTexture(canvas)
 
-  // Allow the texture to repeat cleanly across the 3D box faces
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
-  // Scale the texture wrapping so the holes look appropriately sized on the sides vs top
   texture.repeat.set(1, 2)
 
   return texture
@@ -279,41 +270,35 @@ const generateWallBumpMap = () => {
   canvas.width = w
   canvas.height = h
 
-  // 1. Base plaster level
   ctx.fillStyle = '#808080'
   ctx.fillRect(0, 0, w, h)
 
-  // 2. Add procedural noise (creates a painted drywall or concrete texture)
   const imgData = ctx.getImageData(0, 0, w, h)
   const data = imgData.data
   for (let i = 0; i < data.length; i += 4) {
-    // Generate subtle grit
     const noise = (Math.random() - 0.5) * 25
     const val = 128 + noise
-    data[i] = val // R
-    data[i + 1] = val // G
-    data[i + 2] = val // B
-    data[i + 3] = 255 // A
+    data[i] = val
+    data[i + 1] = val
+    data[i + 2] = val
+    data[i + 3] = 255
   }
   ctx.putImageData(imgData, 0, 0)
 
-  // 3. Add Top Trim / Crown Molding (White = raised)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, w, 15)
-  ctx.fillStyle = '#b0b0b0' // subtle shadow under the trim
+  ctx.fillStyle = '#b0b0b0'
   ctx.fillRect(0, 15, w, 5)
 
-  // 4. Add Bottom Baseboard (White = raised)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, h - 35, w, 35)
-  ctx.fillStyle = '#a0a0a0' // lip of the baseboard
+  ctx.fillStyle = '#a0a0a0'
   ctx.fillRect(0, h - 38, w, 3)
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.wrapS = THREE.RepeatWrapping
   texture.wrapT = THREE.RepeatWrapping
 
-  // Stretch the texture out horizontally so it doesn't compress on long walls
   texture.repeat.set(4, 1)
   texture.needsUpdate = true
 
@@ -323,7 +308,7 @@ const generateWallBumpMap = () => {
 const wallBumpTexture = generateWallBumpMap()
 
 const rackBumpTexture = generateRackBumpMap()
-// 3. The Server Material
+
 const innerServerMaterialBase = new THREE.MeshStandardMaterial({
   map: textures.map,
   emissiveMap: textures.emissiveMap,
@@ -351,19 +336,20 @@ export type EditMode =
   | 'add-label'
   | 'move'
   | 'rotate'
+  | 'paint'
   | 'delete'
 
 export interface LabLabel {
-  id: string
-  text: string
+  id: string | number
+  text?: string
+  name?: string
   x: number
   y: number
+  color?: string
 }
 
 const snapToData = (v3d: number, enabled: boolean) =>
   enabled ? Math.round(v3d) * 10 : v3d * 10
-
-// --- Custom Hooks ---
 
 function useThemeColors() {
   const [colors, setColors] = useState({
@@ -393,7 +379,7 @@ function useThemeColors() {
           border: getHex('--border', '#333333'),
           card: getHex('--card', '#1a1a1a'),
           wall: getHex('--muted-foreground', '#666666'),
-          rackBody: '#131313',
+          rackBody: '#222222',
           grid: getHex('--border', '#333333'),
           text: getHex('--foreground', '#ffffff'),
         })
@@ -517,6 +503,7 @@ function useLabHistory(
 function useBoxSelection(
   mode: EditMode,
   wallNodes: Array<WallNode>,
+  labels: Array<LabLabel>,
   setSelectedIds: React.Dispatch<React.SetStateAction<Array<string>>>,
 ) {
   const [selectStart, setSelectStart] = useState<THREE.Vector3 | null>(null)
@@ -569,18 +556,29 @@ function useBoxSelection(
           })
           .map((n) => n.id)
 
+        const selectedLabels = labels
+          .filter((l) => {
+            return l.x >= minX && l.x <= maxX && l.y >= minZ && l.y <= maxZ
+          })
+          .map((l) => String(l.id))
+
         setSelectedIds((prev) => {
           if (e.shiftKey)
             return Array.from(
-              new Set([...prev, ...selectedRacks, ...selectedNodes]),
+              new Set([
+                ...prev,
+                ...selectedRacks,
+                ...selectedNodes,
+                ...selectedLabels,
+              ]),
             )
-          return [...selectedRacks, ...selectedNodes]
+          return [...selectedRacks, ...selectedNodes, ...selectedLabels]
         })
         setSelectStart(null)
         setSelectEnd(null)
       }
     },
-    [mode, selectStart, selectEnd, wallNodes, setSelectedIds],
+    [mode, selectStart, selectEnd, wallNodes, labels, setSelectedIds],
   )
 
   return {
@@ -594,16 +592,16 @@ function useBoxSelection(
   }
 }
 
-// --- Sub-components ---
-
 function GhostPreview({
   mode,
   wallStart,
   wallNodes,
+  useSnap,
 }: {
   mode: EditMode
   wallStart: THREE.Vector3 | null
   wallNodes: Array<WallNode>
+  useSnap: boolean
 }) {
   const cursorRef = useRef<THREE.Group>(null)
   const wallMeshRef = useRef<THREE.Mesh>(null)
@@ -619,8 +617,8 @@ function GhostPreview({
     raycaster.setFromCamera(mouse, camera)
     raycaster.ray.intersectPlane(plane, point)
 
-    let snappedX = Math.round(point.x)
-    let snappedZ = Math.round(point.z)
+    let snappedX = useSnap ? Math.round(point.x) : point.x
+    let snappedZ = useSnap ? Math.round(point.z) : point.z
 
     if (mode === 'add-wall') {
       for (const n of wallNodes) {
@@ -676,18 +674,45 @@ function SceneController({
   center,
   enabled,
   controlsRef,
+  focusTarget,
 }: {
   is2D: boolean
   activeCamera: string
   center?: THREE.Vector3
   enabled: boolean
   controlsRef: React.RefObject<MapControlsImpl | null>
+  focusTarget?: THREE.Vector3 | null
 }) {
   const { camera, invalidate } = useThree()
   const [, getKeys] = useKeyboardControls()
   const initialized = useRef(false)
   const prevIs2D = useRef(is2D)
   const isTypingRef = useRef(false)
+
+  const [lerpState, setLerpState] = useState<{
+    target: THREE.Vector3
+    camPos: THREE.Vector3
+  } | null>(null)
+
+  useEffect(() => {
+    if (focusTarget && controlsRef.current && initialized.current) {
+      const currentOffset = new THREE.Vector3()
+        .copy(camera.position)
+        .sub(controlsRef.current.target)
+      setLerpState({
+        target: focusTarget.clone(),
+        camPos: focusTarget.clone().add(currentOffset),
+      })
+    }
+  }, [focusTarget])
+
+  useEffect(() => {
+    const controls = controlsRef.current
+    if (!controls) return
+    const cancelLerp = () => setLerpState(null)
+    controls.addEventListener('start', cancelLerp)
+    return () => controls.removeEventListener('start', cancelLerp)
+  }, [controlsRef.current])
 
   useEffect(() => {
     const checkIsInput = (target: EventTarget | null) => {
@@ -729,7 +754,7 @@ function SceneController({
       return
     }
 
-    if (prevIs2D.current !== is2D) {
+    if (prevIs2D.current !== is2D && !lerpState) {
       const target = controlsRef.current.target
       if (is2D) camera.position.set(target.x, 600, target.z)
       else camera.position.set(target.x + 150, 200, target.z + 150)
@@ -737,13 +762,28 @@ function SceneController({
       prevIs2D.current = is2D
       invalidate()
     }
-  }, [is2D, camera, invalidate, center, controlsRef])
+  }, [is2D, camera, invalidate, center, controlsRef, lerpState])
 
   const direction = useMemo(() => new THREE.Vector3(), [])
   const rightVec = useMemo(() => new THREE.Vector3(), [])
 
   useFrame((_, delta) => {
-    if (!enabled || !controlsRef.current || isTypingRef.current) return
+    if (lerpState && controlsRef.current) {
+      controlsRef.current.target.lerp(lerpState.target, 8 * delta)
+      camera.position.lerp(lerpState.camPos, 8 * delta)
+      controlsRef.current.update()
+      invalidate()
+
+      if (controlsRef.current.target.distanceTo(lerpState.target) < 1.0) {
+        controlsRef.current.target.copy(lerpState.target)
+        camera.position.copy(lerpState.camPos)
+        controlsRef.current.update()
+        setLerpState(null)
+      }
+    }
+
+    if (!enabled || !controlsRef.current || isTypingRef.current || lerpState)
+      return
     const { forward, back, left, right, rotateLeft, rotateRight } = getKeys()
 
     if ((rotateLeft || rotateRight) && !is2D) {
@@ -798,7 +838,8 @@ function Rack({
   colors,
   mode,
   onSelect,
-  viewOverlay,
+  onPaint,
+  viewMode,
   isSelected,
   dragDeltaRef,
   dragDeltaRotRef,
@@ -809,7 +850,8 @@ function Rack({
   colors: any
   mode: EditMode
   onSelect: (id: string, shift: boolean) => void
-  viewOverlay: string
+  onPaint: (id: string) => void
+  viewMode: 'default' | 'custom'
   isSelected: boolean
   dragDeltaRef: React.MutableRefObject<THREE.Vector3>
   dragDeltaRotRef: React.MutableRefObject<number>
@@ -876,18 +918,15 @@ function Rack({
   })
 
   const rackColor = useMemo(() => {
-    const match = data.id.match(/R(\d+)-C(\d+)/)
-    const r = match ? parseInt(match[1], 10) : 0
-    const c = match ? parseInt(match[2], 10) : 0
-    if (viewOverlay === 'heatmap')
-      return `hsl(10, 100%, ${r % 2 === 0 ? 40 : 70}%)`
-    if (viewOverlay === 'network')
-      return `hsl(210, 100%, ${c % 2 === 0 ? 40 : 70}%)`
+    if (viewMode === 'custom' && (data as any).color) {
+      return (data as any).color
+    }
     return colors.rackBody
-  }, [viewOverlay, data.id, colors.rackBody])
+  }, [viewMode, (data as any).color, colors.rackBody])
 
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
+      if (e.delta > 2) return // Prevent selection if map was just dragged/panned
       e.stopPropagation()
       if (mode === 'select') return
 
@@ -896,6 +935,9 @@ function Rack({
       } else if (isDel) {
         saveToHistory()
         deleteMultipleEquipment([id])
+      } else if (mode === 'paint') {
+        saveToHistory()
+        onPaint(id)
       } else if (mode === 'view') {
         onSelect(id, e.shiftKey)
       }
@@ -906,6 +948,7 @@ function Rack({
       id,
       deleteMultipleEquipment,
       onSelect,
+      onPaint,
       saveToHistory,
       isSelected,
     ],
@@ -935,22 +978,26 @@ function Rack({
             roughness={0.6}
             bumpMap={rackBumpTexture}
             bumpScale={2}
-            emissive={viewOverlay !== 'none' ? rackColor : '#000'}
-            emissiveIntensity={viewOverlay !== 'none' ? 0.6 : 0}
+            emissive={
+              viewMode === 'custom' && (data as any).color
+                ? (data as any).color
+                : '#000'
+            }
+            emissiveIntensity={
+              viewMode === 'custom' && (data as any).color ? 0.6 : 0
+            }
           />
         </mesh>
       ) : (
         <Instance color={isDel ? '#ef4444' : rackColor} onClick={handleClick} />
       )}
 
-      {/* Layer 1: Internal servers with LEDs (Placed JUST outside the solid rack block) */}
       <mesh
         position={[0, 0, RACK_SIZE.d / 2 + 0.05]}
         geometry={glassGeometryBase}
         material={innerServerMaterialBase}
       />
 
-      {/* Layer 2: The tinted physical glass door (Sitting just over the servers) */}
       <mesh
         position={[0, 0, RACK_SIZE.d / 2 + 0.15]}
         geometry={glassGeometryBase}
@@ -960,7 +1007,7 @@ function Rack({
       <group ref={textGroupRef}>
         <Billboard position={[0, RACK_SIZE.h / 2 + 4, 0]}>
           <mesh>
-            <planeGeometry args={[data.id.length * 1.2 + 2, 4]} />
+            <planeGeometry args={[data.label.length * 1.2 + 2, 4]} />
             <meshBasicMaterial
               color={colors.background}
               transparent
@@ -969,13 +1016,17 @@ function Rack({
           </mesh>
           <Text
             fontSize={2}
-            color={colors.text}
+            color={
+              viewMode === 'custom' && (data as any).color
+                ? (data as any).color
+                : colors.text
+            }
             fontWeight="bold"
             anchorX="center"
             anchorY="middle"
             renderOrder={100}
           >
-            {data.id}
+            {data.label}
           </Text>
         </Billboard>
       </group>
@@ -1049,8 +1100,9 @@ function WallNodeRenderer({
         setHovered(false)
       }}
       onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
         e.stopPropagation()
-        if (mode === 'select') return
+        if (mode === 'select' || mode === 'paint') return
         if (mode === 'add-wall') onDrawConnect(node)
         else if (mode === 'delete') onDelete(node.id)
         else if (['move', 'rotate', 'view'].includes(mode)) {
@@ -1164,8 +1216,9 @@ function WallSegmentRenderer({
     <group
       ref={groupRef}
       onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
         e.stopPropagation()
-        if (mode === 'select') return
+        if (mode === 'select' || mode === 'paint') return
         if (mode === 'delete') onDelete(segment.id)
         else if (['move', 'rotate', 'view'].includes(mode)) {
           onSelectSegment(node1.id, node2.id, e.shiftKey)
@@ -1193,7 +1246,168 @@ function WallSegmentRenderer({
   )
 }
 
-// --- Main Application Component ---
+function LabelRenderer({
+  label,
+  colors,
+  mode,
+  viewMode,
+  isSelected,
+  dragDeltaRef,
+  dragDeltaRotRef,
+  groupCenter,
+  onSelect,
+  onDelete,
+  onPaint,
+  saveToHistory,
+}: {
+  label: LabLabel
+  colors: any
+  mode: EditMode
+  viewMode: 'default' | 'custom'
+  isSelected: boolean
+  dragDeltaRef: React.MutableRefObject<THREE.Vector3>
+  dragDeltaRotRef: React.MutableRefObject<number>
+  groupCenter: THREE.Vector3 | null
+  onSelect: (id: string, shift: boolean) => void
+  onDelete: (id: string) => void
+  onPaint: (id: string) => void
+  saveToHistory: () => void
+}) {
+  const groupRef = useRef<THREE.Group>(null)
+  const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), [])
+  const p1 = useMemo(() => new THREE.Vector3(), [])
+
+  useFrame(() => {
+    if (!groupRef.current) return
+    if (
+      isSelected &&
+      groupCenter &&
+      (dragDeltaRef.current.lengthSq() > 0 || dragDeltaRotRef.current !== 0)
+    ) {
+      p1.set(
+        label.x - groupCenter.x,
+        0,
+        label.y - groupCenter.z,
+      ).applyAxisAngle(yAxis, dragDeltaRotRef.current)
+      const nx = groupCenter.x + p1.x + dragDeltaRef.current.x
+      const nz = groupCenter.z + p1.z + dragDeltaRef.current.z
+      groupRef.current.position.set(nx, 8, nz)
+    } else {
+      groupRef.current.position.set(label.x, 8, label.y)
+    }
+  })
+
+  const isDel = mode === 'delete'
+  const displayText = label.text || label.name || 'New Label'
+
+  return (
+    <group
+      ref={groupRef}
+      onClick={(e) => {
+        if (e.delta > 2) return // Prevent if dragged
+        e.stopPropagation()
+        const strId = String(label.id)
+        if (mode === 'select') return
+        if (mode === 'delete') {
+          saveToHistory()
+          onDelete(strId)
+        } else if (mode === 'paint') {
+          saveToHistory()
+          onPaint(strId)
+        } else if (['move', 'rotate', 'view'].includes(mode)) {
+          if (!isSelected || mode === 'view') onSelect(strId, e.shiftKey)
+        }
+      }}
+    >
+      {isSelected && (
+        <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[6, 32]} />
+          <meshBasicMaterial
+            color={colors.primary}
+            transparent
+            opacity={0.3}
+            depthWrite={false}
+          />
+        </mesh>
+      )}
+      <Billboard>
+        <Text
+          fontSize={5}
+          color={
+            isDel
+              ? '#ef4444'
+              : viewMode === 'custom' && label.color
+                ? label.color
+                : colors.text
+          }
+          fontWeight="bold"
+          fillOpacity={isSelected ? 1 : 0.8}
+          outlineWidth={isSelected ? 0.2 : 0}
+          outlineColor={colors.primary}
+        >
+          {displayText}
+        </Text>
+      </Billboard>
+    </group>
+  )
+}
+
+function LabelEditorPanel({
+  label,
+  onUpdate,
+  onClose,
+}: {
+  label: LabLabel
+  onUpdate: (id: string, text: string) => void
+  onClose: () => void
+}) {
+  const [val, setVal] = useState(label.text || label.name || '')
+
+  useEffect(() => {
+    setVal(label.text || label.name || '')
+  }, [label.text, label.name])
+
+  return (
+    <div className="absolute right-6 top-24 z-20 w-[300px] bg-card/90 backdrop-blur-xl rounded-2xl border border-border/50 shadow-2xl p-4 animate-in slide-in-from-right-8 fade-in">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <Type className="w-4 h-4" /> Edit Label
+        </h3>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 rounded-full"
+          onClick={onClose}
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+      <div className="space-y-3">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1 block">
+            Text Content
+          </label>
+          <input
+            autoFocus
+            type="text"
+            className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            onBlur={() => {
+              if (val !== (label.text || label.name))
+                onUpdate(String(label.id), val)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.currentTarget.blur()
+              }
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function CanvasComponent3D({
   roomId,
@@ -1258,7 +1472,77 @@ export function CanvasComponent3D({
   const initStore = useRef(false)
   const prevRoomId = useRef(roomId)
 
-  const [labels, setLabels] = useState<Array<LabLabel>>(initialLabels)
+  const [labels, setLabels] = useState<Array<LabLabel>>([])
+  const [localUnsaved, setLocalUnsaved] = useState(false)
+
+  const displaySaveButton = hasUnsavedChanges || localUnsaved
+
+  const coordsRef = useRef<HTMLSpanElement>(null)
+
+  // Prevent closing the browser tab/refreshing if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (displaySaveButton) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [displaySaveButton])
+
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
+  const discardAction = useRef<(() => void) | null>(null)
+  const cancelAction = useRef<(() => void) | null>(null)
+
+  const displaySaveButtonRef = useRef(displaySaveButton)
+  useEffect(() => {
+    displaySaveButtonRef.current = displaySaveButton
+  }, [displaySaveButton])
+
+  useBlocker({
+    shouldBlockFn: (opts: any) => {
+      const currentLocation = opts.currentLocation || opts.current
+      const nextLocation = opts.nextLocation || opts.next
+
+      const isSamePath = currentLocation?.pathname === nextLocation?.pathname
+      const isSameRoom =
+        String(currentLocation?.search?.roomId) ===
+        String(nextLocation?.search?.roomId)
+
+      if (isSamePath && isSameRoom) {
+        return false
+      }
+
+      if (displaySaveButtonRef.current) {
+        return new Promise<boolean>((resolve) => {
+          setShowUnsavedDialog(true)
+          discardAction.current = () => resolve(false)
+          cancelAction.current = () => resolve(true)
+        })
+      }
+      return false
+    },
+  })
+
+  const handleDiscardUnsaved = () => {
+    setShowUnsavedDialog(false)
+    setLocalUnsaved(false)
+    markSaved()
+    displaySaveButtonRef.current = false
+    if (discardAction.current) {
+      discardAction.current()
+      discardAction.current = null
+    }
+  }
+
+  const handleCancelUnsaved = () => {
+    setShowUnsavedDialog(false)
+    if (cancelAction.current) {
+      cancelAction.current()
+      cancelAction.current = null
+    }
+  }
 
   useEffect(() => {
     if (!initStore.current || prevRoomId.current !== roomId) {
@@ -1266,7 +1550,24 @@ export function CanvasComponent3D({
       initWallNodes(initialNodes)
       initWallSegments(initialSegments)
 
-      setLabels(initialLabels)
+      const seenIds = new Set()
+      const safeLabels = initialLabels.map((l, index) => {
+        let safeId = String(l.id)
+        if (seenIds.has(safeId)) {
+          safeId = `${safeId}-dup-${index}-${Math.random().toString(36).substring(2, 6)}`
+        }
+        seenIds.add(safeId)
+        return {
+          ...l,
+          id: safeId,
+          text: l.text || l.name || 'New Label',
+          name: l.name || l.text || 'New Label',
+        }
+      })
+
+      setLabels(safeLabels)
+      setLocalUnsaved(false)
+      displaySaveButtonRef.current = false
 
       initStore.current = true
       prevRoomId.current = roomId
@@ -1282,9 +1583,21 @@ export function CanvasComponent3D({
     initWallSegments,
   ])
 
+  const prevInitialSelectedId = useRef(initialSelectedId)
   const [selectedIds, setSelectedIds] = useState<Array<string>>(
-    initialSelectedId ? [initialSelectedId] : [],
+    initialSelectedId ? [String(initialSelectedId)] : [],
   )
+
+  useEffect(() => {
+    if (
+      initialSelectedId &&
+      initialSelectedId !== prevInitialSelectedId.current
+    ) {
+      setSelectedIds([String(initialSelectedId)])
+      prevInitialSelectedId.current = initialSelectedId
+    }
+  }, [initialSelectedId])
+
   const [is2D, setIs2D] = useState(false)
   const [projection, setProjection] = useState<'perspective' | 'orthographic'>(
     'perspective',
@@ -1292,16 +1605,66 @@ export function CanvasComponent3D({
   const [mode, setMode] = useState<EditMode>('view')
   const [pendingRackId, setPendingRackId] = useState<string>('')
   const [useSnap, setUseSnap] = useState(true)
-  const [viewOverlay, setViewOverlay] = useState<
-    'none' | 'heatmap' | 'network'
-  >('none')
+
+  const [viewMode, setViewMode] = useState<'default' | 'custom'>('default')
+  const [paintColor, setPaintColor] = useState<string>('#3b82f6')
 
   const [wallStart, setWallStart] = useState<THREE.Vector3 | null>(null)
   const [wallStartNodeId, setWallStartNodeId] = useState<string | null>(null)
 
+  const [focusTarget, setFocusTarget] = useState<THREE.Vector3 | null>(null)
+  const lastPannedId = useRef<string | null>(null)
+
   const colors = useThemeColors()
   const navigate = useNavigate()
   const activeCamera = is2D ? 'orthographic' : projection
+
+  const [rackSearchQuery, setRackSearchQuery] = useState('')
+
+  useEffect(() => {
+    if (mode === 'paint') {
+      setViewMode('custom')
+    }
+  }, [mode])
+
+  useEffect(() => {
+    const activeSelection = selectedIds.length === 1 ? selectedIds[0] : null
+
+    if (
+      activeSelection &&
+      activeSelection !== lastPannedId.current &&
+      initStore.current
+    ) {
+      const id = String(activeSelection)
+
+      const equipmentMap = useLabStore.getState().equipment
+      if (id in equipmentMap) {
+        const eq = equipmentMap[id]
+        setFocusTarget(new THREE.Vector3(eq.x / 10, RACK_SIZE.h / 2, eq.y / 10))
+        lastPannedId.current = activeSelection
+        return
+      }
+
+      const wallNodesMapState = useLabStore.getState().wallNodes
+      if (id in wallNodesMapState) {
+        const nd = wallNodesMapState[id]
+        setFocusTarget(new THREE.Vector3(nd.x / 10, WALL_H / 2, nd.y / 10))
+        lastPannedId.current = activeSelection
+        return
+      }
+
+      const lb = labels.find((l) => String(l.id) === id)
+      if (lb) {
+        setFocusTarget(new THREE.Vector3(lb.x, 8, lb.y))
+        lastPannedId.current = activeSelection
+        return
+      }
+    }
+
+    if (!activeSelection) {
+      lastPannedId.current = null
+    }
+  }, [selectedIds, labels])
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 
@@ -1321,7 +1684,17 @@ export function CanvasComponent3D({
 
       return isNotUsed && belongsToRoom
     })
-  }, [allRacks, equipmentIds])
+  }, [allRacks, equipmentIds, roomIdFromUrl])
+
+  const filteredRacks = useMemo(() => {
+    if (!rackSearchQuery) return availableRacks
+    const query = rackSearchQuery.toLowerCase()
+    return availableRacks.filter(
+      (r: any) =>
+        (r.name || '').toLowerCase().includes(query) ||
+        String(r.id).toLowerCase().includes(query),
+    )
+  }, [availableRacks, rackSearchQuery])
 
   const { historyIndex, history, saveToHistory, undo, redo } = useLabHistory(
     initEquipment,
@@ -1339,9 +1712,8 @@ export function CanvasComponent3D({
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
-  } = useBoxSelection(mode, wallNodes, setSelectedIds)
+  } = useBoxSelection(mode, wallNodes, labels, setSelectedIds)
 
-  // Refs for Drag Controls
   const mapControlsRef = useRef<MapControlsImpl>(null)
   const [transformControlNode, setTransformControlNode] =
     useState<TransformControlsImpl | null>(null)
@@ -1353,7 +1725,6 @@ export function CanvasComponent3D({
   const dragDeltaRotRef = useRef(0)
   const [dragDropCount, setDragDropCount] = useState(0)
 
-  // Clear drag parameters on deselection
   useEffect(() => {
     if (selectedIds.length === 0 || (mode !== 'move' && mode !== 'rotate')) {
       dragStartPos.current = null
@@ -1362,23 +1733,29 @@ export function CanvasComponent3D({
     }
   }, [selectedIds, mode])
 
-  // Reset temp states on mode change
   useEffect(() => {
     if (mode !== 'add-wall') {
       setWallStart(null)
       setWallStartNodeId(null)
     }
-    if (['add-rack', 'add-wall', 'add-label'].includes(mode)) {
+    if (['add-rack', 'add-wall', 'add-label', 'paint'].includes(mode)) {
       setSelectedIds([])
     }
     setSelectStart(null)
     setSelectEnd(null)
   }, [mode, setSelectStart, setSelectEnd])
 
+  const isLabel = useCallback(
+    (id: string) => labels.some((l) => String(l.id) === id),
+    [labels],
+  )
+
   const selectedEquipmentData = useLabStore(
     useShallow((state) =>
       selectedIds
-        .filter((id) => !id.startsWith('WN') && !id.startsWith('WS'))
+        .filter(
+          (id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id),
+        )
         .map((id) => state.equipment[id])
         .filter(Boolean),
     ),
@@ -1391,22 +1768,30 @@ export function CanvasComponent3D({
       count = 0
 
     selectedEquipmentData.forEach((e) => {
-      x += e.x
-      y += e.y
+      x += e.x / 10
+      y += e.y / 10
       count++
     })
 
     wallNodes
       .filter((n) => selectedIds.includes(n.id))
       .forEach((n) => {
-        x += n.x
-        y += n.y
+        x += n.x / 10
+        y += n.y / 10
+        count++
+      })
+
+    labels
+      .filter((l) => selectedIds.includes(String(l.id)))
+      .forEach((l) => {
+        x += l.x
+        y += l.y
         count++
       })
 
     if (count === 0) return null
-    return new THREE.Vector3(x / count / 10, RACK_SIZE.h / 2, y / count / 10)
-  }, [selectedIds, dragDropCount, wallNodes, selectedEquipmentData])
+    return new THREE.Vector3(x / count, RACK_SIZE.h / 2, y / count)
+  }, [selectedIds, dragDropCount, wallNodes, selectedEquipmentData, labels])
 
   const handleDragEnd = useCallback(() => {
     if (!dragStartPos.current) return
@@ -1456,6 +1841,26 @@ export function CanvasComponent3D({
       updateMultipleWallNodes(nodeUpdates)
     }
 
+    const labelIdsToUpdate = selectedIds.filter((id) => isLabel(id))
+    if (labelIdsToUpdate.length > 0) {
+      setLabels((prevLabels) =>
+        prevLabels.map((l) => {
+          if (!labelIdsToUpdate.includes(String(l.id))) return l
+          tempOffset.set(l.x - cx, 0, l.y - cz).applyAxisAngle(yAxis, angle)
+
+          const newX = cx + tempOffset.x + dx
+          const newZ = cz + tempOffset.z + dz
+
+          return {
+            ...l,
+            x: useSnap ? Math.round(newX) : newX,
+            y: useSnap ? Math.round(newZ) : newZ,
+          }
+        }),
+      )
+      setLocalUnsaved(true)
+    }
+
     dragStartPos.current = null
     dragDeltaRef.current.set(0, 0, 0)
     dragDeltaRotRef.current = 0
@@ -1472,9 +1877,9 @@ export function CanvasComponent3D({
     wallNodes,
     wallSegments,
     labels,
+    isLabel,
   ])
 
-  // Safe TransformControls Event Attachment
   useEffect(() => {
     if (transformControlNode && dummyObj) {
       const onDragChange = (e: any) => {
@@ -1495,16 +1900,17 @@ export function CanvasComponent3D({
   }, [transformControlNode, dummyObj, handleDragEnd])
 
   const handleSelect = useCallback(
-    (id: string | null, shiftKey: boolean = false) => {
+    (id: string | number | null, shiftKey: boolean = false) => {
       if (!id) {
         setSelectedIds([])
         return
       }
 
-      let idsToSelect = [id]
+      const strId = String(id)
+      let idsToSelect = [strId]
 
-      if (id.startsWith('WN')) {
-        const targetNode = wallNodesMap[id]
+      if (strId.startsWith('WN')) {
+        const targetNode = wallNodesMap[strId]
         const overlappingNodes = wallNodes.filter(
           (n) => n.x === targetNode.x && n.y === targetNode.y,
         )
@@ -1513,7 +1919,7 @@ export function CanvasComponent3D({
 
       setSelectedIds((prev) => {
         if (shiftKey) {
-          const isSelected = prev.includes(id)
+          const isSelected = prev.includes(strId)
           if (isSelected) return prev.filter((i) => !idsToSelect.includes(i))
           return Array.from(new Set([...prev, ...idsToSelect]))
         }
@@ -1523,25 +1929,62 @@ export function CanvasComponent3D({
       if (
         !shiftKey &&
         mode === 'view' &&
-        !id.startsWith('WN') &&
-        !id.startsWith('WS')
+        !strId.startsWith('WN') &&
+        !strId.startsWith('WS') &&
+        !isLabel(strId)
       ) {
         navigate({
           to: '/map',
           search: (prev: any) => ({
             ...prev,
-            redirectId: id,
+            redirectId: strId,
             redirectType: 'rack',
           }),
           replace: true,
         })
       }
     },
-    [navigate, mode, wallNodes, wallNodesMap],
+    [navigate, mode, wallNodes, wallNodesMap, isLabel],
+  )
+
+  const handlePaint = useCallback(
+    (rawId: string | number) => {
+      const id = String(rawId)
+      if (isLabel(id)) {
+        setLabels((prev) =>
+          prev.map((l) =>
+            String(l.id) === id ? { ...l, color: paintColor } : l,
+          ),
+        )
+        setLocalUnsaved(true)
+      } else {
+        updateMultipleEquipment([{ id, updates: { color: paintColor } }])
+      }
+    },
+    [updateMultipleEquipment, paintColor, isLabel],
+  )
+
+  const handlePlanePointerMove = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      handlePointerMove(e)
+      if (coordsRef.current) {
+        const x = (useSnap ? Math.round(e.point.x) : e.point.x).toFixed(1)
+        const z = (useSnap ? Math.round(e.point.z) : e.point.z).toFixed(1)
+        coordsRef.current.innerText = `X: ${x} | Y: ${z}`
+      }
+    },
+    [handlePointerMove, useSnap],
   )
 
   const handleGridClick = (e: ThreeEvent<MouseEvent>) => {
-    if (mode === 'select' || mode === 'move' || mode === 'rotate') return
+    if (e.delta > 2) return // Ignore click if user was dragging/panning the map
+    if (
+      mode === 'select' ||
+      mode === 'move' ||
+      mode === 'rotate' ||
+      mode === 'paint'
+    )
+      return
     if (mode === 'view') {
       setSelectedIds([])
       navigate({
@@ -1558,9 +2001,9 @@ export function CanvasComponent3D({
 
     e.stopPropagation()
     const pt = new THREE.Vector3(
-      Math.round(e.point.x),
+      useSnap ? Math.round(e.point.x) : e.point.x,
       0,
-      Math.round(e.point.z),
+      useSnap ? Math.round(e.point.z) : e.point.z,
     )
     saveToHistory(wallNodes, wallSegments, labels)
 
@@ -1584,6 +2027,7 @@ export function CanvasComponent3D({
       } as any)
 
       setPendingRackId('')
+      setRackSearchQuery('')
       setMode('view')
     } else if (mode === 'add-wall') {
       const clickedPt = new THREE.Vector2(pt.x * 10, pt.z * 10)
@@ -1627,13 +2071,21 @@ export function CanvasComponent3D({
         }
       }
     } else if (mode === 'add-label') {
-      const text = prompt('Label Text:', 'Zone A')
-      if (text)
-        setLabels([
-          ...labels,
-          { id: `L-${Date.now()}`, text, x: pt.x, y: pt.z },
-        ])
+      const newLabelId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      setLabels([
+        ...labels,
+        {
+          id: newLabelId,
+          text: 'New Label',
+          name: 'New Label',
+          x: pt.x,
+          y: pt.z,
+          color: undefined,
+        },
+      ])
+      setLocalUnsaved(true)
       setMode('view')
+      setSelectedIds([newLabelId])
     }
   }
 
@@ -1653,10 +2105,18 @@ export function CanvasComponent3D({
         equipment: getEquipmentArray(),
         wallNodes: Object.values(useLabStore.getState().wallNodes),
         wallSegments: Object.values(useLabStore.getState().wallSegments),
-        labels: labels,
+        labels: labels.map((l) => ({
+          ...l,
+          name: l.text || l.name || 'New Label',
+          text: l.text || l.name || 'New Label',
+        })),
       })
 
-      setTimeout(() => markSaved(), 500)
+      setTimeout(() => {
+        markSaved()
+        setLocalUnsaved(false)
+        displaySaveButtonRef.current = false
+      }, 500)
       toast.success('Map layout saved successfully')
     } catch (error) {
       console.error('Save failed:', error)
@@ -1667,10 +2127,11 @@ export function CanvasComponent3D({
   const deleteSelection = () => {
     saveToHistory(wallNodes, wallSegments, labels)
     const eqIds = selectedIds.filter(
-      (id) => !id.startsWith('WN') && !id.startsWith('WS'),
+      (id) => !id.startsWith('WN') && !id.startsWith('WS') && !isLabel(id),
     )
     const nodeIds = selectedIds.filter((id) => id.startsWith('WN'))
     const segIds = selectedIds.filter((id) => id.startsWith('WS'))
+    const labelIds = selectedIds.filter((id) => isLabel(id))
 
     const orphanedSegs = wallSegments
       .filter((s) => nodeIds.includes(s.node1Id) || nodeIds.includes(s.node2Id))
@@ -1678,11 +2139,27 @@ export function CanvasComponent3D({
 
     const allSegIdsToDelete = Array.from(new Set([...segIds, ...orphanedSegs]))
 
-    deleteMultipleEquipment(eqIds)
-    deleteMultipleWallNodes(nodeIds)
-    deleteMultipleWallSegments(allSegIdsToDelete)
+    if (eqIds.length > 0) deleteMultipleEquipment(eqIds)
+    if (nodeIds.length > 0) deleteMultipleWallNodes(nodeIds)
+    if (allSegIdsToDelete.length > 0)
+      deleteMultipleWallSegments(allSegIdsToDelete)
+
+    if (labelIds.length > 0) {
+      setLabels((prev) => prev.filter((l) => !labelIds.includes(String(l.id))))
+      setLocalUnsaved(true)
+    }
 
     setSelectedIds([])
+  }
+
+  const handleUndo = () => {
+    undo(wallNodes, wallSegments, labels)
+    setLocalUnsaved(true)
+  }
+
+  const handleRedo = () => {
+    redo()
+    setLocalUnsaved(true)
   }
 
   return (
@@ -1691,113 +2168,239 @@ export function CanvasComponent3D({
       tabIndex={0}
       onMouseDown={(e) => e.currentTarget.focus()}
     >
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-4">
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20">
         {onRoomChange && (
           <Select
             value={roomId?.toString()}
-            onValueChange={onRoomChange}
+            onValueChange={(val) => {
+              if (displaySaveButtonRef.current) {
+                setShowUnsavedDialog(true)
+                discardAction.current = () => {
+                  onRoomChange(val)
+                }
+                cancelAction.current = () => {}
+              } else {
+                onRoomChange(val)
+              }
+            }}
             disabled={isLoadingRooms}
           >
-            <SelectTrigger className="bg-card/90 backdrop-blur-md border border-border/50 shadow-lg rounded-xl">
-              <SelectValue
-                placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
-              />
+            <SelectTrigger className="bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full h-12 px-6 flex items-center justify-between gap-3 text-sm font-semibold hover:bg-card/90 transition-colors w-fit">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
+                <SelectValue
+                  placeholder={isLoadingRooms ? 'Loading...' : 'Select Room'}
+                />
+              </div>
             </SelectTrigger>
-            <SelectContent position="popper" align="start">
+            <SelectContent
+              position="popper"
+              align="center"
+              className="rounded-2xl shadow-xl border-border/50"
+            >
               {rooms.map((room: any) => (
-                <SelectItem key={room.id} value={room.id.toString()}>
-                  {room.name || `Room ${room.id}`}
+                <SelectItem
+                  key={room.id}
+                  value={room.id.toString()}
+                  className="py-2.5 px-4 rounded-xl cursor-pointer"
+                >
+                  <span className="font-medium">
+                    {room.name || `Room ${room.id}`}
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         )}
-
-        <ViewSettings
-          canUndo={historyIndex >= 0}
-          canRedo={historyIndex < history.length - 1}
-          onUndo={() => undo(wallNodes, wallSegments, labels)}
-          onRedo={redo}
-          viewOverlay={viewOverlay}
-          setViewOverlay={setViewOverlay}
-          useSnap={useSnap}
-          setUseSnap={setUseSnap}
-          is2D={is2D}
-          setIs2D={setIs2D}
-          projection={projection}
-          setProjection={setProjection}
-        />
-        <MapToolbar
-          mode={mode}
-          setMode={(v) => {
-            setMode(v as EditMode)
-            if (v !== 'add-rack') setPendingRackId('')
-          }}
-        />
-
-        {mode === 'add-rack' && (
-          <div className="flex flex-col gap-2 p-3 bg-card/90 backdrop-blur-md rounded-xl border border-border/50 shadow-lg animate-in fade-in slide-in-from-left-4 w-70">
-            <div className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Select Rack to Place
-            </div>
-            <Combobox
-              value={pendingRackId}
-              onValueChange={(val) => setPendingRackId(val ?? '')}
-            >
-              <ComboboxInput placeholder="Search available racks..." />
-              <ComboboxEmpty>No racks available</ComboboxEmpty>
-              <ComboboxContent>
-                <ComboboxList>
-                  {availableRacks.map((r: any) => (
-                    <ComboboxItem key={r.id} value={String(r.id)}>
-                      {r.name || `Rack #${r.id}`}
-                    </ComboboxItem>
-                  ))}
-                </ComboboxList>
-              </ComboboxContent>
-            </Combobox>
-            <div className="text-[10px] text-muted-foreground leading-tight mt-1">
-              Select a rack from the database, then click on the grid to place
-              it.
-            </div>
-          </div>
-        )}
       </div>
 
-      <div className="absolute top-4 right-4 z-20 flex gap-2">
-        {hasUnsavedChanges && (
+      <div className="absolute top-6 right-6 z-20 flex items-center gap-3">
+        <div className="flex bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg rounded-full p-1">
           <Button
-            onClick={handleSaveToBackend}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white animate-in fade-in slide-in-from-top-4 shadow-lg"
-          >
-            <Save className="w-4 h-4 mr-2" /> Save Changes
-          </Button>
-        )}
-      </div>
-
-      {selectedIds.length > 0 && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 backdrop-blur-xl bg-card/90 p-2 rounded-xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-6">
-          <div className="px-3 py-1 text-sm font-bold tracking-tight flex items-center border-r border-border/50 text-foreground">
-            {selectedIds.length} Selected
-          </div>
-          <Button
-            size="sm"
             variant="ghost"
-            className="h-8"
-            onClick={() => setSelectedIds([])}
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={handleUndo}
+            disabled={historyIndex < 0}
           >
-            <X className="w-4 h-4 mr-1" /> Clear
+            <Undo2 className="w-4 h-4" />
           </Button>
           <Button
-            size="sm"
-            variant="destructive"
-            className="h-8"
-            onClick={deleteSelection}
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full"
+            onClick={handleRedo}
+            disabled={historyIndex >= history.length - 1}
           >
-            <Trash2 className="w-4 h-4 mr-1" /> Delete
+            <Redo2 className="w-4 h-4" />
           </Button>
         </div>
-      )}
+
+        {displaySaveButton && (
+          <Button
+            onClick={handleSaveToBackend}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-900/20 rounded-full h-11 px-5 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <Save className="w-4 h-4 mr-2" /> Save Layout
+          </Button>
+        )}
+      </div>
+
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-4 pointer-events-none">
+        {selectedIds.length > 0 && (
+          <div className="pointer-events-auto flex items-center gap-2 backdrop-blur-xl bg-primary/10 p-1.5 rounded-full border border-primary/20 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
+            <Badge variant="default" className="ml-2 rounded-full font-bold">
+              {selectedIds.length} Selected
+            </Badge>
+            <div className="w-px h-4 bg-primary/20 mx-1" />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-full hover:bg-primary/20 hover:text-primary"
+              onClick={() => setSelectedIds([])}
+            >
+              <X className="w-4 h-4 mr-1" /> Clear
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 rounded-full"
+              onClick={deleteSelection}
+            >
+              <Trash2 className="w-4 h-4 mr-1" /> Delete
+            </Button>
+          </div>
+        )}
+
+        {mode === 'add-rack' && (
+          <div className="pointer-events-auto flex flex-col gap-3 p-4 bg-card/90 backdrop-blur-xl rounded-3xl border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in w-full max-w-[500px] max-h-[400px]">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between px-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+                  <Server className="w-3 h-3" /> Select a Rack to Place
+                </span>
+                <Badge variant="secondary" className="rounded-full text-[10px]">
+                  {filteredRacks.length} Available
+                </Badge>
+              </div>
+
+              <div className="relative px-2">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search racks..."
+                  value={rackSearchQuery}
+                  onChange={(e) => setRackSearchQuery(e.target.value)}
+                  className="w-full bg-background/50 border border-border/50 rounded-xl pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                />
+              </div>
+            </div>
+
+            <ScrollArea className="w-full px-2">
+              <div className="grid grid-cols-2 gap-2 pb-2">
+                {filteredRacks.length === 0 ? (
+                  <div className="col-span-2 text-center text-sm text-muted-foreground py-8 italic bg-muted/5 rounded-xl border border-dashed border-border/50">
+                    {rackSearchQuery
+                      ? 'No matching racks found'
+                      : 'No racks available to place'}
+                  </div>
+                ) : (
+                  filteredRacks.map((r: any) => (
+                    <Button
+                      key={r.id}
+                      variant={
+                        pendingRackId === String(r.id) ? 'default' : 'outline'
+                      }
+                      className={`flex items-center justify-start gap-2 h-10 px-3 rounded-xl transition-all ${
+                        pendingRackId === String(r.id)
+                          ? 'shadow-md ring-1 ring-primary/50'
+                          : 'hover:border-primary/50 hover:bg-primary/5'
+                      }`}
+                      onClick={() => setPendingRackId(String(r.id))}
+                    >
+                      <Server
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          pendingRackId === String(r.id)
+                            ? 'text-primary-foreground'
+                            : 'text-primary'
+                        }`}
+                      />
+                      <span className="font-bold text-xs truncate">
+                        {r.name || `Rack #${r.id}`}
+                      </span>
+                    </Button>
+                  ))
+                )}
+              </div>
+              <ScrollBar orientation="vertical" className="w-1.5" />
+            </ScrollArea>
+          </div>
+        )}
+
+        {mode === 'paint' && (
+          <div className="pointer-events-auto flex items-center gap-3 p-2 pr-3 bg-card/90 backdrop-blur-xl rounded-full border border-border/50 shadow-2xl animate-in slide-in-from-bottom-2 fade-in">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-3 flex items-center gap-2">
+              <Palette className="w-3 h-3" /> Select Color
+            </span>
+            <div className="w-px h-4 bg-border/50" />
+            <div className="flex gap-1.5">
+              {[
+                { color: '#ef4444', label: 'Red' },
+                { color: '#f97316', label: 'Orange' },
+                { color: '#eab308', label: 'Yellow' },
+                { color: '#84cc16', label: 'Lime' },
+                { color: '#10b981', label: 'Emerald' },
+                { color: '#06b6d4', label: 'Cyan' },
+                { color: '#3b82f6', label: 'Blue' },
+                { color: '#8b5cf6', label: 'Violet' },
+                { color: '#d946ef', label: 'Fuchsia' },
+                { color: '#f43f5e', label: 'Rose' },
+              ].map((c) => (
+                <button
+                  key={c.color}
+                  className={`w-6 h-6 rounded-full transition-all hover:scale-110 ${paintColor === c.color ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : 'ring-1 ring-border shadow-sm'}`}
+                  style={{ backgroundColor: c.color }}
+                  onClick={() => setPaintColor(c.color)}
+                  title={c.label}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pointer-events-auto">
+          <MapToolbar
+            mode={mode}
+            setMode={(v) => {
+              setMode(v as EditMode)
+              if (v !== 'add-rack') {
+                setPendingRackId('')
+                setRackSearchQuery('')
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Coordinate Map Overlay */}
+      <div className="absolute bottom-6 right-6 z-20 pointer-events-none bg-card/80 backdrop-blur-xl border border-border/50 text-muted-foreground px-4 py-2 rounded-full text-[11px] font-bold tracking-widest tabular-nums shadow-lg">
+        <span ref={coordsRef}>X: 0.0 | Y: 0.0</span>
+      </div>
+
+      <div className="absolute top-1/2 right-9 -translate-y-1/2 z-20 flex flex-col items-center pointer-events-none">
+        <div className="pointer-events-auto">
+          <ViewSettings
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            useSnap={useSnap}
+            setUseSnap={setUseSnap}
+            is2D={is2D}
+            setIs2D={setIs2D}
+            projection={projection}
+            setProjection={setProjection}
+          />
+        </div>
+      </div>
 
       <div className="flex-1 relative h-full min-w-0">
         <KeyboardControls
@@ -1816,7 +2419,7 @@ export function CanvasComponent3D({
             gl={{ antialias: true, logarithmicDepthBuffer: true }}
           >
             <Suspense fallback={null}>
-              <GizmoHelper alignment="bottom-right" margin={[80, 80]}>
+              <GizmoHelper alignment="bottom-right" margin={[100, 120]}>
                 <GizmoViewport />
               </GizmoHelper>
               <PerspectiveCamera
@@ -1838,6 +2441,7 @@ export function CanvasComponent3D({
                 center={mode === 'view' ? sceneCenter : undefined}
                 enabled={mode !== 'select'}
                 controlsRef={mapControlsRef}
+                focusTarget={focusTarget}
               />
 
               <ambientLight intensity={0.6} />
@@ -1855,7 +2459,7 @@ export function CanvasComponent3D({
                 position={[0, -0.05, 0]}
                 onClick={handleGridClick}
                 onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
+                onPointerMove={handlePlanePointerMove}
                 onPointerUp={handlePointerUp}
               >
                 <planeGeometry args={[10000, 10000]} />
@@ -1904,7 +2508,7 @@ export function CanvasComponent3D({
                 groupCenter && (
                   <group key={selectedIds.join('-') + dragDropCount}>
                     <group ref={setDummyObj} position={groupCenter} />
-                    {dummyObj && dummyObj.parent && (
+                    {dummyObj && (
                       <TransformControls
                         ref={setTransformControlNode}
                         object={dummyObj}
@@ -1935,7 +2539,7 @@ export function CanvasComponent3D({
                 receiveShadow
                 frustumCulled={false}
               >
-                {viewOverlay === 'none' ? (
+                {viewMode === 'default' ? (
                   <meshStandardMaterial
                     metalness={0.8}
                     roughness={0.6}
@@ -1952,12 +2556,13 @@ export function CanvasComponent3D({
                     id={id}
                     colors={colors}
                     mode={mode}
-                    viewOverlay={viewOverlay}
+                    viewMode={viewMode}
                     isSelected={selectedIds.includes(id)}
                     groupCenter={groupCenter}
                     dragDeltaRef={dragDeltaRef}
                     dragDeltaRotRef={dragDeltaRotRef}
                     onSelect={handleSelect}
+                    onPaint={handlePaint}
                     saveToHistory={() =>
                       saveToHistory(wallNodes, wallSegments, labels)
                     }
@@ -2040,22 +2645,35 @@ export function CanvasComponent3D({
               ))}
 
               {labels.map((l) => (
-                <Billboard key={l.id} position={[l.x, 8, l.y]}>
-                  <Text
-                    fontSize={5}
-                    color={colors.text}
-                    fontWeight="bold"
-                    fillOpacity={0.7}
-                  >
-                    {l.text}
-                  </Text>
-                </Billboard>
+                <LabelRenderer
+                  key={String(l.id)}
+                  label={l}
+                  colors={colors}
+                  mode={mode}
+                  viewMode={viewMode}
+                  isSelected={selectedIds.includes(String(l.id))}
+                  groupCenter={groupCenter}
+                  dragDeltaRef={dragDeltaRef}
+                  dragDeltaRotRef={dragDeltaRotRef}
+                  onSelect={handleSelect}
+                  onDelete={(id) => {
+                    setLabels((prev) =>
+                      prev.filter((lb) => String(lb.id) !== id),
+                    )
+                    setLocalUnsaved(true)
+                  }}
+                  onPaint={handlePaint}
+                  saveToHistory={() =>
+                    saveToHistory(wallNodes, wallSegments, labels)
+                  }
+                />
               ))}
 
               <GhostPreview
                 mode={mode}
                 wallStart={wallStart}
                 wallNodes={wallNodes}
+                useSnap={useSnap}
               />
               <ContactShadows
                 opacity={0.4}
@@ -2068,13 +2686,69 @@ export function CanvasComponent3D({
             </Suspense>
           </Canvas>
         </KeyboardControls>
+
         <ControlsOverlay is2D={is2D} />
+
         <Loader
           containerStyles={{ background: 'var(--background)' }}
           innerStyles={{ backgroundColor: 'var(--card)' }}
           barStyles={{ backgroundColor: 'var(--primary)' }}
         />
       </div>
+
+      <AlertDialog
+        open={showUnsavedDialog}
+        onOpenChange={(open) => {
+          if (!open) handleCancelUnsaved()
+        }}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+              <AlertTriangle />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes in the current laboratory. If you switch
+              laboratories or navigate away, your unsaved progress will be lost.
+              Are you sure you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelUnsaved} variant="outline">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault()
+                handleDiscardUnsaved()
+              }}
+              variant="destructive"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {selectedIds.length === 1 &&
+        isLabel(selectedIds[0]) &&
+        mode === 'view' && (
+          <LabelEditorPanel
+            key={selectedIds[0]}
+            label={labels.find((l) => String(l.id) === selectedIds[0])!}
+            onUpdate={(id, text) => {
+              saveToHistory(wallNodes, wallSegments, labels)
+              setLabels((prev) =>
+                prev.map((l) =>
+                  String(l.id) === id ? { ...l, text, name: text } : l,
+                ),
+              )
+              setLocalUnsaved(true)
+            }}
+            onClose={() => setSelectedIds([])}
+          />
+        )}
 
       {selectedIds.length === 1 &&
         getEquipmentArray().find((e) => e.id === selectedIds[0]) &&

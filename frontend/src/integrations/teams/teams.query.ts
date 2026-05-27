@@ -10,15 +10,13 @@ const PATHS = {
   BASE: '/db/teams',
   INFO: '/db/teams/teams_info',
   CURRENT_USER: '/db/teams/user_teams',
-  SINGLE: (id: string | number) => `/db/teams/${id}`,
   SINGLE_INFO: (id: string | number) => `/db/teams/team_info/${id}`,
-  ADMIN: '/db/teams',
 }
 
 export const adminTeamsQueryOptions = queryOptions({
   queryKey: ['teams', 'admin'],
   queryFn: async () => {
-    const { data } = await api.get<ApiTeamResponse>(PATHS.ADMIN)
+    const { data } = await api.get<ApiTeamResponse>(PATHS.BASE)
     return data
   },
 })
@@ -26,7 +24,7 @@ export const adminTeamsQueryOptions = queryOptions({
 export const teamsQueryOptions = queryOptions({
   queryKey: ['teams'],
   queryFn: async () => {
-    const { data } = await api.get<ApiTeamInfoResponse>(PATHS.BASE)
+    const { data } = await api.get<ApiTeamResponse>(PATHS.BASE)
     return data
   },
 })
@@ -39,15 +37,6 @@ export const teamsInfoQueryOptions = queryOptions({
   },
 })
 
-export const singleTeamQueryOptions = (teamId: string | number) =>
-  queryOptions({
-    queryKey: ['teams', String(teamId)],
-    queryFn: async () => {
-      const { data } = await api.get<ApiTeamInfo>(PATHS.SINGLE(teamId))
-      return data
-    },
-  })
-
 export const singleTeamInfoQueryOptions = (teamId: string | number) =>
   queryOptions({
     queryKey: ['teams', 'info', String(teamId)],
@@ -58,7 +47,7 @@ export const singleTeamInfoQueryOptions = (teamId: string | number) =>
   })
 
 export const currentUserTeamsQueryOptions = queryOptions({
-  queryKey: ['teams'],
+  queryKey: ['teams', 'current'],
   queryFn: async () => {
     const { data } = await api.get<ApiTeamInfoResponse>(PATHS.CURRENT_USER)
     return data
