@@ -1,17 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { Badge, MoreHorizontal } from 'lucide-react'
-import { DataTable } from '../ui/data-table'
-import { PageIsLoading } from '../page-is-loading'
-import { Button } from '../ui/button'
-import { DataTableColumnHeader } from '../data-table/column-header'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu'
+import { Badge } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { DataTable } from './ui/data-table'
+import { PageIsLoading } from './page-is-loading'
+import { DataTableColumnHeader } from './data-table/column-header'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { fetchMachinesData } from '@/integrations/machines/machines.adapter'
 import { formatHeader } from '@/lib/utils'
@@ -65,37 +57,24 @@ export const columns: Array<ColumnDef<MachineItem>> = [
       return value ?? '-'
     },
   })),
-  {
-    id: 'actions',
-    cell: ({ row }) => {
-      const machine = row.original
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem onClick={() => console.log('Edit item', machine)}>
-              Edit machine
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
 ]
 
-export default function MachinesAdminPanel() {
+export default function MachinesPanel() {
   const { data: machines = [], isLoading } = useQuery(machinesQueryOptions)
+  const navigate = useNavigate()
 
   if (isLoading) return <PageIsLoading />
 
-  return <DataTable columns={columns} data={machines} />
+  return (
+    <DataTable
+      columns={columns}
+      data={machines}
+      onRowClick={(row) => {
+        navigate({
+          to: '/machines/$machineId',
+          params: { machineId: String(row.id) },
+        })
+      }}
+    />
+  )
 }
