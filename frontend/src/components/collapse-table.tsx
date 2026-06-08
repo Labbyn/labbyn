@@ -34,10 +34,7 @@ export function CollapseTable({
           </TableHeader>
 
           {inventory.map((category, index) => (
-            <Collapsible
-              key={category.id ?? category.category_name ?? index}
-              asChild
-            >
+            <Collapsible key={index} asChild>
               <TableBody>
                 <TableRow className="group">
                   <TableCell>{category.category_name}</TableCell>
