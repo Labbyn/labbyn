@@ -52,7 +52,7 @@ import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 
 const schemas = {
   hostname: z.string().min(1, 'Hostname is required').max(255),
-  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
+  ip: z.ipv4().or(z.literal('')),
   mac: z
     .string()
     .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
