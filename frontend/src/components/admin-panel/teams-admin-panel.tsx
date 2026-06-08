@@ -21,6 +21,7 @@ import {
   useUpdateTeamMutation,
 } from '@/integrations/teams/teams.mutation'
 import { usersQueryOptions } from '@/integrations/user/user.query'
+import { useChangeUserTeamAccessMutation } from '@/integrations/user/user.mutation'
 
 const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
@@ -76,6 +77,10 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
           idBadge={team.id}
           actions={[
             {
+              label: 'Promote User',
+              onClick: () => meta?.onPromote?.(team),
+            },
+            {
               label: 'Edit',
               onClick: () => meta?.onEdit?.(team),
             },
@@ -97,9 +102,11 @@ export default function TeamsAdminPanel() {
   const { data: teams = [], isLoading } = useQuery(adminTeamsQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null)
+  const [promotingTeam, setPromotingTeam] = useState<TeamItem | null>(null)
 
   const createTeam = useCreateTeamMutation()
   const updateTeam = useUpdateTeamMutation(editingTeam?.id || 0)
+  const changeUserAccess = useChangeUserTeamAccessMutation()
   const { data: users } = useQuery(usersQueryOptions)
 
   const fieldsConfig: Record<string, FieldConfig> = {
@@ -119,6 +126,16 @@ export default function TeamsAdminPanel() {
           label: `${user.name} ${user.surname}`,
           value: String(user.id),
         })),
+    },
+  }
+
+  const promoteFieldsConfig: Record<string, FieldConfig> = {
+    promote_user_id: {
+      type: 'select',
+      options: (users || []).map((user) => ({
+        label: `${user.name} ${user.surname}`,
+        value: String(user.id),
+      })),
     },
   }
 
@@ -150,6 +167,22 @@ export default function TeamsAdminPanel() {
       },
     )
   }
+
+  const handlePromoteUser = (data: any) => {
+    if (promotingTeam && data.promote_user_id) {
+      changeUserAccess.mutate(
+        {
+          userId: Number(data.promote_user_id),
+          data: {
+            team_id: promotingTeam.id,
+            is_group_admin: true,
+          },
+        },
+        { onSuccess: () => setPromotingTeam(null) },
+      )
+    }
+  }
+
   if (isLoading) return <PageIsLoading />
 
   return (
@@ -157,7 +190,7 @@ export default function TeamsAdminPanel() {
       <DataTable
         columns={columns}
         data={teams}
-        meta={{ onEdit: setEditingTeam }}
+        meta={{ onEdit: setEditingTeam, onPromote: setPromotingTeam }}
         onRowClick={(row) => {
           navigate({
             to: '/teams/$teamId',
@@ -187,9 +220,23 @@ export default function TeamsAdminPanel() {
           onClose={() => setEditingTeam(null)}
           defaultValues={{
             name: editingTeam.name,
+            team_admin_id: String(editingTeam.team_admin_id || ''),
           }}
           fieldsConfig={fieldsConfig}
           onSubmit={handleEditTeam}
+        />
+      )}
+
+      {promotingTeam && (
+        <GenericCreateDialog
+          title={`Promote User in ${promotingTeam.name}`}
+          isOpen={!!promotingTeam}
+          onClose={() => setPromotingTeam(null)}
+          defaultValues={{
+            promote_user_id: '',
+          }}
+          fieldsConfig={promoteFieldsConfig}
+          onSubmit={handlePromoteUser}
         />
       )}
     </>
