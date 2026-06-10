@@ -119,6 +119,7 @@ const items = [
   { title: 'Dashboard', url: '/user-dashboard', icon: PanelsTopLeft },
   { title: 'Labs', url: '/labs', icon: Server },
   { title: 'Inventory', url: '/inventory', icon: Archive },
+  { title: 'Machines', url: '/machines', icon: HardDrive },
   { title: 'History', url: '/history', icon: History },
   { title: 'Users', url: '/users', icon: User },
   { title: 'Teams', url: '/teams', icon: Users },
@@ -129,8 +130,6 @@ const items = [
 const adminPanelItems = [
   { title: 'Users', url: '/admin-panel/users', icon: User },
   { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
-  { title: 'Machines', url: '/admin-panel/machines', icon: HardDrive },
-  { title: 'Inventory', url: '/admin-panel/inventory', icon: Archive },
 ]
 
 function useTheme() {

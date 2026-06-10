@@ -23,7 +23,7 @@ export function zodValidate(schema: z.ZodType<any>) {
   return ({ value }: { value: any }) => {
     const result = schema.safeParse(value)
     if (!result.success) {
-      return { message: result.error.errors[0].message }
+      return { message: result.error.issues[0]?.message }
     }
     return undefined
   }

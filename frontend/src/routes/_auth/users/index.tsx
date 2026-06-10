@@ -62,7 +62,11 @@ function RouteComponent() {
 
   return (
     <div className="p-6 space-y-6">
-      <PageHeader title="Users" description="Users description" icon={User} />
+      <PageHeader
+        title="Users"
+        description="Browse lab members and their team affiliations"
+        icon={User}
+      />
       <ScrollArea className="h-full">
         <DataTable
           columns={columns}
