@@ -50,15 +50,15 @@ import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 
 // --- Schemas ---
 
-const schemas = {
-  hostname: z.string().min(1, 'Hostname is required').max(255),
-  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
-  mac: z
-    .string()
-    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
-    .optional()
-    .or(z.literal('')),
-}
+//const schemas = {
+//  hostname: z.string().min(1, 'Hostname is required').max(255),
+//  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
+//  mac: z
+//    .string()
+//    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
+//    .optional()
+//    .or(z.literal('')),
+//}
 
 interface AddPlatformDialogProps {
   children?: React.ReactNode
@@ -183,7 +183,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               {/* Hostname - Always Required */}
               <form.Field
                 name="hostname"
-                validators={{ onChange: zodValidate(schemas.hostname) }}
+                //validators={{ onChange: zodValidate(schemas.hostname) }}
                 children={(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>
@@ -459,7 +459,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                       <div className="grid grid-cols-2 gap-4">
                         <form.Field
                           name="ip_address"
-                          validators={{ onChange: zodValidate(schemas.ip) }}
+                          //validators={{ onChange: zodValidate(schemas.ip) }}
                           children={(field) => (
                             <Field>
                               <FieldLabel htmlFor={field.name}>
@@ -485,7 +485,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
 
                         <form.Field
                           name="mac_address"
-                          validators={{ onChange: zodValidate(schemas.mac) }}
+                          //validators={{ onChange: zodValidate(schemas.mac) }}
                           children={(field) => (
                             <Field>
                               <FieldLabel htmlFor={field.name}>

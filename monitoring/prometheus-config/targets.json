@@ -8,5 +8,16 @@
       "host": "localhost",
       "team": "some_team"
     }
+  },
+  {
+    "targets": [
+      "192.168.56.101:9100"
+    ],
+    "labels": {
+      "env": "virtual",
+      "host": "192.168.56.101",
+      "role": "virtual",
+      "team": "Service Team"
+    }
   }
 ]
