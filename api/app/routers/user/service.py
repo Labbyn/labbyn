@@ -60,9 +60,9 @@ class UserService:
             "login": u.login,
             "user_type": u.user_type,
             "membership": memberships,
+            "email": u.email,
         }
         if can_see_full_data:
-            user_data["email"] = u.email
             user_data["avatar_url"] = (
                 u.avatar_path if hasattr(u, "avatar_path") else None
             )
