@@ -104,14 +104,14 @@ export function CollapseTable({
                                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                                   <div
                                     className="flex items-center gap-1.5"
-                                    title="Pokój / Lokalizacja"
+                                    title="Location"
                                   >
                                     <MapPin className="h-3.5 w-3.5 shrink-0" />
                                     <span>{item.room_name}</span>
                                   </div>
                                   <div
                                     className="flex items-center gap-1.5"
-                                    title="Zespół"
+                                    title="Team"
                                   ></div>
                                 </div>
                               </div>

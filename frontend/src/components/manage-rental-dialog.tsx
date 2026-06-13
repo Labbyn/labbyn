@@ -165,6 +165,7 @@ export function ManageRentalDialog({
                       </Card>
                     ))}
                   </div>
+                  <Separator />
                   <ScrollBar orientation="horizontal" />
                 </ScrollArea>
               </>
