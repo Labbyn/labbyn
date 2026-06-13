@@ -41,6 +41,7 @@ async def lifespan(fast_api_app: FastAPI):
         metrics_task.cancel()
         await asyncio.gather(status_task, metrics_task, return_exceptions=True)
 
+
 api_root_path = os.getenv("ROOT_PATH", "")
 
 app = FastAPI(title="Labbyn API", lifespan=lifespan, root_path=api_root_path)
