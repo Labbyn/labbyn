@@ -41,8 +41,9 @@ async def lifespan(fast_api_app: FastAPI):
         metrics_task.cancel()
         await asyncio.gather(status_task, metrics_task, return_exceptions=True)
 
+api_root_path = os.getenv("ROOT_PATH", "")
 
-app = FastAPI(title="Labbyn API", lifespan=lifespan)
+app = FastAPI(title="Labbyn API", lifespan=lifespan, root_path=api_root_path)
 handlers.setup_exception_handlers(app)
 
 avatar_path = getattr(routers.user, "AVATAR_DIR", "static/avatars")
