@@ -133,12 +133,12 @@ export const columns: Array<ColumnDef<UserItem>> = [
               onClick: (u) => meta?.onEdit?.(u),
             },
             {
-              label: 'Reset password (WIP)',
-              onClick: (u) => console.log('Reset user password', u.id),
-            },
-            {
-              label: 'Force password change',
-              onClick: (u) => resetPasswordMutation.mutate(u.id),
+              label: 'Reset password',
+              onClick: (u) => {
+                resetPasswordMutation.mutate(u.id, {
+                  onSuccess: (data) => meta?.onPasswordReset?.(data),
+                })
+              },
             },
             {
               label: 'Delete',
@@ -157,6 +157,7 @@ export default function UserAdminPanel() {
 
   const { data: users = [], isLoading } = useQuery(adminUsersQueryOptions)
   const { data: teams = [] } = useQuery(adminTeamsQueryOptions)
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserItem | null>(null)
 
@@ -226,7 +227,10 @@ export default function UserAdminPanel() {
       <DataTable
         columns={columns}
         data={users}
-        meta={{ onEdit: setEditingUser }}
+        meta={{
+          onEdit: setEditingUser,
+          onPasswordReset: setGeneratedCredentials,
+        }}
         onRowClick={(row) => {
           navigate({
             to: '/users/$userId',
@@ -276,10 +280,10 @@ export default function UserAdminPanel() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>User Created Successfully</DialogTitle>
+            <DialogTitle>Credentials Generated</DialogTitle>
             <DialogDescription>
-              Here are login credentials for this user. Please copy it now, as
-              it will not be shown again.
+              Here are the login credentials for this user. Please copy it now,
+              as it will not be shown again.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

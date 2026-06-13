@@ -50,8 +50,8 @@ export function CollapseTable({
           </TableHeader>
 
           <TableBody>
-            {inventory.map((category) => (
-              <Collapsible key={category.id} asChild>
+            {inventory.map((category, index) => (
+              <Collapsible key={index} asChild>
                 <>
                   <TableRow className="group cursor-pointer transition-colors hover:bg-muted/30">
                     <TableCell className="font-medium">
