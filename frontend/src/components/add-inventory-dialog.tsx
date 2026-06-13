@@ -80,7 +80,7 @@ export function AddInventoryDialog({
       team_id: 0,
       localization_id: 0,
       rental_status: false,
-    } as InventoryFormValues,
+    },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },

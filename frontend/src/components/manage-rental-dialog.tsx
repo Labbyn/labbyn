@@ -1,5 +1,4 @@
-import { Loader2, Users, Package, Calendar as Calendar1 } from 'lucide-react'
-import { Separator } from './ui/separator'
+import { Calendar as Calendar1, Loader2, Package, Users } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import {
   useMutation,
@@ -8,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { Separator } from './ui/separator'
 import {
   Select,
   SelectContent,
@@ -88,7 +88,7 @@ export function ManageRentalDialog({
       end_date: '',
       quantity: 0,
       team_id: 0,
-    } as RentalFormValues,
+    },
     onSubmit: async ({ value }) => {
       await createMutation.mutateAsync(value)
     },
@@ -128,35 +128,35 @@ export function ManageRentalDialog({
                   <div className="flex w-max space-x-3 pb-3">
                     {item.active_rentals.map((rent_item, idx) => (
                       <Card key={idx} className="flex flex-col w-40 shrink-0">
-                       <CardContent className="flex flex-1 flex-col gap-2 p-3">
-  <div className="flex flex-col">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-      <Users className="mr-1.5 h-3 w-3 shrink-0" />
-      Name
-    </span>
-    <span className="truncate text-sm font-medium text-foreground">
-      {rent_item.borrower_team}
-    </span>
-  </div>
-  <div className="flex flex-col pt-2">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-      <Package className="mr-1.5 h-3 w-3 shrink-0" />
-      Quantity
-    </span>
-    <span className="text-sm font-medium text-foreground">
-      {rent_item.quantity}
-    </span>
-  </div>
-  <div className="flex flex-col">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-    <Calendar1 className="mr-1.5 h-3 w-3 shrink-0" />  
-      End date
-    </span>
-    <span className="text-sm font-medium text-foreground">
-      {rent_item.end_date}
-    </span>
-  </div>
-</CardContent>
+                        <CardContent className="flex flex-1 flex-col gap-2 p-3">
+                          <div className="flex flex-col">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Users className="mr-1.5 h-3 w-3 shrink-0" />
+                              Name
+                            </span>
+                            <span className="truncate text-sm font-medium text-foreground">
+                              {rent_item.borrower_team}
+                            </span>
+                          </div>
+                          <div className="flex flex-col pt-2">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Package className="mr-1.5 h-3 w-3 shrink-0" />
+                              Quantity
+                            </span>
+                            <span className="text-sm font-medium text-foreground">
+                              {rent_item.quantity}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Calendar1 className="mr-1.5 h-3 w-3 shrink-0" />
+                              End date
+                            </span>
+                            <span className="text-sm font-medium text-foreground">
+                              {rent_item.end_date}
+                            </span>
+                          </div>
+                        </CardContent>
                         <CardFooter className="p-3 pt-0 flex justify-center">
                           <DeleteAlertDialog
                             onDelete={() => handleDelete(rent_item.id)}
@@ -174,7 +174,7 @@ export function ManageRentalDialog({
               </p>
             )}
           </div>
-<Separator/>
+          <Separator />
 
           <div className="max-h-[60vh] overflow-y-auto space-y-4 py-3 mb-6">
             <p className="text-sm font-medium mb-3">Add new rental</p>

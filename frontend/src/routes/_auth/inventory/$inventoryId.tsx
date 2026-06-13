@@ -5,15 +5,15 @@ import { useForm } from '@tanstack/react-form'
 import {
   BanknoteArrowUp,
   Book,
+  Calendar,
   ChartColumnStacked,
   ChevronRight,
   ClipboardList,
   Coins,
   MapPin,
-  WeightTilde,
-  Calendar,
   Package,
-  Users
+  Users,
+  WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ApiUpdateInventory } from '@/integrations/inventory/inventory.types'
@@ -206,7 +206,7 @@ function InventoryDetailsPage() {
                             />
                           ) : (
                             <form.Field
-                              name={formField.name as any}
+                              name={formField.name}
                               children={(field) => (
                                 <Input
                                   type="number"
@@ -229,35 +229,35 @@ function InventoryDetailsPage() {
                                       key={i}
                                       className="flex flex-col w-40 shrink-0"
                                     >
-                                     <CardContent className="flex flex-1 flex-col gap-2 p-3">
-  <div className="flex flex-col">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-      <Users className="mr-1.5 h-3 w-3 shrink-0" />
-      Name
-    </span>
-    <span className="truncate text-sm font-medium text-foreground">
-      {item.borrower_team}
-    </span>
-  </div>
-  <div className="flex flex-col pt-2">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-      <Package className="mr-1.5 h-3 w-3 shrink-0" />
-      Quantity
-    </span>
-    <span className="text-sm font-medium text-foreground">
-      {item.quantity}
-    </span>
-  </div>
-  <div className="flex flex-col">
-    <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
-    <Calendar className="mr-1.5 h-3 w-3 shrink-0" />  
-      End date
-    </span>
-    <span className="text-sm font-medium text-foreground">
-      {item.end_date}
-    </span>
-  </div>
-</CardContent>
+                                      <CardContent className="flex flex-1 flex-col gap-2 p-3">
+                                        <div className="flex flex-col">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Users className="mr-1.5 h-3 w-3 shrink-0" />
+                                            Name
+                                          </span>
+                                          <span className="truncate text-sm font-medium text-foreground">
+                                            {item.borrower_team}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col pt-2">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Package className="mr-1.5 h-3 w-3 shrink-0" />
+                                            Quantity
+                                          </span>
+                                          <span className="text-sm font-medium text-foreground">
+                                            {item.quantity}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Calendar className="mr-1.5 h-3 w-3 shrink-0" />
+                                            End date
+                                          </span>
+                                          <span className="text-sm font-medium text-foreground">
+                                            {item.end_date}
+                                          </span>
+                                        </div>
+                                      </CardContent>
                                     </Card>
                                   ))}
                                 </div>

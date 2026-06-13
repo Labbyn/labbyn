@@ -1,4 +1,4 @@
-import { ChevronDown, Layers, MapPin, Users } from 'lucide-react'
+import { ChevronDown, Layers, MapPin } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import type { ApiCategoryInventoryGroupedResponse } from '@/integrations/category/category.types'
 
@@ -25,7 +25,7 @@ export function CollapseTable({
 }) {
   const navigate = useNavigate()
 
-  if (!inventory?.length) {
+  if (inventory.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
         No inventory to display
@@ -61,9 +61,7 @@ export function CollapseTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {category.quantity} units
-                      </Badge>
+                      <Badge variant="outline">{category.quantity} units</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <CollapsibleTrigger className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted [&[data-state=open]>svg]:rotate-180">
@@ -80,7 +78,7 @@ export function CollapseTable({
                           <h4 className="mb-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                             Inventory details
                           </h4>
-                          
+
                           {/* Inventory grid */}
                           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                             {category.item_group.map((item) => (
@@ -104,14 +102,17 @@ export function CollapseTable({
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1.5" title="Pokój / Lokalizacja">
+                                  <div
+                                    className="flex items-center gap-1.5"
+                                    title="Pokój / Lokalizacja"
+                                  >
                                     <MapPin className="h-3.5 w-3.5 shrink-0" />
-                                    <span>
-                                      {item.room_name}
-                                    </span>
+                                    <span>{item.room_name}</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5" title="Zespół">
-                                  </div>
+                                  <div
+                                    className="flex items-center gap-1.5"
+                                    title="Zespół"
+                                  ></div>
                                 </div>
                               </div>
                             ))}

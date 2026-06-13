@@ -2024,7 +2024,7 @@ export function CanvasComponent3D({
         rotation: 0,
         type: 'rack',
         label: selectedRack?.name || `Rack ${pendingRackId}`,
-      } as any)
+      })
 
       setPendingRackId('')
       setRackSearchQuery('')

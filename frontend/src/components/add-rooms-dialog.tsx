@@ -80,7 +80,7 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
       room_type: '',
       team_id: 0,
       tag_ids: [],
-    } as RoomsFormValues,
+    },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },

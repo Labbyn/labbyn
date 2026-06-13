@@ -82,7 +82,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
       room_id: 0,
       team_id: 0,
       tag_ids: [],
-    } as RackFormValues,
+    },
     onSubmit: async ({ value }) => {
       await mutation.mutateAsync(value)
     },

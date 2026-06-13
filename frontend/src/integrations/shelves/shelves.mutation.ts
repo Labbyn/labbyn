@@ -51,7 +51,7 @@ export function useUpdateShelvesOrderMutation(rackId: string | number) {
       const promises = updates.map((shelf) =>
         api.patch(PATHS.DETAIL(shelf.id), {
           order: shelf.order,
-        } as ApiShelfUpdate),
+        }),
       )
       return Promise.all(promises)
     },

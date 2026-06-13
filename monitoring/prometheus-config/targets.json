@@ -19,5 +19,16 @@
       "role": "virtual",
       "team": "Service Team"
     }
+  },
+  {
+    "targets": [
+      "192.168.56.102:9100"
+    ],
+    "labels": {
+      "env": "virtual",
+      "host": "192.168.56.102",
+      "role": "virtual",
+      "team": "Service Team"
+    }
   }
 ]

@@ -47,7 +47,7 @@ export function AssignTagDialog({
       entity_type: entityType!,
       entity_id: entityId!,
       tag_ids: [],
-    } as AssignDetachTagForm,
+    },
     onSubmit: ({ value }) => {
       mutation.mutate(value, {
         onSuccess: () => {

@@ -40,10 +40,7 @@ export const columns: Array<ColumnDef<MachineItem>> = [
   ).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
-      <DataTableColumnHeader
-        column={column}
-        title={formatHeader(key as string)}
-      />
+      <DataTableColumnHeader column={column} title={formatHeader(key)} />
     ),
     cell: ({ getValue }: { getValue: () => any }) => {
       const value = getValue()

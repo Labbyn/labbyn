@@ -412,12 +412,12 @@ function MachineDetailsPage() {
                               </span>
                             ) : (
                               <form.Field
-                                name={formFiled.name as any}
+                                name={formFiled.name}
                                 children={(field) => (
                                   <Input
                                     value={String(field.state.value)}
                                     onChange={(e) =>
-                                      field.handleChange(e.target.value as any)
+                                      field.handleChange(e.target.value)
                                     }
                                     className="h-8 text-sm rounded-md border-input bg-background"
                                   />

@@ -31,10 +31,7 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
   ...(['id', 'name', 'admins'] as Array<keyof ApiTeamItem>).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
-      <DataTableColumnHeader
-        column={column}
-        title={formatHeader(key as string)}
-      />
+      <DataTableColumnHeader column={column} title={formatHeader(key)} />
     ),
     cell: ({ getValue }: { getValue: () => any }) => {
       const value = getValue()

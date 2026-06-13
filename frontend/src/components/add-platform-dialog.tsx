@@ -50,15 +50,15 @@ import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 
 // --- Schemas ---
 
-//const schemas = {
-//  hostname: z.string().min(1, 'Hostname is required').max(255),
-//  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
-//  mac: z
-//    .string()
-//    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
-//    .optional()
-//    .or(z.literal('')),
-//}
+const schemas = {
+  hostname: z.string().min(1, 'Hostname is required').max(255),
+  ip: z.ipv4().or(z.literal('')),
+  mac: z
+    .string()
+    .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
+    .optional()
+    .or(z.literal('')),
+}
 
 interface AddPlatformDialogProps {
   children?: React.ReactNode
@@ -92,7 +92,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
     },
   })
 
-  const form = useForm({
+  const form = useForm<PlatformFormValues>({
     defaultValues: {
       hostname: '',
       addToDb: false,
@@ -113,7 +113,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       ram: '',
       disks: [],
       shelf_id: undefined,
-    } as PlatformFormValues,
+    },
     onSubmit: async ({ value }) => {
       if (
         (value.scanPlatform || value.deployAgent) &&
@@ -144,10 +144,10 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
   )
 
   const { data: shelves, isLoading: isLoadingShelves } = useQuery({
-    ...(selectedRack != null
+    ...(selectedRack
       ? singleShelfQueryOptions(String(selectedRack))
       : { queryKey: ['shelf'], queryFn: () => [] }),
-    enabled: selectedRack != null,
+    enabled: !!selectedRack,
   })
 
   return (
@@ -183,7 +183,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               {/* Hostname - Always Required */}
               <form.Field
                 name="hostname"
-                //validators={{ onChange: zodValidate(schemas.hostname) }}
+                validators={{ onChange: zodValidate(schemas.hostname) }}
                 children={(field) => (
                   <Field>
                     <FieldLabel htmlFor={field.name}>
@@ -459,7 +459,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                       <div className="grid grid-cols-2 gap-4">
                         <form.Field
                           name="ip_address"
-                          //validators={{ onChange: zodValidate(schemas.ip) }}
+                          validators={{ onChange: zodValidate(schemas.ip) }}
                           children={(field) => (
                             <Field>
                               <FieldLabel htmlFor={field.name}>
@@ -485,7 +485,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
 
                         <form.Field
                           name="mac_address"
-                          //validators={{ onChange: zodValidate(schemas.mac) }}
+                          validators={{ onChange: zodValidate(schemas.mac) }}
                           children={(field) => (
                             <Field>
                               <FieldLabel htmlFor={field.name}>
@@ -516,7 +516,11 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                             <Field>
                               <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                               <Select
-                                value={field.state.value?.toString() ?? ''}
+                                value={
+                                  field.state.value
+                                    ? String(field.state.value)
+                                    : ''
+                                }
                                 onValueChange={(value) => {
                                   field.handleChange(Number(value))
                                   form.setFieldValue(
@@ -554,8 +558,12 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 Room / Lab
                               </FieldLabel>
                               <Select
-                                disabled={selectedTeam == null}
-                                value={field.state.value?.toString() ?? ''}
+                                disabled={!selectedTeam}
+                                value={
+                                  field.state.value
+                                    ? String(field.state.value)
+                                    : ''
+                                }
                                 onValueChange={(value) => {
                                   field.handleChange(Number(value))
                                   setSelectedRack(undefined)
@@ -565,7 +573,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 <SelectTrigger>
                                   <SelectValue
                                     placeholder={
-                                      selectedTeam == null
+                                      !selectedTeam
                                         ? 'Select a Team first'
                                         : availableRooms.length === 0
                                           ? 'No rooms for this team'
@@ -592,8 +600,8 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                         <Field>
                           <FieldLabel htmlFor={'rack-select'}>Rack</FieldLabel>
                           <Select
-                            disabled={selectedRoom == null}
-                            value={selectedRack?.toString() ?? ''}
+                            disabled={!selectedRoom}
+                            value={selectedRack ? String(selectedRack) : ''}
                             onValueChange={(value) => {
                               setSelectedRack(Number(value))
                               form.setFieldValue('shelf_id', undefined)
@@ -602,7 +610,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                             <SelectTrigger>
                               <SelectValue
                                 placeholder={
-                                  selectedRoom == null
+                                  !selectedRoom
                                     ? 'Select a Room first'
                                     : availableRacks.length === 0
                                       ? 'No racks available'
@@ -632,10 +640,12 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 Shelf
                               </FieldLabel>
                               <Select
-                                disabled={
-                                  selectedRack == null || isLoadingShelves
+                                disabled={!selectedRack || isLoadingShelves}
+                                value={
+                                  field.state.value
+                                    ? String(field.state.value)
+                                    : ''
                                 }
-                                value={field.state.value?.toString() ?? ''}
                                 onValueChange={(value) =>
                                   field.handleChange(Number(value))
                                 }
@@ -643,7 +653,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 <SelectTrigger>
                                   <SelectValue
                                     placeholder={
-                                      selectedRack == null
+                                      !selectedRack
                                         ? 'Select a Rack first'
                                         : isLoadingShelves
                                           ? 'Loading shelves...'
