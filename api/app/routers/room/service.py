@@ -49,7 +49,7 @@ class RoomService:
         :raises ValidationError: If team data is missing.
         :raises ConflictError: On name collision.
         """
-        self.ctx.require_group_admin()
+        self.ctx.require_user()
         target_team_id = room_data.team_id or (
             self.ctx.team_ids[0] if len(self.ctx.team_ids) == 1 else None
         )

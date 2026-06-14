@@ -45,7 +45,7 @@ class CategoryService:
         :param category_data: Data for new category.
         :return: Created category object.
         """
-        self.ctx.require_admin()
+        self.ctx.require_user()
         obj = models.Categories(**category_data.model_dump())
 
         try:
