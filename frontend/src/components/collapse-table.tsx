@@ -93,7 +93,7 @@ export function CollapseTable({
                                 className="group/item flex cursor-pointer flex-col justify-between space-y-3 rounded-lg border bg-background p-4 shadow-sm transition-all hover:border-primary/30 hover:shadow-md"
                               >
                                 <div className="flex items-start justify-between gap-4">
-                                  <p className="font-medium leading-tight transition-colors group-hover/item:text-primary">
+                                  <p className="truncate font-medium leading-tight transition-colors group-hover/item:text-primary">
                                     {item.name}
                                   </p>
                                   <Badge variant="outline">
