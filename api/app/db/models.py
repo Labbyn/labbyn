@@ -198,7 +198,6 @@ class Machines(Base):
     inventory = relationship("Inventory", back_populates="machine")
 
 
-
 class Metadata(Base):
     """Metadata model representing additional metadata for machines."""
 
