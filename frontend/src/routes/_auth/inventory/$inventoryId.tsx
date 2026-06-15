@@ -5,11 +5,14 @@ import { useForm } from '@tanstack/react-form'
 import {
   BanknoteArrowUp,
   Book,
+  Calendar,
   ChartColumnStacked,
   ChevronRight,
   ClipboardList,
   Coins,
   MapPin,
+  Package,
+  Users,
   WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -224,27 +227,36 @@ function InventoryDetailsPage() {
                                   {inventory.active_rentals.map((item, i) => (
                                     <Card
                                       key={i}
-                                      className="w-40 h-40 shrink-0"
+                                      className="flex flex-col w-40 shrink-0"
                                     >
-                                      <CardContent className="pl-3 flex flex-col">
-                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                          Name
-                                        </span>
-                                        <span className="text-foreground">
-                                          {item.borrower_team}
-                                        </span>
-                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                          Quantity
-                                        </span>
-                                        <span className="text-foreground">
-                                          {item.quantity}
-                                        </span>
-                                        <span className="text-xs font-medium uppercase text-muted-foreground block">
-                                          End date
-                                        </span>
-                                        <span className="text-foreground">
-                                          {item.end_date}
-                                        </span>
+                                      <CardContent className="flex flex-1 flex-col gap-2 p-3">
+                                        <div className="flex flex-col">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Users className="mr-1.5 h-3 w-3 shrink-0" />
+                                            Name
+                                          </span>
+                                          <span className="truncate text-sm font-medium text-foreground">
+                                            {item.borrower_team}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col pt-2">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Package className="mr-1.5 h-3 w-3 shrink-0" />
+                                            Quantity
+                                          </span>
+                                          <span className="text-sm font-medium text-foreground">
+                                            {item.quantity}
+                                          </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                                            <Calendar className="mr-1.5 h-3 w-3 shrink-0" />
+                                            End date
+                                          </span>
+                                          <span className="text-sm font-medium text-foreground">
+                                            {item.end_date}
+                                          </span>
+                                        </div>
                                       </CardContent>
                                     </Card>
                                   ))}

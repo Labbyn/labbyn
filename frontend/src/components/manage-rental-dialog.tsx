@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react'
+import { Calendar as Calendar1, Loader2, Package, Users } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import {
   useMutation,
@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { Separator } from './ui/separator'
 import {
   Select,
   SelectContent,
@@ -123,31 +124,40 @@ export function ManageRentalDialog({
             {item.active_rentals.length > 0 ? (
               <>
                 <p className="text-sm font-medium mb-3">Current rentals</p>
-                <ScrollArea className="w-96 h-55 whitespace-nowrap">
+                <ScrollArea className="w-96 h-55 pb-4 whitespace-nowrap">
                   <div className="flex w-max space-x-3 pb-3">
                     {item.active_rentals.map((rent_item, idx) => (
-                      <Card key={idx} className="w-40 h-40 shrink-0">
-                        <CardContent className="pl-3 flex flex-col">
-                          <span className="text-xs font-medium uppercase text-muted-foreground block">
-                            Name
-                          </span>
-                          <span className="text-foreground">
-                            {rent_item.borrower_team}
-                          </span>
-                          <span className="text-xs font-medium uppercase text-muted-foreground block">
-                            Quantity
-                          </span>
-                          <span className="text-foreground">
-                            {rent_item.quantity}
-                          </span>
-                          <span className="text-xs font-medium uppercase text-muted-foreground block">
-                            End date
-                          </span>
-                          <span className="text-foreground">
-                            {rent_item.end_date}
-                          </span>
+                      <Card key={idx} className="flex flex-col w-40 shrink-0">
+                        <CardContent className="flex flex-1 flex-col gap-2 p-3">
+                          <div className="flex flex-col">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Users className="mr-1.5 h-3 w-3 shrink-0" />
+                              Name
+                            </span>
+                            <span className="truncate text-sm font-medium text-foreground">
+                              {rent_item.borrower_team}
+                            </span>
+                          </div>
+                          <div className="flex flex-col pt-2">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Package className="mr-1.5 h-3 w-3 shrink-0" />
+                              Quantity
+                            </span>
+                            <span className="text-sm font-medium text-foreground">
+                              {rent_item.quantity}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="flex items-center text-[11px] font-medium uppercase text-muted-foreground">
+                              <Calendar1 className="mr-1.5 h-3 w-3 shrink-0" />
+                              End date
+                            </span>
+                            <span className="text-sm font-medium text-foreground">
+                              {rent_item.end_date}
+                            </span>
+                          </div>
                         </CardContent>
-                        <CardFooter>
+                        <CardFooter className="p-3 pt-0 flex justify-center">
                           <DeleteAlertDialog
                             onDelete={() => handleDelete(rent_item.id)}
                           />
@@ -155,6 +165,7 @@ export function ManageRentalDialog({
                       </Card>
                     ))}
                   </div>
+                  <Separator />
                   <ScrollBar orientation="horizontal" />
                 </ScrollArea>
               </>

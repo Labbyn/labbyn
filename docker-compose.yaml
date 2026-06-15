@@ -2,6 +2,9 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        - VITE_API_URL=/api
+        - VITE_WS_URL=ws://localhost/ws
     env_file:
       - .env/frontend.env
     ports:
@@ -19,6 +22,8 @@ services:
     volumes:
       - ./monitoring/prometheus-config:/app/monitoring/prometheus-config
       - ~/.ssh:/root/.ssh
+    ports:
+      - "8000:8000"
   db:
     image: postgres:17
     env_file:
