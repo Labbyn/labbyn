@@ -169,7 +169,7 @@ class TeamService:
                 self.db.add(new_membership)
 
             virtual_lab = models.Rooms(
-                name=f"virtual_{team_data.name}", room_type="virtual", team_id=obj.id
+                name=f"{team_data.name} (virtual)", room_type="virtual", team_id=obj.id
             )
             self.db.add(virtual_lab)
 
