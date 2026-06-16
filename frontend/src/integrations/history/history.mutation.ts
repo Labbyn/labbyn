@@ -21,8 +21,13 @@ export const useRollbackMutation = () => {
       toast.success('System state rolled back successfully')
       queryClient.invalidateQueries({ queryKey: ['history'] })
     },
-    onError: (err: Error) => {
-      toast.error(`Rollback Error: ${err.message}`)
+    onError: (err: any) => {
+      const backendMessage = 
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        'You do not have permission to perform this action (403)';
+        
+      toast.error(`Rollback Error: ${backendMessage}`)
     },
   })
 }
