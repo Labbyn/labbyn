@@ -15,7 +15,7 @@ function RouteComponent() {
     <div className="p-6 space-y-6">
       <PageHeader
         title="Import & Export"
-        description="Import and export data to/from .csv file"
+        description="Import and export data to/from .csv or .json files"
         icon={FolderInput}
       />
       <Separator />
