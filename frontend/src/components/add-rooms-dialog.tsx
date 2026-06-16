@@ -38,7 +38,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useCreateLabMutation } from '@/integrations/labs/labs.mutation'
 import { zodValidate } from '@/utils/index'
-import { currentUserTeamsQueryOptions, teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
 type RoomsFormValues = {

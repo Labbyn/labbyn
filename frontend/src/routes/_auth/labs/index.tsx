@@ -42,7 +42,6 @@ function RouteComponent() {
 
   return (
     <div className="absolute inset-0 flex flex-col bg-background">
-      
       {/* Header and Search Bar Container */}
       <div className="flex-none px-6 py-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-4 z-10">
         <PageHeader
@@ -108,7 +107,10 @@ function RouteComponent() {
                   <Separator />
                   <div className="flex flex-col gap-2 p-4">
                     <Button asChild className="w-full justify-between">
-                      <Link to="/labs/$labId" params={{ labId: String(lab.id) }}>
+                      <Link
+                        to="/labs/$labId"
+                        params={{ labId: String(lab.id) }}
+                      >
                         <span className="flex items-center">
                           <Settings className="mr-2 h-4 w-4" />
                           Room details

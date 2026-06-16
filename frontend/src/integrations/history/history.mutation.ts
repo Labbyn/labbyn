@@ -22,11 +22,11 @@ export const useRollbackMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['history'] })
     },
     onError: (err: any) => {
-      const backendMessage = 
-        err.response?.data?.message || 
-        err.response?.data?.error || 
-        'You do not have permission to perform this action (403)';
-        
+      const backendMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        'You do not have permission to perform this action (403)'
+
       toast.error(`Rollback Error: ${backendMessage}`)
     },
   })

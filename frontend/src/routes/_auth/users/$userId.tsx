@@ -6,9 +6,9 @@ import {
   Contact,
   Info,
   Mail,
+  Search,
   UserSearch,
   Users,
-  Search
 } from 'lucide-react'
 import { singleUserQueryOptions } from '@/integrations/user/user.query'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -23,11 +23,11 @@ export const Route = createFileRoute('/_auth/users/$userId')({
 function InventoryDetailsPage() {
   const { userId } = Route.useParams()
   const { data: user } = useSuspenseQuery(singleUserQueryOptions(userId))
-  
+
   const [searchQuery, setSearchQuery] = useState('')
 
   const filteredMemberships = user.membership.filter((group) =>
-    group.team_name.toLowerCase().includes(searchQuery.toLowerCase())
+    group.team_name.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return (
@@ -127,8 +127,8 @@ function InventoryDetailsPage() {
                   ) : (
                     <div className="text-center py-6 border-2 border-dashed rounded-lg">
                       <p className="text-sm text-muted-foreground italic">
-                        {user.membership.length > 0 
-                          ? 'No team found' 
+                        {user.membership.length > 0
+                          ? 'No team found'
                           : 'No assigned teams'}
                       </p>
                     </div>
