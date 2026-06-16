@@ -117,7 +117,8 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
     onSubmit: async ({ value }) => {
       if (!value.addToDb && !value.scanPlatform && !value.deployAgent) {
         toast.error('No operation selected', {
-          description: 'Please select at least one operation (Manual Entry, Auto-Discovery, or Deploy Agent).',
+          description:
+            'Please select at least one operation (Manual Entry, Auto-Discovery, or Deploy Agent).',
         })
         return
       }

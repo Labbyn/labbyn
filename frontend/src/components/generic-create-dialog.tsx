@@ -67,23 +67,22 @@ export function GenericCreateDialog<T extends Record<string, any>>({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        
+
         <div className="flex flex-col gap-5 py-4">
           {fields.map((key) => {
             const val = defaultValues[key]
             const config = fieldsConfig?.[key]
-            
+
             const rawString = String(key)
               .replace(/([A-Z])/g, ' $1') // insert a space before all caps (camelCase)
               .replace(/_/g, ' ') // replace underscores with spaces (snake_case)
               .trim()
-            const label = rawString.charAt(0).toUpperCase() + rawString.slice(1).toLowerCase()
+            const label =
+              rawString.charAt(0).toUpperCase() +
+              rawString.slice(1).toLowerCase()
 
             return (
-              <Field
-                key={String(key)}
-                className="flex flex-col gap-2"
-              >
+              <Field key={String(key)} className="flex flex-col gap-2">
                 <FieldLabel
                   htmlFor={String(key)}
                   className="text-sm font-medium leading-none"
