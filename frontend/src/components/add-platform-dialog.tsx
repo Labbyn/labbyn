@@ -115,6 +115,13 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       shelf_id: undefined,
     } as PlatformFormValues,
     onSubmit: async ({ value }) => {
+      if (!value.addToDb && !value.scanPlatform && !value.deployAgent) {
+        toast.error('No operation selected', {
+          description: 'Please select at least one operation (Manual Entry, Auto-Discovery, or Deploy Agent).',
+        })
+        return
+      }
+
       if (
         (value.scanPlatform || value.deployAgent) &&
         (!value.login || !value.password)
