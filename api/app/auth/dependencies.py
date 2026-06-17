@@ -1,4 +1,5 @@
 """Configuration of team and role filtering access."""
+from typing import Union, Any
 
 from fastapi import Depends
 from sqlalchemy import sql
@@ -134,14 +135,20 @@ class RequestContext:
         if not (self.is_admin or self.is_group_admin or self.is_user):
             raise exceptions.AccessDeniedError("Access denied")
 
-    async def validate_team_access(self, team_id: int):
-        """Validate if user has access to team-restricted resources.
+    async def validate_team_access(self, obj_or_id: Union[int, Any], resource_name: str = "Object"):
+        """Validates if the user has access to the resource based on team_id.
+        :param obj_or_id: Object or Team ID
+        :param resource_name: Resource name
 
-        :param team_id: Team Id
-        :return: AccessDenied error
+        :raises ObjectNotFoundError: If the team/resource context is fundamentally invalid.
+        :raises AccessDeniedError: If the user is not an admin and doesn't belong to the team.
         """
         if self.is_admin:
             return
+        team_id = obj_or_id if isinstance(obj_or_id, int) else getattr(obj_or_id, "team_id", None)
+
+        if team_id is None:
+            raise exceptions.AccessDeniedError(f"Insufficient permissions to manage this {resource_name}.")
 
         if team_id not in self.team_ids:
             stmt = sql.select(models.Teams.name).where(models.Teams.id == team_id)
@@ -152,5 +159,5 @@ class RequestContext:
                 raise exceptions.ObjectNotFoundError("Team")
 
             raise exceptions.AccessDeniedError(
-                f"Insufficient permissions " f"to manage items for team '{team_name}'"
+                f"Insufficient permissions to manage items for team '{team_name}'"
             )

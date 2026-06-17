@@ -42,6 +42,7 @@ class MachineService:
         )
         if not machine:
             raise exceptions.ObjectNotFoundError("Machine")
+        await self.ctx.validate_team_access(machine, resource_name="Machine")
         return machine
 
     async def create_machine(self, machine_data: Any) -> models.Machines:
@@ -56,7 +57,7 @@ class MachineService:
         cpus = machine_data.cpus or []
         disks = machine_data.disks or []
         data = machine_data.model_dump(exclude={"cpus", "disks"})
-        await self.ctx.validate_team_access(data["team_id"])
+        await self.ctx.validate_team_access(data["team_id"], resource_name="Machine")
         try:
             if not data.get("metadata_id"):
                 new_metadata = models.Metadata()
@@ -333,7 +334,7 @@ class MachineService:
             shelf = shelf_res.scalar_one_or_none()
             if not shelf:
                 raise exceptions.ObjectNotFoundError("Target shelf")
-            await self.ctx.validate_team_access(shelf.rack.team_id)
+            await self.ctx.validate_team_access(shelf.rack.team_id, resource_name="Shelf")
             try:
                 m_name, s_name, r_name = machine.name, shelf.name, shelf.rack.name
                 machine.shelf_id, machine.localization_id = shelf_id, shelf.rack.room_id
