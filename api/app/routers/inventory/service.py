@@ -49,7 +49,9 @@ class InventoryService:
         self.ctx.require_user()
         try:
             data = inventory_data.model_dump()
-            await self.ctx.validate_team_access(data["team_id"], resource_name="Inventory")
+            await self.ctx.validate_team_access(
+                data["team_id"], resource_name="Inventory"
+            )
 
             obj = models.Inventory(**data)
             self.db.add(obj)

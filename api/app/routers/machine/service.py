@@ -334,7 +334,9 @@ class MachineService:
             shelf = shelf_res.scalar_one_or_none()
             if not shelf:
                 raise exceptions.ObjectNotFoundError("Target shelf")
-            await self.ctx.validate_team_access(shelf.rack.team_id, resource_name="Shelf")
+            await self.ctx.validate_team_access(
+                shelf.rack.team_id, resource_name="Shelf"
+            )
             try:
                 m_name, s_name, r_name = machine.name, shelf.name, shelf.rack.name
                 machine.shelf_id, machine.localization_id = shelf_id, shelf.rack.room_id

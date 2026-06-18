@@ -166,7 +166,9 @@ class RackService:
                     db_rack.tags = tag_res.scalars().all()
 
             if "team_id" in update_dict:
-                await self.ctx.validate_team_access(update_dict["team_id"], resource_name="Rack")
+                await self.ctx.validate_team_access(
+                    update_dict["team_id"], resource_name="Rack"
+                )
 
             if "room_id" in update_dict:
                 room = (

@@ -178,7 +178,9 @@ class RoomService:
                         room.tags = tag_res.scalars().all()
 
                 if "team_id" in update_data:
-                    await self.ctx.validate_team_access(update_data["team_id"], resource_name="Room")
+                    await self.ctx.validate_team_access(
+                        update_data["team_id"], resource_name="Room"
+                    )
 
                 for k, v in update_data.items():
                     setattr(room, k, v)

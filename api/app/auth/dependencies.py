@@ -1,4 +1,5 @@
 """Configuration of team and role filtering access."""
+
 from typing import Union, Any
 
 from fastapi import Depends
@@ -135,7 +136,9 @@ class RequestContext:
         if not (self.is_admin or self.is_group_admin or self.is_user):
             raise exceptions.AccessDeniedError("Access denied")
 
-    async def validate_team_access(self, obj_or_id: Union[int, Any], resource_name: str = "Object"):
+    async def validate_team_access(
+        self, obj_or_id: Union[int, Any], resource_name: str = "Object"
+    ):
         """Validates if the user has access to the resource based on team_id.
         :param obj_or_id: Object or Team ID
         :param resource_name: Resource name
@@ -145,10 +148,16 @@ class RequestContext:
         """
         if self.is_admin:
             return
-        team_id = obj_or_id if isinstance(obj_or_id, int) else getattr(obj_or_id, "team_id", None)
+        team_id = (
+            obj_or_id
+            if isinstance(obj_or_id, int)
+            else getattr(obj_or_id, "team_id", None)
+        )
 
         if team_id is None:
-            raise exceptions.AccessDeniedError(f"Insufficient permissions to manage this {resource_name}.")
+            raise exceptions.AccessDeniedError(
+                f"Insufficient permissions to manage this {resource_name}."
+            )
 
         if team_id not in self.team_ids:
             stmt = sql.select(models.Teams.name).where(models.Teams.id == team_id)
