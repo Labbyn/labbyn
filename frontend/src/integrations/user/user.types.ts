@@ -53,3 +53,8 @@ export type ApiUserInfoMembership = {
 }
 
 export type ApiUsersInfoRespnse = Array<ApiUserInfo>
+
+export type UserChangeTeamAccess = {
+  team_id: number
+  is_group_admin: boolean
+}

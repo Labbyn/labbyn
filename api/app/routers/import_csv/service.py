@@ -2,6 +2,8 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from typing import Any, Dict, List
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError, DBAPIError
+
 
 from app.db import models
 from app.core import exceptions
@@ -76,6 +78,24 @@ class ImportService:
                     results["details"].append(
                         {"row": index + 1, "name": name, "status": "success"}
                     )
+
+            except DBAPIError as e:
+                results["summary"]["failed"] += 1
+                error_msg = str(e.orig) if hasattr(e, "orig") else str(e)
+
+                if "DataError" in str(e) or "invalid input" in error_msg:
+                    friendly_error = "Invalid data format provided. Please check if your fields match expected data types (e.g. text in an integer column)."
+                else:
+                    friendly_error = f"Database operation error: {error_msg}"
+
+                results["details"].append(
+                    {
+                        "row": index + 1,
+                        "name": row.get("name", "Unknown"),
+                        "status": "failed",
+                        "error": friendly_error,
+                    }
+                )
             except (exceptions.AppBaseException, Exception) as e:
                 results["summary"]["failed"] += 1
                 error_msg = e.message if hasattr(e, "message") else str(e)
@@ -94,26 +114,37 @@ class ImportService:
 
         return results
 
+    async def _resolve_room(self, row: Dict[str, Any], t_id: int) -> models.Rooms:
+        """Resolve room from row data or fallback to team's virtual room.
+
+        :param row: Dictionary containing room data.
+        :param t_id: Resolved team ID to which the resource will be assigned.
+        :return: Room name or fallback to team's virtual room.
+        """
+        room_name = row.get("room_name")
+        if not room_name:
+            team_obj = await self.db.get(models.Teams, t_id)
+            t_name = team_obj.name if team_obj else "Unknown"
+            room_name = f"{t_name} (virtual)"
+        room = await self.repo.get_room_by_name(self.db, room_name, t_id)
+        if not room:
+            raise exceptions.ObjectNotFoundError("Room", room_name)
+        return room
+
     async def _process_inventory(self, row: Dict[str, Any], t_id: int) -> str:
         """Process a single inventory item row with full relationship mapping.
 
         Maps to: Room (Required), Category (Required), Machine (Optional).
+        :param row: Dictionary containing full inventory data.
+        :param t_id: Resolved team ID to which the inventory will be assigned.
+        :return: Name of the successfully processed inventory.
         """
-        room = await self.repo.get_room_by_name(self.db, row.get("room_name"), t_id)
-        if not room:
-            raise exceptions.ObjectNotFoundError("Room", row.get("room_name"))
+        room = await self._resolve_room(row, t_id)
 
         cat_name = row.get("category_name", "General")
         cat = await self.repo.get_category_by_name(self.db, cat_name)
         if not cat:
             raise exceptions.ObjectNotFoundError("Category", cat_name)
-
-        m_id = None
-        if row.get("machine_name"):
-            m = await self.repo.get_machine_by_name(self.db, row["machine_name"], t_id)
-            if not m:
-                raise exceptions.ObjectNotFoundError("Machine", row["machine_name"])
-            m_id = m.id
 
         obj = models.Inventory(
             name=row["name"],
@@ -121,7 +152,6 @@ class ImportService:
             team_id=t_id,
             localization_id=room.id,
             category_id=cat.id,
-            machine_id=m_id,
             rental_status=bool(row.get("rental_status", False)),
         )
 
@@ -136,9 +166,7 @@ class ImportService:
         :param t_id: Resolved team ID to which the machine will be assigned.
         :return: Name of the successfully processed machine.
         """
-        room = await self.repo.get_room_by_name(self.db, row.get("room_name"), t_id)
-        if not room:
-            raise exceptions.ObjectNotFoundError("Room", row.get("room_name"))
+        room = await self._resolve_room(row, t_id)
 
         shelf_id = None
         if row.get("shelf_name"):
@@ -184,11 +212,10 @@ class ImportService:
         try:
             self.db.add(machine)
             await self.db.flush()
-        except Exception:
+        except IntegrityError:
             raise exceptions.ConflictError(
-                f"Machine '{row['name']}' already exists in room '{row.get('room_name')}'"
+                f"Machine '{row['name']}' already exists in room '{room.name}.'"
             )
-
         for cpu_name in row.get("cpu", []):
             self.db.add(models.CPUs(name=cpu_name, machine_id=machine.id))
 
@@ -211,10 +238,11 @@ class ImportService:
         """Process a single rack row and its optional shelves.
 
         Allows defining shelves by a list of names or by size (count).
+        :param row: Dictionary containing full rack data.
+        :param t_id: Resolved team ID to which the rack will be assigned.
+        :return: Name of the successfully processed rack.
         """
-        room = await self.repo.get_room_by_name(self.db, row.get("room_name"), t_id)
-        if not room:
-            raise exceptions.ObjectNotFoundError("Room", row.get("room_name"))
+        room = await self._resolve_room(row, t_id)
 
         rack = models.Rack(name=row["name"], room_id=room.id, team_id=t_id)
         self.db.add(rack)
