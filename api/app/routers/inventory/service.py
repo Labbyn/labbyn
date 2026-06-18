@@ -37,6 +37,7 @@ class InventoryService:
         item = await self.repo.get_by_id(self.db, item_id, self.ctx, detailed=detailed)
         if not item:
             raise exceptions.ObjectNotFoundError("Inventory item")
+        await self.ctx.validate_team_access(item, resource_name="Inventory")
         return item
 
     async def create_item(self, inventory_data):
@@ -48,7 +49,7 @@ class InventoryService:
         self.ctx.require_user()
         try:
             data = inventory_data.model_dump()
-            await self.ctx.validate_team_access(data["team_id"])
+            await self.ctx.validate_team_access(data["team_id"], resource_name="Inventory")
 
             obj = models.Inventory(**data)
             self.db.add(obj)

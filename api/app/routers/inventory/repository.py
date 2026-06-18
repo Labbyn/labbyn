@@ -80,6 +80,5 @@ class InventoryRepository:
                 ),
             )
 
-        stmt = ctx.team_filter(stmt, models.Inventory)
         result = await db.execute(stmt)
         return result.unique().scalar_one_or_none()

@@ -51,7 +51,7 @@ class AnsibleService:
             else:
                 raise exceptions.ValidationError("Target team ID required.")
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Ansible")
 
         try:
             await self.executor.run_playbook_task(

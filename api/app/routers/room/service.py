@@ -59,7 +59,7 @@ class RoomService:
                 "Target team ID is required to create a room"
             )
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Room")
 
         try:
             obj = models.Rooms(
@@ -178,7 +178,7 @@ class RoomService:
                         room.tags = tag_res.scalars().all()
 
                 if "team_id" in update_data:
-                    await self.ctx.validate_team_access(update_data["team_id"])
+                    await self.ctx.validate_team_access(update_data["team_id"], resource_name="Room")
 
                 for k, v in update_data.items():
                     setattr(room, k, v)

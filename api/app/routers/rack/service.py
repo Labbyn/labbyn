@@ -64,6 +64,7 @@ class RackService:
         rack = await self.repo.get_by_id(self.db, rack_id, self.ctx, detailed=detailed)
         if not rack:
             raise exceptions.ObjectNotFoundError("Rack")
+        await self.ctx.validate_team_access(rack.team_id, resource_name="Rack")
         return rack
 
     async def get_all_racks(
@@ -95,7 +96,7 @@ class RackService:
         if not target_team_id:
             raise exceptions.ValidationError("Target team ID is required")
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Rack")
 
         room = (
             await self.db.execute(
@@ -165,7 +166,7 @@ class RackService:
                     db_rack.tags = tag_res.scalars().all()
 
             if "team_id" in update_dict:
-                await self.ctx.validate_team_access(update_dict["team_id"])
+                await self.ctx.validate_team_access(update_dict["team_id"], resource_name="Rack")
 
             if "room_id" in update_dict:
                 room = (
