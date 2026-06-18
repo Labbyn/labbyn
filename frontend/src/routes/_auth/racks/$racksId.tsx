@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button'
 import {
   useCreateShelfMutation,
   useDeleteShelfMutation,
+  useUpdateShelvesOrderMutation,
 } from '@/integrations/shelves/shelves.mutation'
 
 export const Route = createFileRoute('/_auth/racks/$racksId')({
@@ -49,15 +50,18 @@ function RacksDetailsPage() {
   const [isEditing, setIsEditing] = useState(false)
   const navigate = useNavigate()
 
+  const updateShelvesOrder = useUpdateShelvesOrderMutation(racksId)
+
   const form = useForm({
     defaultValues: {
       name: rack.name,
       team_id: rack.team_id,
       room_id: rack.room_id,
       tags: rack.tags,
-      shelves: rack.shelves,
+      shelves: rack.shelves.slice().sort((a: any, b: any) => a.order - b.order),
     },
     onSubmit: ({ value }) => {
+      // Update rack basic fields
       updateRack.mutate(value, {
         onSuccess: () => {
           toast.success('Rack updated successfully')
@@ -67,6 +71,24 @@ function RacksDetailsPage() {
           toast.error('Operation failed', { description: error.message })
         },
       })
+
+      if (value.shelves && Array.isArray(value.shelves)) {
+        const updates = value.shelves.map((shelf: any) => ({
+          id: shelf.id,
+          order: shelf.order,
+        }))
+        updateShelvesOrder.mutate(updates, {
+          onSuccess: () => {
+            toast.success('Shelves order saved')
+          },
+          onError: (error: Error) => {
+            toast.error('Failed to save shelves order', {
+              description: error.message,
+            })
+          },
+        })
+      }
+
       setIsEditing(false)
     },
   })
@@ -329,7 +351,7 @@ function RacksDetailsPage() {
                       name="shelves"
                       children={(field) => (
                         <DndTable
-                          shelves={field.state.value}
+                          shelves={field.state.value.slice().sort((a: any, b: any) => a.order - b.order)}
                           onReorder={(newShelves) => {
                             field.handleChange(newShelves)
                           }}
@@ -358,7 +380,7 @@ function RacksDetailsPage() {
                 ) : (
                   <DataTable
                     columns={columnsShelves}
-                    data={rack.shelves.map((shelf) => ({
+                    data={rack.shelves.slice().sort((a, b) => a.order - b.order).map((shelf) => ({
                       name: shelf.name,
                       machines: shelf.machines,
                     }))}
