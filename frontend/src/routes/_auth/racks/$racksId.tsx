@@ -370,8 +370,11 @@ function RacksDetailsPage() {
                                   )
                                   toast.success(`Shelf deleted!`)
                                 },
+                              onError: (error: Error) => {
+                                toast.error('Operation failed', { description: error.message })
                               },
-                            )
+                            },
+                          )
                           }}
                         />
                       )}

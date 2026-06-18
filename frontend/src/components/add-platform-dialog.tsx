@@ -83,6 +83,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['shelf'] })
       queryClient.invalidateQueries({ queryKey: ['rack'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 
       setOpen(false)
       form.reset()
@@ -115,6 +116,14 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       shelf_id: undefined,
     } as PlatformFormValues,
     onSubmit: async ({ value }) => {
+      // require at least one operation: manual DB entry or auto-discovery
+      if (!value.addToDb && !value.scanPlatform) {
+        toast.error('Select operation', {
+          description: 'Please choose Manual Inventory Entry or Auto-Discovery before adding a platform.',
+        })
+        return
+      }
+
       if (
         (value.scanPlatform || value.deployAgent) &&
         (!value.login || !value.password)
@@ -929,11 +938,11 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit]}
-              children={([canSubmit]) => (
+              selector={(state) => [state.canSubmit, state.values.addToDb, state.values.scanPlatform]}
+              children={([canSubmit, addToDb, scanPlatform]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || mutation.isPending}
+                  disabled={!canSubmit || mutation.isPending || !(addToDb || scanPlatform)}
                 >
                   {mutation.isPending ? (
                     <>
