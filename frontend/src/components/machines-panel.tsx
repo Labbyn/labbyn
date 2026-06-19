@@ -14,7 +14,6 @@ type MachineItem = ReturnType<typeof fetchMachinesData>[number]
 export const columns: Array<ColumnDef<MachineItem>> = [
   ...(
     [
-      'id',
       'name',
       'mac_address',
       'ip_address',
