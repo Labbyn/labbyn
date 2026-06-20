@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Brackets, Loader2, Plus } from 'lucide-react'
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import {
   useMutation,
   useQueryClient,
@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button'
 import { useCreateRackMutation } from '@/integrations/racks/racks.mutation'
 import { zodValidate } from '@/utils/index'
 import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
-import { labsQueryOptions } from '@/integrations/labs/labs.query'
+import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
 type RackFormValues = {
@@ -59,7 +59,7 @@ const schemas = {
 export function AddRackDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
-  const { data: labs } = useSuspenseQuery(labsQueryOptions)
+  const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
   const { data: teams } = useSuspenseQuery(currentUserTeamsQueryOptions)
   const { data: tags } = useSuspenseQuery(tagsQueryOptions)
 
@@ -85,6 +85,12 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
       await mutation.mutateAsync(value)
     },
   })
+
+  const selectedTeam = useStore(form.store, (state) => state.values.team_id)
+
+  const availableRooms = labs.filter(
+    (lab) => Number(lab.team_id) === Number(selectedTeam),
+  )
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -113,7 +119,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
           }}
         >
           <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1 mb-6">
-            {/* Rack name, room name, team name, tags - Always Required */}
+            {/* Rack name, room / lab name, team name, tags - Always Required */}
             <form.Field
               name="name"
               validators={{ onChange: zodValidate(schemas.name) }}
@@ -135,40 +141,17 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
               )}
             />
             <form.Field
-              name="room_id"
-              validators={{ onChange: zodValidate(schemas.room_id) }}
-              children={(field) => (
-                <Field>
-                  <FieldLabel htmlFor={field.name}>Room Name</FieldLabel>
-                  <Select
-                    value={field.state.value.toString()}
-                    onValueChange={(value) => field.handleChange(Number(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a room" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {labs.map((lab) => (
-                        <SelectItem key={lab.id} value={lab.id.toString()}>
-                          <div className="gap-2">
-                            <span className="capitalize">{lab.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-            />
-            <form.Field
               name="team_id"
               validators={{ onChange: zodValidate(schemas.team_id) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                   <Select
                     value={field.state.value.toString()}
-                    onValueChange={(value) => field.handleChange(Number(value))}
+                    onValueChange={(value) => {
+                      field.handleChange(Number(value))
+                      form.setFieldValue('room_id', 0)
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select a team" />
@@ -178,6 +161,33 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
                         <SelectItem key={team.id} value={team.id.toString()}>
                           <div className="gap-2">
                             <span className="capitalize">{team.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+            />
+            <form.Field
+              name="room_id"
+              validators={{ onChange: zodValidate(schemas.room_id) }}
+              children={(field) => (
+                <Field>
+                  <FieldLabel htmlFor={field.name}>Room / Lab</FieldLabel>
+                  <Select
+                  disabled={!selectedTeam || selectedTeam <= 0}
+                  value={field.state.value.toString()}
+                  onValueChange={(value) => field.handleChange(Number(value))}
+                >
+                    <SelectTrigger>
+                      <SelectValue placeholder={!selectedTeam || selectedTeam <= 0 ? 'Select a Team first' : 'Select a room'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableRooms.map((lab) => (
+                        <SelectItem key={lab.id} value={lab.id.toString()}>
+                          <div className="gap-2">
+                            <span className="capitalize">{lab.name}</span>
                           </div>
                         </SelectItem>
                       ))}
