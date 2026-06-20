@@ -67,9 +67,6 @@ function RacksDetailsPage() {
           toast.success('Rack updated successfully')
           setIsEditing(false)
         },
-        onError: (error: Error) => {
-          toast.error('Operation failed', { description: error.message })
-        },
       })
 
       const updates = value.shelves.map((shelf: any) => ({
@@ -79,11 +76,6 @@ function RacksDetailsPage() {
       updateShelvesOrder.mutate(updates, {
         onSuccess: () => {
           toast.success('Shelves order saved')
-        },
-        onError: (error: Error) => {
-          toast.error('Failed to save shelves order', {
-            description: error.message,
-          })
         },
       })
 
@@ -175,9 +167,6 @@ function RacksDetailsPage() {
             onSuccess: () => {
               toast.success('Rack deleted successfully')
               router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
             },
           })
         },
@@ -369,11 +358,6 @@ function RacksDetailsPage() {
                                     ),
                                   )
                                   toast.success(`Shelf deleted!`)
-                                },
-                                onError: (error: Error) => {
-                                  toast.error('Operation failed', {
-                                    description: error.message,
-                                  })
                                 },
                               },
                             )

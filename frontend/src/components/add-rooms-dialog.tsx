@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   MultiSelect,
   MultiSelectContent,
@@ -69,9 +70,6 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 

@@ -41,7 +41,6 @@ export const useCreateDocumentMutation = () => {
         params: { docId: String(newDoc.id) },
       })
     },
-    onError: () => toast.error('Failed to create document'),
   })
 }
 
@@ -68,7 +67,6 @@ export const useUpdateDocumentMutation = () => {
         queryKey: ['documentation', String(data.id)],
       })
     },
-    onError: () => toast.error('Failed to save changes'),
   })
 }
 
@@ -85,6 +83,5 @@ export const useDeleteDocumentMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['documentation'] })
       navigate({ to: '/documentation' })
     },
-    onError: () => toast.error('Failed to delete document'),
   })
 }

@@ -68,9 +68,6 @@ export function AddInventoryDialog({
       setOpen(false)
       form.reset()
     },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
-    },
   })
 
   const form = useForm({

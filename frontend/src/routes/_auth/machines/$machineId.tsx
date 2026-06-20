@@ -24,6 +24,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
 import type { TagItem } from '@/integrations/tags/tags.types'
 import { Button } from '@/components/ui/button'
 import {
@@ -98,9 +99,6 @@ function MachineDetailsPage() {
           toast.success('Machine updated successfully')
           setIsEditing(false)
         },
-        onError: (error: Error) => {
-          toast.error('Update failed', { description: error.message })
-        },
       })
     },
   })
@@ -162,9 +160,6 @@ function MachineDetailsPage() {
             onSuccess: () => {
               toast.success('Machine deleted successfully')
               router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
             },
           })
         },

@@ -16,6 +16,7 @@ import {
   WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
 import type { ApiUpdateInventory } from '@/integrations/inventory/inventory.types'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -85,9 +86,6 @@ function InventoryDetailsPage() {
           toast.success('Inventory updated successfully')
           setIsEditing(false)
         },
-        onError: (error: Error) => {
-          toast.error('Update failed', { description: error.message })
-        },
       })
     },
   })
@@ -114,9 +112,6 @@ function InventoryDetailsPage() {
             onSuccess: () => {
               toast.success('Item deleted successfully')
               router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
             },
           })
         },

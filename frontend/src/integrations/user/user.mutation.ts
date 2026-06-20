@@ -23,9 +23,6 @@ export const useCreateUserMutation = () => {
       toast.success(`User created. Login: ${data.login}`)
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: () => {
-      toast.error('Failed to create user')
-    },
   })
 }
 
@@ -75,9 +72,6 @@ export const useResetUserPasswordMutation = () => {
       toast.success('Password reset successfully')
       queryClient.invalidateQueries({ queryKey: ['users'] })
     },
-    onError: () => {
-      toast.error('Failed to reset password')
-    },
   })
 }
 
@@ -99,9 +93,6 @@ export const useChangeUserTeamAccessMutation = () => {
       toast.success('User team access updated')
       queryClient.invalidateQueries({ queryKey: ['teams'] })
       queryClient.invalidateQueries({ queryKey: ['users'] })
-    },
-    onError: () => {
-      toast.error('Failed to update user team access')
     },
   })
 }

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   MultiSelect,
   MultiSelectContent,
@@ -70,9 +71,6 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['racks'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 
