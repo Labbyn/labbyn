@@ -154,7 +154,7 @@ class TagService:
         :return: Updated Tag object.
         :raises ConflictError: If new name is already taken.
         """
-        self.ctx.require_user()
+        self.ctx.require_admin()
         async with redis_service.acquire_lock(f"tag_lock:{tag_id}"):
             tag = await self.get_tag_or_404(tag_id)
             old_name = tag.name
@@ -179,13 +179,20 @@ class TagService:
         :param tag_id: ID of the tag.
         :raises ValidationError: If deletion fails.
         """
-        self.ctx.require_user()
+        self.ctx.require_admin()
         async with redis_service.acquire_lock(f"tag_lock:{tag_id}"):
             tag = await self.get_tag_or_404(tag_id)
             tag_name = tag.name
             try:
                 await self.db.delete(tag)
                 await self.db.commit()
-            except Exception:
+            except IntegrityError:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete tag '{tag_name}'")
+                raise exceptions.ValidationError(
+                    f"Cannot delete category '{tag_name}' because it is assigned to items."
+                )
+            except Exception as e:
+                await self.db.rollback()
+                raise exceptions.ValidationError(
+                    f"Could not delete category '{tag_name}'"
+                ) from e
