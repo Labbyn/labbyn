@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { Loader2, RefreshCcw } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
 import { toast } from 'sonner'
 import { z } from 'zod'
+
 import {
   Dialog,
   DialogClose,
@@ -53,10 +53,6 @@ export function AutoDiscovertDialog({
       queryClient.invalidateQueries({ queryKey: ['auto-discovery'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

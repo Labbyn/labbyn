@@ -248,12 +248,6 @@ export default function ImportPage() {
         message: result.message || 'Import successful!',
       })
     },
-    onError: (error: Error) => {
-      setSubmitResult({
-        success: false,
-        message: error.message,
-      })
-    },
   })
 
   const handleSubmit = () => {

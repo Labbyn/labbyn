@@ -1,6 +1,5 @@
 import { Calendar as Calendar1, Loader2, Package, Users } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import {
   useMutation,
   useQueryClient,
@@ -16,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import type { ApiInventoryInfoItem } from '@/integrations/inventory/inventory.types'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
@@ -76,10 +76,6 @@ export function ManageRentalDialog({
       queryClient.invalidateQueries({ queryKey: ['rentals'] })
       onOpenChange(false)
       form.reset()
-    },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

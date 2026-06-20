@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Brackets, Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import {
   useMutation,
   useQueryClient,
@@ -16,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   MultiSelect,
   MultiSelectContent,
@@ -71,10 +71,6 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['racks'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

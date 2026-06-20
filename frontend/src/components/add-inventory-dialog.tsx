@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Loader2, Plus, ToolCase } from 'lucide-react'
 import { useForm, useStore } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import {
   useMutation,
   useQueryClient,
@@ -68,10 +67,6 @@ export function AddInventoryDialog({
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

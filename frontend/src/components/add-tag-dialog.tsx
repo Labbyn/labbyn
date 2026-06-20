@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { AxiosError } from 'axios'
 import { Loader2, Plus, Tag } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   Dialog,
   DialogContent,
@@ -51,10 +51,6 @@ export function AddTagDialog({ children }: { children?: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

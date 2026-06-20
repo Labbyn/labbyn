@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { AxiosError } from 'axios'
 import { Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+
 import type { AssignDetachTagForm } from '@/integrations/tags/tags.types'
 import {
   MultiSelect,
@@ -55,10 +55,6 @@ export function AssignTagDialog({
           toast.success('Tags assigned successfully')
           setOpen(false)
           form.reset()
-        },
-        onError: (error: AxiosError <{detail: string; code: string }>) => {
-          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-          toast.error('Operation failed', { description: errorMessage })
         },
       })
     },

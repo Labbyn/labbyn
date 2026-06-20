@@ -1,7 +1,6 @@
 import React, { useState } from 'react' // Make sure React is imported for ReactNode
 import { AlertCircle, Cpu, Loader2, Plus, Server, Trash2 } from 'lucide-react'
 import { useForm, useStore } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import {
   useMutation,
   useQuery,
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
@@ -89,10 +89,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       setOpen(false)
       form.reset()
     },
-    onError: (error: AxiosError <{detail: string; code: string }>) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
-    },
   })
 
   const form = useForm({
@@ -120,7 +116,8 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       // require at least one operation: manual DB entry or auto-discovery
       if (!value.addToDb && !value.scanPlatform) {
         toast.error('Select operation', {
-          description: 'Please choose Manual Inventory Entry or Auto-Discovery before adding a platform.',
+          description:
+            'Please choose Manual Inventory Entry or Auto-Discovery before adding a platform.',
         })
         return
       }
@@ -920,11 +917,19 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit, state.values.addToDb, state.values.scanPlatform]}
+              selector={(state) => [
+                state.canSubmit,
+                state.values.addToDb,
+                state.values.scanPlatform,
+              ]}
               children={([canSubmit, addToDb, scanPlatform]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || mutation.isPending || !(addToDb || scanPlatform)}
+                  disabled={
+                    !canSubmit ||
+                    mutation.isPending ||
+                    !(addToDb || scanPlatform)
+                  }
                 >
                   {mutation.isPending ? (
                     <>

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import {
   BanknoteArrowUp,
   Book,
@@ -17,6 +16,7 @@ import {
   WeightTilde,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
 import type { ApiUpdateInventory } from '@/integrations/inventory/inventory.types'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -85,10 +85,6 @@ function InventoryDetailsPage() {
         onSuccess: () => {
           toast.success('Inventory updated successfully')
           setIsEditing(false)
-        },
-        onError: (error: AxiosError <{detail: string; code: string }>) => {
-          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-          toast.error('Operation failed', { description: errorMessage })
         },
       })
     },

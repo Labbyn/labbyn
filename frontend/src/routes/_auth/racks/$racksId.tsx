@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
-import { AxiosError } from 'axios'
 import { Box, Cpu, Info, Layers, MapPin, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -68,27 +67,17 @@ function RacksDetailsPage() {
           toast.success('Rack updated successfully')
           setIsEditing(false)
         },
-        onError: (error: AxiosError <{detail: string; code: string }>) => {
-          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-          toast.error('Operation failed', { description: errorMessage })
-        },
       })
 
-      if (value.shelves && Array.isArray(value.shelves)) {
-        const updates = value.shelves.map((shelf: any) => ({
-          id: shelf.id,
-          order: shelf.order,
-        }))
-        updateShelvesOrder.mutate(updates, {
-          onSuccess: () => {
-            toast.success('Shelves order saved')
-          },
-          onError: (error: AxiosError <{detail: string; code: string }>) => {
-            const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-            toast.error('Operation failed', { description: errorMessage })
-          },
-        })
-      }
+      const updates = value.shelves.map((shelf: any) => ({
+        id: shelf.id,
+        order: shelf.order,
+      }))
+      updateShelvesOrder.mutate(updates, {
+        onSuccess: () => {
+          toast.success('Shelves order saved')
+        },
+      })
 
       setIsEditing(false)
     },
@@ -178,10 +167,6 @@ function RacksDetailsPage() {
             onSuccess: () => {
               toast.success('Rack deleted successfully')
               router.history.back()
-            },
-            onError: (error: AxiosError <{detail: string; code: string }>) => {
-              const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-              toast.error('Operation failed', { description: errorMessage })
             },
           })
         },
@@ -353,7 +338,9 @@ function RacksDetailsPage() {
                       name="shelves"
                       children={(field) => (
                         <DndTable
-                          shelves={field.state.value.slice().sort((a: any, b: any) => a.order - b.order)}
+                          shelves={field.state.value
+                            .slice()
+                            .sort((a: any, b: any) => a.order - b.order)}
                           onReorder={(newShelves) => {
                             field.handleChange(newShelves)
                           }}
@@ -372,12 +359,8 @@ function RacksDetailsPage() {
                                   )
                                   toast.success(`Shelf deleted!`)
                                 },
-                              onError: (error: AxiosError <{detail: string; code: string }>) => {
-                                const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-                                toast.error('Operation failed', { description: errorMessage })
                               },
-                            },
-                          )
+                            )
                           }}
                         />
                       )}
@@ -386,10 +369,13 @@ function RacksDetailsPage() {
                 ) : (
                   <DataTable
                     columns={columnsShelves}
-                    data={rack.shelves.slice().sort((a, b) => a.order - b.order).map((shelf) => ({
-                      name: shelf.name,
-                      machines: shelf.machines,
-                    }))}
+                    data={rack.shelves
+                      .slice()
+                      .sort((a, b) => a.order - b.order)
+                      .map((shelf) => ({
+                        name: shelf.name,
+                        machines: shelf.machines,
+                      }))}
                   />
                 )}
               </>
