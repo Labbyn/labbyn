@@ -938,11 +938,19 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit, state.values.addToDb, state.values.scanPlatform]}
+              selector={(state) => [
+                state.canSubmit,
+                state.values.addToDb,
+                state.values.scanPlatform,
+              ]}
               children={([canSubmit, addToDb, scanPlatform]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || mutation.isPending || !(addToDb || scanPlatform)}
+                  disabled={
+                    !canSubmit ||
+                    mutation.isPending ||
+                    !(addToDb || scanPlatform)
+                  }
                 >
                   {mutation.isPending ? (
                     <>

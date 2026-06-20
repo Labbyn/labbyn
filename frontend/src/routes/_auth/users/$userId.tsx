@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/_auth/users/$userId')({
   component: InventoryDetailsPage,
