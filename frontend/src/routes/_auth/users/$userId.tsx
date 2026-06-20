@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/_auth/users/$userId')({
   component: InventoryDetailsPage,
@@ -105,20 +106,21 @@ function InventoryDetailsPage() {
 
                 <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-2">
                   {filteredMemberships.length > 0 ? (
-                    filteredMemberships.map((group, index) => (
+                    filteredMemberships.map((group) => (
                       <Link
                         key={group.team_id}
-                        to={user.group_links[index]}
+                        to="/teams/$teamId"
+                        params={{ teamId: String(group.team_id) }}
                         className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group shrink-0"
                       >
                         <div className="flex flex-col gap-1">
                           <span className="font-bold text-sm">
                             {group.team_name}
                           </span>
-                          {group.is_group_admin && (
-                            <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded w-fit font-bold uppercase">
-                              Admin
-                            </span>
+                          {group.is_group_admin ? (
+                            <Badge variant="secondary">Admin</Badge>
+                          ) : (
+                            <Badge variant="secondary">User</Badge>
                           )}
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
