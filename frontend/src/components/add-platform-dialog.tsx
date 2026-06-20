@@ -102,7 +102,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       deployAgent: false,
       login: '',
       password: '',
-      name: '',
       ip_address: '',
       mac_address: '',
       localization_id: undefined,
@@ -427,25 +426,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                       {/* General Details */}
                       <div className="grid grid-cols-2 gap-4">
                         <form.Field
-                          name="name"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                Display Name
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                placeholder="Friendly name"
-                                value={field.state.value || ''}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                              />
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
                           name="serial_number"
                           children={(field) => (
                             <Field>
@@ -458,6 +438,26 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 value={field.state.value || ''}
                                 onChange={(e) =>
                                   field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
+                        />
+
+                        <form.Field
+                          name="pdu_port"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                PDU Port
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                type="number"
+                                placeholder="e.g. 1"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(Number(e.target.value))
                                 }
                               />
                             </Field>
@@ -679,26 +679,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                   )}
                                 </SelectContent>
                               </Select>
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
-                          name="pdu_port"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                PDU Port
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                type="number"
-                                placeholder="e.g. 1"
-                                value={field.state.value || ''}
-                                onChange={(e) =>
-                                  field.handleChange(Number(e.target.value))
-                                }
-                              />
                             </Field>
                           )}
                         />
