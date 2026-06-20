@@ -119,7 +119,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
           }}
         >
           <div className="max-h-[60vh] overflow-y-auto space-y-4 p-1 mb-6">
-            {/* Rack name, room name, team name, tags - Always Required */}
+            {/* Rack name, room / lab name, team name, tags - Always Required */}
             <form.Field
               name="name"
               validators={{ onChange: zodValidate(schemas.name) }}
@@ -145,7 +145,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
               validators={{ onChange: zodValidate(schemas.team_id) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                   <Select
                     value={field.state.value.toString()}
                     onValueChange={(value) => {
@@ -174,7 +174,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
               validators={{ onChange: zodValidate(schemas.room_id) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Room Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Room / Lab</FieldLabel>
                   <Select
                   disabled={!selectedTeam || selectedTeam <= 0}
                   value={field.state.value.toString()}

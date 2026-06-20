@@ -157,7 +157,7 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
               validators={{ onChange: zodValidate(schemas.team_id) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                   <Select
                     value={field.state.value.toString()}
                     onValueChange={(value) => field.handleChange(Number(value))}
