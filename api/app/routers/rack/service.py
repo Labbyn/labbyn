@@ -125,10 +125,12 @@ class RackService:
 
             self.db.add(db_rack)
             await self.db.flush()
-            size = getattr(rack_data, "size", None)
-            if size and size > 0:
+            size = getattr(rack_data, "size", None) or 2
+            if size > 0:
                 for i in range(1, size + 1):
-                    new_shelf = models.Shelf(name=f"U{i}", rack_id=db_rack.id, order=i)
+                    new_shelf = models.Shelf(
+                        name=f"Shelf {i}", rack_id=db_rack.id, order=i
+                    )
                     self.db.add(new_shelf)
 
             await self.db.commit()
