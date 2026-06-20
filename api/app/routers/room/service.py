@@ -59,7 +59,7 @@ class RoomService:
                 "Target team ID is required to create a room"
             )
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Room")
 
         try:
             obj = models.Rooms(
@@ -178,7 +178,9 @@ class RoomService:
                         room.tags = tag_res.scalars().all()
 
                 if "team_id" in update_data:
-                    await self.ctx.validate_team_access(update_data["team_id"])
+                    await self.ctx.validate_team_access(
+                        update_data["team_id"], resource_name="Room"
+                    )
 
                 for k, v in update_data.items():
                     setattr(room, k, v)
@@ -206,9 +208,18 @@ class RoomService:
         self.ctx.require_group_admin()
         async with redis_service.acquire_lock(f"room_lock:{room_id}"):
             room = await self.get_room_or_404(room_id)
+            room_name = room.name
             try:
                 await self.db.delete(room)
+                await self.db.flush()
                 await self.db.commit()
-            except Exception:
+            except IntegrityError:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete room '{room.name}'")
+                raise exceptions.ValidationError(
+                    f"Could not delete room '{room_name}' because it is still in use (contains racks)."
+                )
+            except Exception as e:
+                await self.db.rollback()
+                raise exceptions.ValidationError(
+                    f"Could not delete room '{room_name}'"
+                ) from e

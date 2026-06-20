@@ -34,7 +34,7 @@ class MapService:
         if not room:
             raise exceptions.ObjectNotFoundError(f"Room {room_id}")
 
-        await self.ctx.validate_team_access(room.team_id)
+        await self.ctx.validate_team_access(room.team_id, resource_name="Map")
 
         db_map = await MapRepository.get_map_by_room_id(self.db, room_id)
         if not db_map:
@@ -58,7 +58,7 @@ class MapService:
             if not room:
                 raise exceptions.ObjectNotFoundError(f"Room {room_id}")
 
-            await self.ctx.validate_team_access(room.team_id)
+            await self.ctx.validate_team_access(room.team_id, resource_name="Map")
 
             stmt = sql.select(models.Map).filter(models.Map.room_id == room_id)
             db_map = (await self.db.execute(stmt)).scalar_one_or_none()

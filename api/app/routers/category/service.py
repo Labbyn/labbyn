@@ -118,14 +118,19 @@ class CategoryService:
             cat = await self.repo.get_by_id(self.db, cat_id)
             if not cat:
                 raise exceptions.ObjectNotFoundError("Category")
-
+            cat_name = cat.name
             try:
                 await self.repo.delete(self.db, cat)
                 await self.db.commit()
+            except IntegrityError:
+                await self.db.rollback()
+                raise exceptions.ValidationError(
+                    f"Cannot delete category '{cat_name}' because it is assigned to inventory items."
+                )
             except Exception as e:
                 await self.db.rollback()
                 raise exceptions.ValidationError(
-                    f"Could not delete category '{cat.name}'"
+                    f"Could not delete category '{cat_name}'"
                 ) from e
 
     async def get_grouped_categories(self):
