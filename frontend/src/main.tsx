@@ -11,8 +11,8 @@ import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 import { AuthProvider, useAuth } from './routes/auth.tsx'
 import { PageNotFound } from './components/page-not-found.tsx'
-import { SomethingWentWrong } from './components/something-went-wrong.tsx'
 import { PageIsLoading } from './components/page-is-loading.tsx'
+import { GlobalRouteError } from './components/global-route-error.tsx'
 
 // Create a new router instance
 
@@ -28,9 +28,8 @@ const router = createRouter({
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
   defaultPendingMinMs: 25,
-  defaultErrorComponent: () => {
-    return <SomethingWentWrong />
-  },
+  defaultErrorComponent: GlobalRouteError, 
+  
   defaultNotFoundComponent: () => {
     return <PageNotFound />
   },
