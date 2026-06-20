@@ -130,8 +130,29 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         })
         return
       }
+
+      if (!value.team_id || !value.localization_id) {
+        toast.error('Team and room required', {
+          description:
+            'Please select both Team and Lab before adding a platform.',
+        })
+        return
+      }
+
+      if (selectedRack != null) {
+        const rackHasShelves = Array.isArray(shelves) && shelves.length > 0
+        if (!rackHasShelves || !value.shelf_id) {
+          toast.error('Shelf required', {
+            description:
+              'Please select shelf before adding a machine.',
+          })
+          return
+        }
+      }
+
       await mutation.mutateAsync(value)
     },
+
   })
 
   const formValues = useStore(form.store, (state) => state.values)
