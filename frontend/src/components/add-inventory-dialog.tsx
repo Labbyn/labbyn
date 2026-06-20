@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useCreateInventoryItemMutation } from '@/integrations/inventory/inventory.mutation'
 import { zodValidate } from '@/utils/index'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import { labsBaseQueryOptions } from '@/integrations/labs/labs.query'
 import { categoryListQueryOptions } from '@/integrations/category/category.query'
 
@@ -55,7 +55,7 @@ export function AddInventoryDialog({
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
   const { data: labs } = useSuspenseQuery(labsBaseQueryOptions)
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(currentUserTeamsQueryOptions)
   const { data: categories } = useSuspenseQuery(categoryListQueryOptions)
 
   const mutation = useMutation({

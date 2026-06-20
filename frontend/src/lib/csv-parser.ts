@@ -9,6 +9,23 @@ export function parseCSV(text: string): ParsedCSV {
     return { headers: [], rows: [] }
   }
 
+  const detectSeparator = (headerLine: string): string => {
+    const candidates = [',', ';', '\t', '|']
+    let bestSeparator = ','
+    let maxCount = 0
+
+    for (const candidate of candidates) {
+      const count = headerLine.split(candidate).length - 1
+      if (count > maxCount) {
+        maxCount = count
+        bestSeparator = candidate
+      }
+    }
+    return bestSeparator
+  }
+
+  const separator = detectSeparator(lines[0])
+
   const parseRow = (row: string): Array<string> => {
     const result: Array<string> = []
     let current = ''
@@ -23,9 +40,10 @@ export function parseCSV(text: string): ParsedCSV {
         i++
       } else if (char === '"') {
         inQuotes = !inQuotes
-      } else if (char === ',' && !inQuotes) {
+      } else if (!inQuotes && row.startsWith(separator, i)) {
         result.push(current.trim())
         current = ''
+        i += separator.length - 1
       } else {
         current += char
       }

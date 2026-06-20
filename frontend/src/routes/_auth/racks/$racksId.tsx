@@ -72,22 +72,20 @@ function RacksDetailsPage() {
         },
       })
 
-      if (value.shelves && Array.isArray(value.shelves)) {
-        const updates = value.shelves.map((shelf: any) => ({
-          id: shelf.id,
-          order: shelf.order,
-        }))
-        updateShelvesOrder.mutate(updates, {
-          onSuccess: () => {
-            toast.success('Shelves order saved')
-          },
-          onError: (error: Error) => {
-            toast.error('Failed to save shelves order', {
-              description: error.message,
-            })
-          },
-        })
-      }
+      const updates = value.shelves.map((shelf: any) => ({
+        id: shelf.id,
+        order: shelf.order,
+      }))
+      updateShelvesOrder.mutate(updates, {
+        onSuccess: () => {
+          toast.success('Shelves order saved')
+        },
+        onError: (error: Error) => {
+          toast.error('Failed to save shelves order', {
+            description: error.message,
+          })
+        },
+      })
 
       setIsEditing(false)
     },
@@ -351,7 +349,9 @@ function RacksDetailsPage() {
                       name="shelves"
                       children={(field) => (
                         <DndTable
-                          shelves={field.state.value.slice().sort((a: any, b: any) => a.order - b.order)}
+                          shelves={field.state.value
+                            .slice()
+                            .sort((a: any, b: any) => a.order - b.order)}
                           onReorder={(newShelves) => {
                             field.handleChange(newShelves)
                           }}
@@ -370,11 +370,13 @@ function RacksDetailsPage() {
                                   )
                                   toast.success(`Shelf deleted!`)
                                 },
-                              onError: (error: Error) => {
-                                toast.error('Operation failed', { description: error.message })
+                                onError: (error: Error) => {
+                                  toast.error('Operation failed', {
+                                    description: error.message,
+                                  })
+                                },
                               },
-                            },
-                          )
+                            )
                           }}
                         />
                       )}
@@ -383,10 +385,13 @@ function RacksDetailsPage() {
                 ) : (
                   <DataTable
                     columns={columnsShelves}
-                    data={rack.shelves.slice().sort((a, b) => a.order - b.order).map((shelf) => ({
-                      name: shelf.name,
-                      machines: shelf.machines,
-                    }))}
+                    data={rack.shelves
+                      .slice()
+                      .sort((a, b) => a.order - b.order)
+                      .map((shelf) => ({
+                        name: shelf.name,
+                        machines: shelf.machines,
+                      }))}
                   />
                 )}
               </>

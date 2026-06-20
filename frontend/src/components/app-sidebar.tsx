@@ -15,7 +15,6 @@ import {
   Moon,
   PanelsTopLeft,
   Server,
-  Settings,
   Sun,
   Tags,
   User,
@@ -379,13 +378,6 @@ export function AppSidebar() {
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-
-                <Link to="/settings">
-                  <DropdownMenuItem>
-                    <Settings />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                </Link>
 
                 <DropdownMenuItem onClick={toggleTheme}>
                   {theme === 'dark' ? <Moon /> : <Sun />}

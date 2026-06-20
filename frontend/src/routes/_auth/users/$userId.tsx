@@ -1,3 +1,4 @@
+import { useState } from 'react' // Dodany import
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import {
@@ -5,6 +6,7 @@ import {
   Contact,
   Info,
   Mail,
+  Search,
   UserSearch,
   Users,
 } from 'lucide-react'
@@ -13,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
+import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/_auth/users/$userId')({
   component: InventoryDetailsPage,
@@ -21,6 +24,12 @@ export const Route = createFileRoute('/_auth/users/$userId')({
 function InventoryDetailsPage() {
   const { userId } = Route.useParams()
   const { data: user } = useSuspenseQuery(singleUserQueryOptions(userId))
+
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredMemberships = user.membership.filter((group) =>
+    group.team_name.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
   return (
     <SubPageTemplate
@@ -73,43 +82,61 @@ function InventoryDetailsPage() {
               </>
             }
           />
-          {/* Teams Card with Integrated Links */}
+
+          {/* Teams Card with Integrated Links & Search */}
           <SubpageCard
             title={'Team Memberships'}
             description={'Manage and view team access'}
             type="Info"
             Icon={Users}
             content={
-              <>
-                {user.membership.length > 0 ? (
-                  user.membership.map((group) => (
-                    <Link
-                      key={group.team_id}
-                      to="/teams/$teamId"
-                      params={{ teamId: String(group.team_id) }}
-                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <span className="font-bold text-sm">
-                          {group.team_name}
-                        </span>
-                        {group.is_group_admin ? (
-                          <Badge variant="secondary">Admin</Badge>
-                        ) : (
-                          <Badge variant="secondary">User</Badge>
-                        )}
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  ))
-                ) : (
-                  <div className="text-center py-6 border-2 border-dashed rounded-lg">
-                    <p className="text-sm text-muted-foreground italic">
-                      No assigned teams
-                    </p>
+              <div className="flex flex-col gap-4">
+                {user.membership.length > 5 && (
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Search for a team..."
+                      className="pl-8"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
                 )}
-              </>
+
+                <div className="flex flex-col gap-2 max-h-[350px] overflow-y-auto pr-2">
+                  {filteredMemberships.length > 0 ? (
+                    filteredMemberships.map((group) => (
+                      <Link
+                        key={group.team_id}
+                        to="/teams/$teamId"
+                        params={{ teamId: String(group.team_id) }}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent hover:text-accent-foreground transition-colors group shrink-0"
+                      >
+                        <div className="flex flex-col gap-1">
+                          <span className="font-bold text-sm">
+                            {group.team_name}
+                          </span>
+                          {group.is_group_admin ? (
+                            <Badge variant="secondary">Admin</Badge>
+                          ) : (
+                            <Badge variant="secondary">User</Badge>
+                          )}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="text-center py-6 border-2 border-dashed rounded-lg">
+                      <p className="text-sm text-muted-foreground italic">
+                        {user.membership.length > 0
+                          ? 'No team found'
+                          : 'No assigned teams'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             }
           />
         </>
