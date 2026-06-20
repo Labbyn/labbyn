@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { useForm } from '@tanstack/react-form'
 import {
   AlarmClock,
@@ -98,7 +99,7 @@ function MachineDetailsPage() {
           toast.success('Machine updated successfully')
           setIsEditing(false)
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError <{detail: string; code: string }>) => {
           const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
           toast.error('Operation failed', { description: errorMessage })
         },
@@ -164,8 +165,9 @@ function MachineDetailsPage() {
               toast.success('Machine deleted successfully')
               router.history.back()
             },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
+            onError: (error: AxiosError <{detail: string; code: string }>) => {
+              const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+              toast.error('Operation failed', { description: errorMessage })
             },
           })
         },

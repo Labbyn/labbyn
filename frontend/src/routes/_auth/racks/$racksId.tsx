@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { useForm } from '@tanstack/react-form'
 import { Box, Cpu, Info, Layers, MapPin, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -67,7 +68,7 @@ function RacksDetailsPage() {
           toast.success('Rack updated successfully')
           setIsEditing(false)
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError <{detail: string; code: string }>) => {
           const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
           toast.error('Operation failed', { description: errorMessage })
         },
@@ -82,7 +83,7 @@ function RacksDetailsPage() {
           onSuccess: () => {
             toast.success('Shelves order saved')
           },
-          onError: (error: Error) => {
+          onError: (error: AxiosError <{detail: string; code: string }>) => {
             const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
             toast.error('Operation failed', { description: errorMessage })
           },
@@ -178,7 +179,7 @@ function RacksDetailsPage() {
               toast.success('Rack deleted successfully')
               router.history.back()
             },
-            onError: (error: Error) => {
+            onError: (error: AxiosError <{detail: string; code: string }>) => {
               const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
               toast.error('Operation failed', { description: errorMessage })
             },
@@ -371,7 +372,7 @@ function RacksDetailsPage() {
                                   )
                                   toast.success(`Shelf deleted!`)
                                 },
-                              onError: (error: Error) => {
+                              onError: (error: AxiosError <{detail: string; code: string }>) => {
                                 const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
                                 toast.error('Operation failed', { description: errorMessage })
                               },

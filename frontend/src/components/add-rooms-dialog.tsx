@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Loader2, Plus, Server } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
+import { AxiosError } from 'axios'
 import {
   useMutation,
   useQueryClient,
@@ -70,9 +71,9 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
       setOpen(false)
       form.reset()
     },
-    onError: (error: Error) => {
-      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-      toast.error('Operation failed', { description: errorMessage })
+    onError: (error: AxiosError <{detail: string; code: string }>) => {
+          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+          toast.error('Operation failed', { description: errorMessage })
     },
   })
 

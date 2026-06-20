@@ -1,5 +1,6 @@
 import { Calendar as Calendar1, Loader2, Package, Users } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
+import { AxiosError } from 'axios'
 import {
   useMutation,
   useQueryClient,
@@ -76,7 +77,7 @@ export function ManageRentalDialog({
       onOpenChange(false)
       form.reset()
     },
-    onError: (error: Error) => {
+    onError: (error: AxiosError <{detail: string; code: string }>) => {
       const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
       toast.error('Operation failed', { description: errorMessage })
     },

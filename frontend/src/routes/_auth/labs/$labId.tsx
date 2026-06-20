@@ -1,5 +1,6 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { AxiosError } from 'axios'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TagItem } from '@/integrations/tags/tags.types'
@@ -71,7 +72,7 @@ function RouteComponent() {
               toast.success('Lab deleted successfully')
               router.history.back()
             },
-            onError: (error: Error) => {
+            onError: (error: AxiosError <{detail: string; code: string }>) => {
               const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
               toast.error('Operation failed', { description: errorMessage })
             },

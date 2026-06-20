@@ -1,6 +1,7 @@
 // integrations/history/history.mutation.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { AxiosError } from 'axios'
 import api from '@/lib/api'
 
 const PATHS = {
@@ -21,7 +22,7 @@ export const useRollbackMutation = () => {
       toast.success('System state rolled back successfully')
       queryClient.invalidateQueries({ queryKey: ['history'] })
     },
-    onError: (err: Error) => {
+    onError: (error: AxiosError <{detail: string; code: string }>) => {
       const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
       toast.error('Operation failed', { description: errorMessage })
     },

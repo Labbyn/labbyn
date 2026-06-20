@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AxiosError } from 'axios'
 import { Loader2, Plus } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -55,7 +56,7 @@ export function AssignTagDialog({
           setOpen(false)
           form.reset()
         },
-        onError: (error: Error) => {
+        onError: (error: AxiosError <{detail: string; code: string }>) => {
           const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
           toast.error('Operation failed', { description: errorMessage })
         },
