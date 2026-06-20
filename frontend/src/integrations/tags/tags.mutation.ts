@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AssignDetachTagForm } from './tags.types'
+import type { AssignDetachTagForm, TagItem} from './tags.types'
 import api from '@/lib/api'
 
 const PATHS = {
@@ -41,6 +41,31 @@ export function useDetachTagMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['racks'] })
+    },
+  })
+}
+
+export const useDeletTagMutation = (tagId: number) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ['delete-tag'],
+    mutationFn: () => api.delete(PATHS.DETAIL(tagId)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', 'list'] })
+    },
+  })
+}
+
+export const useUpdateTagMutation = (tagId: number) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ['update-tag'],
+    mutationFn: (data: Partial<TagItem> ) =>
+      api.patch(PATHS.DETAIL(tagId), data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags', 'list'] })
     },
   })
 }

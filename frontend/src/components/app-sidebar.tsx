@@ -129,6 +129,8 @@ const items = [
 const adminPanelItems = [
   { title: 'Users', url: '/admin-panel/users', icon: User },
   { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
+  { title: 'Tags', url: '/admin-panel/tags', icon: Tags },
+  { title: 'Categories', url: '/admin-panel/categories', icon: LayoutGrid },
 ]
 
 function useTheme() {

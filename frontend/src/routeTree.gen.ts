@@ -36,6 +36,8 @@ import { Route as AuthHistoryHistoryIdRouteImport } from './routes/_auth/history
 import { Route as AuthDocumentationDocIdRouteImport } from './routes/_auth/documentation/$docId'
 import { Route as AuthAdminPanelUsersRouteImport } from './routes/_auth/admin-panel/users'
 import { Route as AuthAdminPanelTeamsRouteImport } from './routes/_auth/admin-panel/teams'
+import { Route as AuthAdminPanelTagsRouteImport } from './routes/_auth/admin-panel/tags'
+import { Route as AuthAdminPanelCategoriesRouteImport } from './routes/_auth/admin-panel/categories'
 import { Route as AuthInventoryDeviceDeviceidRouteImport } from './routes/_auth/inventory/device/$deviceid'
 
 const SetupPasswordRoute = SetupPasswordRouteImport.update({
@@ -173,6 +175,17 @@ const AuthAdminPanelTeamsRoute = AuthAdminPanelTeamsRouteImport.update({
   path: '/admin-panel/teams',
   getParentRoute: () => AuthRoute,
 } as any)
+const AuthAdminPanelTagsRoute = AuthAdminPanelTagsRouteImport.update({
+  id: '/admin-panel/tags',
+  path: '/admin-panel/tags',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AuthAdminPanelCategoriesRoute =
+  AuthAdminPanelCategoriesRouteImport.update({
+    id: '/admin-panel/categories',
+    path: '/admin-panel/categories',
+    getParentRoute: () => AuthRoute,
+  } as any)
 const AuthInventoryDeviceDeviceidRoute =
   AuthInventoryDeviceDeviceidRouteImport.update({
     id: '/inventory/device/$deviceid',
@@ -190,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/map': typeof AuthMapRoute
   '/settings': typeof AuthSettingsRoute
   '/user-dashboard': typeof AuthUserDashboardRoute
+  '/admin-panel/categories': typeof AuthAdminPanelCategoriesRoute
+  '/admin-panel/tags': typeof AuthAdminPanelTagsRoute
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/documentation/$docId': typeof AuthDocumentationDocIdRoute
@@ -218,6 +233,8 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthSettingsRoute
   '/user-dashboard': typeof AuthUserDashboardRoute
   '/': typeof AuthIndexRoute
+  '/admin-panel/categories': typeof AuthAdminPanelCategoriesRoute
+  '/admin-panel/tags': typeof AuthAdminPanelTagsRoute
   '/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/documentation/$docId': typeof AuthDocumentationDocIdRoute
@@ -249,6 +266,8 @@ export interface FileRoutesById {
   '/_auth/settings': typeof AuthSettingsRoute
   '/_auth/user-dashboard': typeof AuthUserDashboardRoute
   '/_auth/': typeof AuthIndexRoute
+  '/_auth/admin-panel/categories': typeof AuthAdminPanelCategoriesRoute
+  '/_auth/admin-panel/tags': typeof AuthAdminPanelTagsRoute
   '/_auth/admin-panel/teams': typeof AuthAdminPanelTeamsRoute
   '/_auth/admin-panel/users': typeof AuthAdminPanelUsersRoute
   '/_auth/documentation/$docId': typeof AuthDocumentationDocIdRoute
@@ -280,6 +299,8 @@ export interface FileRouteTypes {
     | '/map'
     | '/settings'
     | '/user-dashboard'
+    | '/admin-panel/categories'
+    | '/admin-panel/tags'
     | '/admin-panel/teams'
     | '/admin-panel/users'
     | '/documentation/$docId'
@@ -308,6 +329,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/user-dashboard'
     | '/'
+    | '/admin-panel/categories'
+    | '/admin-panel/tags'
     | '/admin-panel/teams'
     | '/admin-panel/users'
     | '/documentation/$docId'
@@ -338,6 +361,8 @@ export interface FileRouteTypes {
     | '/_auth/settings'
     | '/_auth/user-dashboard'
     | '/_auth/'
+    | '/_auth/admin-panel/categories'
+    | '/_auth/admin-panel/tags'
     | '/_auth/admin-panel/teams'
     | '/_auth/admin-panel/users'
     | '/_auth/documentation/$docId'
@@ -555,6 +580,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminPanelTeamsRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_auth/admin-panel/tags': {
+      id: '/_auth/admin-panel/tags'
+      path: '/admin-panel/tags'
+      fullPath: '/admin-panel/tags'
+      preLoaderRoute: typeof AuthAdminPanelTagsRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/_auth/admin-panel/categories': {
+      id: '/_auth/admin-panel/categories'
+      path: '/admin-panel/categories'
+      fullPath: '/admin-panel/categories'
+      preLoaderRoute: typeof AuthAdminPanelCategoriesRouteImport
+      parentRoute: typeof AuthRoute
+    }
     '/_auth/inventory/device/$deviceid': {
       id: '/_auth/inventory/device/$deviceid'
       path: '/inventory/device/$deviceid'
@@ -586,6 +625,8 @@ interface AuthRouteChildren {
   AuthSettingsRoute: typeof AuthSettingsRoute
   AuthUserDashboardRoute: typeof AuthUserDashboardRoute
   AuthIndexRoute: typeof AuthIndexRoute
+  AuthAdminPanelCategoriesRoute: typeof AuthAdminPanelCategoriesRoute
+  AuthAdminPanelTagsRoute: typeof AuthAdminPanelTagsRoute
   AuthAdminPanelTeamsRoute: typeof AuthAdminPanelTeamsRoute
   AuthAdminPanelUsersRoute: typeof AuthAdminPanelUsersRoute
   AuthHistoryHistoryIdRoute: typeof AuthHistoryHistoryIdRoute
@@ -612,6 +653,8 @@ const AuthRouteChildren: AuthRouteChildren = {
   AuthSettingsRoute: AuthSettingsRoute,
   AuthUserDashboardRoute: AuthUserDashboardRoute,
   AuthIndexRoute: AuthIndexRoute,
+  AuthAdminPanelCategoriesRoute: AuthAdminPanelCategoriesRoute,
+  AuthAdminPanelTagsRoute: AuthAdminPanelTagsRoute,
   AuthAdminPanelTeamsRoute: AuthAdminPanelTeamsRoute,
   AuthAdminPanelUsersRoute: AuthAdminPanelUsersRoute,
   AuthHistoryHistoryIdRoute: AuthHistoryHistoryIdRoute,
