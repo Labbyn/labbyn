@@ -41,7 +41,8 @@ export function DataTableRowActions<T>({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="h-8 w-8 p-0 backdrop-blur-xs bg-card/30 rounded-xl border border-border/40"
+          variant="ghost"
+          className="h-8 w-8 p-0 backdrop-blur-xs bg-card/30 rounded-xl border border-border/40 text-foreground"
           onClick={(e) => e.stopPropagation()}
         >
           <span className="sr-only">Open menu</span>

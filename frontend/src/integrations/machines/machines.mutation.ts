@@ -40,7 +40,7 @@ export const handlePlatformSubmission = async (values: PlatformFormValues) => {
         PATHS.MACHINES,
         {
           name: values.name || values.hostname,
-          localization_id: values.localization_id || 1, // Default room ID
+          localization_id: values.localization_id || null,
           metadata_id: metadata.id,
           ip_address: values.ip_address || null,
           mac_address: values.mac_address || null,

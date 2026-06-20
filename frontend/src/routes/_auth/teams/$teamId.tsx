@@ -36,8 +36,24 @@ function TeamsDetailsPage() {
     {
       accessorKey: 'user_type',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="User type" />
+        <DataTableColumnHeader column={column} title="User Role" />
       ),
+      cell: ({ row }) => {
+        const rawType = row.getValue<string>('user_type')
+
+        const roleLabels: Record<string, string> = {
+          ADMIN: 'Admin',
+          USER: 'User',
+          GROUP_ADMIN: 'Group Admin',
+          'UserType.ADMIN': 'Admin',
+          'UserType.USER': 'User',
+          'UserType.GROUP_ADMIN': 'Group Admin',
+        }
+
+        const formattedType = roleLabels[rawType] || rawType || 'Unknown'
+
+        return <span>{formattedType}</span>
+      },
     },
   ]
 

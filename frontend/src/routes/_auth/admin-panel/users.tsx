@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_auth/admin-panel/users')({
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="Users Admin Panel"
-        description="Welcome to Users admin panel. Here you can view and manage inventory as an admin."
+        description="Welcome to Users admin panel. Here you can view and manage users as an admin."
         icon={Users}
       />
       <UserAdminPanel />

@@ -113,11 +113,10 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       shelf_id: undefined,
     } as PlatformFormValues,
     onSubmit: async ({ value }) => {
-      // require at least one operation: manual DB entry or auto-discovery
-      if (!value.addToDb && !value.scanPlatform) {
-        toast.error('Select operation', {
+      if (!value.addToDb && !value.scanPlatform && !value.deployAgent) {
+        toast.error('No operation selected', {
           description:
-            'Please choose Manual Inventory Entry or Auto-Discovery before adding a platform.',
+            'Please select at least one operation (Manual Entry, Auto-Discovery, or Deploy Agent).',
         })
         return
       }
