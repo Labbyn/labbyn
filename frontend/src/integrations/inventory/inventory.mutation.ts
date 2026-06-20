@@ -44,6 +44,7 @@ export const useDeleteInventoryMutation = (itemId: string | number) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

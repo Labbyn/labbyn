@@ -24,6 +24,7 @@ export const useDeleteLabMutation = (labId: number) => {
     mutationFn: () => api.delete(PATHS.DETAIL(labId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['labs'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

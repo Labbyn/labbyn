@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { singleUserQueryOptions } from '@/integrations/user/user.query'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { SubPageTemplate } from '@/components/subpage-template'
 import { SubpageCard } from '@/components/subpage-card'
 import { Input } from '@/components/ui/input'

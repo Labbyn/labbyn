@@ -103,6 +103,7 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
       api.patch(PATHS.DETAIL(machineId), machineData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -115,6 +116,7 @@ export const useDeleteMachineMutation = (machineId: string | number) => {
     mutationFn: () => api.delete(PATHS.DETAIL(machineId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -157,6 +159,7 @@ export const useDeployAgent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -194,6 +197,7 @@ export const useDeleteAgent = (machineId: string | number) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

@@ -83,6 +83,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['shelf'] })
       queryClient.invalidateQueries({ queryKey: ['rack'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 
       setOpen(false)
       form.reset()
@@ -937,11 +938,11 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit]}
-              children={([canSubmit]) => (
+              selector={(state) => [state.canSubmit, state.values.addToDb, state.values.scanPlatform]}
+              children={([canSubmit, addToDb, scanPlatform]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || mutation.isPending}
+                  disabled={!canSubmit || mutation.isPending || !(addToDb || scanPlatform)}
                 >
                   {mutation.isPending ? (
                     <>
