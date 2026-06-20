@@ -208,9 +208,18 @@ class RoomService:
         self.ctx.require_group_admin()
         async with redis_service.acquire_lock(f"room_lock:{room_id}"):
             room = await self.get_room_or_404(room_id)
+            room_name = room.name
             try:
                 await self.db.delete(room)
+                await self.db.flush()
                 await self.db.commit()
-            except Exception:
+            except IntegrityError:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Could not delete room '{room.name}'")
+                raise exceptions.ValidationError(
+                    f"Could not delete room '{room_name}' because it is still in use (contains racks)."
+                )
+            except Exception as e:
+                await self.db.rollback()
+                raise exceptions.ValidationError(
+                    f"Could not delete room '{room_name}'"
+                ) from e
