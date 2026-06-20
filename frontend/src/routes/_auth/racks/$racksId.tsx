@@ -68,7 +68,8 @@ function RacksDetailsPage() {
           setIsEditing(false)
         },
         onError: (error: Error) => {
-          toast.error('Operation failed', { description: error.message })
+          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+          toast.error('Operation failed', { description: errorMessage })
         },
       })
 
@@ -82,9 +83,8 @@ function RacksDetailsPage() {
             toast.success('Shelves order saved')
           },
           onError: (error: Error) => {
-            toast.error('Failed to save shelves order', {
-              description: error.message,
-            })
+            const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+            toast.error('Operation failed', { description: errorMessage })
           },
         })
       }
@@ -179,7 +179,8 @@ function RacksDetailsPage() {
               router.history.back()
             },
             onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
+              const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+              toast.error('Operation failed', { description: errorMessage })
             },
           })
         },
@@ -371,7 +372,8 @@ function RacksDetailsPage() {
                                   toast.success(`Shelf deleted!`)
                                 },
                               onError: (error: Error) => {
-                                toast.error('Operation failed', { description: error.message })
+                                const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+                                toast.error('Operation failed', { description: errorMessage })
                               },
                             },
                           )

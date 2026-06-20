@@ -72,7 +72,8 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
       form.reset()
     },
     onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
+      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+      toast.error('Operation failed', { description: errorMessage })
     },
   })
 

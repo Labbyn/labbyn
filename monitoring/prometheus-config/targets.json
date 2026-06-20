@@ -8,5 +8,16 @@
       "host": "localhost",
       "team": "some_team"
     }
+  },
+  {
+    "targets": [
+      "213:9100"
+    ],
+    "labels": {
+      "env": "virtual",
+      "host": "213",
+      "role": "virtual",
+      "team": "Service Team"
+    }
   }
 ]

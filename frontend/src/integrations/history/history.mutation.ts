@@ -22,7 +22,8 @@ export const useRollbackMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['history'] })
     },
     onError: (err: Error) => {
-      toast.error(`Rollback Error: ${err.message}`)
+      const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+      toast.error('Operation failed', { description: errorMessage })
     },
   })
 }

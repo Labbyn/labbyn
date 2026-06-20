@@ -86,7 +86,8 @@ function InventoryDetailsPage() {
           setIsEditing(false)
         },
         onError: (error: Error) => {
-          toast.error('Update failed', { description: error.message })
+          const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+          toast.error('Operation failed', { description: errorMessage })
         },
       })
     },
@@ -116,7 +117,8 @@ function InventoryDetailsPage() {
               router.history.back()
             },
             onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
+              const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
+              toast.error('Operation failed', { description: errorMessage })
             },
           })
         },
