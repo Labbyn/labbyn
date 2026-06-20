@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link, createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
 import { useForm } from '@tanstack/react-form'
+import { AxiosError } from 'axios'
 import {
   BanknoteArrowUp,
   Book,
@@ -116,10 +116,6 @@ function InventoryDetailsPage() {
             onSuccess: () => {
               toast.success('Item deleted successfully')
               router.history.back()
-            },
-            onError: (error: AxiosError <{detail: string; code: string }>) => {
-              const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
-              toast.error('Operation failed', { description: errorMessage })
             },
           })
         },

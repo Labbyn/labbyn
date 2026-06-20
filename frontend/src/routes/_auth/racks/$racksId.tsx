@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { AxiosError } from 'axios'
 import { useForm } from '@tanstack/react-form'
+import { AxiosError } from 'axios'
 import { Box, Cpu, Info, Layers, MapPin, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'

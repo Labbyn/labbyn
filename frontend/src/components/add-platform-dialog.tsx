@@ -1,6 +1,7 @@
 import React, { useState } from 'react' // Make sure React is imported for ReactNode
 import { AlertCircle, Cpu, Loader2, Plus, Server, Trash2 } from 'lucide-react'
 import { useForm, useStore } from '@tanstack/react-form'
+import { AxiosError } from 'axios'
 import {
   useMutation,
   useQuery,
@@ -88,7 +89,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       setOpen(false)
       form.reset()
     },
-    onError: (error: Error) => {
+    onError: (error: AxiosError <{detail: string; code: string }>) => {
       const errorMessage = error.response?.data?.detail || error.message || 'An unknown error occured'
       toast.error('Operation failed', { description: errorMessage })
     },
