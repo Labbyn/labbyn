@@ -48,7 +48,7 @@ type RentalFormValues = {
   item_id: number
   start_date: string
   end_date: string
-  quantity: number
+  quantity: number | null
   team_id: number
 }
 
@@ -84,7 +84,7 @@ export function ManageRentalDialog({
       item_id: item.id,
       start_date: '',
       end_date: '',
-      quantity: 0,
+      quantity: null,
       team_id: 0,
     } as RentalFormValues,
     onSubmit: async ({ value }) => {
@@ -183,9 +183,15 @@ export function ManageRentalDialog({
                   <FieldLabel htmlFor={field.name}>Quantity</FieldLabel>
                   <Input
                     id={field.name}
-                    value={field.state.value}
+                    value={
+                      field.state.value == null ? '' : String(field.state.value)
+                    }
                     onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onChange={(e) =>
+                      field.handleChange(
+                        e.target.value === '' ? null : Number(e.target.value),
+                      )
+                    }
                     type="number"
                     min="0"
                     className={
@@ -319,22 +325,36 @@ export function ManageRentalDialog({
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit]}
-              children={([canSubmit]) => (
-                <Button
-                  type="submit"
-                  disabled={!canSubmit || createMutation.isPending}
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <Loader2 className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>Create new rental</>
-                  )}
-                </Button>
-              )}
+              selector={(state) => [
+                state.values.start_date,
+                state.values.end_date,
+                state.values.quantity,
+                state.values.team_id,
+                state.canSubmit,
+              ]}
+              children={([
+                start_date,
+                end_date,
+                quantity,
+                team_id,
+                canSubmit,
+              ]) => {
+                const requiredFieldsSet =
+                  !!start_date && !!end_date && quantity != null && Number(team_id) !== 0
+                const disabled = !requiredFieldsSet || !canSubmit || createMutation.isPending
+                return (
+                  <Button type="submit" disabled={disabled}>
+                    {createMutation.isPending ? (
+                      <>
+                        <Loader2 className="animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>Create new rental</>
+                    )}
+                  </Button>
+                )
+              }}
             />
           </DialogFooter>
         </form>
