@@ -206,7 +206,16 @@ class InventoryService:
         """
         self.ctx.require_user()
         async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
-            item = await self.get_inventory_or_404(item_id)
+            item = await self.get_inventory_or_404(item_id, detailed=True)
+
+            today = datetime.now().date()
+            has_active_rentals = any(r.end_date >= today for r in item.rental_history)
+
+            if has_active_rentals:
+                raise exceptions.ValidationError(
+                    f"Cannot delete '{item.name}', as it has active rentals."
+                )
+
             try:
                 await self.db.delete(item)
                 await self.db.commit()

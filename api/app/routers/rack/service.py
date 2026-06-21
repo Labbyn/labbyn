@@ -218,6 +218,7 @@ class RackService:
         """
         self.ctx.require_user()
         db_rack = await self.get_rack_or_404(rack_id, detailed=True)
+        rack_name = db_rack.name
         try:
             virtual_room = (
                 await self.db.execute(
@@ -247,10 +248,13 @@ class RackService:
 
             await self.db.delete(db_rack)
             await self.db.commit()
+        except IntegrityError:
+            await self.db.rollback()
+            raise exceptions.ValidationError(
+                f"Could not delete rack '{rack_name}' because it is still in use (contains machines)."
+            )
         except Exception as e:
             await self.db.rollback()
-            if isinstance(e, exceptions.ValidationError):
-                raise e
             raise exceptions.ValidationError(
-                f"Could not delete rack '{db_rack.name}'"
+                f"Could not delete rack '{rack_name}'"
             ) from e

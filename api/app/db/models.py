@@ -69,7 +69,7 @@ class Rack(Base):
 
     team = relationship("Teams")
     room = relationship("Rooms", back_populates="racks")
-    shelves = relationship("Shelf", back_populates="rack", cascade="all, delete-orphan")
+    shelves = relationship("Shelf", back_populates="rack")
     tags = relationship("Tags", secondary="tags_racks", back_populates="racks")
     equipment = relationship(
         "Equipment", back_populates="rack", cascade="all, delete-orphan"
