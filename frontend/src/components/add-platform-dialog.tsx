@@ -85,6 +85,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['shelf'] })
       queryClient.invalidateQueries({ queryKey: ['rack'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
 
       setOpen(false)
       form.reset()

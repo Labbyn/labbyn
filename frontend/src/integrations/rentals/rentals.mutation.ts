@@ -9,7 +9,7 @@ const PATHS = {
 
 export async function useCreateRentalMutation(rentData: {
   item_id: number
-  quantity: number
+  quantity: number | null
   start_date: string
   end_date: string
   team_id: number

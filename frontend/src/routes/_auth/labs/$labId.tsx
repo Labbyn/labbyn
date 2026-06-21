@@ -24,7 +24,7 @@ export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
       <DataTableColumnHeader column={column} title="Rack name" />
     ),
     cell: ({ row }) => (
-      <div className="flex flex-col font-medium">
+      <div>
         {row.getValue('name') || '-'}
       </div>
     ),

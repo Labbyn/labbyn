@@ -69,6 +69,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
     onSuccess: () => {
       toast.success('Rack added successfully')
       queryClient.invalidateQueries({ queryKey: ['racks'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
     },

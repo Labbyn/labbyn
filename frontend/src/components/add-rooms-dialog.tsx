@@ -68,6 +68,7 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
       toast.success('Room added successfully')
       queryClient.invalidateQueries({ queryKey: ['labs'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
     },

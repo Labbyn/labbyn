@@ -36,7 +36,7 @@ export const columns: Array<ColumnDef<ApiTagsItem>> = [
                   .replace(/^./, (s) => s.toUpperCase())
               : '-'
             return (
-              <div className="flex justify-center">
+              <div>
                 <Badge className={className}>{label}</Badge>
               </div>
             )

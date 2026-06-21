@@ -6,7 +6,7 @@ import { GenericCreateDialog } from '@/components/generic-create-dialog'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { DataTableRowActions } from '@/components/data-table/row-actions'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiCategoryItem } from '@/integrations/category/category.types'
+import type { ApiCategoryItem, ApiCategoryUpdate } from '@/integrations/category/category.types'
 import { categoryListQueryOptions } from '@/integrations/category/category.query'
 import {
   useDeletCategoryMutation,
@@ -66,7 +66,7 @@ export default function CategoriesAdminPanel() {
 
   const updateCategory = useUpdateCategoryMutation(editingCategory?.id || 0)
 
-  const handleEditCategory = (data: ApiCategoryItem) => {
+  const handleEditCategory = (data: ApiCategoryUpdate) => {
     if (!editingCategory) return
     updateCategory.mutate({ name: data.name }, { onSuccess: () => setEditingCategory(null) })
   }
@@ -91,7 +91,7 @@ export default function CategoriesAdminPanel() {
           title="Edit Category"
           isOpen={!!editingCategory}
           onClose={() => setEditingCategory(null)}
-          defaultValues={{ id: editingCategory.id, name: editingCategory.name }}
+          defaultValues={{ name: editingCategory.name }}
           fieldsConfig={fieldsConfig}
           onSubmit={handleEditCategory}
         />

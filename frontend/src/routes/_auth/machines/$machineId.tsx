@@ -22,6 +22,7 @@ import {
   Save,
   StickyNote,
   Trash2,
+  X
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -561,6 +562,14 @@ function MachineDetailsPage() {
                             disabled={selectedRoom == null}
                             value={field.state.value?.toString() ?? ''}
                             onValueChange={(value) => {
+                              if (value === 'none') {
+                                field.handleChange(null)
+                                setSelectedRack(undefined)
+                                form.setFieldValue('rack_id', null)
+                                form.setFieldValue('shelf_id', null)
+                                return
+                              }
+
                               field.handleChange(Number(value))
                               setSelectedRack(Number(value))
                               form.setFieldValue('shelf_id', null)
@@ -578,6 +587,9 @@ function MachineDetailsPage() {
                               />
                             </SelectTrigger>
                             <SelectContent>
+                              {/* Option to clear rack selection */}
+                              <SelectItem value="none"><X/>No rack</SelectItem>
+
                               {availableRacks.map((rack) => (
                                 <SelectItem
                                   key={rack.id}

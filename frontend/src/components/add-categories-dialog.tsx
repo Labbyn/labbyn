@@ -38,6 +38,7 @@ export function AddCategoriesDialog({
     onSuccess: () => {
       toast.success('Category added successfully')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
     },

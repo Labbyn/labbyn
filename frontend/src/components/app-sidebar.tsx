@@ -166,7 +166,7 @@ export function AppSidebar() {
   const { isMobile } = useSidebar()
 
   if (!user) return null
-
+  
   const handleLogout = async () => {
     await logout()
     router.invalidate()
@@ -364,19 +364,22 @@ export function AppSidebar() {
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {user.name}{' '}
-                      {user.user_type === 'admin' && <Badge>Admin</Badge>}
-                    </span>
-                    <span className="truncate text-xs">{user.email}</span>
-                  </div>
+                <DropdownMenuItem asChild>
+                  <Link to="/users/$userId"
+                        params={{ userId: String(user.id) }}>                  
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        {user.name}{' '}
+                        {user.user_type === 'admin' && <Badge>Admin</Badge>}
+                      </span>
+                      <span className="truncate text-xs">{user.email}</span>
+                    </div>
+                  </Link>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />

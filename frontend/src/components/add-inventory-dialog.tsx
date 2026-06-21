@@ -65,6 +65,7 @@ export function AddInventoryDialog({
       toast.success('Item added successfully')
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
     },
