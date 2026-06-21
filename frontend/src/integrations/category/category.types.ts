@@ -4,6 +4,9 @@ export interface ApiCategoryItem {
   id: number
   name: string
 }
+export interface ApiCategoryUpdate {
+  name: string
+}
 
 export interface ApiCategoryInventoryGrouped {
   id: number
