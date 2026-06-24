@@ -11,6 +11,7 @@ import { DataPreview } from './data-preview'
 import type { TableConfig } from './table-selector'
 import type { ColumnMapping } from './column-mapper'
 import type { ParsedCSV } from '@/lib/csv-parser'
+import type { ImportReportResponse } from '@/integrations/import-export/import-export.types'
 import {
   Select,
   SelectContent,
@@ -70,6 +71,9 @@ const AVAILABLE_TABLES: Array<TableConfig> = [
 
 export default function ImportPage() {
   const { data: teams = [] } = useQuery(currentUserTeamsQueryOptions)
+  const [importReport, setImportReport] = useState<ImportReportResponse | null>(
+    null,
+  )
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
@@ -88,6 +92,7 @@ export default function ImportPage() {
     setFileName(name)
     setMapping({})
     setSubmitResult(null)
+    setImportReport(null)
   }, [])
 
   const handleClearFile = useCallback(() => {
@@ -95,6 +100,7 @@ export default function ImportPage() {
     setFileName(null)
     setMapping({})
     setSubmitResult(null)
+    setImportReport(null)
   }, [])
 
   const handleTableSelect = useCallback(
@@ -212,25 +218,56 @@ export default function ImportPage() {
       },
       {
         onSuccess: (data) => {
-          setSubmitResult({
-            success: true,
-            message: typeof data === 'string' ? data : 'Import successful!',
-          })
+          if (typeof data !== 'string') {
+            setImportReport(data)
+            setSubmitResult(null)
+          } else {
+            setSubmitResult({
+              success: true,
+              message: typeof data === 'string' ? data : 'Import successful!',
+            })
+            setImportReport(null)
+          }
         },
         onError: (error: any) => {
-          const detail = error.response?.data?.detail
-          const errorMsg = detail
-            ? Array.isArray(detail)
+          const errorData = error.response?.data
+          const reportPayload = errorData?.summary
+            ? errorData
+            : errorData?.detail?.summary
+              ? errorData.detail
+              : null
+
+          if (reportPayload && reportPayload.summary) {
+            setImportReport(reportPayload)
+            setSubmitResult(null)
+            return
+          }
+
+          const detail = errorData?.detail
+          let errorMsg = 'Import failed'
+
+          if (detail) {
+            errorMsg = Array.isArray(detail)
               ? detail
-                  .map((e: any) => `${e.loc.join('.')}: ${e.msg}`)
+                  .map((e: any) => `${e.loc?.join('.') || 'Error'}: ${e.msg}`)
                   .join(', ')
-              : detail
-            : error.response?.data?.message || error.message || 'Import failed'
+              : typeof detail === 'string'
+                ? detail
+                : JSON.stringify(detail)
+          } else if (errorData?.message) {
+            errorMsg =
+              typeof errorData.message === 'string'
+                ? errorData.message
+                : JSON.stringify(errorData.message)
+          } else if (error.message) {
+            errorMsg = error.message
+          }
 
           setSubmitResult({
             success: false,
             message: errorMsg,
           })
+          setImportReport(null)
         },
       },
     )
@@ -394,6 +431,75 @@ export default function ImportPage() {
                   </span>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 5: Post-Import Report */}
+        {importReport && (
+          <Card
+            className={`border-2 ${importReport.summary.failed > 0 ? 'border-destructive/50' : 'border-green-500/50'}`}
+          >
+            <CardHeader>
+              <CardTitle className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                <AlertCircleIcon className="h-4 w-4" />
+                Import Results Report
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col bg-muted p-4 rounded-lg">
+                  <span className="text-sm text-muted-foreground">
+                    Total Rows Processed
+                  </span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.total || 0}
+                  </span>
+                </div>
+                <div className="flex flex-col bg-green-500/10 text-green-600 p-4 rounded-lg">
+                  <span className="text-sm font-medium">
+                    Successfully Imported
+                  </span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.success || 0}
+                  </span>
+                </div>
+                <div className="flex flex-col bg-destructive/10 text-destructive p-4 rounded-lg">
+                  <span className="text-sm font-medium">Failed</span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.failed || 0}
+                  </span>
+                </div>
+              </div>
+
+              {importReport.summary.failed > 0 &&
+                Array.isArray(importReport.details) &&
+                importReport.details.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
+                      Failed Rows Breakdown
+                    </h4>
+                    <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                      {importReport.details
+                        .filter((d) => d.status === 'failed')
+                        .map((detail, idx) => (
+                          <Alert
+                            variant="destructive"
+                            key={`${detail.row}-${idx}`}
+                          >
+                            <AlertCircleIcon className="h-4 w-4" />
+                            <AlertTitle>
+                              Row {detail.row || '?'}:{' '}
+                              {detail.name || 'Unknown'}
+                            </AlertTitle>
+                            <AlertDescription>
+                              {detail.error || 'No error details provided.'}
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                    </div>
+                  </div>
+                )}
             </CardContent>
           </Card>
         )}
