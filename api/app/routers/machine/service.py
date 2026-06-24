@@ -187,7 +187,9 @@ class MachineService:
             "prometheus_live_stats": live_payload,
             "grafana_link": f"{GRAFANA_URL}/d/ARCDarkvk/?orgId=1&var-host={target_ip}",
             "rack_link": f"/racks/{machine.shelf.rack_id}" if machine.shelf else "#",
-            "map_link": f"/map?roomId={machine.room.id}&redirectType=machine{'&redirectId=' + str(machine.id) if machine.localization_id else ''}" if machine.room else "#"
+            "map_link": f"/map?roomId={machine.room.id}&redirectType=machine{'&redirectId=' + str(machine.id) if machine.localization_id else ''}"
+            if machine.room
+            else "#",
         }
 
     async def update_machine(
