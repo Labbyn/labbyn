@@ -144,8 +144,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         const rackHasShelves = Array.isArray(shelves) && shelves.length > 0
         if (!rackHasShelves || !value.shelf_id) {
           toast.error('Shelf required', {
-            description:
-              'Please select shelf before adding a machine.',
+            description: 'Please select shelf before adding a machine.',
           })
           return
         }
@@ -153,7 +152,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
 
       await mutation.mutateAsync(value)
     },
-
   })
 
   const formValues = useStore(form.store, (state) => state.values)

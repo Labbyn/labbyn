@@ -22,7 +22,7 @@ import {
   Save,
   StickyNote,
   Trash2,
-  X
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -588,7 +588,10 @@ function MachineDetailsPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {/* Option to clear rack selection */}
-                              <SelectItem value="none"><X/>No rack</SelectItem>
+                              <SelectItem value="none">
+                                <X />
+                                No rack
+                              </SelectItem>
 
                               {availableRacks.map((rack) => (
                                 <SelectItem
