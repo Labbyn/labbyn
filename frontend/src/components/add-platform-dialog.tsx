@@ -132,7 +132,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         return
       }
 
-      if (!value.team_id || !value.localization_id) {
+      if (value.addToDb && (!value.team_id || !value.localization_id)) {
         toast.error('Team and lab required', {
           description:
             'Please select both team and lab before adding a platform.',
