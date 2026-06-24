@@ -132,7 +132,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         return
       }
 
-      if (!value.team_id || !value.localization_id) {
+      if (value.addToDb && (!value.team_id || !value.localization_id)) {
         toast.error('Team and lab required', {
           description:
             'Please select both team and lab before adding a platform.',
@@ -144,8 +144,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         const rackHasShelves = Array.isArray(shelves) && shelves.length > 0
         if (!rackHasShelves || !value.shelf_id) {
           toast.error('Shelf required', {
-            description:
-              'Please select shelf before adding a machine.',
+            description: 'Please select shelf before adding a machine.',
           })
           return
         }
@@ -153,7 +152,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
 
       await mutation.mutateAsync(value)
     },
-
   })
 
   const formValues = useStore(form.store, (state) => state.values)

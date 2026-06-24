@@ -8,11 +8,13 @@ import { useDetachTagMutation } from '@/integrations/tags/tags.mutation'
 // Tags color definition
 export const colorMap = {
   red: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
-  purple: 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
+  purple:
+    'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
   lightBlue: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
   green: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
   blue: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  orange: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  orange:
+    'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
   gray: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
   darkBlue: 'bg-slate-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300',
   black: 'bg-black text-white dark:bg-black dark:text-white',

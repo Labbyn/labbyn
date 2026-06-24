@@ -340,8 +340,12 @@ export function ManageRentalDialog({
                 canSubmit,
               ]) => {
                 const requiredFieldsSet =
-                  !!start_date && !!end_date && quantity != null && Number(team_id) !== 0
-                const disabled = !requiredFieldsSet || !canSubmit || createMutation.isPending
+                  !!start_date &&
+                  !!end_date &&
+                  quantity != null &&
+                  Number(team_id) !== 0
+                const disabled =
+                  !requiredFieldsSet || !canSubmit || createMutation.isPending
                 return (
                   <Button type="submit" disabled={disabled}>
                     {createMutation.isPending ? (

@@ -66,6 +66,7 @@ export function AddInventoryDialog({
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['history'] })
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
       setOpen(false)
       form.reset()
     },

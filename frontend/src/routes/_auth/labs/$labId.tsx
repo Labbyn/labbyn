@@ -23,11 +23,7 @@ export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Rack name" />
     ),
-    cell: ({ row }) => (
-      <div>
-        {row.getValue('name') || '-'}
-      </div>
-    ),
+    cell: ({ row }) => <div>{row.getValue('name') || '-'}</div>,
   },
   {
     id: 'machine_count',

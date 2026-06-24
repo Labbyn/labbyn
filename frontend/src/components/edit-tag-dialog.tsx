@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { colorMap } from './tag-list'
+import type { ApiTagsItem, TagItem } from '@/integrations/tags/tags.types'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useUpdateTagMutation } from '@/integrations/tags/tags.mutation'
-import type { TagItem, ApiTagsItem } from '@/integrations/tags/tags.types'
 import { zodValidate } from '@/utils/index'
 
 const schemas = {
@@ -38,7 +38,6 @@ export function EditTagDialog({
   isOpen: boolean
   onClose: () => void
 }) {
-
   const updateTag = useUpdateTagMutation(tag?.id || 0)
 
   const form = useForm({
@@ -54,7 +53,10 @@ export function EditTagDialog({
     },
   })
 
-  const colorArray = Object.keys(colorMap).map((key) => ({ id: key, name: key }))
+  const colorArray = Object.keys(colorMap).map((key) => ({
+    id: key,
+    name: key,
+  }))
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
@@ -112,7 +114,9 @@ export function EditTagDialog({
                           <div className="flex items-center gap-2">
                             <div
                               className="h-3 w-3 rounded-full"
-                              style={{ backgroundColor: (color.name as any) as string }}
+                              style={{
+                                backgroundColor: color.name as any as string,
+                              }}
                             />
                             <span className="capitalize">{color.name}</span>
                           </div>
@@ -132,7 +136,10 @@ export function EditTagDialog({
             <form.Subscribe
               selector={(state) => [state.canSubmit]}
               children={([canSubmit]) => (
-                <Button type="submit" disabled={!canSubmit || updateTag.isPending}>
+                <Button
+                  type="submit"
+                  disabled={!canSubmit || updateTag.isPending}
+                >
                   {updateTag.isPending ? (
                     <>
                       <Loader2 className="animate-spin" /> Processing...

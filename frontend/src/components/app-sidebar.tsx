@@ -166,7 +166,7 @@ export function AppSidebar() {
   const { isMobile } = useSidebar()
 
   if (!user) return null
-  
+
   const handleLogout = async () => {
     await logout()
     router.invalidate()
@@ -365,8 +365,10 @@ export function AppSidebar() {
                 sideOffset={4}
               >
                 <DropdownMenuItem asChild>
-                  <Link to="/users/$userId"
-                        params={{ userId: String(user.id) }}>                  
+                  <Link
+                    to="/users/$userId"
+                    params={{ userId: String(user.id) }}
+                  >
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarFallback className="rounded-lg">
                         {getInitials(user.name)}

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AssignDetachTagForm, TagItem} from './tags.types'
+import type { AssignDetachTagForm, TagItem } from './tags.types'
 import api from '@/lib/api'
 
 const PATHS = {
@@ -62,7 +62,7 @@ export const useUpdateTagMutation = (tagId: number) => {
 
   return useMutation({
     mutationKey: ['update-tag'],
-    mutationFn: (data: Partial<TagItem> ) =>
+    mutationFn: (data: Partial<TagItem>) =>
       api.patch(PATHS.DETAIL(tagId), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags', 'list'] })
