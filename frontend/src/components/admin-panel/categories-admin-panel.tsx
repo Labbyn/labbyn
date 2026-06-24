@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import type {
+  ApiCategoryItem,
+  ApiCategoryUpdate,
+} from '@/integrations/category/category.types'
 import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import { GenericCreateDialog } from '@/components/generic-create-dialog'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { DataTableRowActions } from '@/components/data-table/row-actions'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiCategoryItem, ApiCategoryUpdate } from '@/integrations/category/category.types'
 import { categoryListQueryOptions } from '@/integrations/category/category.query'
 import {
   useDeletCategoryMutation,
@@ -21,7 +24,10 @@ export const columns: Array<ColumnDef<ApiCategoryItem>> = [
   ...(['id', 'name'] as Array<keyof ApiCategoryItem>).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
-      <DataTableColumnHeader column={column} title={formatHeader(key as string)} />
+      <DataTableColumnHeader
+        column={column}
+        title={formatHeader(key as string)}
+      />
     ),
     cell: ({ getValue }: { getValue: () => any }) => getValue() ?? '-',
   })),
@@ -58,7 +64,8 @@ export const columns: Array<ColumnDef<ApiCategoryItem>> = [
 
 export default function CategoriesAdminPanel() {
   const { data: categories = [] } = useQuery(categoryListQueryOptions)
-  const [editingCategory, setEditingCategory] = useState<ApiCategoryItem | null>(null)
+  const [editingCategory, setEditingCategory] =
+    useState<ApiCategoryItem | null>(null)
 
   const fieldsConfig = {
     name: { type: 'text' as const },
@@ -68,7 +75,10 @@ export default function CategoriesAdminPanel() {
 
   const handleEditCategory = (data: ApiCategoryUpdate) => {
     if (!editingCategory) return
-    updateCategory.mutate({ name: data.name }, { onSuccess: () => setEditingCategory(null) })
+    updateCategory.mutate(
+      { name: data.name },
+      { onSuccess: () => setEditingCategory(null) },
+    )
   }
 
   return (

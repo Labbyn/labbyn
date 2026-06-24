@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { ApiImportPayload, ImportEntityType } from './import-export.types'
+import type {
+  ApiImportPayload,
+  ImportEntityType,
+  ImportReportResponse,
+} from './import-export.types'
 import api from '@/lib/api'
 
 const PATHS = {
@@ -21,24 +25,77 @@ export const useImportDataMutation = () => {
       entityType: ImportEntityType | string
       payload: ApiImportPayload
     }) => {
-      const { data } = await api.post<string>(PATHS.IMPORT(entityType), payload)
-      return data
+      const response = await api.post<ImportReportResponse | string>(
+        PATHS.IMPORT(entityType),
+        payload,
+        {
+          validateStatus: (status) =>
+            (status >= 200 && status < 300) || status === 400,
+        },
+      )
+
+      if (response.status === 400) {
+        const validationError = new Error('Import Validation Failed')
+        ;(validationError as any).response = response
+        throw validationError
+      }
+
+      return response.data
     },
+
+    throwOnError: false,
+
     onSuccess: (data, variables) => {
-      toast.success(typeof data === 'string' ? data : 'Import successful!')
+      if (typeof data !== 'string') {
+        if (data.summary.failed > 0) {
+          toast.warning(
+            `Import completed with ${data.summary.failed} errors. See report for details.`,
+          )
+        } else {
+          toast.success(
+            `Successfully imported ${data.summary.success} records!`,
+          )
+        }
+      } else {
+        toast.success(typeof data === 'string' ? data : 'Import successful!')
+      }
       queryClient.invalidateQueries({ queryKey: [variables.entityType] })
     },
+
     onError: (error: any) => {
-      const detail = error.response?.data?.detail
+      const errorData = error.response?.data
+      const reportPayload = errorData?.summary
+        ? errorData
+        : errorData?.detail?.summary
+          ? errorData.detail
+          : null
+
+      if (reportPayload && reportPayload.summary) {
+        toast.error(
+          `Import failed: 0 records imported. See report for details.`,
+        )
+        return
+      }
+
+      const detail = errorData?.detail
       if (detail) {
         const msg = Array.isArray(detail)
           ? detail
               .map((e: any) => `${e.loc?.join('.') || 'Error'}: ${e.msg}`)
               .join(', ')
-          : detail
+          : typeof detail === 'string'
+            ? detail
+            : JSON.stringify(detail)
+
         toast.error(`Import failed: ${msg}`)
       } else {
-        toast.error(error.message || 'Failed to import data')
+        const fallbackMsg =
+          errorData?.message || error.message || 'Failed to import data'
+        toast.error(
+          typeof fallbackMsg === 'string'
+            ? fallbackMsg
+            : JSON.stringify(fallbackMsg),
+        )
       }
     },
   })
