@@ -62,7 +62,7 @@ class MachinesUpdate(BaseModel):
     """Schema for updating a Machine."""
 
     name: Optional[str] = Field(None, max_length=100)
-    room_id: Optional[int] = None
+    localization_id: Optional[int] = None
     ip_address: Optional[str] = Field(None, max_length=16)
     mac_address: Optional[str] = Field(None, max_length=17)
     pdu_port: Optional[int] = None
