@@ -10,8 +10,8 @@ import type {
 import api from '@/lib/api'
 
 const PATHS = {
-  MACHINES: '/db/machines/',
-  METADATA: '/db/metadata/',
+  MACHINES: '/db/machines',
+  METADATA: '/db/metadata',
   DISCOVERY: '/ansible/discovery',
   SETUP_AGENT: '/ansible/setup_agent',
   PROMETHEUS: '/prometheus/target',
