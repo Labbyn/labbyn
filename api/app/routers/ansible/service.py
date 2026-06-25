@@ -148,6 +148,8 @@ class AnsibleService:
         if not machine:
             raise exceptions.ObjectNotFoundError("Machine")
 
+        meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
+
         try:
             await self.executor.run_playbook_task(
                 service_schemas.AnsiblePlaybook.scan_platform,
@@ -155,12 +157,12 @@ class AnsibleService:
                 request.extra_vars,
             )
             specs = self.executor.parse_platform_report(machine.name)
+
             for field in ["os", "ram", "mac_address", "ip_address", "name"]:
                 setattr(machine, field, specs.get(field))
 
             await self.repo.sync_hardware(self.db, machine.id, specs)
 
-            meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
             if meta:
                 meta.ansible_access = True
                 meta.agent_prometheus = specs["agent_prometheus"]
