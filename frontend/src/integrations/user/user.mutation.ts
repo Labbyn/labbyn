@@ -4,7 +4,7 @@ import type { UserCreate, UserCreatedResponse, UserUpdate } from './user.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/users/',
+  BASE: '/db/users',
   DETAIL: (id: string | number) => `/db/users/${id}`,
   AUTH_RESET_PASSWORD: (id: string | number) => `/auth/reset-password/${id}`,
   CHANGE_TEAM_ACCESS: (id: string | number) =>
