@@ -95,7 +95,11 @@ function MachineDetailsPage() {
   const form = useForm({
     defaultValues: { ...machine },
     onSubmit: ({ value }) => {
-      updateMachine.mutate(value, {
+      const updatePayload = {
+        ...value,
+        localization_id: value.room_id,
+      }
+      updateMachine.mutate(updatePayload, {
         onSuccess: () => {
           toast.success('Machine updated successfully')
           setIsEditing(false)

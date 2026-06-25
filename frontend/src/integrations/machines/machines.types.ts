@@ -56,6 +56,7 @@ export interface ApiMachineInfo {
   rack_name: string
   room_name: string
   room_id: number | null
+  localization_id: number | null
   last_update: string // format: date-time
   monitoring: boolean
   ansible_access: boolean
@@ -107,7 +108,7 @@ export interface PlatformFormValues {
 
 export interface MachineUpdate {
   name?: string | null
-  room_id?: number | null
+  localization_id?: number | null
   mac_address?: string | null
   ip_address?: string | null
   pdu_port?: number | null
