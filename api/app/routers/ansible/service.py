@@ -6,6 +6,7 @@ from app.core import exceptions
 from app.db import models
 from app.schemas import service_schemas
 from app.utils import redis_service
+from sqlalchemy import sql
 
 from .executor import AnsibleExecutor
 from .repository import AnsibleRepository
@@ -66,18 +67,20 @@ class AnsibleService:
             ) from e
 
         results = []
-        default_room = await self.repo.get_room_by_name_and_team(
-            self.db, "virtual", target_team_id
+        team_stmt = sql.select(models.Teams.name).where(
+            models.Teams.id == target_team_id
         )
+        team_res = await self.db.execute(team_stmt)
+        team_name = team_res.scalar_one_or_none()
 
-        if not default_room:
-            default_room = models.Rooms(
-                name="virtual", room_type="virtual", team_id=target_team_id
-            )
-            self.db.add(default_room)
-            await self.db.commit()
-            await self.db.refresh(default_room)
+        if not team_name:
+            raise exceptions.ObjectNotFoundError("Team")
 
+        virtual_room_name = f"{team_name} (virtual)"
+
+        default_room = await self.repo.get_room_by_name_and_team(
+            self.db, virtual_room_name, target_team_id
+        )
         for host in request.hosts:
             try:
                 specs = self.executor.parse_platform_report(host)

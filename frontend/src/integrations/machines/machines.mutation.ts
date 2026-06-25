@@ -104,6 +104,7 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['machine', String(machineId)] })
     },
   })
 }

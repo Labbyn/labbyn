@@ -69,6 +69,7 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
     onSuccess: () => {
       toast.success('Rack added successfully')
       queryClient.invalidateQueries({ queryKey: ['racks'] })
+      queryClient.invalidateQueries({ queryKey: ['labs'] })
       queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
@@ -177,12 +178,18 @@ export function AddRackDialog({ children }: { children?: React.ReactNode }) {
                 <Field>
                   <FieldLabel htmlFor={field.name}>Room / Lab</FieldLabel>
                   <Select
-                  disabled={!selectedTeam || selectedTeam <= 0}
-                  value={field.state.value.toString()}
-                  onValueChange={(value) => field.handleChange(Number(value))}
-                >
+                    disabled={!selectedTeam || selectedTeam <= 0}
+                    value={field.state.value.toString()}
+                    onValueChange={(value) => field.handleChange(Number(value))}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder={!selectedTeam || selectedTeam <= 0 ? 'Select a Team first' : 'Select a room'} />
+                      <SelectValue
+                        placeholder={
+                          !selectedTeam || selectedTeam <= 0
+                            ? 'Select a Team first'
+                            : 'Select a room'
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {availableRooms.map((lab) => (

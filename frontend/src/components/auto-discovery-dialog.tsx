@@ -51,6 +51,7 @@ export function AutoDiscovertDialog({
     onSuccess: () => {
       toast.success('Platform scaned successfully')
       queryClient.invalidateQueries({ queryKey: ['auto-discovery'] })
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
       setOpen(false)
       form.reset()
     },

@@ -1,6 +1,6 @@
-import api from '@/lib/api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ApiCategoryItem } from './category.types'
+import api from '@/lib/api'
 
 const PATHS = {
   BASE: '/db/categories',
@@ -31,7 +31,8 @@ export const useUpdateCategoryMutation = (categoryId: number) => {
 
   return useMutation({
     mutationKey: ['update-category'],
-    mutationFn: (data: Partial<ApiCategoryItem> ) => api.patch(PATHS.DETAIL(categoryId), data),
+    mutationFn: (data: Partial<ApiCategoryItem>) =>
+      api.patch(PATHS.DETAIL(categoryId), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories', 'list'] })
     },

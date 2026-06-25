@@ -28,8 +28,8 @@ const router = createRouter({
   defaultStructuralSharing: true,
   defaultPreloadStaleTime: 0,
   defaultPendingMinMs: 25,
-  defaultErrorComponent: GlobalRouteError, 
-  
+  defaultErrorComponent: GlobalRouteError,
+
   defaultNotFoundComponent: () => {
     return <PageNotFound />
   },

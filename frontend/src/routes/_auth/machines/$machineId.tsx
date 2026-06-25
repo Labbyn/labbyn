@@ -22,7 +22,7 @@ import {
   Save,
   StickyNote,
   Trash2,
-  X
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -95,7 +95,11 @@ function MachineDetailsPage() {
   const form = useForm({
     defaultValues: { ...machine },
     onSubmit: ({ value }) => {
-      updateMachine.mutate(value, {
+      const updatePayload = {
+        ...value,
+        localization_id: value.room_id,
+      }
+      updateMachine.mutate(updatePayload, {
         onSuccess: () => {
           toast.success('Machine updated successfully')
           setIsEditing(false)
@@ -588,7 +592,10 @@ function MachineDetailsPage() {
                             </SelectTrigger>
                             <SelectContent>
                               {/* Option to clear rack selection */}
-                              <SelectItem value="none"><X/>No rack</SelectItem>
+                              <SelectItem value="none">
+                                <X />
+                                No rack
+                              </SelectItem>
 
                               {availableRacks.map((rack) => (
                                 <SelectItem

@@ -1,16 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import type { ApiTagsItem } from '@/integrations/tags/tags.types'
 import { DataTable } from '@/components/ui/data-table'
 import { Button } from '@/components/ui/button'
 import { DataTableColumnHeader } from '@/components/data-table/column-header'
 import { DataTableRowActions } from '@/components/data-table/row-actions'
 import { Badge } from '@/components/ui/badge'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiTagsItem } from '@/integrations/tags/tags.types'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
-import {
-  useDeletTagMutation,
-} from '@/integrations/tags/tags.mutation'
+import { useDeletTagMutation } from '@/integrations/tags/tags.mutation'
 import { colorMap } from '@/components/tag-list'
 import { AddTagDialog } from '@/components/add-tag-dialog'
 import { EditTagDialog } from '@/components/edit-tag-dialog'
@@ -22,7 +20,10 @@ export const columns: Array<ColumnDef<ApiTagsItem>> = [
   ...(['id', 'name', 'color'] as Array<keyof ApiTagsItem>).map((key) => ({
     accessorKey: key,
     header: ({ column }: any) => (
-      <DataTableColumnHeader column={column} title={formatHeader(key as string)} />
+      <DataTableColumnHeader
+        column={column}
+        title={formatHeader(key as string)}
+      />
     ),
     cell:
       key === 'color'
@@ -95,7 +96,11 @@ export default function TagsAdminPanel() {
       />
 
       {editingTag && (
-        <EditTagDialog tag={editingTag} isOpen={!!editingTag} onClose={() => setEditingTag(null)} />
+        <EditTagDialog
+          tag={editingTag}
+          isOpen={!!editingTag}
+          onClose={() => setEditingTag(null)}
+        />
       )}
     </>
   )

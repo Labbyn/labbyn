@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios'
-import type { ErrorComponentProps } from '@tanstack/react-router'
 import { PageNotFound } from './page-not-found'
 import { SomethingWentWrong } from './something-went-wrong'
+import type { ErrorComponentProps } from '@tanstack/react-router'
 
 export function GlobalRouteError({ error, reset }: ErrorComponentProps) {
   if (isAxiosError(error)) {
@@ -12,5 +12,5 @@ export function GlobalRouteError({ error, reset }: ErrorComponentProps) {
     }
   }
 
-  return <SomethingWentWrong error={error as Error} reset={reset} />
+  return <SomethingWentWrong error={error} reset={reset} />
 }
