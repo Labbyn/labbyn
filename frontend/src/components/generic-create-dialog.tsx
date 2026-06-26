@@ -54,7 +54,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
     if (isOpen) {
       setFormData(defaultValues)
     }
-  }, [isOpen, defaultValues])
+  }, [isOpen]) 
 
   const handleChange = (key: keyof T, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
