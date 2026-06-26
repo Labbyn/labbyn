@@ -67,7 +67,9 @@ class MachineService:
 
             obj = models.Machines(**data)
             obj.cpus = [models.CPUs(name=item.name) for item in cpus]
-            obj.disks = [models.Disks(name=item.name) for item in disks]
+            obj.disks = [
+                models.Disks(name=item.name, capacity=item.capacity) for item in disks
+            ]
 
             self.db.add(obj)
             await self.db.commit()

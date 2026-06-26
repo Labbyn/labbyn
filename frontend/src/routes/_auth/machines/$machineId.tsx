@@ -441,7 +441,7 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {disk.capacity}
+                                    {disk.capacity !== null ? `${disk.capacity} GB` : disk.capacity}
                                   </span>
                                 </div>
                               ))
@@ -451,6 +451,13 @@ function MachineDetailsPage() {
                               <span className="truncate">
                                 {convertTimestampToDate(rawValue as string) ||
                                   '—'}
+                              </span>
+                            ) : formFiled.name === 'ram' ? (
+                              <span className="truncate">
+                                {typeof rawValue === 'string' ||
+                                typeof rawValue === 'number'
+                                  ? rawValue ? `${rawValue} GB` : '—'
+                                  : '—'}
                               </span>
                             ) : (
                               <span className="truncate">
