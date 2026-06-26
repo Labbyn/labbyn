@@ -173,6 +173,22 @@ export default function UserAdminPanel() {
   const updateUser = useUpdateUserMutation(editingUser?.id || '')
 
   const fieldsConfig: Record<string, FieldConfig> = {
+    name: {
+      type: 'text',
+      required: true,
+    },
+    surname: {
+      type: 'text',
+      required: true,
+    },
+    login: {
+      type: 'text',
+      required: true,
+    },
+    email: {
+      type: 'email',
+      required: true,
+    },
     user_type: {
       type: 'select',
       options: [
@@ -180,6 +196,7 @@ export default function UserAdminPanel() {
         { label: 'Admin', value: 'admin' },
         { label: 'Group Admin', value: 'group_admin' },
       ],
+      required: true,
     },
     team_ids: {
       type: 'multi-select',
