@@ -220,39 +220,29 @@ class RackService:
         db_rack = await self.get_rack_or_404(rack_id, detailed=True)
         rack_name = db_rack.name
         try:
-            virtual_room = (
-                await self.db.execute(
-                    sql.select(models.Rooms).where(
-                        models.Rooms.team_id == db_rack.team_id,
-                        models.Rooms.room_type == "virtual",
-                    )
-                )
-            ).scalar_one_or_none()
-
-            if not virtual_room:
-                team_name = db_rack.team.name if db_rack.team else "N/A"
-                raise exceptions.ValidationError(
-                    f"Virtual lab not found for team '{team_name}'"
-                )
-
             shelf_ids = [shelf.id for shelf in db_rack.shelves]
+
             if shelf_ids:
-                m_res = await self.db.execute(
+                m_check = await self.db.execute(
                     sql.select(models.Machines).where(
                         models.Machines.shelf_id.in_(shelf_ids)
                     )
                 )
-                for machine in m_res.scalars().all():
-                    machine.shelf_id = None
-                    machine.localization_id = virtual_room.id
+                if m_check.scalars().first():
+                    raise exceptions.ValidationError(
+                        f"Could not delete rack '{rack_name}' because it is still in use (contains machines)."
+                    )
+
+                await self.db.execute(
+                    sql.delete(models.Shelf).where(models.Shelf.id.in_(shelf_ids))
+                )
 
             await self.db.delete(db_rack)
             await self.db.commit()
-        except IntegrityError:
+
+        except exceptions.ValidationError:
             await self.db.rollback()
-            raise exceptions.ValidationError(
-                f"Could not delete rack '{rack_name}' because it is still in use (contains machines)."
-            )
+            raise
         except Exception as e:
             await self.db.rollback()
             raise exceptions.ValidationError(
