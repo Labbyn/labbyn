@@ -865,7 +865,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                       <Input
                                         placeholder="Capacity"
                                         className="w-1/3"
-                                        type="number"
+                                        type="text"
                                         value={disk.capacity || ''}
                                         onChange={(e) => {
                                           const newDisks = [...disks]
