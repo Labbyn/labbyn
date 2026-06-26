@@ -452,6 +452,13 @@ function MachineDetailsPage() {
                                 {convertTimestampToDate(rawValue as string) ||
                                   '—'}
                               </span>
+                            ) : formFiled.name === 'ram' ? (
+                              <span className="truncate">
+                                {typeof rawValue === 'string' ||
+                                typeof rawValue === 'number'
+                                  ? rawValue ? `${rawValue} GB` : '—'
+                                  : '—'}
+                              </span>
                             ) : (
                               <span className="truncate">
                                 {typeof rawValue === 'string' ||

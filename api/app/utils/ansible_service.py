@@ -42,7 +42,7 @@ def parse_platform_report(hostname: str) -> dict:
         cpu_list = [{"name": cpu_str}]
 
         ram_info = info.get("ram_memory", {})
-        ram_str = f"{ram_info.get('real_gb', '?')} GB"
+        ram_str = f"{ram_info.get('real_gb', '?')}"
 
         drives = info.get("drives", [])
         disk_list = []
@@ -50,7 +50,7 @@ def parse_platform_report(hostname: str) -> dict:
             disk_list.append(
                 {
                     "name": d.get("mount", "Unknown"),
-                    "capacity": f'{d.get("size_gb", "?")} GB',
+                    "capacity": f'{d.get("size_gb", "?")}',
                 }
             )
 
