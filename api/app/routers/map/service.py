@@ -73,7 +73,7 @@ class MapService:
 
                 node_lookup = {}
                 for n in payload.wall_nodes:
-                    node = models.WallNodes(name=n.name, x=n.x, y=n.y, map_id=db_map.id)
+                    node = models.WallNodes(id=n.id, name=n.name, x=n.x, y=n.y, map_id=db_map.id)
                     self.db.add(node)
                     node_lookup[n.name] = node
 
@@ -87,6 +87,7 @@ class MapService:
                     if n1 and n2:
                         self.db.add(
                             models.WallSegments(
+                                id=s.id,
                                 map_id=db_map.id,
                                 name=s.name,
                                 node1_id=n1.id,
@@ -99,6 +100,7 @@ class MapService:
                 for eq in payload.equipment:
                     self.db.add(
                         models.Equipment(
+                            id=eq.id,
                             name=eq.name,
                             eq_type=eq.eq_type,
                             x=eq.x,
@@ -114,6 +116,7 @@ class MapService:
                 for lb in payload.labels:
                     self.db.add(
                         models.MapLabels(
+                            id=lb.id,
                             map_id=db_map.id,
                             name=lb.name,
                             x=lb.x,

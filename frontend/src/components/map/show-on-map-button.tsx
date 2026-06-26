@@ -31,7 +31,7 @@ export function ShowOnMapButton({
         to="/map"
         search={{
           roomId: Number(roomId),
-          redirectId: String(equipmentId),
+          redirectId: Number(equipmentId),
           redirectType: type,
         }}
       >

@@ -54,7 +54,7 @@ function App() {
           initialNodes={mapData.wallNodes}
           initialSegments={mapData.wallSegments}
           initialLabels={mapData.labels}
-          initialSelectedId={redirectId?.toString()}
+          initialSelectedId={redirectId}
         />
       </div>
     </div>
