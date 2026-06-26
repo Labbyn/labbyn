@@ -215,7 +215,7 @@ function RacksDetailsPage() {
                             name="team_id"
                             children={(formField) => (
                               <Select
-                                value={formField.state.value.toString() || ''}
+                                value={formField.state.value?.toString() || ''}
                                 onValueChange={(value) => {
                                   formField.handleChange(Number(value))
                                 }}
