@@ -24,13 +24,14 @@ class MapService:
         self.ctx = ctx
 
     def _sync_collection(
-        self,
-        model_cls: Type[Any],
-        db_map_id: int,
-        incoming_items: List[BaseModel],
-        current_items_dict: Dict[int, Any],
-        update_fields: List[str],
-        extra_attrs: Dict[str, Any] = None,
+            self,
+            model_cls: Type[Any],
+            db_map_id: int,
+            incoming_items: List[BaseModel],
+            current_items_dict: Dict[int, Any],
+            update_fields: List[str],
+            db_collection: Any,
+            extra_attrs: Dict[str, Any] = None,
     ) -> Dict[str, Any]:
         """Generic helper to perform Upsert (Create, Update, Delete) on map components.
 
@@ -51,6 +52,8 @@ class MapService:
 
         for item_id, db_item in current_items_dict.items():
             if item_id not in incoming_ids:
+                if db_item in db_collection:
+                    db_collection.remove(db_item)
                 self.db.delete(db_item)
 
         created_or_updated_objects = {}
@@ -69,10 +72,12 @@ class MapService:
                     setattr(db_item, k, v)
             else:
                 merged_data = {**item_data, **dynamic_attrs}
-
                 db_item = model_cls(map_id=db_map_id, **merged_data)
+                db_collection.append(db_item)
                 self.db.add(db_item)
+
             created_or_updated_objects[item.name] = db_item
+
         return created_or_updated_objects
 
     async def get_room_map(self, room_id: int) -> models.Map:
@@ -113,38 +118,33 @@ class MapService:
 
             await self.ctx.validate_team_access(room.team_id, resource_name="Map")
 
-            stmt = sql.select(models.Map).filter(models.Map.room_id == room_id)
-            db_map = (await self.db.execute(stmt)).scalar_one_or_none()
+            db_map = await MapRepository.get_map_by_room_id(self.db, room_id)
 
             if not db_map:
-                db_map = models.Map(room_id=room_id)
-                self.db.add(db_map)
+                new_map = models.Map(room_id=room_id)
+                self.db.add(new_map)
                 await self.db.flush()
 
-            current_map_state = await MapRepository.get_map_by_room_id(self.db, room_id)
-            current_state_exists = current_map_state is not None
+                db_map = await MapRepository.get_map_by_room_id(self.db, room_id)
 
             try:
-                current_nodes = (
-                    {n.id: n for n in current_map_state.nodes}
-                    if current_state_exists
-                    else {}
-                )
+                # NODES
+                current_nodes = {n.id: n for n in db_map.nodes}
                 node_lookup = self._sync_collection(
                     model_cls=models.WallNodes,
                     db_map_id=db_map.id,
                     incoming_items=payload.wall_nodes,
                     current_items_dict=current_nodes,
                     update_fields=["name", "x", "y"],
+                    db_collection=db_map.nodes,
                 )
 
                 await self.db.flush()
 
+                # SEGMENTS
                 segment_extra_attrs = {}
                 for s in payload.wall_segments or []:
-                    n1, n2 = node_lookup.get(s.node1_name), node_lookup.get(
-                        s.node2_name
-                    )
+                    n1, n2 = node_lookup.get(s.node1_name), node_lookup.get(s.node2_name)
                     if n1 and n2:
                         segment_extra_attrs[s.name] = {
                             "node1_id": n1.id,
@@ -153,53 +153,37 @@ class MapService:
                             "node2_name": s.node2_name,
                         }
 
-                current_segments = (
-                    {s.id: s for s in current_map_state.segments}
-                    if current_state_exists
-                    else {}
-                )
+                current_segments = {s.id: s for s in db_map.segments}
                 self._sync_collection(
                     model_cls=models.WallSegments,
                     db_map_id=db_map.id,
                     incoming_items=payload.wall_segments,
                     current_items_dict=current_segments,
                     update_fields=["name"],
+                    db_collection=db_map.segments,
                     extra_attrs=segment_extra_attrs,
                 )
 
-                current_eq = (
-                    {e.id: e for e in current_map_state.equipment}
-                    if current_state_exists
-                    else {}
-                )
+                # EQUIPMENT
+                current_eq = {e.id: e for e in db_map.equipment}
                 self._sync_collection(
                     model_cls=models.Equipment,
                     db_map_id=db_map.id,
                     incoming_items=payload.equipment,
                     current_items_dict=current_eq,
-                    update_fields=[
-                        "name",
-                        "eq_type",
-                        "x",
-                        "y",
-                        "rotation",
-                        "label",
-                        "color",
-                        "rack_id",
-                    ],
+                    update_fields=["name", "eq_type", "x", "y", "rotation", "label", "color", "rack_id"],
+                    db_collection=db_map.equipment,
                 )
 
-                current_labels = (
-                    {l.id: l for l in current_map_state.labels}
-                    if current_state_exists
-                    else {}
-                )
+                # LABELS
+                current_labels = {l.id: l for l in db_map.labels}
                 self._sync_collection(
                     model_cls=models.MapLabels,
                     db_map_id=db_map.id,
                     incoming_items=payload.labels,
                     current_items_dict=current_labels,
                     update_fields=["name", "x", "y", "color"],
+                    db_collection=db_map.labels,
                 )
 
                 await self.db.commit()
