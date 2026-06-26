@@ -23,9 +23,6 @@ export const columns: Array<ColumnDef<MachineItem>> = [
       'serial_number',
       'note',
       'added_on',
-      'cpu',
-      'ram',
-      'disk',
       'room_name',
     ] as Array<keyof MachineItem>
   ).map((key) => ({
@@ -56,6 +53,54 @@ export const columns: Array<ColumnDef<MachineItem>> = [
       return value ?? '-'
     },
   })),
+  {
+    accessorKey: 'cpus',
+    header: ({ column }: any) => (
+      <DataTableColumnHeader column={column} title="CPUs" />
+    ),
+    cell: ({ getValue }: { getValue: () => any }) => {
+      const cpus = getValue()
+      if (!Array.isArray(cpus) || cpus.length === 0) return '-'
+      return (
+        <div className="flex flex-col gap-1">
+          {cpus.map((cpu: any, idx: number) => (
+            <span key={idx} className="text-sm">
+              {cpu.name}
+            </span>
+          ))}
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: 'ram',
+    header: ({ column }: any) => (
+      <DataTableColumnHeader column={column} title="RAM" />
+    ),
+    cell: ({ getValue }: { getValue: () => any }) => {
+      const value = getValue()
+      return value ? `${value} GB` : '-'
+    },
+  },
+  {
+    accessorKey: 'disks',
+    header: ({ column }: any) => (
+      <DataTableColumnHeader column={column} title="Disks" />
+    ),
+    cell: ({ getValue }: { getValue: () => any }) => {
+      const disks = getValue()
+      if (!Array.isArray(disks) || disks.length === 0) return '-'
+      return (
+        <div className="flex flex-col gap-1">
+          {disks.map((disk: any, idx: number) => (
+            <span key={idx} className="text-sm">
+              {disk.name} {disk.capacity ? `(${disk.capacity} GB)` : ''}
+            </span>
+          ))}
+        </div>
+      )
+    },
+  },
 ]
 
 export default function MachinesPanel() {
