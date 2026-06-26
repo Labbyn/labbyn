@@ -112,9 +112,11 @@ export default function TeamsAdminPanel() {
   const fieldsConfig: Record<string, FieldConfig> = {
     name: {
       type: 'text',
+      required: true,
     },
     team_admin_id: {
       type: 'select',
+      required: true,
       options: (users || [])
         .filter(
           (user) =>
