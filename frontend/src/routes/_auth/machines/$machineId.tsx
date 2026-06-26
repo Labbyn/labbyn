@@ -441,7 +441,7 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {disk.capacity}
+                                    {disk.capacity !== null ? `${disk.capacity} GB` : disk.capacity}
                                   </span>
                                 </div>
                               ))
