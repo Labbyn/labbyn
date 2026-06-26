@@ -23,7 +23,9 @@ class UserRepository:
         stmt = sql.select(models.User).where(models.User.id == user_id)
         if detailed:
             stmt = stmt.options(
-                orm.joinedload(models.User.teams).joinedload(models.UsersTeams.team)
+                orm.joinedload(models.User.teams).joinedload(
+                    models.UsersTeams.team, innerjoin=True
+                )
             )
         result = await db.execute(stmt)
         return result.unique().scalar_one_or_none()
@@ -36,7 +38,9 @@ class UserRepository:
         :return: List of User objects.
         """
         stmt = sql.select(models.User).options(
-            orm.joinedload(models.User.teams).joinedload(models.UsersTeams.team)
+            orm.joinedload(models.User.teams).joinedload(
+                models.UsersTeams.team, innerjoin=True
+            )
         )
         result = await db.execute(stmt)
         return result.unique().scalars().all()

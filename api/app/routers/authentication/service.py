@@ -31,6 +31,10 @@ class AuthService:
         if not db_user:
             raise exceptions.ObjectNotFoundError("User", self.user.login)
 
+        if security.verify_password(data.new_password, db_user.hashed_password):
+            raise exceptions.ValidationError(
+                f"New password cannot be the same as the current password for user '{db_user.login}'."
+            )
         db_user.hashed_password = security.hash_password(data.new_password)
         db_user.force_password_change = False
         self.db.add(db_user)
