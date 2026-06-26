@@ -46,7 +46,7 @@ class UserService:
         can_see_secret_details = self.ctx.is_admin or self.ctx.is_group_admin
         memberships = [
             {
-                "team_id": m.team_id,
+                "team_id": m.team_id if m.team_id else 0,
                 "team_name": m.team.name if m.team else None,
                 "is_group_admin": m.is_group_admin,
             }
