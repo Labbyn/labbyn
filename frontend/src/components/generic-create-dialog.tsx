@@ -54,7 +54,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
     if (isOpen) {
       setFormData(defaultValues)
     }
-  }, [isOpen]) 
+  }, [isOpen])
 
   const handleChange = (key: keyof T, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
@@ -66,11 +66,11 @@ export function GenericCreateDialog<T extends Record<string, any>>({
     const config = fieldsConfig?.[key]
     if (config?.required) {
       const value = formData[key]
-      
+
       if (Array.isArray(value)) {
         return value.length > 0
       }
-      
+
       if (value === '' || value === null || value === undefined) {
         return false
       }
@@ -185,10 +185,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
           })}
         </div>
         <DialogFooter>
-          <Button 
-            onClick={() => onSubmit(formData)} 
-            disabled={!isFormValid}
-          >
+          <Button onClick={() => onSubmit(formData)} disabled={!isFormValid}>
             Save
           </Button>
         </DialogFooter>
