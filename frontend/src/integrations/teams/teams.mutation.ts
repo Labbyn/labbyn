@@ -31,7 +31,9 @@ export const useUpdateTeamMutation = (teamId: string | number) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (teamData: Partial<{ name: string }>) => {
+    mutationFn: async (
+      teamData: Partial<{ name: string; team_admin_id: Array<number> }>,
+    ) => {
       const { data } = await api.patch(PATHS.DETAIL(teamId), teamData)
       return data
     },
