@@ -695,29 +695,6 @@ function SceneController({
   } | null>(null)
 
   useEffect(() => {
-    if (!controlsRef.current || !center) return
-
-    if (!initialized.current) {
-      if (is2D) camera.position.set(center.x, 600, center.z)
-      else camera.position.set(center.x + 150, 200, center.z + 150)
-      controlsRef.current.target.copy(center)
-      camera.lookAt(center)
-      controlsRef.current.update()
-      initialized.current = true
-      return
-    }
-
-    if (prevIs2D.current !== is2D && !lerpState) {
-      const target = controlsRef.current.target
-      if (is2D) camera.position.set(target.x, 600, target.z)
-      else camera.position.set(target.x + 150, 200, target.z + 150)
-      controlsRef.current.update()
-      prevIs2D.current = is2D
-      invalidate()
-    }
-  }, [is2D, camera, invalidate, center, controlsRef, lerpState])
-
-  useEffect(() => {
     if (focusTarget && controlsRef.current && initialized.current) {
       const currentOffset = new THREE.Vector3()
         .copy(camera.position)
@@ -729,7 +706,6 @@ function SceneController({
     }
   }, [focusTarget])
 
-  // 3. Pozostałe efekty
   useEffect(() => {
     const controls = controlsRef.current
     if (!controls) return
@@ -764,6 +740,29 @@ function SceneController({
       document.removeEventListener('focusout', handleFocusOut, true)
     }
   }, [])
+
+  useEffect(() => {
+    if (!controlsRef.current || !center) return
+
+    if (!initialized.current) {
+      if (is2D) camera.position.set(center.x, 600, center.z)
+      else camera.position.set(center.x + 150, 200, center.z + 150)
+      controlsRef.current.target.copy(center)
+      camera.lookAt(center)
+      controlsRef.current.update()
+      initialized.current = true
+      return
+    }
+
+    if (prevIs2D.current !== is2D && !lerpState) {
+      const target = controlsRef.current.target
+      if (is2D) camera.position.set(target.x, 600, target.z)
+      else camera.position.set(target.x + 150, 200, target.z + 150)
+      controlsRef.current.update()
+      prevIs2D.current = is2D
+      invalidate()
+    }
+  }, [is2D, camera, invalidate, center, controlsRef, lerpState])
 
   const direction = useMemo(() => new THREE.Vector3(), [])
   const rightVec = useMemo(() => new THREE.Vector3(), [])
@@ -1429,7 +1428,7 @@ export function CanvasComponent3D({
   initialNodes?: Array<WallNode>
   initialSegments?: Array<WallSegment>
   initialLabels?: Array<LabLabel>
-  initialSelectedId?: string | number
+  initialSelectedId?: string
 }) {
   const initEquipment = useLabStore((state) => state.initEquipment)
   const getEquipmentArray = useLabStore((state) => state.getEquipmentArray)
@@ -1665,7 +1664,7 @@ export function CanvasComponent3D({
     if (!activeSelection) {
       lastPannedId.current = null
     }
-  }, [selectedIds, labels, equipmentIds])
+  }, [selectedIds, labels])
 
   const { data: allRacks } = useQuery(racksBaseListQueryOptions)
 

@@ -215,7 +215,7 @@ function RacksDetailsPage() {
                             name="team_id"
                             children={(formField) => (
                               <Select
-                                value={formField.state.value.toString() || ''}
+                                value={formField.state.value?.toString() || ''}
                                 onValueChange={(value) => {
                                   formField.handleChange(Number(value))
                                 }}
@@ -253,9 +253,9 @@ function RacksDetailsPage() {
                             {fieldValue ? fieldValue.toString() : '—'}
                           </span>
                           <ShowOnMapButton
-                            type="rack"
+                            type="lab"
                             roomId={rack.room_id}
-                            equipmentId={Number(rack.id)}
+                            equipmentId={rack.id}
                             variant="secondary"
                           />
                         </div>
