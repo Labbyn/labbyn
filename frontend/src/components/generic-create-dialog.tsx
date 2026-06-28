@@ -142,10 +142,10 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                         handleChange(key, newValues.map(Number))
                       }
                     >
-                      <MultiSelectTrigger className="w-full bg-background">
+                      <MultiSelectTrigger className="w-full h-auto min-h-10 flex-wrap bg-background py-1.5">
                         <MultiSelectValue
                           placeholder={`Select ${label.toLowerCase()}`}
-                          className="min-w-0 flex-1"
+                          className="min-w-0 flex-1 flex-wrap"
                         />
                       </MultiSelectTrigger>
                       <MultiSelectContent>
