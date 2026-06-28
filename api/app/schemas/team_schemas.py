@@ -16,13 +16,14 @@ class TeamsBase(BaseModel):
 class TeamsCreate(TeamsBase):
     """Schema for creating a Team."""
 
-    team_admin_id: Optional[int] = Field(None, description="ID of the user to be admin")
+    team_admin_ids: List[int] = []
 
 
 class TeamsUpdate(BaseModel):
     """Schema for updating a Team."""
 
     name: Optional[str] = None
+    team_admin_ids: Optional[List[int]] = None
 
 
 class TeamsResponse(TeamsBase):
