@@ -9,7 +9,7 @@ from app.db import models
 GRAFANA_URL = (
     "http://localhost:3001"
     if os.environ.get("ENV") == "development"
-    else "http://grafana:3000"
+    else "http://localhost/grafana/"
 )
 
 
@@ -47,7 +47,6 @@ class MachineRepository:
         :return: Machine object or None.
         """
         stmt = sql.select(models.Machines).filter(models.Machines.id == machine_id)
-        stmt = ctx.team_filter(stmt, models.Machines)
 
         if full_detail:
             stmt = stmt.options(

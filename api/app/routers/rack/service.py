@@ -64,6 +64,7 @@ class RackService:
         rack = await self.repo.get_by_id(self.db, rack_id, self.ctx, detailed=detailed)
         if not rack:
             raise exceptions.ObjectNotFoundError("Rack")
+        await self.ctx.validate_team_access(rack.team_id, resource_name="Rack")
         return rack
 
     async def get_all_racks(
@@ -95,7 +96,7 @@ class RackService:
         if not target_team_id:
             raise exceptions.ValidationError("Target team ID is required")
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Rack")
 
         room = (
             await self.db.execute(
@@ -124,10 +125,12 @@ class RackService:
 
             self.db.add(db_rack)
             await self.db.flush()
-            size = getattr(rack_data, "size", None)
-            if size and size > 0:
+            size = getattr(rack_data, "size", None) or 2
+            if size > 0:
                 for i in range(1, size + 1):
-                    new_shelf = models.Shelf(name=f"U{i}", rack_id=db_rack.id, order=i)
+                    new_shelf = models.Shelf(
+                        name=f"Shelf {i}", rack_id=db_rack.id, order=i
+                    )
                     self.db.add(new_shelf)
 
             await self.db.commit()
@@ -165,7 +168,9 @@ class RackService:
                     db_rack.tags = tag_res.scalars().all()
 
             if "team_id" in update_dict:
-                await self.ctx.validate_team_access(update_dict["team_id"])
+                await self.ctx.validate_team_access(
+                    update_dict["team_id"], resource_name="Rack"
+                )
 
             if "room_id" in update_dict:
                 room = (
@@ -213,39 +218,33 @@ class RackService:
         """
         self.ctx.require_user()
         db_rack = await self.get_rack_or_404(rack_id, detailed=True)
+        rack_name = db_rack.name
         try:
-            virtual_room = (
-                await self.db.execute(
-                    sql.select(models.Rooms).where(
-                        models.Rooms.team_id == db_rack.team_id,
-                        models.Rooms.room_type == "virtual",
-                    )
-                )
-            ).scalar_one_or_none()
-
-            if not virtual_room:
-                team_name = db_rack.team.name if db_rack.team else "N/A"
-                raise exceptions.ValidationError(
-                    f"Virtual lab not found for team '{team_name}'"
-                )
-
             shelf_ids = [shelf.id for shelf in db_rack.shelves]
+
             if shelf_ids:
-                m_res = await self.db.execute(
+                m_check = await self.db.execute(
                     sql.select(models.Machines).where(
                         models.Machines.shelf_id.in_(shelf_ids)
                     )
                 )
-                for machine in m_res.scalars().all():
-                    machine.shelf_id = None
-                    machine.localization_id = virtual_room.id
+                if m_check.scalars().first():
+                    raise exceptions.ValidationError(
+                        f"Could not delete rack '{rack_name}' because it is still in use (contains machines)."
+                    )
+
+                await self.db.execute(
+                    sql.delete(models.Shelf).where(models.Shelf.id.in_(shelf_ids))
+                )
 
             await self.db.delete(db_rack)
             await self.db.commit()
+
+        except exceptions.ValidationError:
+            await self.db.rollback()
+            raise
         except Exception as e:
             await self.db.rollback()
-            if isinstance(e, exceptions.ValidationError):
-                raise e
             raise exceptions.ValidationError(
-                f"Could not delete rack '{db_rack.name}'"
+                f"Could not delete rack '{rack_name}'"
             ) from e

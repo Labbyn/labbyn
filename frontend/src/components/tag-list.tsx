@@ -13,6 +13,13 @@ export const colorMap = {
   lightBlue: 'bg-sky-50 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
   green: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
   blue: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  orange:
+    'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  gray: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+  darkBlue: 'bg-slate-50 text-slate-700 dark:bg-slate-950 dark:text-slate-300',
+  black: 'bg-black text-white dark:bg-black dark:text-white',
+  teal: 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
+  brown: 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200',
 }
 
 interface TagListProps {

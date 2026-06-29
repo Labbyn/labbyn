@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import type { PlatformFormValues } from '@/integrations/machines/machines.types'
 import {
   Dialog,
@@ -52,7 +53,7 @@ import { singleShelfQueryOptions } from '@/integrations/shelves/shelves.query'
 
 const schemas = {
   hostname: z.string().min(1, 'Hostname is required').max(255),
-  ip: z.string().ip({ version: 'v4' }).optional().or(z.literal('')),
+  ip: z.ipv4().or(z.literal('')),
   mac: z
     .string()
     .regex(/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'Invalid MAC address')
@@ -83,12 +84,11 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
       queryClient.invalidateQueries({ queryKey: ['shelf'] })
       queryClient.invalidateQueries({ queryKey: ['rack'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
 
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 
@@ -100,7 +100,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       deployAgent: false,
       login: '',
       password: '',
-      name: '',
       ip_address: '',
       mac_address: '',
       localization_id: undefined,
@@ -115,6 +114,14 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
       shelf_id: undefined,
     } as PlatformFormValues,
     onSubmit: async ({ value }) => {
+      if (!value.addToDb && !value.scanPlatform && !value.deployAgent) {
+        toast.error('No operation selected', {
+          description:
+            'Please select at least one operation (Manual Entry, Auto-Discovery, or Deploy Agent).',
+        })
+        return
+      }
+
       if (
         (value.scanPlatform || value.deployAgent) &&
         (!value.login || !value.password)
@@ -124,6 +131,25 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
         })
         return
       }
+
+      if (value.addToDb && (!value.team_id || !value.localization_id)) {
+        toast.error('Team and lab required', {
+          description:
+            'Please select both team and lab before adding a platform.',
+        })
+        return
+      }
+
+      if (selectedRack != null) {
+        const rackHasShelves = Array.isArray(shelves) && shelves.length > 0
+        if (!rackHasShelves || !value.shelf_id) {
+          toast.error('Shelf required', {
+            description: 'Please select shelf before adding a machine.',
+          })
+          return
+        }
+      }
+
       await mutation.mutateAsync(value)
     },
   })
@@ -417,25 +443,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                       {/* General Details */}
                       <div className="grid grid-cols-2 gap-4">
                         <form.Field
-                          name="name"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                Display Name
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                placeholder="Friendly name"
-                                value={field.state.value || ''}
-                                onChange={(e) =>
-                                  field.handleChange(e.target.value)
-                                }
-                              />
-                            </Field>
-                          )}
-                        />
-
-                        <form.Field
                           name="serial_number"
                           children={(field) => (
                             <Field>
@@ -448,6 +455,26 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                 value={field.state.value || ''}
                                 onChange={(e) =>
                                   field.handleChange(e.target.value)
+                                }
+                              />
+                            </Field>
+                          )}
+                        />
+
+                        <form.Field
+                          name="pdu_port"
+                          children={(field) => (
+                            <Field>
+                              <FieldLabel htmlFor={field.name}>
+                                PDU Port
+                              </FieldLabel>
+                              <Input
+                                id={field.name}
+                                type="number"
+                                placeholder="e.g. 1"
+                                value={field.state.value || ''}
+                                onChange={(e) =>
+                                  field.handleChange(Number(e.target.value))
                                 }
                               />
                             </Field>
@@ -672,26 +699,6 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                             </Field>
                           )}
                         />
-
-                        <form.Field
-                          name="pdu_port"
-                          children={(field) => (
-                            <Field>
-                              <FieldLabel htmlFor={field.name}>
-                                PDU Port
-                              </FieldLabel>
-                              <Input
-                                id={field.name}
-                                type="number"
-                                placeholder="e.g. 1"
-                                value={field.state.value || ''}
-                                onChange={(e) =>
-                                  field.handleChange(Number(e.target.value))
-                                }
-                              />
-                            </Field>
-                          )}
-                        />
                       </div>
 
                       {/* Hardware & OS Details */}
@@ -858,7 +865,7 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
                                       <Input
                                         placeholder="Capacity"
                                         className="w-1/3"
-                                        type="number"
+                                        type="text"
                                         value={disk.capacity || ''}
                                         onChange={(e) => {
                                           const newDisks = [...disks]
@@ -929,11 +936,19 @@ export function AddPlatformDialog({ children }: AddPlatformDialogProps) {
               Cancel
             </Button>
             <form.Subscribe
-              selector={(state) => [state.canSubmit]}
-              children={([canSubmit]) => (
+              selector={(state) => [
+                state.canSubmit,
+                state.values.addToDb,
+                state.values.scanPlatform,
+              ]}
+              children={([canSubmit, addToDb, scanPlatform]) => (
                 <Button
                   type="submit"
-                  disabled={!canSubmit || mutation.isPending}
+                  disabled={
+                    !canSubmit ||
+                    mutation.isPending ||
+                    !(addToDb || scanPlatform)
+                  }
                 >
                   {mutation.isPending ? (
                     <>

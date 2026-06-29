@@ -128,7 +128,7 @@ class UserInfo(BaseModel):
     )
     force_password_change: Optional[bool] = None
     avatar_url: Optional[str] = None
-    email: Optional[str] = None
+    email: Optional[EmailStr] = None
 
 
 class UserInfoExtended(UserInfo):
@@ -137,8 +137,6 @@ class UserInfoExtended(UserInfo):
     Includes avatar, contact details and group links.
     """
 
-    avatar_url: Optional[str] = None
-    email: EmailStr
     group_links: List[str] = Field(
         default=[], description="Links to the assigned groups details"
     )

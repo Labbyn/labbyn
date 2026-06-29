@@ -46,7 +46,7 @@ class UserService:
         can_see_secret_details = self.ctx.is_admin or self.ctx.is_group_admin
         memberships = [
             {
-                "team_id": m.team_id,
+                "team_id": m.team_id if m.team_id else 0,
                 "team_name": m.team.name if m.team else None,
                 "is_group_admin": m.is_group_admin,
             }
@@ -60,9 +60,9 @@ class UserService:
             "login": u.login,
             "user_type": u.user_type,
             "membership": memberships,
+            "email": u.email,
         }
         if can_see_full_data:
-            user_data["email"] = u.email
             user_data["avatar_url"] = (
                 u.avatar_path if hasattr(u, "avatar_path") else None
             )

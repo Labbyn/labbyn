@@ -6,6 +6,7 @@ from app.core import exceptions
 from app.db import models
 from app.schemas import service_schemas
 from app.utils import redis_service
+from sqlalchemy import sql
 
 from .executor import AnsibleExecutor
 from .repository import AnsibleRepository
@@ -51,7 +52,7 @@ class AnsibleService:
             else:
                 raise exceptions.ValidationError("Target team ID required.")
 
-        await self.ctx.validate_team_access(target_team_id)
+        await self.ctx.validate_team_access(target_team_id, resource_name="Ansible")
 
         try:
             await self.executor.run_playbook_task(
@@ -66,18 +67,20 @@ class AnsibleService:
             ) from e
 
         results = []
-        default_room = await self.repo.get_room_by_name_and_team(
-            self.db, "virtual", target_team_id
+        team_stmt = sql.select(models.Teams.name).where(
+            models.Teams.id == target_team_id
         )
+        team_res = await self.db.execute(team_stmt)
+        team_name = team_res.scalar_one_or_none()
 
-        if not default_room:
-            default_room = models.Rooms(
-                name="virtual", room_type="virtual", team_id=target_team_id
-            )
-            self.db.add(default_room)
-            await self.db.commit()
-            await self.db.refresh(default_room)
+        if not team_name:
+            raise exceptions.ObjectNotFoundError("Team")
 
+        virtual_room_name = f"{team_name} (virtual)"
+
+        default_room = await self.repo.get_room_by_name_and_team(
+            self.db, virtual_room_name, target_team_id
+        )
         for host in request.hosts:
             try:
                 specs = self.executor.parse_platform_report(host)
@@ -145,6 +148,8 @@ class AnsibleService:
         if not machine:
             raise exceptions.ObjectNotFoundError("Machine")
 
+        meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
+
         try:
             await self.executor.run_playbook_task(
                 service_schemas.AnsiblePlaybook.scan_platform,
@@ -152,12 +157,12 @@ class AnsibleService:
                 request.extra_vars,
             )
             specs = self.executor.parse_platform_report(machine.name)
+
             for field in ["os", "ram", "mac_address", "ip_address", "name"]:
                 setattr(machine, field, specs.get(field))
 
             await self.repo.sync_hardware(self.db, machine.id, specs)
 
-            meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
             if meta:
                 meta.ansible_access = True
                 meta.agent_prometheus = specs["agent_prometheus"]
@@ -240,12 +245,27 @@ class AnsibleService:
                 request.extra_vars,
             )
 
+            machine = await self.repo.get_machine_by_name(
+                self.db, request.host, self.ctx
+            )
+
+            if machine:
+                meta = await self.repo.get_metadata_by_id(self.db, machine.metadata_id)
+                if meta:
+                    meta.agent_prometheus = True
+                    meta.ansible_access = True
+                    meta.last_update = datetime.now()
+
+                self.db.add(machine)
+                await self.db.commit()
+
             return {
                 "message": f"Agent setup completed for {request.host}",
                 "user_creation": user_result,
                 "node_exporter_deployment": deploy_result,
             }
         except Exception as e:
+            await self.db.rollback()
             raise exceptions.ExternalServiceError(
                 f"Full Agent Setup for host {request.host} failed", str(e)
             )

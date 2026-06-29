@@ -152,24 +152,25 @@ class TeamService:
         :param team_data: Pydantic schema containing new team details.
         :return: Created Team model instance.
         """
-        admin_id = team_data.team_admin_id
+        admin_ids = team_data.team_admin_ids
 
         self.ctx.require_admin()
         try:
             data = team_data.model_dump()
-            data.pop("team_admin_id", None)
+            data.pop("team_admin_ids", None)
             obj = models.Teams(**data)
             self.db.add(obj)
             await self.db.flush()
 
-            if admin_id:
-                new_membership = models.UsersTeams(
-                    user_id=admin_id, team_id=obj.id, is_group_admin=True
-                )
-                self.db.add(new_membership)
+            if admin_ids:
+                for admin_id in admin_ids:
+                    new_membership = models.UsersTeams(
+                        user_id=admin_id, team_id=obj.id, is_group_admin=True
+                    )
+                    self.db.add(new_membership)
 
             virtual_lab = models.Rooms(
-                name=f"virtual_{team_data.name}", room_type="virtual", team_id=obj.id
+                name=f"{team_data.name} (virtual)", room_type="virtual", team_id=obj.id
             )
             self.db.add(virtual_lab)
 
@@ -216,7 +217,7 @@ class TeamService:
         """
         self.ctx.require_user()
         async with redis_service.acquire_lock(f"team_lock:{team_id}"):
-            team = await self.repo.get_by_id(self.db, team_id)
+            team = await self.repo.get_by_id(self.db, team_id, detailed=True)
             if not team:
                 raise exceptions.ObjectNotFoundError("Team", str(team_id))
 
@@ -233,13 +234,40 @@ class TeamService:
                     )
 
             try:
-                for k, v in team_data.model_dump(exclude_unset=True).items():
+                update_dict = team_data.model_dump(exclude_unset=True)
+                new_admin_ids = update_dict.pop("team_admin_ids", None)
+
+                for k, v in update_dict.items():
                     setattr(team, k, v)
+
+                if new_admin_ids is not None:
+                    target_admin_ids = set(new_admin_ids)
+                    current_members = {m.user_id: m for m in team.users}
+
+                    for u_id, membership in current_members.items():
+                        if membership.is_group_admin and u_id not in target_admin_ids:
+                            membership.is_group_admin = False
+                            self.db.add(membership)
+
+                    for admin_id in target_admin_ids:
+                        if admin_id in current_members:
+                            membership = current_members[admin_id]
+                            if not membership.is_group_admin:
+                                membership.is_group_admin = True
+                                self.db.add(membership)
+                        else:
+                            new_membership = models.UsersTeams(
+                                user_id=admin_id, team_id=team.id, is_group_admin=True
+                            )
+                            self.db.add(new_membership)
+
                 await self.db.commit()
-                return team
-            except Exception:
+                return await self.repo.get_by_id(self.db, team_id, detailed=True)
+            except Exception as e:
                 await self.db.rollback()
-                raise exceptions.ValidationError(f"Failed to update team '{team.name}'")
+                raise exceptions.ValidationError(
+                    f"Failed to update team '{team.name}'"
+                ) from e
 
     async def delete_team(self, team_id: int):
         """Delete team (Superadmin only).

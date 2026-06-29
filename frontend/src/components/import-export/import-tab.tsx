@@ -1,6 +1,6 @@
-import { AlertCircleIcon, Info, Loader2, Send, Upload } from 'lucide-react'
+import { AlertCircleIcon, Loader2, Send, Upload, Users } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
@@ -11,36 +11,23 @@ import { DataPreview } from './data-preview'
 import type { TableConfig } from './table-selector'
 import type { ColumnMapping } from './column-mapper'
 import type { ParsedCSV } from '@/lib/csv-parser'
+import type { ImportReportResponse } from '@/integrations/import-export/import-export.types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { parseCSV } from '@/lib/csv-parser'
-
-/**
- * Configuration for CSV-to-Database mapping.
- * Specifies table identifiers, display names, and field-level requirements.
- * @todo Migrate to backend-driven schema discovery.
- */
+import { useImportDataMutation } from '@/integrations/import-export/import-export.mutation'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 
 const AVAILABLE_TABLES: Array<TableConfig> = [
-  {
-    id: 'history',
-    name: 'History',
-    fields: [
-      { key: 'id', label: 'ID', required: true },
-      { key: 'entity_type', label: 'Entity Type', required: true },
-      { key: 'action', label: 'Action', required: true },
-      { key: 'entity_id', label: 'Entity ID' },
-      { key: 'user_id', label: 'User ID' },
-      { key: 'timestamp', label: 'Timestamp' },
-      { key: 'before_state', label: 'Before State' },
-      { key: 'after_state', label: 'After State' },
-      { key: 'can_rollback', label: 'Can Rollback' },
-      { key: 'extra_data', label: 'Extra Data' },
-    ],
-  },
   {
     id: 'inventory',
     name: 'Inventory',
     fields: [
-      { key: 'id', label: 'ID' },
       { key: 'name', label: 'Item Name', required: true },
       { key: 'quantity', label: 'Quantity', required: true },
       { key: 'team_id', label: 'Team ID' },
@@ -49,14 +36,12 @@ const AVAILABLE_TABLES: Array<TableConfig> = [
       { key: 'category_id', label: 'Category ID' },
       { key: 'rental_status', label: 'Rental Status' },
       { key: 'rental_id', label: 'Rental ID' },
-      { key: 'version_id', label: 'Version' },
     ],
   },
   {
     id: 'machines',
     name: 'Machines',
     fields: [
-      { key: 'id', label: 'ID' },
       { key: 'name', label: 'Machine Name', required: true },
       { key: 'localization_id', label: 'Localization ID' },
       { key: 'mac_address', label: 'MAC Address' },
@@ -66,57 +51,40 @@ const AVAILABLE_TABLES: Array<TableConfig> = [
       { key: 'os', label: 'Operating System' },
       { key: 'serial_number', label: 'Serial Number' },
       { key: 'note', label: 'Notes' },
-      { key: 'added_on', label: 'Added On' },
       { key: 'cpu', label: 'CPU' },
       { key: 'ram', label: 'RAM' },
       { key: 'disk', label: 'Disk' },
-      { key: 'metadata_id', label: 'Metadata ID' },
-      { key: 'layout_id', label: 'Layout ID' },
-      { key: 'version_id', label: 'Version' },
     ],
   },
   {
-    id: 'teams',
-    name: 'Teams',
+    id: 'racks',
+    name: 'Racks',
     fields: [
-      { key: 'id', label: 'ID', required: true },
-      { key: 'name', label: 'Team Name' },
-      { key: 'team_admin_id', label: 'Admin ID' },
-      { key: 'version_id', label: 'Version' },
-    ],
-  },
-  {
-    id: 'user',
-    name: 'Users',
-    fields: [
-      { key: 'id', label: 'ID' },
-      { key: 'name', label: 'First Name', required: true },
-      { key: 'surname', label: 'Last Name', required: true },
+      { key: 'name', label: 'Rack Name', required: true },
+      { key: 'room_id', label: 'Room ID' },
       { key: 'team_id', label: 'Team ID' },
-      { key: 'login', label: 'Login/Username' },
-      { key: 'email', label: 'Email Address', required: true },
-      { key: 'is_active', label: 'Active Status' },
-      { key: 'is_superuser', label: 'Superuser' },
-      { key: 'is_verified', label: 'Verified' },
-      { key: 'user_type', label: 'User Type' },
-      {
-        key: 'force_password_change',
-        label: 'Force Password Change',
-      },
-      { key: 'version_id', label: 'Version' },
+      { key: 'capacity', label: 'Capacity' },
+      { key: 'description', label: 'Description' },
     ],
   },
 ]
 
 export default function ImportPage() {
+  const { data: teams = [] } = useQuery(currentUserTeamsQueryOptions)
+  const [importReport, setImportReport] = useState<ImportReportResponse | null>(
+    null,
+  )
   const [csvData, setCsvData] = useState<ParsedCSV | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
   const [selectedTable, setSelectedTable] = useState<string | null>(null)
+  const [selectedUiTeam, setSelectedUiTeam] = useState<number | null>(null)
   const [mapping, setMapping] = useState<ColumnMapping>({})
   const [submitResult, setSubmitResult] = useState<{
     success: boolean
     message: string
   } | null>(null)
+
+  const { mutate: importData, isPending } = useImportDataMutation()
 
   const handleFileLoaded = useCallback((content: string, name: string) => {
     const parsed = parseCSV(content)
@@ -124,6 +92,7 @@ export default function ImportPage() {
     setFileName(name)
     setMapping({})
     setSubmitResult(null)
+    setImportReport(null)
   }, [])
 
   const handleClearFile = useCallback(() => {
@@ -131,6 +100,7 @@ export default function ImportPage() {
     setFileName(null)
     setMapping({})
     setSubmitResult(null)
+    setImportReport(null)
   }, [])
 
   const handleTableSelect = useCallback(
@@ -193,68 +163,32 @@ export default function ImportPage() {
     [],
   )
 
-  const selectedTableConfig = AVAILABLE_TABLES.find(
-    (t) => t.id === selectedTable,
-  )
-
   const buildMappedData = () => {
     if (!csvData || !selectedTableConfig) return []
 
     return csvData.rows.map((row) => {
-      const record: Record<string, string> = {}
+      const record: Record<string, any> = {}
 
       csvData.headers.forEach((header, index) => {
         const fieldKey = mapping[header]
         if (fieldKey) {
-          record[fieldKey] = row[index] || ''
+          let value: string | number = row[index]?.trim() || ''
+
+          if (typeof value === 'string') {
+            value = value.replace(/\p{Cc}/gu, '')
+          }
+
+          if (value !== '' && !isNaN(Number(value))) {
+            value = Number(value)
+          }
+
+          record[fieldKey] = value
         }
       })
 
       return record
     })
   }
-
-  const { mutate: importData, isPending } = useMutation({
-    mutationFn: async (payload: {
-      table: string
-      data: Array<any>
-      mapping: any
-    }) => {
-      const response = await fetch('/api/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-
-      console.log(JSON.stringify(payload))
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(errorText || 'Import failed')
-      }
-
-      if (response.status === 204) {
-        return { success: true, message: 'Import successful!' }
-      }
-
-      const text = await response.text()
-      return text
-        ? JSON.parse(text)
-        : { success: true, message: 'Import successful!' }
-    },
-    onSuccess: (result) => {
-      setSubmitResult({
-        success: true,
-        message: result.message || 'Import successful!',
-      })
-    },
-    onError: (error: Error) => {
-      setSubmitResult({
-        success: false,
-        message: error.message,
-      })
-    },
-  })
 
   const handleSubmit = () => {
     const mappedData = buildMappedData()
@@ -274,15 +208,80 @@ export default function ImportPage() {
       return
     }
 
-    importData({
-      table: selectedTable!,
-      data: mappedData,
-      mapping: mapping,
-    })
+    importData(
+      {
+        entityType: selectedTable!,
+        payload: {
+          ui_team_id: selectedUiTeam!,
+          rows: mappedData,
+        },
+      },
+      {
+        onSuccess: (data) => {
+          if (typeof data !== 'string') {
+            setImportReport(data)
+            setSubmitResult(null)
+          } else {
+            setSubmitResult({
+              success: true,
+              message: typeof data === 'string' ? data : 'Import successful!',
+            })
+            setImportReport(null)
+          }
+        },
+        onError: (error: any) => {
+          const errorData = error.response?.data
+          const reportPayload = errorData?.summary
+            ? errorData
+            : errorData?.detail?.summary
+              ? errorData.detail
+              : null
+
+          if (reportPayload && reportPayload.summary) {
+            setImportReport(reportPayload)
+            setSubmitResult(null)
+            return
+          }
+
+          const detail = errorData?.detail
+          let errorMsg = 'Import failed'
+
+          if (detail) {
+            errorMsg = Array.isArray(detail)
+              ? detail
+                  .map((e: any) => `${e.loc?.join('.') || 'Error'}: ${e.msg}`)
+                  .join(', ')
+              : typeof detail === 'string'
+                ? detail
+                : JSON.stringify(detail)
+          } else if (errorData?.message) {
+            errorMsg =
+              typeof errorData.message === 'string'
+                ? errorData.message
+                : JSON.stringify(errorData.message)
+          } else if (error.message) {
+            errorMsg = error.message
+          }
+
+          setSubmitResult({
+            success: false,
+            message: errorMsg,
+          })
+          setImportReport(null)
+        },
+      },
+    )
   }
 
+  const selectedTableConfig = AVAILABLE_TABLES.find(
+    (t) => t.id === selectedTable,
+  )
+
   const canSubmit =
-    csvData && selectedTable && Object.values(mapping).some((v) => v !== null)
+    csvData &&
+    selectedTable &&
+    selectedUiTeam !== null &&
+    Object.values(mapping).some((v) => v !== null)
 
   return (
     <main className="container mx-auto py-8">
@@ -292,7 +291,7 @@ export default function ImportPage() {
           <h1 className="text-3xl font-bold tracking-tight">CSV Import Tool</h1>
         </div>
         <p className="text-muted-foreground">
-          Upload your CSV file, select a table, and map columns to import your
+          Upload your CSV file, select a context, and map columns to import your
           data.
         </p>
       </header>
@@ -329,17 +328,42 @@ export default function ImportPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-8">
-              <div className="space-y-4">
-                <h3 className="font-medium">Target Table</h3>
-                <TableSelector
-                  tables={AVAILABLE_TABLES}
-                  selectedTable={selectedTable}
-                  onTableSelect={handleTableSelect}
-                />
+              <div className="grid sm:grid-cols-2 gap-8">
+                {/* Context Team Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>Target Context (Team)</span>
+                  </div>
+                  <Select
+                    value={selectedUiTeam?.toString() || ''}
+                    onValueChange={(v) => setSelectedUiTeam(Number(v))}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a team..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id.toString()}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Table Selection */}
+                <div className="space-y-4">
+                  <TableSelector
+                    tables={AVAILABLE_TABLES}
+                    selectedTable={selectedTable}
+                    onTableSelect={handleTableSelect}
+                  />
+                </div>
               </div>
 
               {selectedTableConfig && (
-                <div className="space-y-4">
+                <div className="space-y-4 border-t pt-6">
                   <h3 className="font-medium">Column Mapping</h3>
                   <ColumnMapper
                     csvHeaders={csvData.headers}
@@ -400,9 +424,10 @@ export default function ImportPage() {
                     </>
                   )}
                 </Button>
-                {!canSubmit && selectedTable && (
+                {!canSubmit && (selectedTable || selectedUiTeam) && (
                   <span className="text-sm text-muted-foreground">
-                    Map at least one column to continue
+                    Select a team, a table, and map at least one column to
+                    continue
                   </span>
                 )}
               </div>
@@ -410,52 +435,71 @@ export default function ImportPage() {
           </Card>
         )}
 
-        {/* Getting Started */}
-        {!csvData && (
-          <Card className="border-dashed bg-muted/50">
+        {/* Step 5: Post-Import Report */}
+        {importReport && (
+          <Card
+            className={`border-2 ${importReport.summary.failed > 0 ? 'border-destructive/50' : 'border-green-500/50'}`}
+          >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <Info className="h-5 w-5" />
-                Getting Started
+              <CardTitle className="text-sm font-bold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                <AlertCircleIcon className="h-4 w-4" />
+                Import Results Report
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {[
-                  {
-                    step: '01',
-                    title: 'Upload',
-                    desc: 'Select or drag your CSV file',
-                  },
-                  {
-                    step: '02',
-                    title: 'Target',
-                    desc: 'Choose the destination table',
-                  },
-                  {
-                    step: '03',
-                    title: 'Map',
-                    desc: 'Link CSV columns to fields',
-                  },
-                  {
-                    step: '04',
-                    title: 'Review',
-                    desc: 'Preview and confirm import',
-                  },
-                ].map((item) => (
-                  <Card key={item.step} className="bg-muted/30 border-dashed">
-                    <CardContent>
-                      <span className="text-2xl font-bold text-primary">
-                        {item.step}
-                      </span>
-                      <h4 className="font-semibold mt-1">{item.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {item.desc}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col bg-muted p-4 rounded-lg">
+                  <span className="text-sm text-muted-foreground">
+                    Total Rows Processed
+                  </span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.total || 0}
+                  </span>
+                </div>
+                <div className="flex flex-col bg-green-500/10 text-green-600 p-4 rounded-lg">
+                  <span className="text-sm font-medium">
+                    Successfully Imported
+                  </span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.success || 0}
+                  </span>
+                </div>
+                <div className="flex flex-col bg-destructive/10 text-destructive p-4 rounded-lg">
+                  <span className="text-sm font-medium">Failed</span>
+                  <span className="text-3xl font-bold">
+                    {importReport.summary.failed || 0}
+                  </span>
+                </div>
               </div>
+
+              {importReport.summary.failed > 0 &&
+                Array.isArray(importReport.details) &&
+                importReport.details.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">
+                      Failed Rows Breakdown
+                    </h4>
+                    <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                      {importReport.details
+                        .filter((d) => d.status === 'failed')
+                        .map((detail, idx) => (
+                          <Alert
+                            variant="destructive"
+                            key={`${detail.row}-${idx}`}
+                          >
+                            <AlertCircleIcon className="h-4 w-4" />
+                            <AlertTitle>
+                              Row {detail.row || '?'}:{' '}
+                              {detail.name || 'Unknown'}
+                            </AlertTitle>
+                            <AlertDescription>
+                              {detail.error || 'No error details provided.'}
+                            </AlertDescription>
+                          </Alert>
+                        ))}
+                    </div>
+                  </div>
+                )}
             </CardContent>
           </Card>
         )}

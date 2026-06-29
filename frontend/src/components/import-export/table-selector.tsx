@@ -28,7 +28,7 @@ export function TableSelector({
   onTableSelect,
 }: TableSelectorProps) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-medium">
         <Database className="h-4 w-4 text-primary" />
         <span>Target Table</span>

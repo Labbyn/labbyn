@@ -30,11 +30,10 @@ class ShelfService:
         :raises ObjectNotFoundError: If rack doesn't exist or user lacks team access.
         """
         stmt = sql.select(models.Rack).filter(models.Rack.id == rack_id)
-        stmt = self.ctx.team_filter(stmt, models.Rack)
         rack = (await self.db.execute(stmt)).scalar_one_or_none()
-
         if not rack:
             raise exceptions.ObjectNotFoundError("Rack")
+        await self.ctx.validate_team_access(rack, resource_name="Rack")
         return rack
 
     async def get_shelf_or_404(self, shelf_id: int) -> models.Shelf:

@@ -28,6 +28,7 @@ import { Field, FieldLabel } from './ui/field'
 export interface FieldConfig {
   type: 'text' | 'number' | 'select' | 'password' | 'email' | 'multi-select'
   options?: Array<{ label: string; value: string }>
+  required?: boolean
 }
 
 interface GenericCreateDialogProps<T> {
@@ -53,7 +54,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
     if (isOpen) {
       setFormData(defaultValues)
     }
-  }, [isOpen, defaultValues])
+  }, [isOpen])
 
   const handleChange = (key: keyof T, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
@@ -61,35 +62,56 @@ export function GenericCreateDialog<T extends Record<string, any>>({
 
   const fields = Object.keys(defaultValues) as Array<keyof T>
 
+  const isFormValid = fields.every((key) => {
+    const config = fieldsConfig?.[key]
+    if (config?.required) {
+      const value = formData[key]
+
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
+
+      if (value === '' || value === null || value === undefined) {
+        return false
+      }
+    }
+    return true
+  })
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-106.25">
+      <DialogContent className="sm:max-w-106.25 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+
+        <div className="flex flex-col gap-5 py-4">
           {fields.map((key) => {
             const val = defaultValues[key]
-            const rawString = String(key).replace(/_/g, ' ')
+            const config = fieldsConfig?.[key]
+
+            const rawString = String(key)
+              .replace(/([A-Z])/g, ' $1') // insert a space before all caps (camelCase)
+              .replace(/_/g, ' ') // replace underscores with spaces (snake_case)
+              .trim()
             const label =
               rawString.charAt(0).toUpperCase() +
               rawString.slice(1).toLowerCase()
-            const config = fieldsConfig?.[key]
 
             return (
-              <Field
-                key={String(key)}
-                className="grid grid-cols-4 items-center gap-4"
-              >
+              <Field key={String(key)} className="flex flex-col gap-2">
                 <FieldLabel
                   htmlFor={String(key)}
-                  className="text-right text-xs"
+                  className="text-sm font-medium leading-none"
                 >
                   {label}
+                  {config?.required && (
+                    <span className="text-destructive">* required</span>
+                  )}
                 </FieldLabel>
 
                 {config?.type === 'select' ? (
-                  <div className="col-span-3 min-w-0">
+                  <div className="w-full">
                     <Select
                       value={String(formData[key] ?? '')}
                       onValueChange={(value) => handleChange(key, value)}
@@ -109,7 +131,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                     </Select>
                   </div>
                 ) : config?.type === 'multi-select' ? (
-                  <div className="col-span-3 min-w-0">
+                  <div className="w-full">
                     <MultiSelect
                       values={
                         Array.isArray(formData[key])
@@ -120,10 +142,10 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                         handleChange(key, newValues.map(Number))
                       }
                     >
-                      <MultiSelectTrigger className="w-full bg-background">
+                      <MultiSelectTrigger className="w-full h-auto min-h-10 flex-wrap bg-background py-1.5">
                         <MultiSelectValue
                           placeholder={`Select ${label.toLowerCase()}`}
-                          className="min-w-0 flex-1"
+                          className="min-w-0 flex-1 flex-wrap"
                         />
                       </MultiSelectTrigger>
                       <MultiSelectContent>
@@ -138,7 +160,7 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                     </MultiSelect>
                   </div>
                 ) : (
-                  <div className="col-span-3 min-w-0">
+                  <div className="w-full">
                     <Input
                       id={String(key)}
                       className="w-full"
@@ -163,7 +185,9 @@ export function GenericCreateDialog<T extends Record<string, any>>({
           })}
         </div>
         <DialogFooter>
-          <Button onClick={() => onSubmit(formData)}>Save</Button>
+          <Button onClick={() => onSubmit(formData)} disabled={!isFormValid}>
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

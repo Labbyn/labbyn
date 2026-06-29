@@ -1,6 +1,7 @@
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+
 import type { ColumnDef } from '@tanstack/react-table'
 import type { TagItem } from '@/integrations/tags/tags.types'
 import type { ApiLabsDetailRack } from '@/integrations/labs/labs.types'
@@ -22,11 +23,7 @@ export const columns: Array<ColumnDef<ApiLabsDetailRack>> = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Rack name" />
     ),
-    cell: ({ row }) => (
-      <div className="flex flex-col font-medium">
-        {row.getValue('name') || '-'}
-      </div>
-    ),
+    cell: ({ row }) => <div>{row.getValue('name') || '-'}</div>,
   },
   {
     id: 'machine_count',
@@ -70,9 +67,6 @@ function RouteComponent() {
             onSuccess: () => {
               toast.success('Lab deleted successfully')
               router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
             },
           })
         },

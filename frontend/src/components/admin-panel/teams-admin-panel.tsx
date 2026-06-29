@@ -12,53 +12,65 @@ import { DataTableColumnHeader } from '../data-table/column-header'
 import { DataTableRowActions } from '../data-table/row-actions'
 import type { FieldConfig } from '../generic-create-dialog'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { ApiTeamItem } from '@/integrations/teams/teams.types'
-import type { fetchTeamData } from '@/integrations/teams/teams.adapter'
-import { adminTeamsQueryOptions } from '@/integrations/teams/teams.query'
+import type { ApiTeamInfo } from '@/integrations/teams/teams.types'
+import { teamsInfoQueryOptions } from '@/integrations/teams/teams.query'
 import {
   useCreateTeamMutation,
   useDeleteTeamMutation,
   useUpdateTeamMutation,
 } from '@/integrations/teams/teams.mutation'
-import { usersQueryOptions } from '@/integrations/user/user.query'
+import { adminUsersQueryOptions } from '@/integrations/user/user.query'
+import { useChangeUserTeamAccessMutation } from '@/integrations/user/user.mutation'
+
+export type {
+  ApiTeamInfo,
+  ApiTeamInfoResponse,
+} from '@/integrations/teams/teams.types'
 
 const formatHeader = (key: string) =>
   key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
 
-type TeamItem = ReturnType<typeof fetchTeamData>[number]
+type TeamItem = ApiTeamInfo
 
-export const columns: Array<ColumnDef<ApiTeamItem>> = [
-  ...(['id', 'name', 'admins'] as Array<keyof ApiTeamItem>).map((key) => ({
-    accessorKey: key,
-    header: ({ column }: any) => (
-      <DataTableColumnHeader
-        column={column}
-        title={formatHeader(key as string)}
-      />
-    ),
-    cell: ({ getValue }: { getValue: () => any }) => {
-      const value = getValue()
+export const columns: Array<ColumnDef<ApiTeamInfo>> = [
+  ...(['id', 'name', 'admins', 'member_count'] as Array<keyof ApiTeamInfo>).map(
+    (key) => ({
+      accessorKey: key,
+      header: ({ column }: any) => (
+        <DataTableColumnHeader
+          column={column}
+          title={formatHeader(key as string)}
+        />
+      ),
+      cell: ({ getValue }: { getValue: () => any }) => {
+        const value = getValue()
 
-      if (key === 'admins' && typeof value === 'string') {
-        if (value === 'No Admin' || !value || value === '-') {
-          return <span className="text-muted-foreground">-</span>
+        if (key === 'admins') {
+          const adminData = value as ApiTeamInfo['admins']
+
+          if (adminData.length === 0) {
+            return <span className="text-muted-foreground">-</span>
+          }
+
+          return (
+            <div className="flex flex-wrap gap-1">
+              {adminData.map((admin) => (
+                <Badge
+                  key={admin.id}
+                  variant="secondary"
+                  className="text-[10px]"
+                >
+                  {admin.full_name || admin.login || 'Unknown'}
+                </Badge>
+              ))}
+            </div>
+          )
         }
 
-        const adminList = value.split(', ')
-        return (
-          <div className="flex flex-wrap gap-1">
-            {adminList.map((admin, index) => (
-              <Badge key={index} variant="secondary" className="text-[10px]">
-                {admin}
-              </Badge>
-            ))}
-          </div>
-        )
-      }
-
-      return value ?? '-'
-    },
-  })),
+        return value ?? '-'
+      },
+    }),
+  ),
   {
     id: 'actions',
     meta: {
@@ -75,6 +87,10 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
           row={team}
           idBadge={team.id}
           actions={[
+            {
+              label: 'Promote User',
+              onClick: () => meta?.onPromote?.(team),
+            },
             {
               label: 'Edit',
               onClick: () => meta?.onEdit?.(team),
@@ -94,31 +110,43 @@ export const columns: Array<ColumnDef<ApiTeamItem>> = [
 export default function TeamsAdminPanel() {
   const navigate = useNavigate()
 
-  const { data: teams = [], isLoading } = useQuery(adminTeamsQueryOptions)
+  const { data: teams = [], isLoading } = useQuery(teamsInfoQueryOptions)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTeam, setEditingTeam] = useState<TeamItem | null>(null)
+  const [promotingTeam, setPromotingTeam] = useState<TeamItem | null>(null)
 
   const createTeam = useCreateTeamMutation()
   const updateTeam = useUpdateTeamMutation(editingTeam?.id || 0)
-  const { data: users } = useQuery(usersQueryOptions)
+  const changeUserAccess = useChangeUserTeamAccessMutation()
+  const { data: users } = useQuery(adminUsersQueryOptions)
 
   const fieldsConfig: Record<string, FieldConfig> = {
     name: {
       type: 'text',
+      required: true,
     },
     team_admin_id: {
-      type: 'select',
+      type: 'multi-select',
+      required: true,
       options: (users || [])
         .filter(
           (user) =>
-            user.user_type === 'admin' ||
-            user.user_type === 'group_admin' ||
-            user.id === editingTeam?.team_admin_id,
+            user.user_type === 'admin' || user.user_type === 'group_admin',
         )
         .map((user) => ({
           label: `${user.name} ${user.surname}`,
           value: String(user.id),
         })),
+    },
+  }
+
+  const promoteFieldsConfig: Record<string, FieldConfig> = {
+    promote_user_id: {
+      type: 'select',
+      options: (users || []).map((user) => ({
+        label: `${user.name} ${user.surname}`,
+        value: String(user.id),
+      })),
     },
   }
 
@@ -131,7 +159,7 @@ export default function TeamsAdminPanel() {
     createTeam.mutate(
       {
         ...data,
-        team_admin_id: Number(data.team_admin_id),
+        team_admin_id: data.team_admin_id?.map(Number) || [],
       },
       {
         onSuccess: () => setIsDialogOpen(false),
@@ -143,13 +171,29 @@ export default function TeamsAdminPanel() {
     updateTeam.mutate(
       {
         ...data,
-        team_admin_id: Number(data.team_admin_id),
+        team_admin_id: data.team_admin_id?.map(Number) || [],
       },
       {
         onSuccess: () => setEditingTeam(null),
       },
     )
   }
+
+  const handlePromoteUser = (data: any) => {
+    if (promotingTeam && data.promote_user_id) {
+      changeUserAccess.mutate(
+        {
+          userId: Number(data.promote_user_id),
+          data: {
+            team_id: promotingTeam.id,
+            is_group_admin: true,
+          },
+        },
+        { onSuccess: () => setPromotingTeam(null) },
+      )
+    }
+  }
+
   if (isLoading) return <PageIsLoading />
 
   return (
@@ -157,7 +201,7 @@ export default function TeamsAdminPanel() {
       <DataTable
         columns={columns}
         data={teams}
-        meta={{ onEdit: setEditingTeam }}
+        meta={{ onEdit: setEditingTeam, onPromote: setPromotingTeam }}
         onRowClick={(row) => {
           navigate({
             to: '/teams/$teamId',
@@ -187,9 +231,23 @@ export default function TeamsAdminPanel() {
           onClose={() => setEditingTeam(null)}
           defaultValues={{
             name: editingTeam.name,
+            team_admin_id: editingTeam.admins.map((admin) => String(admin.id)),
           }}
           fieldsConfig={fieldsConfig}
           onSubmit={handleEditTeam}
+        />
+      )}
+
+      {promotingTeam && (
+        <GenericCreateDialog
+          title={`Promote User in ${promotingTeam.name}`}
+          isOpen={!!promotingTeam}
+          onClose={() => setPromotingTeam(null)}
+          defaultValues={{
+            promote_user_id: '',
+          }}
+          fieldsConfig={promoteFieldsConfig}
+          onSubmit={handlePromoteUser}
         />
       )}
     </>

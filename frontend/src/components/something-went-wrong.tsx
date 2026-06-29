@@ -8,16 +8,29 @@ import {
   EmptyTitle,
 } from '@/components/ui/empty'
 
-export function SomethingWentWrong() {
+interface SomethingWentWrongProps {
+  error?: Error
+  reset?: () => void
+}
+
+export function SomethingWentWrong({ error, reset }: SomethingWentWrongProps) {
   const router = useRouter()
   const canGoBack = useCanGoBack()
+
   return (
     <div className="flex h-screen w-full items-center justify-center">
       <Empty>
         <EmptyHeader>
           <EmptyTitle>Something went wrong!</EmptyTitle>
-          <EmptyDescription>The app has encountered an error.</EmptyDescription>
-          <EmptyContent>
+          <EmptyDescription>
+            {error?.message || 'The app has encountered an error.'}
+          </EmptyDescription>
+          <EmptyContent className="flex gap-2">
+            {reset && (
+              <Button onClick={reset} variant="outline">
+                Try again
+              </Button>
+            )}
             {canGoBack ? (
               <Button onClick={() => router.history.back()}>Go back</Button>
             ) : null}

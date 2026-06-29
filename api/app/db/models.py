@@ -69,7 +69,7 @@ class Rack(Base):
 
     team = relationship("Teams")
     room = relationship("Rooms", back_populates="racks")
-    shelves = relationship("Shelf", back_populates="rack", cascade="all, delete-orphan")
+    shelves = relationship("Shelf", back_populates="rack")
     tags = relationship("Tags", secondary="tags_racks", back_populates="racks")
     equipment = relationship(
         "Equipment", back_populates="rack", cascade="all, delete-orphan"
@@ -195,6 +195,7 @@ class Machines(Base):
     disks = relationship(
         "Disks", back_populates="machine", cascade="all, delete-orphan"
     )
+    inventory = relationship("Inventory", back_populates="machine")
 
 
 class Metadata(Base):
@@ -370,11 +371,11 @@ class Inventory(Base):
     room = relationship("Rooms", back_populates="inventory")
     team = relationship("Teams", back_populates="inventory")
     current_rental = relationship("Rentals", foreign_keys=[rental_id])
-
+    machine_id = Column(Integer, ForeignKey("machines.id"), nullable=True)
     rental_history = relationship(
         "Rentals", foreign_keys="[Rentals.item_id]", back_populates="inventory"
     )
-
+    machine = relationship("Machines", back_populates="inventory")
     category = relationship("Categories", back_populates="inventory")
 
 

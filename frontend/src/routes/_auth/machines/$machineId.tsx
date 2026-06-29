@@ -22,8 +22,10 @@ import {
   Save,
   StickyNote,
   Trash2,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
+
 import type { TagItem } from '@/integrations/tags/tags.types'
 import { Button } from '@/components/ui/button'
 import {
@@ -93,13 +95,14 @@ function MachineDetailsPage() {
   const form = useForm({
     defaultValues: { ...machine },
     onSubmit: ({ value }) => {
-      updateMachine.mutate(value, {
+      const updatePayload = {
+        ...value,
+        localization_id: value.room_id,
+      }
+      updateMachine.mutate(updatePayload, {
         onSuccess: () => {
           toast.success('Machine updated successfully')
           setIsEditing(false)
-        },
-        onError: (error: Error) => {
-          toast.error('Update failed', { description: error.message })
         },
       })
     },
@@ -162,9 +165,6 @@ function MachineDetailsPage() {
             onSuccess: () => {
               toast.success('Machine deleted successfully')
               router.history.back()
-            },
-            onError: (error: Error) => {
-              toast.error('Operation failed', { description: error.message })
             },
           })
         },
@@ -441,7 +441,7 @@ function MachineDetailsPage() {
                                 >
                                   <span>{disk.name}</span>
                                   <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-bold">
-                                    {disk.capacity}
+                                    {disk.capacity !== null ? `${disk.capacity} GB` : disk.capacity}
                                   </span>
                                 </div>
                               ))
@@ -451,6 +451,13 @@ function MachineDetailsPage() {
                               <span className="truncate">
                                 {convertTimestampToDate(rawValue as string) ||
                                   '—'}
+                              </span>
+                            ) : formFiled.name === 'ram' ? (
+                              <span className="truncate">
+                                {typeof rawValue === 'string' ||
+                                typeof rawValue === 'number'
+                                  ? rawValue ? `${rawValue} GB` : '—'
+                                  : '—'}
                               </span>
                             ) : (
                               <span className="truncate">
@@ -566,6 +573,14 @@ function MachineDetailsPage() {
                             disabled={selectedRoom == null}
                             value={field.state.value?.toString() ?? ''}
                             onValueChange={(value) => {
+                              if (value === 'none') {
+                                field.handleChange(null)
+                                setSelectedRack(undefined)
+                                form.setFieldValue('rack_id', null)
+                                form.setFieldValue('shelf_id', null)
+                                return
+                              }
+
                               field.handleChange(Number(value))
                               setSelectedRack(Number(value))
                               form.setFieldValue('shelf_id', null)
@@ -583,6 +598,12 @@ function MachineDetailsPage() {
                               />
                             </SelectTrigger>
                             <SelectContent>
+                              {/* Option to clear rack selection */}
+                              <SelectItem value="none">
+                                <X />
+                                No rack
+                              </SelectItem>
+
                               {availableRacks.map((rack) => (
                                 <SelectItem
                                   key={rack.id}

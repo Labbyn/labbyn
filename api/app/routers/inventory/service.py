@@ -37,6 +37,7 @@ class InventoryService:
         item = await self.repo.get_by_id(self.db, item_id, self.ctx, detailed=detailed)
         if not item:
             raise exceptions.ObjectNotFoundError("Inventory item")
+        await self.ctx.validate_team_access(item, resource_name="Inventory")
         return item
 
     async def create_item(self, inventory_data):
@@ -48,7 +49,9 @@ class InventoryService:
         self.ctx.require_user()
         try:
             data = inventory_data.model_dump()
-            await self.ctx.validate_team_access(data["team_id"])
+            await self.ctx.validate_team_access(
+                data["team_id"], resource_name="Inventory"
+            )
 
             obj = models.Inventory(**data)
             self.db.add(obj)
@@ -203,7 +206,16 @@ class InventoryService:
         """
         self.ctx.require_user()
         async with redis_service.acquire_lock(f"inventory_lock:{item_id}"):
-            item = await self.get_inventory_or_404(item_id)
+            item = await self.get_inventory_or_404(item_id, detailed=True)
+
+            today = datetime.now().date()
+            has_active_rentals = any(r.end_date >= today for r in item.rental_history)
+
+            if has_active_rentals:
+                raise exceptions.ValidationError(
+                    f"Cannot delete '{item.name}', as it has active rentals."
+                )
+
             try:
                 await self.db.delete(item)
                 await self.db.commit()

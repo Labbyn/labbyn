@@ -3,7 +3,7 @@ import type { ApiUpdateInventory } from './inventory.types'
 import api from '@/lib/api'
 
 const PATHS = {
-  BASE: '/db/inventory/',
+  BASE: '/db/inventory',
   DETAIL: (id: string | number) => `/db/inventory/${id}`,
 }
 
@@ -44,6 +44,7 @@ export const useDeleteInventoryMutation = (itemId: string | number) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

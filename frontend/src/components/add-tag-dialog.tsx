@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   Dialog,
   DialogContent,
@@ -50,9 +51,6 @@ export function AddTagDialog({ children }: { children?: React.ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['tags'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 

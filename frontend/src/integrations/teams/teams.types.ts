@@ -31,11 +31,15 @@ export type ApiTeamInfo = {
   id: number
   name: string
   team_admin_name: string
-  admin: {
+  admins: Array<{
+    id: string
     full_name: string
     login: string
     email: string
-  }
+    user_type: UserType
+    is_group_admin: boolean
+    user_link: string
+  }>
   members: Array<ApiTeamMemberInfo>
   member_count: number
   racks: Array<ApiTeamRackInfo>

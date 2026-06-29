@@ -55,7 +55,6 @@ class RackRepository:
         :return: Rack object or None.
         """
         stmt = sql.select(models.Rack).where(models.Rack.id == rack_id)
-        stmt = ctx.team_filter(stmt, models.Rack)
 
         if detailed:
             stmt = stmt.options(

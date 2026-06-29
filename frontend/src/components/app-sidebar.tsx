@@ -15,7 +15,6 @@ import {
   Moon,
   PanelsTopLeft,
   Server,
-  Settings,
   Sun,
   Tags,
   User,
@@ -119,6 +118,7 @@ const items = [
   { title: 'Dashboard', url: '/user-dashboard', icon: PanelsTopLeft },
   { title: 'Labs', url: '/labs', icon: Server },
   { title: 'Inventory', url: '/inventory', icon: Archive },
+  { title: 'Machines', url: '/machines', icon: HardDrive },
   { title: 'History', url: '/history', icon: History },
   { title: 'Users', url: '/users', icon: User },
   { title: 'Teams', url: '/teams', icon: Users },
@@ -129,8 +129,8 @@ const items = [
 const adminPanelItems = [
   { title: 'Users', url: '/admin-panel/users', icon: User },
   { title: 'Teams', url: '/admin-panel/teams', icon: CirclePile },
-  { title: 'Machines', url: '/admin-panel/machines', icon: HardDrive },
-  { title: 'Inventory', url: '/admin-panel/inventory', icon: Archive },
+  { title: 'Tags', url: '/admin-panel/tags', icon: Tags },
+  { title: 'Categories', url: '/admin-panel/categories', icon: LayoutGrid },
 ]
 
 function useTheme() {
@@ -364,29 +364,27 @@ export function AppSidebar() {
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
-                  <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">
-                      {getInitials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">
-                      {user.name}{' '}
-                      {user.user_type === 'admin' && <Badge>Admin</Badge>}
-                    </span>
-                    <span className="truncate text-xs">{user.email}</span>
-                  </div>
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/users/$userId"
+                    params={{ userId: String(user.id) }}
+                  >
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        {getInitials(user.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-semibold">
+                        {user.name}{' '}
+                        {user.user_type === 'admin' && <Badge>Admin</Badge>}
+                      </span>
+                      <span className="truncate text-xs">{user.email}</span>
+                    </div>
+                  </Link>
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-
-                <Link to="/settings">
-                  <DropdownMenuItem>
-                    <Settings />
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                </Link>
 
                 <DropdownMenuItem onClick={toggleTheme}>
                   {theme === 'dark' ? <Moon /> : <Sun />}

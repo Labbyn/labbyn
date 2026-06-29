@@ -17,6 +17,9 @@ export const categoryListQueryOptions = queryOptions({
   queryKey: ['categories', 'list'],
   queryFn: async () => {
     const { data } = await api.get<ApiCategoryResponse>(PATHS.LIST)
+    if (Array.isArray(data)) {
+      return data.sort((a, b) => a.id - b.id)
+    }
     return data
   },
 })
@@ -32,7 +35,7 @@ export const singleCategoryQueryOptions = (categoryId: string) =>
   })
 
 export const categoryGroupedInventoryListQueryOptions = queryOptions({
-  queryKey: ['categories', 'list', 'invenory'],
+  queryKey: ['categories', 'list', 'inventory'],
   queryFn: async () => {
     const { data } = await api.get<ApiCategoryInventoryGroupedResponse>(
       PATHS.GROUPED,

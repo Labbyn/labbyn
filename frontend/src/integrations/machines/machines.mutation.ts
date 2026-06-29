@@ -10,8 +10,8 @@ import type {
 import api from '@/lib/api'
 
 const PATHS = {
-  MACHINES: '/db/machines/',
-  METADATA: '/db/metadata/',
+  MACHINES: '/db/machines',
+  METADATA: '/db/metadata',
   DISCOVERY: '/ansible/discovery',
   SETUP_AGENT: '/ansible/setup_agent',
   PROMETHEUS: '/prometheus/target',
@@ -40,7 +40,7 @@ export const handlePlatformSubmission = async (values: PlatformFormValues) => {
         PATHS.MACHINES,
         {
           name: values.name || values.hostname,
-          localization_id: values.localization_id || 1, // Default room ID
+          localization_id: values.localization_id || null,
           metadata_id: metadata.id,
           ip_address: values.ip_address || null,
           mac_address: values.mac_address || null,
@@ -103,6 +103,10 @@ export const useUpdateMachineMutation = (machineId: string | number) => {
       api.patch(PATHS.DETAIL(machineId), machineData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({
+        queryKey: ['machine', String(machineId)],
+      })
     },
   })
 }
@@ -115,6 +119,7 @@ export const useDeleteMachineMutation = (machineId: string | number) => {
     mutationFn: () => api.delete(PATHS.DETAIL(machineId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -157,6 +162,7 @@ export const useDeployAgent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }
@@ -194,6 +200,7 @@ export const useDeleteAgent = (machineId: string | number) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

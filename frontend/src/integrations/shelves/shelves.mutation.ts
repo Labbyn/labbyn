@@ -23,6 +23,7 @@ export function useCreateShelfMutation() {
       queryClient.invalidateQueries({ queryKey: ['machines'] })
       queryClient.invalidateQueries({ queryKey: ['shelf'] })
       queryClient.invalidateQueries({ queryKey: ['racks', 'list', 'base'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
 }

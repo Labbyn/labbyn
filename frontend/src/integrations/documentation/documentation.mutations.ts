@@ -9,18 +9,28 @@ const PATHS = {
   SINGLE: (id: string | number) => `/db/documentation/${id}`,
 }
 
+const getSafeTimestamp = () => {
+  const now = new Date()
+  const tzOffset = now.getTimezoneOffset() * 60000
+  const localTime = new Date(now.getTime() - tzOffset)
+  return localTime.toISOString().split('.')[0]
+}
+
 export const useCreateDocumentMutation = () => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
 
   return useMutation({
     mutationFn: async () => {
-      const timestamp = new Date().toLocaleString()
+      const timestamp = new Date().toLocaleString(undefined, { hour12: false })
 
-      const { data } = await api.post<ApiDocumentationItem>(PATHS.BASE, {
+      const payload = {
         title: `New Document ${timestamp}`,
         content: '# New Document',
-      })
+        added_on: getSafeTimestamp(),
+        modified_on: getSafeTimestamp(),
+      }
+      const { data } = await api.post<ApiDocumentationItem>(PATHS.BASE, payload)
       return data
     },
     onSuccess: (newDoc) => {
@@ -31,7 +41,6 @@ export const useCreateDocumentMutation = () => {
         params: { docId: String(newDoc.id) },
       })
     },
-    onError: () => toast.error('Failed to create document'),
   })
 }
 
@@ -43,6 +52,7 @@ export const useUpdateDocumentMutation = () => {
       const payload = {
         title: doc.title,
         content: doc.content,
+        modified_on: getSafeTimestamp(),
       }
       const { data } = await api.patch<ApiDocumentationItem>(
         PATHS.SINGLE(doc.id),
@@ -57,7 +67,6 @@ export const useUpdateDocumentMutation = () => {
         queryKey: ['documentation', String(data.id)],
       })
     },
-    onError: () => toast.error('Failed to save changes'),
   })
 }
 
@@ -74,6 +83,5 @@ export const useDeleteDocumentMutation = () => {
       queryClient.invalidateQueries({ queryKey: ['documentation'] })
       navigate({ to: '/documentation' })
     },
-    onError: () => toast.error('Failed to delete document'),
   })
 }

@@ -253,7 +253,8 @@ class PrometheusService:
                 )
 
         if team_id:
-            await self.ctx.validate_team_access(team_id)
+            await self.ctx.validate_team_access(team_id, resource_name="targets")
+            target_data.team_id = team_id
             team_name = await repo.get_team_name(self.db, team_id)
 
             if not team_name:

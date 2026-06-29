@@ -20,6 +20,7 @@ services:
       - ./api:/code/
     environment:
       - ENV=development
+      - ROOT_PATH=
   db:
     ports:
       - "5432:5432"

@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select'
+
 import {
   MultiSelect,
   MultiSelectContent,
@@ -38,7 +39,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useCreateLabMutation } from '@/integrations/labs/labs.mutation'
 import { zodValidate } from '@/utils/index'
-import { teamsQueryOptions } from '@/integrations/teams/teams.query'
+import { currentUserTeamsQueryOptions } from '@/integrations/teams/teams.query'
 import { tagsQueryOptions } from '@/integrations/tags/tags.query'
 
 type RoomsFormValues = {
@@ -57,7 +58,7 @@ const schemas = {
 export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false)
   const queryClient = useQueryClient()
-  const { data: teams } = useSuspenseQuery(teamsQueryOptions)
+  const { data: teams } = useSuspenseQuery(currentUserTeamsQueryOptions)
   const { data: tags } = useSuspenseQuery(tagsQueryOptions)
 
   const mutation = useMutation({
@@ -66,11 +67,10 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
     onSuccess: () => {
       toast.success('Room added successfully')
       queryClient.invalidateQueries({ queryKey: ['labs'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['history'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 
@@ -158,7 +158,7 @@ export function AddRoomsDialog({ children }: { children?: React.ReactNode }) {
               validators={{ onChange: zodValidate(schemas.team_id) }}
               children={(field) => (
                 <Field>
-                  <FieldLabel htmlFor={field.name}>Team Name</FieldLabel>
+                  <FieldLabel htmlFor={field.name}>Team</FieldLabel>
                   <Select
                     value={field.state.value.toString()}
                     onValueChange={(value) => field.handleChange(Number(value))}

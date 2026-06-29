@@ -4,6 +4,7 @@ import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { z } from 'zod'
+
 import {
   Dialog,
   DialogClose,
@@ -50,11 +51,9 @@ export function AutoDiscovertDialog({
     onSuccess: () => {
       toast.success('Platform scaned successfully')
       queryClient.invalidateQueries({ queryKey: ['auto-discovery'] })
+      queryClient.invalidateQueries({ queryKey: ['machines'] })
       setOpen(false)
       form.reset()
-    },
-    onError: (error: Error) => {
-      toast.error('Operation failed', { description: error.message })
     },
   })
 
