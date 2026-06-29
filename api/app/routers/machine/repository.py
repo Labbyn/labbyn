@@ -9,7 +9,7 @@ from app.db import models
 GRAFANA_URL = (
     "http://localhost:3001"
     if os.environ.get("ENV") == "development"
-    else "http://grafana:3000"
+    else "http://localhost:3001/grafana/"
 )
 
 
