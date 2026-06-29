@@ -21,6 +21,7 @@ export const useCreateTeamMutation = () => {
     onSuccess: () => {
       toast.success('Team created successfully')
       queryClient.invalidateQueries({ queryKey: ['teams'] })
+      queryClient.invalidateQueries({ queryKey: ['labs'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })
@@ -30,7 +31,9 @@ export const useUpdateTeamMutation = (teamId: string | number) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (teamData: Partial<{ name: string }>) => {
+    mutationFn: async (
+      teamData: Partial<{ name: string; team_admin_id: Array<number> }>,
+    ) => {
       const { data } = await api.patch(PATHS.DETAIL(teamId), teamData)
       return data
     },
@@ -41,6 +44,7 @@ export const useUpdateTeamMutation = (teamId: string | number) => {
         queryKey: ['teams', 'info', String(teamId)],
       })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['labs'] })
     },
   })
 }
@@ -55,6 +59,7 @@ export const useDeleteTeamMutation = () => {
     onSuccess: () => {
       toast.success('Team deleted')
       queryClient.invalidateQueries({ queryKey: ['teams'] })
+      queryClient.invalidateQueries({ queryKey: ['labs'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
   })

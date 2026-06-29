@@ -28,6 +28,7 @@ import { Field, FieldLabel } from './ui/field'
 export interface FieldConfig {
   type: 'text' | 'number' | 'select' | 'password' | 'email' | 'multi-select'
   options?: Array<{ label: string; value: string }>
+  required?: boolean
 }
 
 interface GenericCreateDialogProps<T> {
@@ -53,13 +54,29 @@ export function GenericCreateDialog<T extends Record<string, any>>({
     if (isOpen) {
       setFormData(defaultValues)
     }
-  }, [isOpen, defaultValues])
+  }, [isOpen])
 
   const handleChange = (key: keyof T, value: any) => {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
   const fields = Object.keys(defaultValues) as Array<keyof T>
+
+  const isFormValid = fields.every((key) => {
+    const config = fieldsConfig?.[key]
+    if (config?.required) {
+      const value = formData[key]
+
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
+
+      if (value === '' || value === null || value === undefined) {
+        return false
+      }
+    }
+    return true
+  })
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -88,6 +105,9 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                   className="text-sm font-medium leading-none"
                 >
                   {label}
+                  {config?.required && (
+                    <span className="text-destructive">* required</span>
+                  )}
                 </FieldLabel>
 
                 {config?.type === 'select' ? (
@@ -122,10 +142,10 @@ export function GenericCreateDialog<T extends Record<string, any>>({
                         handleChange(key, newValues.map(Number))
                       }
                     >
-                      <MultiSelectTrigger className="w-full bg-background">
+                      <MultiSelectTrigger className="w-full h-auto min-h-10 flex-wrap bg-background py-1.5">
                         <MultiSelectValue
                           placeholder={`Select ${label.toLowerCase()}`}
-                          className="min-w-0 flex-1"
+                          className="min-w-0 flex-1 flex-wrap"
                         />
                       </MultiSelectTrigger>
                       <MultiSelectContent>
@@ -165,7 +185,9 @@ export function GenericCreateDialog<T extends Record<string, any>>({
           })}
         </div>
         <DialogFooter>
-          <Button onClick={() => onSubmit(formData)}>Save</Button>
+          <Button onClick={() => onSubmit(formData)} disabled={!isFormValid}>
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
