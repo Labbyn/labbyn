@@ -6,6 +6,9 @@ export const Route = createFileRoute('/_auth/')({
       throw redirect({ to: '/login' })
     }
 
-    throw redirect({ to: '/labs' })
+    throw redirect({
+      to: '/user-dashboard',
+      search: {} as any,
+    })
   },
 })
