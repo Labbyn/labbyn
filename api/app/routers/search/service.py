@@ -74,7 +74,7 @@ class SearchService:
                 for i in data["items"]
             ],
             "rooms": [
-                {"id": rm.id, "label": rm.name, "target_url": f"/rooms/{rm.id}"}
+                {"id": rm.id, "label": rm.name, "target_url": f"/labs/{rm.id}"}
                 for rm in data["rooms"]
             ],
         }
