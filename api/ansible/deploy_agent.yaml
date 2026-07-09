@@ -7,20 +7,20 @@
   tasks:
     - name: Download and Extract Node Exporter
       unarchive:
-        src: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+        src: "https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-arm64.tar.gz"
         dest: /tmp
         remote_src: yes
 
     - name: Move Node Exporter binary
       copy:
-        src: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter
+        src: /tmp/node_exporter-{{ node_exporter_version }}.linux-arm64/node_exporter
         dest: /usr/local/bin/node_exporter 
         mode: '0755'
         remote_src: yes
 
     - name: Clear /tmp Files
       file:
-        path: /tmp/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter
+        path: /tmp/node_exporter-{{ node_exporter_version }}.linux-arm64/node_exporter
         state: absent
 
     - name: Add Service File For Node Exporter
